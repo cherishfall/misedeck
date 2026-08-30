@@ -1,0 +1,42 @@
+# MiseDeck
+
+> [简体中文](./AGENTS.zh-CN.md)
+
+An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + React/TypeScript, cross-platform (macOS polished first, Windows/Linux beta). The product principle: a faithful GUI over mise's command surface — no concepts the CLI does not have (ADR-0004).
+
+## Before you code
+
+- Read `CONTEXT.md` (domain glossary) and any ADR in `docs/adr/` touching your area. Use glossary vocabulary in code, issues, and UI copy.
+- The v1 spec and implementation tickets live in GitHub Issues (`ready-for-agent` label); see `docs/agents/issue-tracker.md`.
+
+## Working agreement (one ticket per session)
+
+- Work on exactly ONE ticket per session. Tickets are GitHub issues labelled `ready-for-agent`; a ticket is startable only when every issue in its "Blocked by" list is closed. Check with `gh issue view <n> --json issueDependenciesSummary` or look at the issue page.
+- Before writing code: read the ticket, this file, `docs/agents/architecture.md`, and `docs/agents/conventions.md`. Starting the scaffold ticket (#17)? Also read `docs/agents/getting-started.md`.
+- Stay inside the ticket's acceptance criteria. Notice something the ticket does not cover? Comment on the issue instead of expanding scope.
+
+## Non-negotiables
+
+- The maintainer is a product owner, not a code reviewer. Self-verify every change: build, run, and look at the running app before claiming done — screenshot it using whatever UI-automation or screenshot capability your harness provides. Leave no red tests and no broken build.
+- Every mutating action goes through the execution panel: show the exact mise command and its live logs.
+- All UI strings go through i18n (en + zh-CN); no hardcoded copy.
+- Cross-platform from day one: paths and process spawning via Tauri/Rust APIs only.
+- Read `docs/agents/architecture.md` before creating or modifying any Tauri command, and `docs/agents/conventions.md` before invoking mise, handling errors, or writing tests.
+
+## Documentation languages
+
+Every doc in this repo has a Simplified Chinese sibling named `<name>.zh-CN.md` in the same directory. Cross-link each pair at the top (`[简体中文]` / `[English]`). When editing a doc, update its sibling in the same change — a stale translation is a bug.
+
+## Git
+
+Do not commit, push, or otherwise mutate git state unless the user asks.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub Issues on this repo, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` at the repo root plus `docs/adr/`. See `docs/agents/domain.md`.
