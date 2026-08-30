@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<!-- ============================================================================
+  ⚠ THROWAWAY PROTOTYPE — 抛弃式原型，请勿当作生产代码
+  MiseDeck（mise 的桌面 GUI 客户端，真实技术栈 Tauri + React）信息架构探索。
+  本原型要回答的问题：app 的信息架构应该长什么样？
+  Global scope 与 Project scope 在 UI / 交互上应该如何区分？
+  用法：双击在浏览器打开，通过底部胶囊或 ←/→ 键切换 ?variant=A|B|C。
+  全部数据为 mock，所有按钮均为只读占位（toast 提示“原型占位”）。
+============================================================================= -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MiseDeck · UI 原型（抛弃式）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--border:#21262d;--border2:#30363d;
+  --fg:#e6edf3;--dim:#8b949e;--faint:#6e7681;
+  --accent:#58a6ff;--green:#3fb950;--yellow:#d29922;--red:#f85149;--purple:#bc8cff;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+}
+body{background:var(--bg);color:var(--fg);font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;padding-bottom:110px;min-height:100vh}
+.mono{font-family:var(--mono)}
+.dim{color:var(--dim)}.faint{color:var(--faint)}
+button{font:inherit;cursor:pointer}
+.btn{background:var(--panel2);border:1px solid var(--border2);color:var(--fg);border-radius:6px;padding:5px 12px;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--dim)}
+.btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.btn.warn{background:#9e6a03;border-color:#9e6a03;color:#fff}
+.btn.ghost{background:transparent}
+.btn.sm{padding:2px 9px;font-size:12px;border-radius:5px}
+.badge{font-family:var(--mono);font-size:11px;padding:1px 8px;border-radius:99px;border:1px solid;white-space:nowrap}
+.b-proj{color:var(--purple);border-color:rgba(188,140,255,.4);background:rgba(188,140,255,.08)}
+.b-glob{color:var(--dim);border-color:var(--border2);background:rgba(139,148,158,.08)}
+.b-warn{color:var(--yellow);border-color:rgba(210,153,34,.4);background:rgba(210,153,34,.1)}
+.b-ok{color:var(--green);border-color:rgba(63,185,80,.35);background:rgba(63,185,80,.08)}
+.b-red{color:var(--red);border-color:rgba(248,81,73,.4);background:rgba(248,81,73,.08)}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.panel-h{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;font-weight:600}
+.panel-b{padding:14px 16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--dim);font-weight:500;font-size:12px;padding:8px 16px;border-bottom:1px solid var(--border)}
+td{padding:9px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.outdated td{background:rgba(210,153,34,.05)}
+.trust{display:flex;align-items:center;gap:12px;background:rgba(210,153,34,.07);border:1px solid rgba(210,153,34,.35);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px}
+.trust .t-ico{color:var(--yellow);font-size:16px}
+.trust .t-txt{flex:1}
+.hint{display:flex;align-items:center;gap:12px;background:rgba(88,166,255,.06);border:1px solid rgba(88,166,255,.25);border-radius:10px;padding:12px 16px;font-size:13px}
+.hint .h-ico{color:var(--accent)}
+.hint .h-txt{flex:1}
+.hint .h-btns{display:flex;gap:8px}
+.usehint{margin-top:14px;font-size:12px;color:var(--faint)}
+.usehint code{font-family:var(--mono);color:var(--dim);background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:1px 6px}
+/* 顶部原型警示条 */
+#proto-banner{background:var(--yellow);color:#1c1200;font-size:12px;font-weight:600;text-align:center;padding:5px 12px;letter-spacing:.3px}
+/* ===== Variant A ===== */
+.a-wrap{display:grid;grid-template-columns:224px 1fr;min-height:calc(100vh - 26px)}
+.a-side{border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:2px}
+.a-logo{font-family:var(--mono);font-weight:700;font-size:15px;padding:4px 10px 16px;color:var(--fg)}
+.a-logo span{color:var(--green)}
+.a-nav{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:7px;color:var(--dim);font-size:13px;cursor:pointer;border:1px solid transparent}
+.a-nav:hover{color:var(--fg)}
+.a-nav.on{background:var(--panel2);color:var(--fg);border-color:var(--border2)}
+.a-nav .ico{font-family:var(--mono);width:16px;text-align:center}
+.a-side-foot{margin-top:auto;font-size:11px;color:var(--faint);padding:8px 10px;font-family:var(--mono)}
+.a-main{display:flex;flex-direction:column;min-width:0}
+.a-top{display:flex;align-items:center;gap:14px;padding:12px 24px;border-bottom:1px solid var(--border)}
+.a-scope{display:flex;background:var(--panel);border:1px solid var(--border2);border-radius:8px;padding:3px;gap:2px}
+.a-scope button{background:transparent;border:none;color:var(--dim);border-radius:6px;padding:4px 12px;font-size:12.5px;font-family:var(--mono)}
+.a-scope button.on{background:var(--panel2);color:var(--fg);box-shadow:inset 0 0 0 1px var(--border2)}
+.a-scope button .dot{color:var(--yellow)}
+.a-content{padding:24px;max-width:960px;width:100%;margin:0 auto}
+.a-content h1{font-size:18px;margin-bottom:4px}
+.a-sub{color:var(--dim);font-size:13px;margin-bottom:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.card h3{font-size:13px;color:var(--dim);font-weight:500;margin-bottom:8px}
+.proj-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer}
+.proj-row:hover{border-color:var(--dim)}
+.proj-row .p-path{font-family:var(--mono);font-size:13px}
+.health{display:flex;gap:8px;align-items:baseline;font-size:13px;padding:4px 0}
+.health .ok{color:var(--green)}.health .wn{color:var(--yellow)}
+/* ===== Variant B ===== */
+.b-wrap{max-width:900px;margin:0 auto;padding:28px 24px}
+.b-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.b-logo{font-family:var(--mono);font-weight:700;font-size:16px}
+.b-logo span{color:var(--green)}
+.seg{display:flex;background:var(--panel);border:1px solid var(--border2);border-radius:9px;padding:3px;gap:2px}
+.seg button{background:transparent;border:none;color:var(--dim);border-radius:6px;padding:6px 22px;font-size:13px}
+.seg button.on{background:#1f6feb;color:#fff}
+.pcard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px;cursor:pointer}
+.pcard:hover{border-color:var(--dim)}
+.pcard .pc-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.pcard .pc-path{font-family:var(--mono);font-size:15px;font-weight:600}
+.pcard .pc-ov{font-family:var(--mono);font-size:12.5px;color:var(--purple);margin-right:14px}
+.pcard .pc-ov b{color:var(--fg);font-weight:600}
+.pcard .pc-meta{font-size:12.5px;color:var(--dim);margin-top:10px;display:flex;gap:16px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin:18px 0 0}
+.tabs button{background:transparent;border:none;color:var(--dim);padding:8px 14px;font-size:13px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--fg);border-bottom-color:var(--accent)}
+pre.toml{font-family:var(--mono);font-size:12.5px;line-height:1.7;background:#010409;border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow:auto;color:#a5d6ff}
+.backlink{background:none;border:none;color:var(--accent);font-size:13px;padding:0}
+/* ===== Variant C ===== */
+.c-wrap{display:grid;grid-template-columns:52px 1fr;min-height:calc(100vh - 26px)}
+.c-rail{border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:6px}
+.c-rail .r-logo{font-family:var(--mono);font-weight:700;color:var(--green);margin-bottom:8px}
+.c-rbtn{width:36px;height:36px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--dim);font-family:var(--mono);font-size:15px;display:flex;align-items:center;justify-content:center}
+.c-rbtn:hover{color:var(--fg)}
+.c-rbtn.on{background:var(--panel2);color:var(--fg);border-color:var(--border2)}
+.c-rbtn .dot{color:var(--yellow);font-size:9px;position:absolute;margin:10px 0 0 14px}
+.c-rail .r-sep{width:22px;border-top:1px solid var(--border);margin:4px 0}
+.c-main{padding:20px 28px;max-width:880px}
+.c-title{font-family:var(--mono);font-size:13px;color:var(--dim);margin-bottom:14px}
+.c-title b{color:var(--fg)}
+.term{background:#010409;border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden}
+.term-h{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12.5px}
+.term-h .ps{color:var(--green)}
+.term-h .cmd{color:var(--fg)}
+.term-h .cp{margin-left:auto}
+.term-b{padding:10px 14px;font-family:var(--mono);font-size:12.5px;line-height:1.75}
+.term-b table{font-family:var(--mono);font-size:12.5px}
+.term-b th,.term-b td{padding:4px 14px 4px 0;border:none;text-align:left}
+.term-b th{color:var(--faint);font-weight:400}
+.t-warn{color:var(--yellow)}
+.t-ok{color:var(--green)}
+.t-dim{color:var(--faint)}
+.t-cmt{color:var(--faint);font-style:italic}
+.term .act-row{display:flex;gap:8px;padding:0 14px 12px}
+/* ===== 浮动切换器 & toast ===== */
+#switcher{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;background:#f0f3f6;color:#0d1117;border-radius:99px;padding:5px;box-shadow:0 8px 30px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.15);z-index:99}
+#switcher button{width:32px;height:32px;border-radius:99px;border:none;background:transparent;color:#0d1117;font-size:15px;font-weight:700}
+#switcher button:hover{background:#d0d7de}
+#switcher .lbl{font-size:12.5px;font-weight:600;padding:0 10px;font-family:var(--mono);white-space:nowrap}
+#toast{position:fixed;left:50%;bottom:74px;transform:translateX(-50%) translateY(8px);background:#f0f3f6;color:#0d1117;font-size:12.5px;font-weight:600;border-radius:8px;padding:7px 16px;opacity:0;pointer-events:none;transition:all .18s;z-index:100;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div id="proto-banner">⚠ 抛弃式原型 THROWAWAY PROTOTYPE · 数据为 mock · 按钮均为占位，无任何实际操作</div>
+<div id="app"></div>
+<div id="switcher">
+  <button id="sw-prev" title="上一个变体（←）">‹</button>
+  <span class="lbl" id="sw-lbl"></span>
+  <button id="sw-next" title="下一个变体（→）">›</button>
+</div>
+<div id="toast">原型占位 · 无实际操作</div>
+<script>
+"use strict";
+/* ================= mock 数据（基于真实机器） ================= */
+var GLOBAL_TOOLS=[
+  {name:"node",  version:"22.20.0", latest:"23.5.0", outdated:true},
+  {name:"go",    version:"1.26.7"},
+  {name:"java",  version:"oracle-17"},
+  {name:"maven", version:"3.9.16"},
+  {name:"python",version:"3.13.5"}
+];
+var PROJECTS={
+  shop:{
+    key:"shop", path:"~/Code/shop-api", trusted:false,
+    tools:[
+      {name:"node",  version:"20.19.0", src:"project", over:"22.20.0"},
+      {name:"pnpm",  version:"10.12.1", src:"project"},
+      {name:"go",    version:"1.26.7",  src:"global"},
+      {name:"java",  version:"oracle-17",src:"global"},
+      {name:"maven", version:"3.9.16",  src:"global"},
+      {name:"python",version:"3.13.5",  src:"global"}
+    ],
+    env:[
+      {key:"DATABASE_URL", value:"postgres://localhost:5432/shop_dev", src:"project"},
+      {key:"NODE_ENV",     value:"development", src:"project"}
+    ],
+    tasks:[
+      {name:"dev",   run:"pnpm dev"},
+      {name:"build", run:"pnpm build"}
+    ],
+    toml:'[tools]\nnode = "20.19.0"\npnpm = "10"\n\n[env]\nDATABASE_URL = "postgres://localhost:5432/shop_dev"\nNODE_ENV = "development"\n\n[tasks.dev]\nrun = "pnpm dev"\n\n[tasks.build]\nrun = "pnpm build"'
+  },
+  blog:{
+    key:"blog", path:"~/Code/blog", trusted:true,
+    tools:[
+      {name:"node",  version:"22.20.0", src:"global"},
+      {name:"go",    version:"1.26.7",  src:"global"},
+      {name:"java",  version:"oracle-17",src:"global"},
+      {name:"maven", version:"3.9.16",  src:"global"},
+      {name:"python",version:"3.13.5",  src:"global"}
+    ],
+    env:[],
+    tasks:[
+      {name:"dev",   run:"npm run dev"},
+      {name:"build", run:"npm run build"}
+    ],
+    toml:'[tools]\nnode = "22"'
+  }
+};
+/* ================= 通用组件 ================= */
+function toast(msg){
+  var t=document.getElementById("toast");
+  t.textContent=msg||"原型占位 · 无实际操作";
+  t.classList.add("show");
+  clearTimeout(t._tm);
+  t._tm=setTimeout(function(){t.classList.remove("show");},1500);
+}
+function srcBadge(t){
+  if(t.src==="project"&&t.over)return '<span class="badge b-proj">覆盖全局 '+t.over+'</span>';
+  if(t.src==="project")return '<span class="badge b-proj">项目 mise.toml</span>';
+  return '<span class="badge b-glob">全局</span>';
+}
+function envBadge(e){
+  return e.src==="project"?'<span class="badge b-proj">项目 mise.toml</span>':'<span class="badge b-glob">全局</span>';
+}
+function trustBadge(p){
+  return p.trusted?'<span class="badge b-ok">已信任</span>':'<span class="badge b-warn">未信任</span>';
+}
+function trustBanner(p){
+  if(p.trusted)return "";
+  return '<div class="trust"><span class="t-ico">⚠</span>'+
+    '<div class="t-txt"><b>此项目未被信任</b>，配置中的 env / tasks 不会生效。信任前 MiseDeck 只读取 tools 版本。</div>'+
+    '<button class="btn warn" onclick="toast()">信任此项目</button></div>';
+}
+function activateHint(){
+  return '<div class="hint"><span class="h-ico">ℹ</span>'+
+    '<div class="h-txt">此项目的环境在<b>进程启动时</b>生效：MiseDeck 只负责写配置，终端 / IDE 启动 shell 时才真正激活。</div>'+
+    '<div class="h-btns"><button class="btn primary sm" onclick="toast()">在终端中打开（已激活）</button>'+
+    '<button class="btn ghost sm" onclick="toast()">复制生效命令</button></div></div>';
+}
+function useHint(cmd){
+  return '<div class="usehint">提示：此操作等效于 CLI 命令 <code>'+cmd+'</code></div>';
+}
+function toolRows(tools,showSrc){
+  var html="";
+  tools.forEach(function(t){
+    var cls=t.outdated?' class="outdated"':"";
+    html+="<tr"+cls+'><td class="mono" style="font-weight:600">'+t.name+"</td>"+
+      '<td class="mono">'+t.version+"</td>"+
+      (showSrc?("<td>"+srcBadge(t)+"</td>"):"")+
+      "<td>"+(t.outdated
+        ?'<span class="badge b-warn">outdated → '+t.latest+'</span> <button class="btn sm" style="margin-left:8px" onclick="toast()">升级</button>'
+        :'<span class="dim" style="font-size:12px">最新</span>')+"</td></tr>";
+  });
+  return html;
+}
+function taskRows(tasks){
+  var html="";
+  tasks.forEach(function(t){
+    html+='<tr><td class="mono" style="font-weight:600">'+t.name+'</td>'+
+      '<td class="mono dim">'+t.run+'</td>'+
+      '<td style="text-align:right"><button class="btn sm" onclick="toast()">▶ 运行</button></td></tr>';
+  });
+  return html;
+}
+</script>
+<script>
+"use strict";
+/* ================= Variant A：仪表盘 + 功能域侧边栏 ================= */
+var A={
+  nav:"dashboard",
+  scope:"global", /* global | shop | blog */
+  setNav:function(n){A.nav=n;render();},
+  setScope:function(s){A.scope=s;render();},
+  openProject:function(k){A.scope=k;A.nav="tools";render();}
+};
+var A_NAVS=[
+  ["dashboard","◈","仪表盘"],
+  ["tools","⬡","工具"],
+  ["env","∴","环境变量"],
+  ["settings","⚙","设置"],
+  ["plugins","⌘","插件"]
+];
+function aScopeBtn(key,label,warn){
+  return '<button class="'+(A.scope===key?"on":"")+'" onclick="A.setScope(\''+key+'\')">'+
+    label+(warn?'<span class="dot"> ●</span>':"")+"</button>";
+}
+function renderA(){
+  var side='<div class="a-side"><div class="a-logo"><span>▲</span> MiseDeck</div>';
+  A_NAVS.forEach(function(n){
+    side+='<div class="a-nav'+(A.nav===n[0]?" on":"")+'" onclick="A.setNav(\''+n[0]+'\')"><span class="ico">'+n[1]+"</span>"+n[2]+"</div>";
+  });
+  side+='<div class="a-side-foot">mise 2026.8.3<br>~/.config/mise</div></div>';
+
+  var top='<div class="a-top"><span class="dim" style="font-size:12.5px">作用域</span>'+
+    '<div class="a-scope">'+
+    aScopeBtn("global","全局 (Global)")+
+    aScopeBtn("shop","shop-api",!PROJECTS.shop.trusted)+
+    aScopeBtn("blog","blog")+
+    '</div><span class="faint" style="font-size:12px">切换作用域，查看不同配置来源的解析结果</span></div>';
+
+  var c="";
+  var scopeProj=A.scope==="global"?null:PROJECTS[A.scope];
+
+  if(A.nav==="dashboard"){
+    c+='<h1>仪表盘</h1><div class="a-sub">mise 全局状态一览</div>';
+    if(scopeProj)c+=trustBanner(scopeProj);
+    c+='<div class="grid2">';
+    /* outdated 卡片 */
+    c+='<div class="card"><h3>可更新</h3>'+
+      '<div style="display:flex;align-items:center;gap:10px">'+
+      '<span class="mono" style="font-weight:600">node</span>'+
+      '<span class="mono dim">22.20.0</span><span class="dim">→</span>'+
+      '<span class="mono" style="color:var(--yellow)">23.5.0</span>'+
+      '<span class="badge b-warn">outdated</span>'+
+      '<button class="btn sm primary" style="margin-left:auto" onclick="toast()">升级</button></div>'+
+      useHint("mise upgrade node")+'</div>';
+    /* 健康检查 */
+    c+='<div class="card"><h3>健康检查（doctor）</h3>'+
+      '<div class="health"><span class="ok">✓</span> shims 路径已在 PATH 中</div>'+
+      '<div class="health"><span class="ok">✓</span> ~/.config/mise/config.toml 语法正常</div>'+
+      '<div class="health"><span class="ok">✓</span> 5 个工具已安装并可解析</div>'+
+      '<div class="health"><span class="wn">⚠</span> node 22.20.0 已过期（23.5.0 可用）</div></div>';
+    c+="</div>";
+    /* 最近项目 */
+    c+='<div class="card" style="margin-top:14px"><h3>最近项目</h3>';
+    ["shop","blog"].forEach(function(k){
+      var p=PROJECTS[k];
+      c+='<div class="proj-row" onclick="A.openProject(\''+k+'\')">'+
+        '<span class="p-path">'+p.path+"</span>"+trustBadge(p)+
+        '<span class="dim" style="font-size:12px;margin-left:auto">node '+
+        (k==="shop"?"20.19.0（覆盖全局）":"22.20.0")+"</span></div>";
+    });
+    c+="</div>";
+  }
+  else if(A.nav==="tools"){
+    if(scopeProj){
+      c+='<h1>工具 <span class="mono dim" style="font-size:13px;font-weight:400">'+scopeProj.path+"</span></h1>"+
+        '<div class="a-sub">项目解析结果 = 全局配置 + 项目 mise.toml 覆盖</div>'+trustBanner(scopeProj)+
+        '<div class="panel"><table><tr><th>Tool</th><th>解析版本</th><th>配置来源</th><th>状态</th></tr>'+
+        toolRows(scopeProj.tools,true)+"</table></div>"+
+        '<div style="margin-top:14px">'+activateHint()+"</div>"+
+        useHint("mise -C "+scopeProj.path+" ls");
+    }else{
+      c+='<h1>工具</h1><div class="a-sub">全局已安装工具（~/.config/mise/config.toml）</div>'+
+        '<div class="panel"><table><tr><th>Tool</th><th>版本</th><th>状态</th></tr>'+
+        toolRows(GLOBAL_TOOLS,false)+"</table></div>"+
+        useHint("mise ls --global · 升级等效于 mise use -g node@23");
+    }
+  }
+  else if(A.nav==="env"){
+    if(scopeProj){
+      var rows="";
+      if(scopeProj.env.length===0){
+        rows='<tr><td colspan="3" class="dim" style="text-align:center;padding:24px">此项目未覆盖环境变量，进程将继承 shell 环境</td></tr>';
+      }else{
+        scopeProj.env.forEach(function(e){
+          rows+='<tr><td class="mono" style="font-weight:600">'+e.key+'</td>'+
+            '<td class="mono dim">'+e.value+"</td><td>"+envBadge(e)+"</td></tr>";
+        });
+      }
+      c+='<h1>环境变量 <span class="mono dim" style="font-size:13px;font-weight:400">'+scopeProj.path+"</span></h1>"+
+        '<div class="a-sub">项目 env 仅在进程启动时注入</div>'+trustBanner(scopeProj)+
+        '<div class="panel"><table><tr><th>Key</th><th>Value</th><th>配置来源</th></tr>'+rows+"</table></div>"+
+        '<div style="margin-top:14px">'+activateHint()+"</div>"+
+        useHint("mise -C "+scopeProj.path+" env");
+    }else{
+      c+='<h1>环境变量</h1><div class="a-sub">全局配置未设置环境变量</div>'+
+        '<div class="panel"><div class="panel-b dim" style="text-align:center;padding:32px">全局 env 为空 · 项目级 env 请切换到项目作用域查看</div></div>'+
+        useHint("mise env");
+    }
+  }
+  else if(A.nav==="settings"){
+    c+='<h1>设置</h1><div class="a-sub">mise settings（只读预览）</div>'+
+      '<div class="panel"><div class="panel-b">'+
+      '<div class="health"><span class="dim mono" style="width:180px">activate_on_cd</span> true</div>'+
+      '<div class="health"><span class="dim mono" style="width:180px">shims_dir</span> ~/.local/share/mise/shims</div>'+
+      '<div class="health"><span class="dim mono" style="width:180px">trusted_config_paths</span> ~/Code/blog</div>'+
+      '<div class="health"><span class="dim mono" style="width:180px">jobs</span> 8</div></div></div>'+
+      useHint("mise settings ls");
+  }
+  else if(A.nav==="plugins"){
+    c+='<h1>插件</h1><div class="a-sub">已安装的后端插件</div>'+
+      '<div class="panel"><table><tr><th>插件</th><th>仓库</th><th></th></tr>'+
+      '<tr><td class="mono">node</td><td class="mono dim">core</td><td></td></tr>'+
+      '<tr><td class="mono">go</td><td class="mono dim">core</td><td></td></tr>'+
+      '<tr><td class="mono">java</td><td class="mono dim">core</td><td></td></tr>'+
+      '<tr><td class="mono">maven</td><td class="mono dim">core</td><td></td></tr>'+
+      '<tr><td class="mono">python</td><td class="mono dim">core</td><td></td></tr>'+
+      '<tr><td class="mono">pnpm</td><td class="mono dim">core</td><td></td></tr>'+
+      "</table></div>"+useHint("mise plugins ls");
+  }
+
+  return '<div class="a-wrap">'+side+'<div class="a-main">'+top+'<div class="a-content">'+c+"</div></div></div>";
+}
+
+/* ================= Variant B：两个世界 ================= */
+var B={
+  world:"projects",   /* global | projects */
+  proj:null,          /* null | shop | blog */
+  tab:"overview",     /* overview | tools | env | tasks | config */
+  setWorld:function(w){B.world=w;B.proj=null;render();},
+  open:function(k){B.proj=k;B.tab="overview";render();},
+  back:function(){B.proj=null;render();},
+  setTab:function(t){B.tab=t;render();}
+};
+function bGlobal(){
+  var h='<div style="margin-bottom:16px"><h1 style="font-size:18px">Global</h1>'+
+    '<div class="dim" style="font-size:13px">全局工具集 · ~/.config/mise/config.toml · 所有项目的默认版本</div></div>'+
+    '<div class="panel"><table><tr><th>Tool</th><th>版本</th><th>状态</th></tr>'+
+    toolRows(GLOBAL_TOOLS,false)+"</table></div>"+
+    useHint("mise ls --global · 升级等效于 mise use -g node@23");
+  return h;
+}
+function bProjects(){
+  var h='<div style="margin-bottom:16px"><h1 style="font-size:18px">Projects</h1>'+
+    '<div class="dim" style="font-size:13px">已发现包含 mise.toml 的项目</div></div>';
+  ["shop","blog"].forEach(function(k){
+    var p=PROJECTS[k];
+    var ovs="";
+    p.tools.forEach(function(t){
+      if(t.src==="project"){
+        ovs+='<span class="pc-ov">'+t.name+" <b>"+t.version+"</b>"+(t.over?" · 覆盖全局 "+t.over:" · 项目新增")+"</span>";
+      }
+    });
+    h+='<div class="pcard" onclick="B.open(\''+k+'\')">'+
+      '<div class="pc-top"><span class="pc-path">'+p.path+"</span>"+trustBadge(p)+"</div>"+
+      "<div>"+(ovs||'<span class="dim" style="font-size:12.5px">无版本覆盖，全部继承全局</span>')+"</div>"+
+      '<div class="pc-meta"><span>'+p.env.length+" 个 env 覆盖</span><span>"+p.tasks.length+" 个 tasks</span><span>mise.toml</span></div>"+
+      "</div>";
+  });
+  return h;
+}
+function bDetail(p){
+  var h='<button class="backlink" onclick="B.back()">← 返回 Projects</button>'+
+    '<div style="display:flex;align-items:center;gap:12px;margin:12px 0 4px">'+
+    '<span class="mono" style="font-size:18px;font-weight:700">'+p.path+"</span>"+trustBadge(p)+"</div>"+
+    '<div class="dim" style="font-size:13px">mise.toml · '+(p.trusted?"env / tasks 已激活":"env / tasks 未激活")+"</div>";
+  h+='<div style="margin-top:14px">'+trustBanner(p)+"</div>";
+  var tabs=[["overview","概览"],["tools","工具"],["env","环境变量"],["tasks","任务"],["config","配置文件"]];
+  h+='<div class="tabs">';
+  tabs.forEach(function(t){
+    h+='<button class="'+(B.tab===t[0]?"on":"")+'" onclick="B.setTab(\''+t[0]+'\')">'+t[1]+"</button>";
+  });
+  h+="</div><div style='padding-top:18px'>";
+
+  if(B.tab==="overview"){
+    var overCount=0;p.tools.forEach(function(t){if(t.src==="project")overCount++;});
+    h+='<div class="grid2">'+
+      '<div class="card"><h3>版本覆盖</h3><div class="mono" style="font-size:22px;font-weight:700">'+overCount+'</div><div class="dim" style="font-size:12.5px">个项目级 tool 覆盖</div></div>'+
+      '<div class="card"><h3>env 覆盖</h3><div class="mono" style="font-size:22px;font-weight:700">'+p.env.length+'</div><div class="dim" style="font-size:12.5px">个环境变量</div></div>'+
+      "</div>"+
+      '<div style="margin-top:14px">'+activateHint()+"</div>"+
+      useHint("mise -C "+p.path+" status");
+  }else if(B.tab==="tools"){
+    h+='<div class="panel"><table><tr><th>Tool</th><th>解析版本</th><th>配置来源</th><th>状态</th></tr>'+
+      toolRows(p.tools,true)+"</table></div>"+useHint("mise -C "+p.path+" ls");
+  }else if(B.tab==="env"){
+    var rows="";
+    if(p.env.length===0){
+      rows='<tr><td colspan="3" class="dim" style="text-align:center;padding:24px">无 env 覆盖，进程继承 shell 环境</td></tr>';
+    }else{
+      p.env.forEach(function(e){
+        rows+='<tr><td class="mono" style="font-weight:600">'+e.key+'</td><td class="mono dim">'+e.value+"</td><td>"+envBadge(e)+"</td></tr>";
+      });
+    }
+    h+='<div class="panel"><table><tr><th>Key</th><th>Value</th><th>配置来源</th></tr>'+rows+"</table></div>"+
+      '<div style="margin-top:14px">'+activateHint()+"</div>"+useHint("mise -C "+p.path+" env");
+  }else if(B.tab==="tasks"){
+    h+='<div class="panel"><table><tr><th>Task</th><th>命令</th><th></th></tr>'+taskRows(p.tasks)+"</table></div>"+
+      useHint("mise -C "+p.path+" run dev");
+  }else if(B.tab==="config"){
+    h+='<div class="dim" style="font-size:12.5px;margin-bottom:8px">'+p.path+'/mise.toml</div>'+
+      '<pre class="toml">'+p.toml.replace(/&/g,"&amp;").replace(/</g,"&lt;")+"</pre>";
+  }
+  h+="</div>";
+  return h;
+}
+function renderB(){
+  var h='<div class="b-wrap"><div class="b-head">'+
+    '<div class="b-logo"><span>▲</span> MiseDeck</div>'+
+    '<div class="seg">'+
+    '<button class="'+(B.world==="global"?"on":"")+'" onclick="B.setWorld(\'global\')">Global</button>'+
+    '<button class="'+(B.world==="projects"?"on":"")+'" onclick="B.setWorld(\'projects\')">Projects</button>'+
+    "</div></div>";
+  if(B.world==="global")h+=bGlobal();
+  else if(B.proj)h+=bDetail(PROJECTS[B.proj]);
+  else h+=bProjects();
+  return h+"</div>";
+}
+</script>
+<script>
+"use strict";
+/* ================= Variant C：Deck 控制台 ================= */
+var C={
+  ctx:"global", /* global | shop | blog | settings */
+  setCtx:function(k){C.ctx=k;render();}
+};
+function cTerm(cmd,body,actions){
+  return '<div class="term"><div class="term-h"><span class="ps">$</span><span class="cmd">'+cmd+"</span>"+
+    '<button class="btn sm ghost cp" onclick="toast()">复制</button></div>'+
+    '<div class="term-b">'+body+"</div>"+(actions||"")+"</div>";
+}
+function cToolsBody(tools,withSrc){
+  var h='<table><tr><th>TOOL</th><th>VERSION</th>'+(withSrc?"<th>SOURCE</th>":"")+"<th></th></tr>";
+  tools.forEach(function(t){
+    var src="";
+    if(withSrc){
+      if(t.src==="project"&&t.over)src='<span style="color:var(--purple)">mise.toml (overrides global '+t.over+")</span>";
+      else if(t.src==="project")src='<span style="color:var(--purple)">mise.toml</span>';
+      else src='<span class="t-dim">global</span>';
+    }
+    h+="<tr><td>"+t.name+"</td><td>"+t.version+"</td>"+(withSrc?"<td>"+src+"</td>":"")+
+      "<td>"+(t.outdated?'<span class="t-warn">→ '+t.latest+" available</span>":'<span class="t-dim">latest</span>')+"</td></tr>";
+  });
+  return h+"</table>";
+}
+function cGlobal(){
+  var h=cTerm("mise ls --global",cToolsBody(GLOBAL_TOOLS,false),
+    '<div class="act-row"><button class="btn sm" onclick="toast()">升级 node</button>'+
+    '<span class="t-dim" style="font-size:11.5px;align-self:center">→ 等效于 mise use -g node@23</span></div>');
+  h+=cTerm("mise outdated",
+    '<span class="t-warn">node  22.20.0  →  23.5.0</span>\n<span class="t-dim"># 其余 4 个工具均为最新</span>'.replace(/\n/g,"<br>"));
+  h+=cTerm("mise doctor",
+    '<span class="t-ok">✓</span> shims 路径已在 PATH 中<br>'+
+    '<span class="t-ok">✓</span> ~/.config/mise/config.toml 语法正常<br>'+
+    '<span class="t-warn">⚠</span> node 22.20.0 已过期（23.5.0 可用）');
+  return h;
+}
+function cProject(p){
+  var h="";
+  if(!p.trusted){
+    h+='<div class="term"><div class="term-h"><span class="t-warn">!</span><span class="cmd t-warn">此项目未被信任</span></div>'+
+      '<div class="term-b"><span class="t-cmt"># 配置中的 env / tasks 不会生效，仅解析 tools 版本</span><br>'+
+      '<span class="t-cmt"># 信任后将执行 mise.toml 中的 [env] 与 [tasks]</span></div>'+
+      '<div class="act-row"><button class="btn warn sm" onclick="toast()">信任此项目</button>'+
+      '<span class="t-dim" style="font-size:11.5px;align-self:center">→ mise trust '+p.path+"</span></div></div>";
+  }
+  h+=cTerm("mise -C "+p.path+" ls",cToolsBody(p.tools,true));
+  var envBody="";
+  if(p.env.length===0){
+    envBody='<span class="t-dim"># 无 env 覆盖，进程继承 shell 环境</span>';
+  }else{
+    p.env.forEach(function(e){
+      envBody+='<span style="color:var(--accent)">'+e.key+"</span>="+e.value+'  <span class="t-dim"># mise.toml</span><br>';
+    });
+  }
+  h+=cTerm("mise -C "+p.path+" env",envBody);
+  var taskBody="<table><tr><th>TASK</th><th>RUN</th><th></th></tr>";
+  p.tasks.forEach(function(t){
+    taskBody+="<tr><td>"+t.name+'</td><td class="t-dim">'+t.run+"</td>"+
+      '<td><button class="btn sm ghost" onclick="toast()">▶</button></td></tr>';
+  });
+  taskBody+="</table>";
+  h+=cTerm("mise -C "+p.path+" tasks",taskBody);
+  /* 生效方式教学面板 */
+  h+='<div class="term"><div class="term-h"><span class="ps">$</span><span class="cmd">mise activate zsh</span>'+
+    '<button class="btn sm ghost cp" onclick="toast()">复制</button></div>'+
+    '<div class="term-b"><span class="t-cmt"># 此项目的环境在进程启动时生效：GUI 只写配置，shell / IDE 启动时才真正激活</span></div>'+
+    '<div class="act-row"><button class="btn primary sm" onclick="toast()">在终端中打开（已激活）</button>'+
+    '<button class="btn ghost sm" onclick="toast()">复制生效命令</button></div></div>';
+  return h;
+}
+function cSettings(){
+  return cTerm("mise settings ls",
+    'activate_on_cd        <span class="t-ok">true</span><br>'+
+    'shims_dir             ~/.local/share/mise/shims<br>'+
+    'trusted_config_paths  ~/Code/blog<br>'+
+    'jobs                  8');
+}
+function renderC(){
+  var rail='<div class="c-rail"><div class="r-logo">▲</div>';
+  rail+='<button class="c-rbtn'+(C.ctx==="global"?" on":"")+'" title="Global" onclick="C.setCtx(\'global\')">~</button>';
+  rail+='<div class="r-sep"></div>';
+  rail+='<button class="c-rbtn'+(C.ctx==="shop"?" on":"")+'" title="~/Code/shop-api" onclick="C.setCtx(\'shop\')">'+(PROJECTS.shop.trusted?"⌂":'<span style="position:relative">⌂<span class="dot">●</span></span>')+"</button>";
+  rail+='<button class="c-rbtn'+(C.ctx==="blog"?" on":"")+'" title="~/Code/blog" onclick="C.setCtx(\'blog\')">⌂</button>';
+  rail+='<div class="r-sep"></div>';
+  rail+='<button class="c-rbtn'+(C.ctx==="settings"?" on":"")+'" title="设置" onclick="C.setCtx(\'settings\')">⚙</button>';
+  rail+="</div>";
+
+  var title,body;
+  if(C.ctx==="global"){title="上下文： <b>Global</b>（~/.config/mise/config.toml）";body=cGlobal();}
+  else if(C.ctx==="settings"){title="上下文： <b>设置</b>";body=cSettings();}
+  else{var p=PROJECTS[C.ctx];title="上下文： <b>"+p.path+"</b>（项目作用域）"+(p.trusted?"":' <span class="badge b-warn">未信任</span>');body=cProject(p);}
+
+  return '<div class="c-wrap">'+rail+'<div class="c-main">'+
+    '<div class="c-title">'+title+' · 每个操作都会回显等效的 mise 命令</div>'+
+    body+"</div></div>";
+}
+
+/* ================= 变体切换 ================= */
+var VARIANTS=[["A","仪表盘布局"],["B","两个世界"],["C","Deck 控制台"]];
+function currentVariant(){
+  var v=new URLSearchParams(location.search).get("variant");
+  for(var i=0;i<VARIANTS.length;i++)if(VARIANTS[i][0]===v)return v;
+  return "A";
+}
+function goVariant(v){
+  var u=new URL(location.href);
+  u.searchParams.set("variant",v);
+  location.href=u;
+}
+function cycle(dir){
+  var cur=currentVariant(),idx=0;
+  for(var i=0;i<VARIANTS.length;i++)if(VARIANTS[i][0]===cur)idx=i;
+  idx=(idx+dir+VARIANTS.length)%VARIANTS.length;
+  goVariant(VARIANTS[idx][0]);
+}
+function render(){
+  var v=currentVariant();
+  var app=document.getElementById("app");
+  if(v==="A")app.innerHTML=renderA();
+  else if(v==="B")app.innerHTML=renderB();
+  else app.innerHTML=renderC();
+  var name="";
+  for(var i=0;i<VARIANTS.length;i++)if(VARIANTS[i][0]===v)name=VARIANTS[i][1];
+  document.getElementById("sw-lbl").textContent=v+"（"+name+"）";
+  document.title="MiseDeck 原型 · "+v;
+}
+document.getElementById("sw-prev").addEventListener("click",function(){cycle(-1);});
+document.getElementById("sw-next").addEventListener("click",function(){cycle(1);});
+document.addEventListener("keydown",function(e){
+  var t=e.target;
+  var tag=t&&t.tagName?t.tagName.toLowerCase():"";
+  if(tag==="input"||tag==="textarea"||(t&&t.isContentEditable))return;
+  if(e.key==="ArrowLeft")cycle(-1);
+  else if(e.key==="ArrowRight")cycle(1);
+});
+render();
+</script>
+</body>
+</html>
