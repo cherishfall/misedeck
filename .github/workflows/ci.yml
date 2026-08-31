@@ -1,0 +1,99 @@
+name: ci
+
+# Cheap frontend + Rust checks on every push to master and on every PR.
+# The full tag-triggered build lives in release.yml — this workflow
+# keeps master green without paying for a Tauri bundle on every commit.
+# Target wall-clock: under 5 minutes on a warm cache.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# One run per ref at a time; cancel superseded runs on the same ref so
+# a force-push doesn't pay for the previous run's tests.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only is enough: no release, no deployment.
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: frontend (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Frontend behavior can differ subtly between Windows path
+        # handling and POSIX shells; keep the cheap checks honest by
+        # covering at least two. macOS catches shell portability too.
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: misedeck/package-lock.json
+
+      - name: Install npm dependencies
+        working-directory: misedeck
+        run: npm ci
+
+      - name: TypeScript typecheck
+        working-directory: misedeck
+        run: npx tsc --noEmit
+
+      - name: i18n parity + call-site guard
+        working-directory: misedeck
+        run: npm run lint:i18n
+
+      - name: Frontend production build
+        working-directory: misedeck
+        run: npm run build
+
+  rust:
+    name: rust (ubuntu-latest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libsoup-3.0-dev
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: misedeck/src-tauri -> target
+          cache-on-failure: true
+
+      - name: cargo check
+        working-directory: misedeck/src-tauri
+        run: cargo check --all-targets
+
+      - name: cargo test
+        working-directory: misedeck/src-tauri
+        run: cargo test --all-targets

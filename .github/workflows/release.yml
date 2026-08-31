@@ -1,0 +1,187 @@
+name: release
+
+# Tag pushes (`v*.*.*`) cut a real release. `workflow_dispatch` is a manual
+# trigger to exercise the build matrix from a branch without cutting a tag
+# (the release job is skipped in that case — see below).
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+# One release at a time per ref. A second tag push waits for the first to
+# finish; we never want two matrix runs publishing to the same Release.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+# `contents: write` is required to publish the GitHub Release. Every other
+# step inherits the same token and has the read access it needs.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Continue other legs when one fails so a Windows or Linux breakage
+      # is visible in the same run, not hidden behind a cancelled matrix.
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+        # Per-platform bundle subset — the Tauri 2 defaults that the
+        # host runner can actually produce. The frontend bundle and the
+        # Rust binary are always built; this only controls the installers.
+        include:
+          - os: macos-latest
+            bundles: app,dmg
+          - os: windows-latest
+            bundles: nsis
+          - os: ubuntu-latest
+            bundles: deb,rpm,appimage
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history + tags so the release job can read the tag
+          # annotation (used as the release body when present).
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: misedeck/src-tauri -> target
+          shared-key: ${{ matrix.os }}
+          cache-on-failure: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: misedeck/package-lock.json
+
+      - name: Install Linux system dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libsoup-3.0-dev
+
+      - name: Install npm dependencies
+        working-directory: misedeck
+        run: npm ci
+
+      - name: Build Tauri bundle
+        working-directory: misedeck
+        run: npm run tauri build -- --bundles ${{ matrix.bundles }}
+
+      - name: Compute SHA256SUMS
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd misedeck
+          # Hash the actual installers and signed binaries, not the
+          # unpacked .app bundle directory. Portable across the three
+          # runners because every GitHub-hosted image ships coreutils.
+          find src-tauri/target/release/bundle \
+            -type f \
+            \( -name '*.dmg' -o -name '*.exe' -o -name '*.msi' \
+               -o -name '*.deb' -o -name '*.rpm' -o -name '*.AppImage' \) \
+            -print0 \
+          | xargs -0 sha256sum > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: misedeck-${{ matrix.os }}
+          # Only the installers, not the unpacked `.app` directory on
+          # macOS. The `.app` is what gets bundled into the `.dmg` and
+          # is too large to attach to a Release.
+          path: |
+            misedeck/src-tauri/target/release/bundle/**/*.dmg
+            misedeck/src-tauri/target/release/bundle/**/*.exe
+            misedeck/src-tauri/target/release/bundle/**/*.msi
+            misedeck/src-tauri/target/release/bundle/**/*.deb
+            misedeck/src-tauri/target/release/bundle/**/*.rpm
+            misedeck/src-tauri/target/release/bundle/**/*.AppImage
+            misedeck/SHA256SUMS
+          if-no-files-found: error
+
+  release:
+    name: release
+    needs: build
+    # Only publish on real tag pushes. workflow_dispatch (manual matrix
+    # test) and PR builds never create a Release.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Download all platform artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Resolve release notes
+        id: notes
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # 1. Tag annotation wins if the tagger wrote one.
+          ANNOTATION="$(git tag -l --format='%(contents)' "$TAG" || true)"
+          if [ -n "$ANNOTATION" ]; then
+            printf '%s\n' "$ANNOTATION" > release-body.md
+            echo "source=annotation" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # 2. Curated template with <version> substituted.
+          if [ -f .github/release-template.md ]; then
+            sed -e "s|<version>|$TAG|g" -e "s|{{version}}|$TAG|g" \
+              .github/release-template.md > release-body.md
+            echo "source=template" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # 3. No annotation, no template — let softprops auto-generate.
+          : > release-body.md
+          echo "source=auto" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body_path: release-body.md
+          # Only auto-generate when we have nothing else to put there.
+          generate_release_notes: ${{ steps.notes.outputs.source == 'auto' }}
+          draft: false
+          prerelease: false
+          # Every file under artifacts/ — bundles and per-platform
+          # SHA256SUMS — is attached with its original filename.
+          files: |
+            artifacts/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
