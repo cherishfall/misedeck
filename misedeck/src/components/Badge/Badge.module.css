@@ -1,0 +1,59 @@
+/* Badge — tracked mono label. Border + text pick up the variant
+ * tint; the background is a subtle wash of the same color so the
+ * badge reads as a "stamp" against the panel. */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ice);
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  line-height: 1.4;
+  white-space: nowrap;
+  justify-self: start;
+}
+
+.affix {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+}
+
+/* Variants — text + border from the tinted tokens. Background stays
+ * subtle so badges never compete with a panel fill. */
+.variant-default {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.variant-info {
+  color: var(--ice);
+  border-color: var(--tint-info);
+  background: var(--tint-info-bg);
+}
+
+.variant-success {
+  color: var(--beam);
+  border-color: var(--tint-success);
+  background: var(--tint-success-bg);
+}
+
+.variant-warning {
+  color: var(--flare);
+  border-color: var(--tint-warning);
+  background: var(--tint-warning-bg);
+}
+
+.variant-danger {
+  color: var(--breach);
+  border-color: var(--tint-danger);
+  background: var(--tint-danger-bg);
+}

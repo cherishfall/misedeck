@@ -1,0 +1,45 @@
+/* EmptyState — page-level "nothing to show" panel. */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-5);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--hull) 35%, transparent);
+  color: var(--text);
+  text-align: left;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ice);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
+  color: var(--text);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--beam) 30%, transparent);
+}
+
+.body {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--dim);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 56ch;
+}
+
+.action {
+  margin-top: var(--space-2);
+}

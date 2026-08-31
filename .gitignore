@@ -64,3 +64,5 @@ fastlane/test_output
 # Project-local mise env helper (hard-codes user path; not portable)
 .mise-shims/
 
+.chrome-en/
+misedeck/scripts-capture.mjs

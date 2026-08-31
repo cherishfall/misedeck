@@ -1,0 +1,98 @@
+/* Table — semantic <table> for the tools list and other data grids.
+ * Mono cells, tracked column headers, right-align numeric columns. */
+
+.scroller {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+}
+
+.caption {
+  caption-side: top;
+  text-align: left;
+  padding: 0 0 var(--space-3) 0;
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.table thead th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+  font-weight: 500;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--hull) 60%, transparent);
+  white-space: nowrap;
+}
+
+.table tbody td {
+  padding: var(--space-3) var(--space-3);
+  border-bottom: 1px solid color-mix(in srgb, var(--beam) 7%, transparent);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.row {
+  transition: background var(--motion-state-change) ease;
+}
+
+.row:hover {
+  background: color-mix(in srgb, var(--ice) 5%, transparent);
+}
+
+.rowClickable {
+  cursor: pointer;
+  transition: background var(--motion-state-change) ease;
+}
+
+.rowClickable:hover {
+  background: color-mix(in srgb, var(--beam) 6%, transparent);
+}
+
+.numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.table tfoot td {
+  padding: var(--space-3);
+  border-top: 1px solid var(--line-strong);
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--ice);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .rowClickable {
+    transition: none;
+  }
+}

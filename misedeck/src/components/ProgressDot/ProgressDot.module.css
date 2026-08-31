@@ -1,0 +1,49 @@
+/* ProgressDot — status dot. The attention pulse uses the global
+ * `pulse` keyframe from tokens.css, one of the three allowed
+ * ambient motions. */
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.tone-beam {
+  background: var(--beam);
+  box-shadow: 0 0 8px var(--beam);
+}
+
+.tone-ice {
+  background: var(--ice);
+  box-shadow: 0 0 6px var(--ice);
+}
+
+.tone-flare {
+  background: var(--flare);
+  box-shadow: 0 0 8px var(--flare);
+}
+
+.tone-breach {
+  background: var(--breach);
+  box-shadow: 0 0 8px var(--breach);
+}
+
+.tone-dim {
+  background: var(--dim);
+  box-shadow: none;
+}
+
+/* Attention pulse — the only animation this component owns. Toggled
+ * explicitly by `pulsing`, or implicit for flare/breach tones (both
+ * are "needs attention" signals). */
+.pulse {
+  animation: pulse var(--motion-pulse) ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+  }
+}

@@ -1,0 +1,61 @@
+/* IconButton — square control carrying a glyph only. Shares the
+ * same color rules as Button. */
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dim);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease,
+    background var(--motion-state-change) ease;
+}
+
+.iconButton:hover:not(:disabled),
+.iconButton:focus-visible {
+  color: var(--beam);
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--beam) 6%, transparent);
+  outline: none;
+}
+
+.iconButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.size-sm {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+}
+
+.size-md {
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
+}
+
+.variant-secondary {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--hull) 60%, transparent);
+}
+
+.glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iconButton {
+    transition: none;
+  }
+}

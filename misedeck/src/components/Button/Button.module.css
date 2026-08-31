@@ -1,0 +1,140 @@
+/* Button — see docs/design/visual-language.md for the variant semantics.
+ * Every value is a token; the four variants + two sizes + loading/disabled
+ * states cover the system. Motion is a ≤120ms state change. */
+
+.button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--hull) 80%, transparent);
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition:
+    border-color var(--motion-state-change) ease,
+    color var(--motion-state-change) ease,
+    background var(--motion-state-change) ease,
+    box-shadow var(--motion-state-change) ease;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--beam-soft);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--beam) 18%, transparent);
+}
+
+.button:focus-visible {
+  outline: none;
+  border-color: var(--beam);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--beam) 30%, transparent);
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(0.5px);
+}
+
+/* Disabled / loading. */
+.button:disabled,
+.button[aria-busy="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+/* ---------- Sizes ---------- */
+
+.size-sm {
+  font-size: 11.5px;
+  padding: 4px 10px;
+}
+
+.size-md {
+  font-size: 12.5px;
+  padding: 8px 14px;
+}
+
+/* ---------- Variants ---------- */
+
+/* Primary — beam fill, void text. The "go" button. */
+.variant-primary {
+  background: color-mix(in srgb, var(--beam) 14%, transparent);
+  border-color: var(--beam-soft);
+  color: var(--beam);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--beam) 45%, transparent);
+}
+
+.variant-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--beam) 22%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--beam) 30%, transparent);
+}
+
+/* Secondary — line border, text fill. The default for most actions. */
+.variant-secondary {
+  background: color-mix(in srgb, var(--hull) 80%, transparent);
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+/* Ghost — no border, dim → text on hover. For low-emphasis actions. */
+.variant-ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--dim);
+}
+
+.variant-ghost:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--line-strong);
+  box-shadow: none;
+}
+
+/* Danger — breach fill, void text. For destructive actions only. */
+.variant-danger {
+  background: var(--tint-danger-bg);
+  border-color: var(--tint-danger);
+  color: var(--breach);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--breach) 35%, transparent);
+}
+
+.variant-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--breach) 18%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--breach) 30%, transparent);
+}
+
+/* Loading state — replace label with a tracked mono string. The
+ * string itself is the loading indicator; the system has no
+ * spinner animation. */
+.loading .label {
+  color: var(--dim);
+}
+
+.loading .affix {
+  opacity: 0.4;
+}
+
+.affix {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.label {
+  display: inline-block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+  .button:active:not(:disabled) {
+    transform: none;
+  }
+}

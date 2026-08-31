@@ -1,0 +1,381 @@
+/* StyleGuide — dev-only gallery page. Every visual rule pulls from
+ * tokens.css; this file only carries layout for the gallery itself. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-6) var(--space-6);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ice);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--size-display);
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 0;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--beam) 30%, transparent);
+}
+
+.intro {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--dim);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 60ch;
+}
+
+.signalLine {
+  margin: var(--space-4) 0;
+}
+
+/* ---------- Section ---------- */
+
+.section {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line);
+}
+
+.sectionHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  position: sticky;
+  top: var(--space-3);
+  align-self: start;
+}
+
+.sectionEyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--beam);
+  text-transform: uppercase;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 0;
+}
+
+.sectionNote {
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  color: var(--dim);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.sectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+/* ---------- Color ---------- */
+
+.swatchGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+.swatch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--hull) 50%, transparent);
+}
+
+.swatchChip {
+  height: 48px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+
+.swatchMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.swatchName {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.swatchToken {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--dim);
+  word-break: break-all;
+}
+
+/* ---------- Typography ---------- */
+
+.typeStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--hull) 50%, transparent);
+}
+
+.typeRow {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--space-4);
+  align-items: baseline;
+}
+
+.typeLabel {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.typeLabelSample {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--beam);
+}
+
+.typeDisplay {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--size-display);
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
+  color: var(--text);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--beam) 30%, transparent);
+}
+
+.typeUi {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.typeMono {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--beam) 30%, transparent);
+}
+
+/* ---------- Motion ---------- */
+
+.motionGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--hull) 50%, transparent);
+}
+
+.motionItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.motionLabel {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.motionRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 24px;
+}
+
+.motionCode {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+}
+
+.caret {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: var(--beam);
+  vertical-align: middle;
+  box-shadow: 0 0 8px var(--beam);
+  animation: caret-blink var(--motion-caret-blink) steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    animation: none;
+  }
+}
+
+/* ---------- Panel demo ---------- */
+
+.panelGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-3);
+}
+
+.demoLabel {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--beam);
+  margin-bottom: var(--space-2);
+}
+
+.demoBody {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.demoRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* ---------- Banner demo ---------- */
+
+.bannerStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.bannerAction {
+  margin-top: var(--space-2);
+}
+
+/* ---------- Table cells ---------- */
+
+.cellName {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.cellMono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--beam) 30%, transparent);
+}
+
+.cellLatest {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.arrow {
+  color: var(--flare);
+}
+
+.latestValue {
+  color: var(--flare);
+  font-weight: 600;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--flare) 35%, transparent);
+}
+
+.cellSource {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.cellActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dim {
+  color: var(--dim);
+}
+
+/* ---------- DataRow demo ---------- */
+
+.dataList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- ProgressDot demo ---------- */
+
+.dotRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.dotLabel {
+  display: inline-block;
+}

@@ -1,6 +1,8 @@
 /* App layout — the minimal subset needed for the starter page (#17).
- * #20 will extract a proper component library. Every color is consumed
- * from `tokens.css`; this file never hardcodes hex values. */
+ * The visual system (#20) owns tokens, keyframes, and the reusable
+ * `.signal-line` utility class; this file only carries the page-level
+ * layout and a couple of state-specific helpers. Every color and timing
+ * is consumed from `tokens.css`; this file never hardcodes values. */
 
 .app-shell {
   min-height: 100%;
@@ -34,6 +36,34 @@
   color: var(--dim);
 }
 
+.wordmark__styleguide {
+  margin-left: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  padding: 2px var(--space-2);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease;
+}
+
+.wordmark__styleguide:hover,
+.wordmark__styleguide:focus-visible {
+  color: var(--beam);
+  border-color: var(--line);
+  outline: none;
+}
+
+.wordmark__styleguide[aria-current="page"] {
+  color: var(--beam);
+  border-color: var(--line-strong);
+}
+
 .starter {
   flex: 1;
   display: flex;
@@ -54,44 +84,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-}
-
-.signal-line {
-  position: absolute;
-  inset: -1px -1px auto -1px;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--beam) 30%,
-    var(--beam) 70%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: signal-sweep 6s linear infinite;
-  pointer-events: none;
-}
-
-.corner {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border: 2px solid var(--beam-soft);
-  pointer-events: none;
-}
-
-.corner--tl {
-  top: -1px;
-  left: -1px;
-  border-right: none;
-  border-bottom: none;
-}
-
-.corner--br {
-  bottom: -1px;
-  right: -1px;
-  border-left: none;
-  border-top: none;
 }
 
 .starter__eyebrow {
@@ -165,8 +157,8 @@
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--breach);
-  background: color-mix(in srgb, var(--breach) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--breach) 30%, transparent);
+  background: var(--tint-danger-bg);
+  border: 1px solid var(--tint-danger);
   border-radius: 4px;
   padding: var(--space-3);
   margin: 0;
@@ -174,6 +166,9 @@
   word-break: break-word;
 }
 
+/* Dot primitives — used inside state indicators and ProgressDot. The
+ * ambient pulse animation lives in tokens.css (`.pulse` reuses the
+ * `pulse` keyframe) so any new component can opt in. */
 .dot {
   width: 8px;
   height: 8px;
@@ -189,7 +184,7 @@
 .dot--flare {
   background: var(--flare);
   box-shadow: 0 0 8px var(--flare);
-  animation: pulse 1.6s ease-in-out infinite;
+  animation: pulse var(--motion-pulse) ease-in-out infinite;
 }
 
 .dot--breach {
@@ -248,32 +243,4 @@
   white-space: pre;
   max-height: 180px;
   overflow: auto;
-}
-
-@keyframes signal-sweep {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(0.85);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .signal-line,
-  .dot--flare {
-    animation: none;
-  }
 }

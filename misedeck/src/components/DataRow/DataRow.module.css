@@ -1,0 +1,55 @@
+/* DataRow — semantic <dl> row. Mono values, tracked label, optional
+ * block layout for raw / multi-line content. */
+
+.row {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.full {
+  grid-template-columns: 96px 1fr;
+}
+
+.label {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ice);
+}
+
+.value {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  word-break: break-all;
+}
+
+.tone-default {
+  color: var(--text);
+}
+
+.tone-beam {
+  color: var(--beam);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--beam) 35%, transparent);
+}
+
+.tone-muted {
+  color: var(--dim);
+}
+
+.block {
+  font-size: 11px;
+  white-space: pre;
+  max-height: 180px;
+  overflow: auto;
+  color: var(--dim);
+  background: color-mix(in srgb, var(--hull) 60%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: var(--space-3);
+}

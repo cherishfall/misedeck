@@ -1,0 +1,67 @@
+/* Panel — translucent surface. All colors from tokens.css. */
+
+.panel {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: var(--space-4);
+  transition: border-color var(--motion-state-change) ease;
+}
+
+/* Tones — same surface, a tinted left border or background wash. The
+ * color comes from a derived tint token, never a raw hex. */
+.tone-info {
+  border-color: var(--tint-info);
+  background: color-mix(in srgb, var(--hull) 72%, transparent),
+    var(--tint-info-bg);
+  background-blend-mode: normal;
+}
+
+.tone-warning {
+  border-color: var(--tint-warning);
+  background: color-mix(in srgb, var(--hull) 72%, transparent),
+    var(--tint-warning-bg);
+  background-blend-mode: normal;
+}
+
+.tone-danger {
+  border-color: var(--tint-danger);
+  background: color-mix(in srgb, var(--hull) 72%, transparent),
+    var(--tint-danger-bg);
+  background-blend-mode: normal;
+}
+
+/* Corner brackets — the page's primary-panel accent. 2px L-marks at
+ * the top-left and bottom-right, in `--beam-soft`. The visual language
+ * says: one per screen, never on every panel. */
+.cornerTL,
+.cornerBR {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cornerTL {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid var(--beam-soft);
+  border-left: 2px solid var(--beam-soft);
+}
+
+.cornerBR {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid var(--beam-soft);
+  border-right: 2px solid var(--beam-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    transition: none;
+  }
+}

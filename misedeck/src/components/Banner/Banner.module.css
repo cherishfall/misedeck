@@ -1,0 +1,106 @@
+/* Banner — full-width notice. Tinted left border + leading dot pick
+ * up the tone; the body is a normal panel surface. */
+
+.banner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: var(--radius-panel);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ice);
+  font-weight: 600;
+}
+
+.body {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.action {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--beam);
+  box-shadow: 0 0 6px var(--beam);
+  flex: none;
+}
+
+/* Tones — the left border and the dot color match. */
+.tone-info {
+  border-left-color: var(--ice);
+}
+.tone-info .dot {
+  background: var(--ice);
+  box-shadow: 0 0 6px var(--ice);
+}
+.tone-info .label {
+  color: var(--ice);
+}
+
+.tone-success {
+  border-left-color: var(--beam);
+}
+.tone-success .dot {
+  background: var(--beam);
+  box-shadow: 0 0 6px var(--beam);
+}
+.tone-success .label {
+  color: var(--beam);
+}
+
+.tone-warning {
+  border-left-color: var(--flare);
+}
+.tone-warning .dot {
+  background: var(--flare);
+  box-shadow: 0 0 6px var(--flare);
+  animation: pulse var(--motion-pulse) ease-in-out infinite;
+}
+.tone-warning .label {
+  color: var(--flare);
+}
+
+.tone-danger {
+  border-left-color: var(--breach);
+}
+.tone-danger .dot {
+  background: var(--breach);
+  box-shadow: 0 0 6px var(--breach);
+}
+.tone-danger .label {
+  color: var(--breach);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tone-warning .dot {
+    animation: none;
+  }
+}
