@@ -94,3 +94,74 @@ These are the spots where the next ticket has a meaningful choice to make. Don't
 - Screenshot capture: headless Chrome DevTools Protocol at `localhost:1420` is the reliable path. Use `misedeck/scripts-capture.mjs` (move to `/tmp/` when done so it doesn't get committed).
 
 Good luck.
+
+---
+
+# Session B (this session) — continuation
+
+**Completed**: #23 (Directory context bar), #30 (mise self-management).
+**Driver policy**: every ticket beyond this point should be a fresh subagent (`task` tool) with a self-contained brief. The main session's context window is 512k; it stays thin and only orchestrates + reports.
+
+## Recent commits on master
+
+| Commit | Ticket | Notes |
+| --- | --- | --- |
+| `756f93b` | #17 | Tauri 2 scaffold |
+| `650d534` | #19 | i18n infrastructure |
+| `d537157` | #20 | visual system |
+| `a8da879` | #31 | CI matrix |
+| `f5d8d9d` | #18 | generalized runner + execution panel |
+| `0cd2ac8` | HANDOFF | session-A handoff |
+| `01c9be0` | #23 | directory context bar (`DirectoryProvider` + `ContextBar`, `tauri-plugin-dialog`) |
+| `5ab053a` | #30 | guided install + self-update (`install.rs`, lifted `ExecutionContext`) |
+
+## Key facts the next session / subagent should know
+
+- The `DirectoryProvider` (`misedeck/src/state/directoryContext.tsx`) is the single source of truth for "which directory is the user looking at". `useDirectory().cwd` returns the string for `-C`, or `null` for global.
+- The `ExecutionContext` (`misedeck/src/components/ExecutionPanel/ExecutionContext.tsx`) is the single source of truth for the execution panel. `useExecutionContext().run({cwd,args})` for arbitrary mise commands; `.runInstall()` and `.runSelfUpdate()` for the two new Tauri commands.
+- `tauri-plugin-dialog` is wired (`Cargo.toml`, `capabilities/default.json`, `lib.rs`); the JS-side import is `@tauri-apps/plugin-dialog`.
+- Tests after #30: `cargo test` → 20 passed (6 unit + 9 mise-probe + 5 runner). Frontend: no test infrastructure yet.
+- i18n keys: 140 leaf keys; parity + call-site lint runs in `npm run lint:i18n`.
+
+## Open Wave 2 / 3 (each must be a fresh subagent)
+
+- Wave 2: #21 → #24 → #25 → #26 → #27 → #28 → #29 (each depends on #23; #26+#27 also benefit from #25's trust UX)
+- Wave 3: #22, #32
+
+Recommended subagent brief skeleton (copy into the `task` tool prompt):
+
+```
+You are implementing GitHub issue #N for the MiseDeck project at /Users/lifan/AiCodingProjects/mise-ui.
+
+WORKING AGREEMENT
+- Read HANDOFF.md, AGENTS.md, docs/agents/{architecture,conventions}.md before coding.
+- The repo uses tauri-plugin-dialog, tauri-plugin-opener, tauri-plugin-shell.
+- All UI copy goes through i18n keys (I18N_KEYS catalog in misedeck/src/i18n/keys.ts).
+- All paths/process spawning through Tauri/Rust cross-platform APIs.
+- Tokens are the only color/typography source; never invent new ones.
+- One ticket per context. Do not refactor unrelated code.
+
+DELIVERABLES
+- Implement the acceptance criteria from `gh issue view #N --comments`.
+- Run `npm run typecheck && npm run lint:i18n && npm run build` (all must pass).
+- Run `source /Users/lifan/AiCodingProjects/mise-ui/.mise-shims/env.sh && cd misedeck/src-tauri && cargo check && cargo test` (all must pass).
+- Commit to master with `git -c user.name=misedeck-driver -c user.email=misedeck-driver@local commit -m "feat(#N): ..."`.
+- Push with `git push origin master`.
+- Close the issue with `gh issue close #N --comment "..."` listing acceptance-criteria evidence and a verification block.
+
+USE THE IMPLEMENT SKILL
+- Load the `implement` skill (it is at /Users/lifan/.cc-switch/skills/implement/SKILL.md) before any code change.
+- Use /tdd at the pre-agreed Rust seams (mise runner boundary) where it makes sense.
+
+WHEN YOU HIT A BLOCKER
+- If a design decision changes the API surface, ask the user once via `ask_user`.
+- If you need a decision that only the maintainer can make, write a comment on the issue and stop.
+- If your work would consume more than 30 minutes, return early with a clear status.
+
+OUTPUT FORMAT
+- Final reply: 1-line status + commit hash + push confirmation + `gh issue close` confirmation.
+- Anything longer: put it in a file in `/tmp/misedeck-issue-NN.md` and reference it.
+```
+
+The subagent does NOT need the full conversation history; the brief above is the entire context it needs.
+
