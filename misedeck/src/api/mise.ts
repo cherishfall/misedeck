@@ -9,7 +9,19 @@
 
 import { invoke } from "@tauri-apps/api/core";
 
-import type { DetectMiseResult } from "../types/tauri";
+import type { AppError, DetectMiseResult } from "../types/tauri";
+
+/** Type-guard for the structured AppError shape. Exported so the
+ *  execution panel's reducer can pattern-match the IPC response. */
+export function isAppError(value: unknown): value is AppError {
+  if (value === null || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.code === "string" &&
+    typeof v.message === "string" &&
+    typeof v.stderr === "string"
+  );
+}
 
 /** Calls the `detect_mise` Tauri command and returns the typed union. */
 export async function detectMise(): Promise<DetectMiseResult> {

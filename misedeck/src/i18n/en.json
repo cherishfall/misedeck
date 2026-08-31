@@ -144,5 +144,19 @@
       "dotIdle": "idle",
       "iconLabel": "menu"
     }
+  },
+  "execution": {
+    "title": "EXECUTION",
+    "commandLabel": "COMMAND",
+    "statusRunning": "running",
+    "statusOk": "ok · {{duration}}s",
+    "statusFailed": "failed ({{duration}}s, exit {{code}})",
+    "statusCancelled": "cancelled",
+    "copy": "Copy command",
+    "copied": "Copied",
+    "cancel": "Cancel",
+    "dismiss": "Dismiss",
+    "emptyHint": "No command has been run yet.",
+    "demoRunDoctor": "Run mise doctor"
   }
 }

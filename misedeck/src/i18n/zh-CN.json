@@ -144,5 +144,19 @@
       "dotIdle": "空闲",
       "iconLabel": "菜单"
     }
+  },
+  "execution": {
+    "title": "执行面板",
+    "commandLabel": "命令",
+    "statusRunning": "运行中",
+    "statusOk": "成功 · {{duration}}s",
+    "statusFailed": "失败 ({{duration}}s, 退出码 {{code}})",
+    "statusCancelled": "已取消",
+    "copy": "复制命令",
+    "copied": "已复制",
+    "cancel": "取消",
+    "dismiss": "关闭",
+    "emptyHint": "尚未执行任何命令。",
+    "demoRunDoctor": "运行 mise doctor"
   }
 }

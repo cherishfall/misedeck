@@ -9,6 +9,8 @@
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::mpsc::{channel, RecvTimeoutError};
+use std::thread;
 use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
@@ -18,6 +20,10 @@ pub const MIN_MISE_VERSION: &str = "2025.1.0";
 
 /// Generous but finite timeout for the `mise version --json` probe.
 pub const DETECT_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// Hard ceiling for the streaming execution panel. The user can cancel;
+/// the runner auto-kills if a process runs past this.
+pub const STREAMING_TIMEOUT: Duration = Duration::from_secs(60 * 30);
 
 /// Fixed set of AppError codes (see docs/agents/conventions.md).
 /// Adding a new code is a deliberate API change.
@@ -65,11 +71,7 @@ impl AppError {
     }
 
     pub fn not_found() -> Self {
-        Self::new(
-            code::MISE_NOT_FOUND,
-            "errors.miseNotFound",
-            String::new(),
-        )
+        Self::new(code::MISE_NOT_FOUND, "errors.miseNotFound", String::new())
     }
 
     pub fn too_old(found: &str, minimum: &str) -> Self {
@@ -89,19 +91,11 @@ impl AppError {
     }
 
     pub fn timeout() -> Self {
-        Self::new(
-            code::TIMEOUT,
-            "errors.timeout",
-            String::new(),
-        )
+        Self::new(code::TIMEOUT, "errors.timeout", String::new())
     }
 }
 
 /// Well-known places to look for the mise binary on the host.
-/// On macOS the common ones are: `~/.local/bin/mise`, `~/.cargo/bin/mise`,
-/// Homebrew on Apple Silicon (`/opt/homebrew/bin/mise`), Homebrew on Intel
-/// (`/usr/local/bin/mise`). We do not shell out to `which` so the lookup is
-/// portable and synchronous.
 pub fn candidate_paths() -> Vec<PathBuf> {
     let mut paths: Vec<PathBuf> = Vec::new();
 
@@ -114,14 +108,12 @@ pub fn candidate_paths() -> Vec<PathBuf> {
     paths.push(PathBuf::from("/opt/homebrew/bin/mise"));
     paths.push(PathBuf::from("/usr/local/bin/mise"));
 
-    // Deduplicate while preserving order.
     let mut seen = std::collections::HashSet::new();
     paths.retain(|p| seen.insert(p.clone()));
     paths
 }
 
 /// Probe for a working mise binary in the well-known locations.
-/// Returns the first path that exists and is executable, or `AppError::not_found()`.
 pub fn locate_mise() -> Result<PathBuf, AppError> {
     for p in candidate_paths() {
         if p.is_file() {
@@ -132,8 +124,7 @@ pub fn locate_mise() -> Result<PathBuf, AppError> {
 }
 
 /// Extract the `YYYY.MM.DD` date prefix from a mise version string like
-/// `"2026.8.14 macos-arm64 (2026-08-26)"`. Returns `None` if the prefix
-/// cannot be parsed.
+/// `"2026.8.14 macos-arm64 (2026-08-26)"`.
 pub fn extract_date(version: &str) -> Option<(String, [u32; 3])> {
     let head = version.split_whitespace().next()?;
     let parts: Vec<&str> = head.split('.').collect();
@@ -146,7 +137,6 @@ pub fn extract_date(version: &str) -> Option<(String, [u32; 3])> {
     Some((head.to_string(), [y, m, d]))
 }
 
-/// Compare two `YYYY.MM.DD` date strings. Returns `true` if `found >= minimum`.
 pub fn meets_minimum(found: &str, minimum: &str) -> bool {
     let Some((_, a)) = extract_date(found) else {
         return false;
@@ -157,20 +147,230 @@ pub fn meets_minimum(found: &str, minimum: &str) -> bool {
     a >= b
 }
 
-/// Run `mise version --json` at `mise_path` and return the parsed result.
-///
-/// `mise_path` is the path to the mise binary (or a fixture script in tests).
-/// The runner never touches the user's PATH; the caller is responsible for
-/// locating the binary (see `locate_mise`).
-pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
-    let raw = run_mise_version(mise_path)?;
+/// Outcome of a captured run.
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RunOutcome {
+    /// Full stdout bytes (decoded as UTF-8 lossy for transport).
+    pub stdout: String,
+    /// Full stderr bytes (decoded as UTF-8 lossy for transport).
+    pub stderr: String,
+    /// Exit code if the process exited normally; `-1` if killed by signal/timeout.
+    pub exit_code: i32,
+    /// Wall-clock duration in milliseconds.
+    pub duration_ms: u64,
+    /// True when the runner killed the process because it exceeded the timeout.
+    pub timed_out: bool,
+}
 
-    let raw_value: serde_json::Value = serde_json::from_slice(&raw.stdout).map_err(|e| {
-        AppError::parse_failed(
-            format!("invalid mise version --json output: {e}"),
-            String::from_utf8_lossy(&raw.stderr).to_string(),
-        )
-    })?;
+/// A single line emitted by a streaming run. The frontend renders these
+/// in the execution panel; the final `Exit` event carries the same fields
+/// as `RunOutcome` minus the buffered stdout/stderr (the panel already has
+/// the lines).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum RunEvent {
+    Stdout { line: String },
+    Stderr { line: String },
+    Exit {
+        exit_code: i32,
+        duration_ms: u64,
+        timed_out: bool,
+    },
+}
+
+/// A request to run the mise CLI. `cwd` becomes `-C <dir>`; `args` is the
+/// rest of the argv passed verbatim.
+#[derive(Debug, Clone)]
+pub struct RunRequest {
+    pub cwd: Option<PathBuf>,
+    pub args: Vec<String>,
+}
+
+impl RunRequest {
+    pub fn new(args: Vec<String>) -> Self {
+        Self { cwd: None, args }
+    }
+
+    pub fn with_cwd(args: Vec<String>, cwd: impl Into<PathBuf>) -> Self {
+        Self {
+            cwd: Some(cwd.into()),
+            args,
+        }
+    }
+}
+
+/// Spawn the mise binary and capture its output, enforcing a finite
+/// timeout. This is the entry point used by the runner.
+///
+/// `on_event` is called for each line and once at the end with `Exit`.
+/// The callback runs on a background thread; keep it cheap (the Tauri
+/// command's `Channel::send` is cheap by design).
+pub fn run_mise<F>(mise_path: &Path, req: &RunRequest, mut on_event: F) -> Result<RunOutcome, AppError>
+where
+    F: FnMut(RunEvent) + Send + 'static,
+{
+    let mut cmd = Command::new(mise_path);
+    if let Some(cwd) = &req.cwd {
+        cmd.arg("-C").arg(cwd);
+    }
+    for a in &req.args {
+        cmd.arg(a);
+    }
+    cmd.stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    let mut child = match cmd.spawn() {
+        Ok(c) => c,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            return Err(AppError::not_found());
+        }
+        Err(e) => {
+            return Err(AppError::command_failed(
+                format!("failed to spawn mise: {e}"),
+                String::new(),
+            ));
+        }
+    };
+
+    let mut stdout = child.stdout.take().expect("piped");
+    let mut stderr = child.stderr.take().expect("piped");
+
+    let (out_tx, out_rx) = channel::<String>();
+    let (err_tx, err_rx) = channel::<String>();
+
+    // Reader threads: split on '\n' and forward one line per channel send.
+    let out_thread = thread::spawn(move || {
+        use std::io::{BufRead, BufReader};
+        let reader = BufReader::new(&mut stdout);
+        for line in reader.lines().map_while(Result::ok) {
+            if out_tx.send(line).is_err() {
+                break;
+            }
+        }
+    });
+    let err_thread = thread::spawn(move || {
+        use std::io::{BufRead, BufReader};
+        let reader = BufReader::new(&mut stderr);
+        for line in reader.lines().map_while(Result::ok) {
+            if err_tx.send(line).is_err() {
+                break;
+            }
+        }
+    });
+
+    let started = Instant::now();
+    let deadline = STREAMING_TIMEOUT;
+    let mut stdout_buf = String::new();
+    let mut stderr_buf = String::new();
+
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                // Drain remaining lines.
+                while let Ok(line) = out_rx.try_recv() {
+                    on_event(RunEvent::Stdout { line: line.clone() });
+                    stdout_buf.push_str(&line);
+                    stdout_buf.push('\n');
+                }
+                while let Ok(line) = err_rx.try_recv() {
+                    on_event(RunEvent::Stderr { line: line.clone() });
+                    stderr_buf.push_str(&line);
+                    stderr_buf.push('\n');
+                }
+                let _ = out_thread.join();
+                let _ = err_thread.join();
+
+                let duration_ms = started.elapsed().as_millis() as u64;
+                let exit_code = status.code().unwrap_or(-1);
+                let timed_out = false;
+                on_event(RunEvent::Exit {
+                    exit_code,
+                    duration_ms,
+                    timed_out,
+                });
+                let outcome = RunOutcome {
+                    stdout: stdout_buf,
+                    stderr: stderr_buf,
+                    exit_code,
+                    duration_ms,
+                    timed_out,
+                };
+                return Ok(outcome);
+            }
+            Ok(None) => {
+                // Non-blocking drain of pending lines so the UI sees output in real time.
+                while let Ok(line) = out_rx.try_recv() {
+                    on_event(RunEvent::Stdout { line: line.clone() });
+                    stdout_buf.push_str(&line);
+                    stdout_buf.push('\n');
+                }
+                while let Ok(line) = err_rx.try_recv() {
+                    on_event(RunEvent::Stderr { line: line.clone() });
+                    stderr_buf.push_str(&line);
+                    stderr_buf.push('\n');
+                }
+                if started.elapsed() > deadline {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    let _ = out_thread.join();
+                    let _ = err_thread.join();
+                    on_event(RunEvent::Exit {
+                        exit_code: -1,
+                        duration_ms: started.elapsed().as_millis() as u64,
+                        timed_out: true,
+                    });
+                    return Err(AppError::timeout());
+                }
+                // Brief sleep so we don't spin.
+                let remaining = deadline.saturating_sub(started.elapsed());
+                let slice = remaining.min(Duration::from_millis(50));
+                match out_rx.recv_timeout(slice) {
+                    Ok(line) => {
+                        on_event(RunEvent::Stdout { line: line.clone() });
+                        stdout_buf.push_str(&line);
+                        stdout_buf.push('\n');
+                    }
+                    Err(RecvTimeoutError::Timeout) => {}
+                    Err(RecvTimeoutError::Disconnected) => {
+                        // stdout closed; loop again to check exit
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(AppError::command_failed(
+                    format!("error waiting for mise: {e}"),
+                    String::new(),
+                ));
+            }
+        }
+    }
+}
+
+/// Run `mise version --json` and return the parsed result. Thin wrapper
+/// around the generalized runner for the probe path.
+pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
+    let req = RunRequest::new(vec!["version".to_string(), "--json".to_string()]);
+    let outcome = run_mise(mise_path, &req, |_| {})?;
+
+    if outcome.timed_out {
+        return Err(AppError::timeout());
+    }
+    if outcome.exit_code != 0 {
+        return Err(AppError::command_failed(
+            format!("mise exited with status {}", outcome.exit_code),
+            outcome.stderr,
+        ));
+    }
+
+    let raw_value: serde_json::Value = serde_json::from_slice(outcome.stdout.as_bytes())
+        .map_err(|e| {
+            AppError::parse_failed(
+                format!("invalid mise version --json output: {e}"),
+                outcome.stderr.clone(),
+            )
+        })?;
 
     let version = raw_value
         .get("version")
@@ -178,14 +378,16 @@ pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
         .ok_or_else(|| {
             AppError::parse_failed(
                 "mise version --json did not include a `version` string",
-                String::from_utf8_lossy(&raw.stderr).to_string(),
+                outcome.stderr.clone(),
             )
         })?
         .to_string();
 
     let version_date = extract_date(&version)
         .map(|(d, _)| d)
-        .ok_or_else(|| AppError::parse_failed("version did not start with YYYY.MM.DD", String::new()))?;
+        .ok_or_else(|| {
+            AppError::parse_failed("version did not start with YYYY.MM.DD", String::new())
+        })?;
 
     if !meets_minimum(&version_date, MIN_MISE_VERSION) {
         return Err(AppError::too_old(&version_date, MIN_MISE_VERSION));
@@ -197,81 +399,6 @@ pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
         binary_path: mise_path.to_path_buf(),
         raw: raw_value,
     })
-}
-
-/// Raw subprocess output. The runner does not interpret the payload; it just
-/// captures stdout/stderr/exit so the parser can shape it.
-#[derive(Debug, Default, Clone)]
-pub struct MiseOutput {
-    pub stdout: Vec<u8>,
-    pub stderr: Vec<u8>,
-    pub status_code: Option<i32>,
-    pub timed_out: bool,
-}
-
-/// Spawn `mise_path version --json` and collect its output, enforcing a timeout.
-///
-/// We do not stream here (version is tiny and the whole point of `--json` is
-/// the UI gets one structured blob). Streaming concerns are deferred to the
-/// execution panel in #18.
-pub fn run_mise_version(mise_path: &Path) -> Result<MiseOutput, AppError> {
-    let mut child = Command::new(mise_path)
-        .arg("version")
-        .arg("--json")
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| match e.kind() {
-            std::io::ErrorKind::NotFound => AppError::not_found(),
-            _ => AppError::command_failed(
-                format!("failed to spawn mise: {e}"),
-                String::new(),
-            ),
-        })?;
-
-    let start = Instant::now();
-    let mut out = MiseOutput::default();
-    loop {
-        match child.try_wait() {
-            Ok(Some(status)) => {
-                out.status_code = status.code();
-                if let Some(mut s) = child.stdout.take() {
-                    use std::io::Read;
-                    let _ = s.read_to_end(&mut out.stdout);
-                }
-                if let Some(mut s) = child.stderr.take() {
-                    use std::io::Read;
-                    let _ = s.read_to_end(&mut out.stderr);
-                }
-                if !status.success() {
-                    return Err(AppError::command_failed(
-                        format!(
-                            "mise exited with status {}",
-                            status.code().unwrap_or(-1)
-                        ),
-                        String::from_utf8_lossy(&out.stderr).to_string(),
-                    ));
-                }
-                return Ok(out);
-            }
-            Ok(None) => {
-                if start.elapsed() > DETECT_TIMEOUT {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    out.timed_out = true;
-                    return Err(AppError::timeout());
-                }
-                std::thread::sleep(Duration::from_millis(25));
-            }
-            Err(e) => {
-                return Err(AppError::command_failed(
-                    format!("error waiting for mise: {e}"),
-                    String::new(),
-                ));
-            }
-        }
-    }
 }
 
 #[cfg(test)]

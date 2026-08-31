@@ -8,6 +8,7 @@ import type { AppError, AppErrorCode, DetectMiseOk } from "./types/tauri";
 
 import { LanguageSwitcher } from "./components/LanguageSwitcher/LanguageSwitcher";
 
+import { ExecutionPanel } from "./components/ExecutionPanel";
 import "./App.css";
 
 interface ViewState {
@@ -192,6 +193,7 @@ function App() {
           )}
         </div>
       </main>
+      <ExecutionPanel />
     </div>
   );
 }
