@@ -3,6 +3,29 @@
     "wordmark": "MISEDECK",
     "tagline": "mise 的忠实 GUI"
   },
+  "common": {
+    "ok": "确定",
+    "cancel": "取消",
+    "save": "保存",
+    "close": "关闭",
+    "copy": "复制",
+    "search": "搜索",
+    "refresh": "刷新",
+    "loading": "加载中…",
+    "error": "错误",
+    "retry": "重试",
+    "back": "返回",
+    "next": "下一步"
+  },
+  "nav": {
+    "tools": "工具",
+    "tasks": "任务",
+    "config": "配置",
+    "doctor": "诊断",
+    "settings": "设置",
+    "plugins": "插件",
+    "about": "关于"
+  },
   "starter": {
     "eyebrow": "▸ MISE / 状态",
     "title": "Mise",
@@ -32,12 +55,24 @@
   "labels": {
     "version": "版本",
     "binary": "路径",
-    "minimum": "最低要求"
+    "minimum": "最低要求",
+    "name": "名称",
+    "versionLabel": "版本",
+    "source": "来源",
+    "lastUsed": "最后使用"
   },
   "errors": {
     "miseNotFound": "MiseDeck 在本机上未找到 mise 可执行文件。",
     "miseTooOld": "mise {{found}} 低于最低要求 {{minimum}}。",
     "timeout": "mise 未在超时时间内响应。",
-    "generic": "MiseDeck 遇到未知错误。"
+    "generic": "MiseDeck 遇到未知错误。",
+    "network": "网络不可用。请检查连接后重试。",
+    "untrusted": "此配置文件尚未被信任。请运行 `mise trust` 继续。",
+    "unknown": "发生了未知错误。"
+  },
+  "languages": {
+    "english": "English",
+    "simplifiedChinese": "中文",
+    "switcherLabel": "语言"
   }
 }

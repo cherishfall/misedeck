@@ -2,7 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import { detectMise } from "./api/mise";
+import { I18N_KEYS } from "./i18n/keys";
 import type { AppError, AppErrorCode, DetectMiseOk } from "./types/tauri";
+
+import { LanguageSwitcher } from "./components/LanguageSwitcher/LanguageSwitcher";
 
 import "./App.css";
 
@@ -54,9 +57,11 @@ function App() {
   return (
     <div className="app-shell">
       <header className="wordmark">
-        <span className="wordmark__name">{t("app.wordmark")}</span>
-        <span className="wordmark__tagline">{t("app.tagline")}</span>
+        <span className="wordmark__name">{t(I18N_KEYS.app.wordmark)}</span>
+        <span className="wordmark__tagline">{t(I18N_KEYS.app.tagline)}</span>
       </header>
+
+      <LanguageSwitcher />
 
       <main className="starter">
         <div className="starter__panel">
@@ -64,14 +69,14 @@ function App() {
           <div className="corner corner--tl" aria-hidden="true" />
           <div className="corner corner--br" aria-hidden="true" />
 
-          <div className="starter__eyebrow">{t("starter.eyebrow")}</div>
-          <h1 className="starter__title">{t("starter.title")}</h1>
-          <p className="starter__hint">{t("starter.hint")}</p>
+          <div className="starter__eyebrow">{t(I18N_KEYS.starter.eyebrow)}</div>
+          <h1 className="starter__title">{t(I18N_KEYS.starter.title)}</h1>
+          <p className="starter__hint">{t(I18N_KEYS.starter.hint)}</p>
 
           {view.status === "loading" && (
             <div className="state state--loading">
               <span className="dot dot--dim" />
-              <span className="state__label">{t("states.detecting")}</span>
+              <span className="state__label">{t(I18N_KEYS.states.detecting)}</span>
             </div>
           )}
 
@@ -79,15 +84,15 @@ function App() {
             <div className="state state--ready">
               <div className="state__indicator">
                 <span className="dot dot--beam" />
-                <span className="state__label">{t("states.ready")}</span>
+                <span className="state__label">{t(I18N_KEYS.states.ready)}</span>
               </div>
               <dl className="data">
                 <div className="data__row">
-                  <dt className="data__label">{t("labels.version")}</dt>
+                  <dt className="data__label">{t(I18N_KEYS.labels.version)}</dt>
                   <dd className="data__value data__value--beam">{view.ok.versionDate}</dd>
                 </div>
                 <div className="data__row">
-                  <dt className="data__label">{t("labels.binary")}</dt>
+                  <dt className="data__label">{t(I18N_KEYS.labels.binary)}</dt>
                   <dd className="data__value">{view.ok.binaryPath}</dd>
                 </div>
                 <div className="data__row data__row--full">
@@ -104,14 +109,18 @@ function App() {
             <div className="state state--not-found">
               <div className="state__indicator">
                 <span className="dot dot--dim" />
-                <span className="state__label">{t("states.notInstalled.title")}</span>
+                <span className="state__label">
+                  {t(I18N_KEYS.states.notInstalled.title)}
+                </span>
               </div>
               <p className="state__body">
-                {t("states.notInstalled.body", {
+                {t(I18N_KEYS.states.notInstalled.body, {
                   url: "https://mise.jdx.dev/installing.html",
                 })}
               </p>
-              <p className="state__hint">{t("states.notInstalled.installHint")}</p>
+              <p className="state__hint">
+                {t(I18N_KEYS.states.notInstalled.installHint)}
+              </p>
             </div>
           )}
 
@@ -119,12 +128,12 @@ function App() {
             <div className="state state--too-old">
               <div className="state__indicator">
                 <span className="dot dot--flare" />
-                <span className="state__label">{t("states.tooOld.title")}</span>
+                <span className="state__label">{t(I18N_KEYS.states.tooOld.title)}</span>
               </div>
               <p className="state__body">
                 {(() => {
                   const params = parseMessageParams(view.err.message);
-                  return t("states.tooOld.body", {
+                  return t(I18N_KEYS.states.tooOld.body, {
                     found: params.found ?? "—",
                     minimum: params.minimum ?? "—",
                   });
@@ -137,9 +146,11 @@ function App() {
             <div className="state state--command-failed">
               <div className="state__indicator">
                 <span className="dot dot--breach" />
-                <span className="state__label">{t("states.commandFailed.title")}</span>
+                <span className="state__label">
+                  {t(I18N_KEYS.states.commandFailed.title)}
+                </span>
               </div>
-              <p className="state__body">{t("states.commandFailed.body")}</p>
+              <p className="state__body">{t(I18N_KEYS.states.commandFailed.body)}</p>
               {view.err.stderr && (
                 <pre className="state__stderr">{view.err.stderr}</pre>
               )}
@@ -150,9 +161,11 @@ function App() {
             <div className="state state--parse-failed">
               <div className="state__indicator">
                 <span className="dot dot--breach" />
-                <span className="state__label">{t("states.parseFailed.title")}</span>
+                <span className="state__label">
+                  {t(I18N_KEYS.states.parseFailed.title)}
+                </span>
               </div>
-              <p className="state__body">{t("states.parseFailed.body")}</p>
+              <p className="state__body">{t(I18N_KEYS.states.parseFailed.body)}</p>
             </div>
           )}
 
@@ -160,7 +173,7 @@ function App() {
             <div className="state state--timeout">
               <div className="state__indicator">
                 <span className="dot dot--breach" />
-                <span className="state__label">{t("errors.timeout")}</span>
+                <span className="state__label">{t(I18N_KEYS.errors.timeout)}</span>
               </div>
             </div>
           )}

@@ -3,6 +3,29 @@
     "wordmark": "MISEDECK",
     "tagline": "a faithful gui for mise"
   },
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "copy": "Copy",
+    "search": "Search",
+    "refresh": "Refresh",
+    "loading": "Loading…",
+    "error": "Error",
+    "retry": "Retry",
+    "back": "Back",
+    "next": "Next"
+  },
+  "nav": {
+    "tools": "Tools",
+    "tasks": "Tasks",
+    "config": "Config",
+    "doctor": "Doctor",
+    "settings": "Settings",
+    "plugins": "Plugins",
+    "about": "About"
+  },
   "starter": {
     "eyebrow": "▸ MISE / STATUS",
     "title": "Mise",
@@ -32,12 +55,24 @@
   "labels": {
     "version": "VERSION",
     "binary": "BINARY",
-    "minimum": "MINIMUM"
+    "minimum": "MINIMUM",
+    "name": "NAME",
+    "versionLabel": "VERSION",
+    "source": "SOURCE",
+    "lastUsed": "LAST USED"
   },
   "errors": {
     "miseNotFound": "MiseDeck could not locate the mise binary on this machine.",
     "miseTooOld": "mise {{found}} is older than the minimum supported {{minimum}}.",
     "timeout": "mise did not respond within the timeout.",
-    "generic": "MiseDeck hit an unexpected error."
+    "generic": "MiseDeck hit an unexpected error.",
+    "network": "Network unavailable. Check your connection and try again.",
+    "untrusted": "This config file is not yet trusted. Run `mise trust` to continue.",
+    "unknown": "An unknown error occurred."
+  },
+  "languages": {
+    "english": "English",
+    "simplifiedChinese": "中文",
+    "switcherLabel": "Language"
   }
 }
