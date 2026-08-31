@@ -17,8 +17,8 @@ pub mod mise;
 
 use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
 use mise::{
-    detect_mise as run_mise_probe, locate_mise, mise_ls, mise_ls_remote, mise_outdated, run_mise,
-    AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
+    detect_mise as run_mise_probe, locate_mise, mise_env, mise_ls, mise_ls_remote, mise_outdated,
+    read_mise_lockfile, run_mise, AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
 };
 
 // Re-export `JsonResult` from the lib root so integration tests can
@@ -303,6 +303,35 @@ fn tools_ls_remote(cwd: Option<String>, tool: String) -> JsonResult {
     }
 }
 
+/// `mise env --json` for the current directory context. Read-only;
+/// returns the raw JSON object mise emits (a flat
+/// `Map<String, String>` of var name → value). Used by the
+/// directory-preview page (#24) to surface the env alongside the
+/// tools.
+#[tauri::command]
+fn tools_env(cwd: Option<String>) -> JsonResult {
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return JsonResult::Err { err: e },
+    };
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    match mise_env(&path, cwd_path) {
+        Ok(value) => JsonResult::Ok { value },
+        Err(e) => JsonResult::Err { err: e },
+    }
+}
+
+/// Read the `mise.lock` file at `<cwd>/mise.lock`. Returns
+/// `Ok(Some(content))` when present (content may be empty when the
+/// file is zero-byte), `Ok(None)` when absent, or `Err(AppError)`
+/// on a hard I/O error. Used by the directory-preview page (#24)
+/// to surface the project's lockfile in a read-only block.
+#[tauri::command]
+fn read_lockfile(cwd: Option<String>) -> Result<Option<String>, AppError> {
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    read_mise_lockfile(cwd_path)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -316,7 +345,9 @@ pub fn run() {
             mise_self_update,
             tools_ls,
             tools_outdated,
-            tools_ls_remote
+            tools_ls_remote,
+            tools_env,
+            read_lockfile
         ])
         .setup(|_app| {
             let mut guard = MISE_BINARY.lock().expect("mise path mutex poisoned");

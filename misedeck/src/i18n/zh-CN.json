@@ -79,6 +79,57 @@
     },
     "noOutdated": "所有已安装工具均为最新版本。"
   },
+  "preview": {
+    "eyebrow": "▸ MISE / 预览",
+    "title": "目录预览",
+    "hint": "当前目录上下文的工具、环境与 lockfile。请使用上方工具栏切换目录。",
+    "nav": "预览",
+    "empty": {
+      "title": "选择一个目录以预览",
+      "body": "目录预览用于展示项目已解析的工具、环境与 lockfile。请使用上方工具栏选择一个目录。"
+    },
+    "sections": {
+      "tools": "已解析的工具",
+      "env": "已解析的环境变量",
+      "lockfile": "Lockfile"
+    },
+    "columns": {
+      "tool": "工具",
+      "version": "版本",
+      "source": "来源",
+      "name": "名称",
+      "value": "值"
+    },
+    "source": {
+      "global": "全局",
+      "project": "项目",
+      "tool": "工具",
+      "default": "默认"
+    },
+    "toolSource": {
+      "global": "全局",
+      "project": "本项目"
+    },
+    "env": {
+      "emptyTitle": "没有环境变量",
+      "emptyBody": "`mise env --json` 返回了空映射。在项目的 mise.toml 中添加 [env] 表可在此处显示变量。",
+      "errorTitle": "加载环境变量失败",
+      "errorBody": "`mise env --json` 未返回结果。stderr 已在执行面板中保留。"
+    },
+    "toolsError": {
+      "title": "加载已解析工具失败",
+      "body": "`mise -C <dir> ls --json` 未返回结果。stderr 已在执行面板中保留。"
+    },
+    "lockfile": {
+      "eyebrow": "▸ MISE.LOCK",
+      "title": "mise.lock",
+      "missing": "此目录中没有 mise.lock。",
+      "empty": "（空文件）",
+      "errorTitle": "读取 lockfile 失败",
+      "errorBody": "MiseDeck 无法读取项目的 mise.lock。stderr 已在执行面板中保留。"
+    },
+    "refresh": "刷新"
+  },
   "states": {
     "detecting": "正在探测 mise…",
     "ready": "就绪",

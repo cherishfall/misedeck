@@ -113,6 +113,57 @@ export const I18N_KEYS = {
     },
     noOutdated: "tools.noOutdated",
   },
+  preview: {
+    eyebrow: "preview.eyebrow",
+    title: "preview.title",
+    hint: "preview.hint",
+    nav: "preview.nav",
+    empty: {
+      title: "preview.empty.title",
+      body: "preview.empty.body",
+    },
+    sections: {
+      tools: "preview.sections.tools",
+      env: "preview.sections.env",
+      lockfile: "preview.sections.lockfile",
+    },
+    columns: {
+      tool: "preview.columns.tool",
+      version: "preview.columns.version",
+      source: "preview.columns.source",
+      name: "preview.columns.name",
+      value: "preview.columns.value",
+    },
+    source: {
+      global: "preview.source.global",
+      project: "preview.source.project",
+      tool: "preview.source.tool",
+      default: "preview.source.default",
+    },
+    toolSource: {
+      global: "preview.toolSource.global",
+      project: "preview.toolSource.project",
+    },
+    env: {
+      emptyTitle: "preview.env.emptyTitle",
+      emptyBody: "preview.env.emptyBody",
+      errorTitle: "preview.env.errorTitle",
+      errorBody: "preview.env.errorBody",
+    },
+    toolsError: {
+      title: "preview.toolsError.title",
+      body: "preview.toolsError.body",
+    },
+    lockfile: {
+      eyebrow: "preview.lockfile.eyebrow",
+      title: "preview.lockfile.title",
+      missing: "preview.lockfile.missing",
+      empty: "preview.lockfile.empty",
+      errorTitle: "preview.lockfile.errorTitle",
+      errorBody: "preview.lockfile.errorBody",
+    },
+    refresh: "preview.refresh",
+  },
   states: {
     detecting: "states.detecting",
     ready: "states.ready",

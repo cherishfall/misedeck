@@ -79,6 +79,57 @@
     },
     "noOutdated": "All installed tools are up to date."
   },
+  "preview": {
+    "eyebrow": "▸ MISE / PREVIEW",
+    "title": "Directory preview",
+    "hint": "Resolved tools, env, and lockfile for the active directory context. Switch directories from the bar above.",
+    "nav": "Preview",
+    "empty": {
+      "title": "Pick a directory to preview",
+      "body": "Directory preview shows the resolved tools, env, and lockfile for a project. Use the bar above to point at one."
+    },
+    "sections": {
+      "tools": "Resolved tools",
+      "env": "Resolved env",
+      "lockfile": "Lockfile"
+    },
+    "columns": {
+      "tool": "Tool",
+      "version": "Version",
+      "source": "Source",
+      "name": "Name",
+      "value": "Value"
+    },
+    "source": {
+      "global": "GLOBAL",
+      "project": "PROJECT",
+      "tool": "TOOL",
+      "default": "DEFAULT"
+    },
+    "toolSource": {
+      "global": "GLOBAL",
+      "project": "THIS PROJECT"
+    },
+    "env": {
+      "emptyTitle": "No env vars",
+      "emptyBody": "`mise env --json` returned an empty map. Add a [env] table to your project mise.toml to surface values here.",
+      "errorTitle": "Failed to load env",
+      "errorBody": "`mise env --json` did not return. Stderr is preserved in the execution panel."
+    },
+    "toolsError": {
+      "title": "Failed to load resolved tools",
+      "body": "`mise -C <dir> ls --json` did not return. Stderr is preserved in the execution panel."
+    },
+    "lockfile": {
+      "eyebrow": "▸ MISE.LOCK",
+      "title": "mise.lock",
+      "missing": "No mise.lock in this directory.",
+      "empty": "(empty file)",
+      "errorTitle": "Failed to read lockfile",
+      "errorBody": "MiseDeck could not read the project's mise.lock. Stderr is preserved in the execution panel."
+    },
+    "refresh": "Refresh"
+  },
   "states": {
     "detecting": "Probing mise…",
     "ready": "READY",

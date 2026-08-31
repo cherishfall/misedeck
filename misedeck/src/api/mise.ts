@@ -9,7 +9,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 
-import type { AppError, DetectMiseResult, JsonResult } from "../types/tauri";
+import type { AppError, DetectMiseResult, JsonResult, LockfileResult } from "../types/tauri";
 
 /** Type-guard for the structured AppError shape. Exported so the
  *  execution panel's reducer can pattern-match the IPC response. */
@@ -48,4 +48,18 @@ export async function toolsLsRemote(
   tool: string,
 ): Promise<JsonResult> {
   return (await invoke("tools_ls_remote", { cwd, tool })) as JsonResult;
+}
+
+/** Calls the `tools_env` Tauri command (`mise env --json`). The
+ *  payload is the flat `Map<String, String>` mise emits. */
+export async function toolsEnv(cwd: string | null): Promise<JsonResult> {
+  return (await invoke("tools_env", { cwd })) as JsonResult;
+}
+
+/** Calls the `read_lockfile` Tauri command. Returns the file's text
+ *  or `null` when the directory has no `mise.lock`. */
+export async function readMiseLockfile(
+  cwd: string | null,
+): Promise<LockfileResult> {
+  return (await invoke("read_lockfile", { cwd })) as LockfileResult;
 }

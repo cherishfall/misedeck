@@ -11,15 +11,18 @@
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
-import { toolsLs, toolsLsRemote, toolsOutdated } from "../api/mise";
+import { readMiseLockfile, toolsEnv, toolsLs, toolsLsRemote, toolsOutdated } from "../api/mise";
 import {
+  parseEnvPayload,
   parseLsPayload,
   parseLsRemotePayload,
   parseOutdatedPayload,
+  type EnvEntry,
 } from "../api/miseTools";
 import { useDirectory } from "../state/directoryContext";
 import type {
   JsonResult,
+  LockfileResult,
   MiseLsItem,
   MiseLsRemoteItem,
   MiseOutdatedItem,
@@ -146,4 +149,79 @@ export function useParsedLsRemote(
     return { isPending: false, data: null, error: q.data ?? null };
   }
   return { isPending: false, data: parseLsRemotePayload(q.data.value), error: null };
+}
+
+/**
+ * `mise env --json` for the current directory context. Cache key is
+ * `["tools", "env", cwd]`. Disabled when no directory is picked so
+ * the global context's "Pick a directory" empty state is the only
+ * rendering path.
+ */
+export function useEnv(): UseQueryResult<JsonResult> {
+  const { cwd } = useDirectory();
+  return useQuery({
+    queryKey: ["tools", "env", cwd],
+    queryFn: () => toolsEnv(cwd),
+    enabled: cwd !== null,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+}
+
+/** Parse the env payload into typed entries. */
+export function useParsedEnv(): {
+  isPending: boolean;
+  data: EnvEntry[] | null;
+  error: JsonResult | null;
+} {
+  const q = useEnv();
+  if (q.isPending) {
+    return { isPending: true, data: null, error: null };
+  }
+  if (q.error) {
+    return { isPending: false, data: null, error: toErr(q.error) };
+  }
+  if (!q.data || q.data.kind === "err") {
+    return { isPending: false, data: null, error: q.data ?? null };
+  }
+  return { isPending: false, data: parseEnvPayload(q.data.value), error: null };
+}
+
+/** Same for the global context, used to cross-check the project
+ *  context and badge project-only env vars correctly. Disabled when
+ *  the active context is already global. */
+export function useGlobalEnv(): UseQueryResult<JsonResult> {
+  const { cwd } = useDirectory();
+  return useQuery({
+    queryKey: ["tools", "env", null],
+    queryFn: () => toolsEnv(null),
+    enabled: cwd !== null,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+}
+
+/** Parse the global env payload. */
+export function useParsedGlobalEnv(): EnvEntry[] | null {
+  const q = useGlobalEnv();
+  if (q.isPending || q.error || !q.data || q.data.kind === "err") {
+    return null;
+  }
+  return parseEnvPayload(q.data.value);
+}
+
+/**
+ * Read the project's `mise.lock` file (or `null` when absent). The
+ * cache key is `["tools", "lockfile", cwd]`. Disabled when no
+ * directory is picked.
+ */
+export function useLockfile(): UseQueryResult<LockfileResult> {
+  const { cwd } = useDirectory();
+  return useQuery({
+    queryKey: ["tools", "lockfile", cwd],
+    queryFn: () => readMiseLockfile(cwd),
+    enabled: cwd !== null,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
 }

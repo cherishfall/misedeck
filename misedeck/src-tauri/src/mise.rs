@@ -481,6 +481,49 @@ pub fn mise_outdated(
     run_mise_json(mise_path, &req)
 }
 
+/// `mise env --json` — the resolved environment for the current
+/// directory context. Returns the raw JSON object mise emits
+/// (`{VAR: value, ...}`); every value is a string. Used by the
+/// directory-preview page (#24) to surface env vars alongside the
+/// tools. Like the tools commands, the runner accepts `cwd` so the
+/// result reflects the directory-scoped resolution (the project's
+/// `[env]` table is merged into the env map).
+pub fn mise_env(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+) -> Result<serde_json::Value, AppError> {
+    let args = vec!["env".to_string(), "--json".to_string()];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    run_mise_json(mise_path, &req)
+}
+
+/// Read the `mise.lock` file at `<cwd>/mise.lock` and return its raw
+/// text. Returns `Ok(None)` when the file does not exist (a normal
+/// outcome — the lockfile is optional). Any other I/O error is
+/// propagated as `AppError::command_failed` so the UI can render it
+/// alongside the other read-only commands. Used by the
+/// directory-preview page (#24) to surface the project's lockfile in
+/// a read-only block.
+pub fn read_mise_lockfile(cwd: Option<&Path>) -> Result<Option<String>, AppError> {
+    let Some(cwd) = cwd else {
+        // The lockfile is a per-directory artifact; the global
+        // context has no associated lockfile. Treat as "no lockfile".
+        return Ok(None);
+    };
+    let path = cwd.join("mise.lock");
+    match std::fs::read_to_string(&path) {
+        Ok(s) => Ok(Some(s)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(AppError::command_failed(
+            format!("failed to read {}: {e}", path.display()),
+            String::new(),
+        )),
+    }
+}
+
 /// `mise ls-remote --json <tool>` — the list of upstream versions
 /// for a single tool. Returns the raw JSON array mise emits
 /// (`[{version, created_at?}, ...]`).
