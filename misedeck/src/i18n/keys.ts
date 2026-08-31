@@ -48,6 +48,13 @@ export const I18N_KEYS = {
     pickerTitle: "contextBar.pickerTitle",
     removeRecentLabel: "contextBar.removeRecentLabel",
   },
+  miseManagement: {
+    guidedInstallButton: "miseManagement.guidedInstallButton",
+    selfUpdateButton: "miseManagement.selfUpdateButton",
+    releaseNotesLink: "miseManagement.releaseNotesLink",
+    selfUpdateSuccessBody: "miseManagement.selfUpdateSuccessBody",
+    selfUpdateNoProbeBody: "miseManagement.selfUpdateNoProbeBody",
+  },
   execution: {
     title: "execution.title",
     commandLabel: "execution.commandLabel",

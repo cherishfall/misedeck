@@ -12,8 +12,10 @@ use std::sync::Mutex;
 use once_cell::sync::Lazy;
 use serde::Serialize;
 
+pub mod install;
 pub mod mise;
 
+use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
 use mise::{detect_mise as run_mise_probe, locate_mise, run_mise, AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest};
 
 /// Cached path to the mise binary, resolved once on first call to `detect_mise`.
@@ -42,6 +44,25 @@ pub enum DetectMiseResult {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum RunCommandResult {
     Ok { outcome: RunOutcome },
+    Err { err: AppError },
+}
+
+/// Result of a streaming install / self-update run. The success variant
+/// carries the post-run outcome (the streaming events have already
+/// been delivered via the channel); the error variant carries the
+/// structured `AppError` for the UI to render. The success variant
+/// flattens the outcome fields so the JS side sees a single object
+/// with `stdout`, `stderr`, `exitCode`, `durationMs`, `timedOut` —
+/// the same shape `RunCommandResult` uses.
+#[derive(Debug, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum InstallCommandResult {
+    Ok {
+        #[serde(flatten)]
+        outcome: InstallOutcome,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        new_version: Option<String>,
+    },
     Err { err: AppError },
 }
 
@@ -130,13 +151,68 @@ fn run_mise_command(
     }
 }
 
+/// Run the official install script for the current platform, streaming
+/// each line via the `on_event` channel. Returns a structured
+/// `InstallCommandResult` (the streaming events have already been
+/// delivered by the time the final result is returned).
+#[tauri::command]
+fn install_mise(on_event: tauri::ipc::Channel<RunEvent>) -> InstallCommandResult {
+    match run_install_script(move |evt| {
+        let _ = on_event.send(evt);
+    }) {
+        Ok(outcome) => InstallCommandResult::Ok {
+            outcome,
+            new_version: None,
+        },
+        Err(e) => InstallCommandResult::Err { err: e },
+    }
+}
+
+/// Run `mise self-update`, streaming each line via the `on_event`
+/// channel. Resolves the cached mise binary; returns the structured
+/// `InstallCommandResult` with the post-update version (when the
+/// post-update probe succeeded).
+#[tauri::command]
+fn mise_self_update(on_event: tauri::ipc::Channel<RunEvent>) -> InstallCommandResult {
+    // Resolve the mise binary path.
+    let path = {
+        let cached = MISE_BINARY.lock().expect("mise path mutex poisoned");
+        cached.clone()
+    };
+    let path = match path {
+        Some(p) => p,
+        None => match locate_mise() {
+            Ok(p) => {
+                *MISE_BINARY.lock().expect("mise path mutex poisoned") = Some(p.clone());
+                p
+            }
+            Err(e) => return InstallCommandResult::Err { err: e },
+        },
+    };
+
+    match run_self_update(&path, move |evt| {
+        let _ = on_event.send(evt);
+    }) {
+        Ok(SelfUpdateOutcome { outcome, new_version }) => InstallCommandResult::Ok {
+            outcome,
+            new_version,
+        },
+        Err(e) => InstallCommandResult::Err { err: e },
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![detect_mise, run_mise_command])
+        .invoke_handler(tauri::generate_handler![
+            detect_mise,
+            run_mise_command,
+            install_mise,
+            mise_self_update
+        ])
         .setup(|_app| {
             let mut guard = MISE_BINARY.lock().expect("mise path mutex poisoned");
             if guard.is_none() {

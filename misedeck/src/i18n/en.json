@@ -28,6 +28,13 @@
     "pickerTitle": "Pick a directory for MiseDeck",
     "removeRecentLabel": "Remove from recents"
   },
+  "miseManagement": {
+    "guidedInstallButton": "▸ Guided install",
+    "selfUpdateButton": "▸ Run mise self-update",
+    "releaseNotesLink": "View release notes",
+    "selfUpdateSuccessBody": "mise updated to {{version}}. Reload MiseDeck to pick up the new binary.",
+    "selfUpdateNoProbeBody": "mise self-update completed. The post-update version probe failed — restart MiseDeck to confirm."
+  },
   "nav": {
     "tools": "Tools",
     "tasks": "Tasks",

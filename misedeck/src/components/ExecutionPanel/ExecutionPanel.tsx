@@ -2,19 +2,39 @@
 // being run, streams stdout/stderr lines, and reports exit status.
 // Per docs/design/visual-language.md the deck is the product's signature
 // behavior: every mutation echoes the command + live logs.
+//
+// The state machine is lifted to `useExecutionContext` so any page can
+// trigger an install, self-update, or arbitrary mise command. The
+// panel itself is presentational.
 
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
-import { useExecution } from "./useExecution";
+import { useExecutionContext } from "./ExecutionContext";
 import styles from "./ExecutionPanel.module.css";
 
 /**
  * Build the human-readable command echo (what the user would type in
- * a terminal) for a request. `cwd` becomes the `mise -C <dir>` prefix.
+ * a terminal) for the active execution. `mise` runs an arbitrary
+ * command; `install` runs the official install script (the actual
+ * platform-specific command is built in Rust); `selfUpdate` runs
+ * `mise self-update`.
  */
-function commandEcho(cwd: string | null, args: string[]): string {
+function commandEcho(
+  kind: "mise" | "install" | "selfUpdate",
+  cwd: string | null,
+  args: string[],
+): string {
+  if (kind === "install") {
+    return "curl -fsSL https://mise.jdx.dev/install.sh | sh";
+  }
+  if (kind === "selfUpdate") {
+    const parts: string[] = ["mise"];
+    if (cwd) parts.push("-C", cwd);
+    parts.push("self-update");
+    return parts.join(" ");
+  }
   const parts: string[] = ["mise"];
   if (cwd) parts.push("-C", cwd);
   for (const a of args) {
@@ -29,7 +49,7 @@ function commandEcho(cwd: string | null, args: string[]): string {
 
 export function ExecutionPanel() {
   const { t } = useTranslation();
-  const { state, run, cancel, dismiss } = useExecution();
+  const { state, cancel, dismiss } = useExecutionContext();
   const logRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
 
@@ -46,7 +66,9 @@ export function ExecutionPanel() {
     stickToBottomRef.current = distanceFromBottom < 24;
   };
 
-  const echo = state.request ? commandEcho(state.request.cwd, state.request.args) : null;
+  const echo = state.request
+    ? commandEcho(state.kind, state.request.cwd, state.request.args)
+    : null;
 
   return (
     <div className={styles.deck}>
@@ -111,7 +133,9 @@ export function ExecutionPanel() {
           {state.status === "cancelled" && (
             <>
               <span className={styles.statusDot} data-tone="dim" />
-              <span className={styles.statusLabel}>{t(I18N_KEYS.execution.statusCancelled)}</span>
+              <span className={styles.statusLabel}>
+                {t(I18N_KEYS.execution.statusCancelled)}
+              </span>
               <button
                 type="button"
                 className={styles.actionBtn}
@@ -122,44 +146,26 @@ export function ExecutionPanel() {
               </button>
             </>
           )}
-          {state.status === "idle" && (
-            <span className={styles.statusLabel}>{t(I18N_KEYS.execution.emptyHint)}</span>
-          )}
         </div>
       </div>
-      {state.lines.length > 0 && (
-        <div ref={logRef} className={styles.log} onScroll={handleScroll}>
-          {state.lines.map((line, i) => (
-            <div
-              key={i}
-              className={styles.line}
-              data-stream={line.stream}
-            >
-              <span className={styles.linePrefix}>
-                {line.stream === "stderr" ? "▲" : "›"}
-              </span>
-              <span className={styles.lineText}>{line.text}</span>
-            </div>
-          ))}
-          {state.status === "running" && (
-            <div className={styles.caret} aria-hidden="true">▍</div>
-          )}
-        </div>
-      )}
-      {/* Run a "Run mise doctor" button for the demo (issue #18). Hidden
-          when a command is already running. */}
-      {state.status === "idle" && (
-        <div className={styles.demoRow}>
-          <button
-            type="button"
-            className={styles.demoBtn}
-            onClick={() => run({ cwd: null, args: ["doctor"] })}
-            data-testid="run-doctor"
+      <div
+        ref={logRef}
+        onScroll={handleScroll}
+        className={styles.log}
+        data-testid="execution-log"
+      >
+        {state.lines.length === 0 && state.status === "idle" && (
+          <div className={styles.emptyHint}>{t(I18N_KEYS.execution.emptyHint)}</div>
+        )}
+        {state.lines.map((line, i) => (
+          <div
+            key={i}
+            className={line.stream === "stderr" ? styles.stderrLine : styles.stdoutLine}
           >
-            + {t(I18N_KEYS.execution.demoRunDoctor)}
-          </button>
-        </div>
-      )}
+            {line.text}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router";
 
@@ -8,6 +8,8 @@ import type { AppError, AppErrorCode, DetectMiseOk } from "./types/tauri";
 
 import { LanguageSwitcher } from "./components/LanguageSwitcher/LanguageSwitcher";
 import { ContextBar } from "./components/ContextBar/ContextBar";
+import { Button } from "./components/Button/Button";
+import { useExecutionContext } from "./components/ExecutionPanel";
 
 import { ExecutionPanel } from "./components/ExecutionPanel";
 import "./App.css";
@@ -50,6 +52,8 @@ function App() {
   const { t } = useTranslation();
   const location = useLocation();
   const onStyleguide = location.pathname === "/__styleguide";
+  const { runInstall, runSelfUpdate } = useExecutionContext();
+  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: ["mise", "detect"],
@@ -59,6 +63,13 @@ function App() {
   });
 
   const view = toViewState(query.data);
+
+  // After a successful self-update the cached version is stale; refetch
+  // so the next render reflects the new version (or a too-old gate
+  // that has now resolved).
+  const onSelfUpdateOk = () => {
+    void queryClient.invalidateQueries({ queryKey: ["mise", "detect"] });
+  };
 
   return (
     <div className="app-shell">
@@ -134,9 +145,24 @@ function App() {
                   url: "https://mise.jdx.dev/installing.html",
                 })}
               </p>
-              <p className="state__hint">
-                {t(I18N_KEYS.states.notInstalled.installHint)}
-              </p>
+              <div className="state__actions">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={runInstall}
+                  data-testid="not-found-guided-install"
+                >
+                  {t(I18N_KEYS.miseManagement.guidedInstallButton)}
+                </Button>
+                <a
+                  className="state__fallback"
+                  href="https://mise.jdx.dev/installing.html"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t(I18N_KEYS.states.notInstalled.installHint)}
+                </a>
+              </div>
             </div>
           )}
 
@@ -155,6 +181,26 @@ function App() {
                   });
                 })()}
               </p>
+              <div className="state__actions">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => {
+                    void runSelfUpdate().then(onSelfUpdateOk);
+                  }}
+                  data-testid="too-old-self-update"
+                >
+                  {t(I18N_KEYS.miseManagement.selfUpdateButton)}
+                </Button>
+                <a
+                  className="state__fallback"
+                  href="https://github.com/jdx/mise/releases"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t(I18N_KEYS.miseManagement.releaseNotesLink)}
+                </a>
+              </div>
             </div>
           )}
 

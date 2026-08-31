@@ -7,6 +7,7 @@ import "./tokens.css";
 import "./i18n";
 import { LanguageProvider } from "./i18n/useLanguage";
 import { DirectoryProvider } from "./state/directoryContext";
+import { ExecutionProvider } from "./components/ExecutionPanel";
 import App from "./App";
 import { StyleGuide } from "./components/StyleGuide/StyleGuide";
 
@@ -24,12 +25,14 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <DirectoryProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<App />} />
-              <Route path="/__styleguide" element={<StyleGuide />} />
-            </Routes>
-          </BrowserRouter>
+          <ExecutionProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<App />} />
+                <Route path="/__styleguide" element={<StyleGuide />} />
+              </Routes>
+            </BrowserRouter>
+          </ExecutionProvider>
         </DirectoryProvider>
       </LanguageProvider>
     </QueryClientProvider>
