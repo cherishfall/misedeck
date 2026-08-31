@@ -28,6 +28,7 @@ Last updated: end of session C — all v1 implementation tickets closed.
 | #22 | Global tool mutations via execution panel | `7973cdb` | Install / uninstall / switch / upgrade on `/tools`; list refreshes on `running → ok`; `RunEvent` enum serialization fixed to camelCase fields on the wire |
 | #32 | Bilingual README + release prep | `b84776e` | README.md + zh-CN/README.md with current screenshots, install notes, Gatekeeper note, disclaimer; `.github/release-template.md` created |
 | — | Pre-release workflow tweak | `de8c7df` | `.github/workflows/release.yml` marks `-alpha`/`-beta`/`-rc`/`-pre` tags as pre-releases |
+| — | Windows CI fix | `0df5c68` | `which_exists` in `shell.rs` was cfg-gated to Linux-only, causing Windows build to fail; made it cross-platform and added `#[allow(dead_code)]` |
 
 **Test count after session C:** 119 Rust tests passed (13 unit + 9 mise-probe + 9 directory + 9 env + 11 settings + 9 runner + 5 cwd + 15 shell + 15 tasks + 5 install + 9 tool_mutations + 10 tools + 9 trust).
 **Lint gates:** `npm run typecheck && npm run lint:i18n && npm run build && cargo check && cargo test` — all pass.
@@ -39,7 +40,8 @@ Last updated: end of session C — all v1 implementation tickets closed.
 
 - Repository renamed to `cherishfall/misedeck`; old `cherishfall/mise-ui` URL redirects correctly.
 - GitHub description and topics set.
-- Tag `v1.0.0-beta.1` pushed; release CI triggered: https://github.com/cherishfall/misedeck/actions/runs/33416339349
+- Tag `v1.0.0-beta.1` pushed but Windows build failed due to a cfg-gated `which_exists` function.
+- Fixed in `0df5c68`; tag `v1.0.0-beta.2` pushed; release CI running: https://github.com/cherishfall/misedeck/actions/runs/33417514613
 - Final `v1.0.0` release was intentionally deferred per maintainer request (some adjustments still wanted).
 
 ---
