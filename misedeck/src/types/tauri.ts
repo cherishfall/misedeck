@@ -101,3 +101,34 @@ export interface MiseLsRemoteItem {
 export type LockfileResult =
   | { kind: "ok"; content: string | null }
   | { kind: "err"; err: AppError };
+
+/**
+ * Trust state for a directory's mise config (issue #25). Mirrors
+ * `TrustSource` in `src-tauri/src/mise.rs` and the architecture
+ * doc's "MISE_SAFE=1" semantics.
+ *
+ *   * `configTrusted`   — a `mise.toml` is in scope and is trusted.
+ *   * `configUntrusted` — a `mise.toml` is in scope but the user
+ *      has not trusted it yet; the directory preview banner
+ *      surfaces this state and mutating actions must route to
+ *      the banner.
+ *   * `noConfig`        — no `mise.toml` is in scope; nothing to
+ *      trust, the banner stays hidden.
+ */
+export type TrustSource = "configTrusted" | "configUntrusted" | "noConfig";
+
+/**
+ * The `trust_check` Tauri command returns this discriminated union.
+ * On success, the `TrustStatus` is shipped as `ok`; on failure, the
+ * structured `AppError` is shipped as `err`. Mirrors `TrustResult`
+ * in `src-tauri/src/lib.rs`.
+ */
+export interface TrustStatus {
+  source: TrustSource;
+  /** Path of the config file the trust probe decided on (or the cwd when `source = "noConfig"`). */
+  path: string;
+}
+
+export type TrustResult =
+  | { kind: "ok"; ok: TrustStatus }
+  | { kind: "err"; err: AppError };

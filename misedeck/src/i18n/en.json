@@ -44,6 +44,16 @@
     "plugins": "Plugins",
     "about": "About"
   },
+  "trust": {
+    "banner": {
+      "label": "UNTRUSTED CONFIG",
+      "body": "This directory's mise.toml has not been trusted. Env and tasks will not run until you trust it.",
+      "action": "Trust this directory"
+    },
+    "busy": "Trusting…",
+    "ok": "Trusted. You may need to re-run actions to see updated results.",
+    "error": "Could not trust the directory. Check the execution panel for details."
+  },
   "starter": {
     "eyebrow": "▸ MISE / STATUS",
     "title": "Mise",

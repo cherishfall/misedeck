@@ -274,3 +274,22 @@
   border-radius: 50%;
   background: var(--dim);
 }
+
+/* ---------- Trust banner (issue #25) ---------- */
+
+.trustPath {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--dim);
+  word-break: break-all;
+}
+
+.trustNote {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--hull) 60%, transparent);
+}

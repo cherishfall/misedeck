@@ -149,7 +149,7 @@ export function useExecution() {
 
   const runMiseInternal = useCallback(
     async (
-      ipcCommand: "run_mise_command" | "install_mise" | "mise_self_update",
+      ipcCommand: "run_mise_command" | "install_mise" | "mise_self_update" | "mise_trust",
       kind: ExecutionKind,
       payload: Record<string, unknown>,
       request: RunRequest,
@@ -236,6 +236,20 @@ export function useExecution() {
     await runMiseInternal("mise_self_update", "selfUpdate", {}, request);
   }, [runMiseInternal]);
 
+  /** Run `mise trust` for the given directory. Streams into the
+   *  panel. The trust cache is the caller's responsibility to
+   *  invalidate — see `useTrustAction()` which does it on Ok. */
+  const runTrust = useCallback(
+    async (cwd: string | null) => {
+      const request: RunRequest = {
+        cwd,
+        args: ["trust"],
+      };
+      await runMiseInternal("mise_trust", "mise", { cwd }, request);
+    },
+    [runMiseInternal],
+  );
+
   const cancel = useCallback(() => {
     cancelRef.current?.();
   }, []);
@@ -244,6 +258,6 @@ export function useExecution() {
     dispatch({ type: "dismiss" });
   }, []);
 
-  return { state, run, runInstall, runSelfUpdate, cancel, dismiss };
+  return { state, run, runInstall, runSelfUpdate, runTrust, cancel, dismiss };
 }
 

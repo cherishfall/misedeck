@@ -17,14 +17,16 @@ pub mod mise;
 
 use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
 use mise::{
-    detect_mise as run_mise_probe, locate_mise, mise_env, mise_ls, mise_ls_remote, mise_outdated,
-    read_mise_lockfile, run_mise, AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
+    check_trust, detect_mise as run_mise_probe, locate_mise, mise_env, mise_ls, mise_ls_remote,
+    mise_outdated, read_mise_lockfile, run_mise, run_trust, AppError, DetectMiseOk, RunEvent,
+    RunOutcome, RunRequest,
 };
 
 // Re-export `JsonResult` from the lib root so integration tests can
 // import it via `misedeck_lib::JsonResult` (mirrors the
 // `DetectMiseResult` re-export pattern).
 pub use self::json_result::JsonResult;
+pub use self::trust_result::TrustResult;
 
 mod json_result {
     use serde::Serialize;
@@ -41,6 +43,25 @@ mod json_result {
     #[serde(tag = "kind", rename_all = "snake_case")]
     pub enum JsonResult {
         Ok { value: serde_json::Value },
+        Err { err: AppError },
+    }
+}
+
+mod trust_result {
+    use serde::Serialize;
+
+    use super::mise::{AppError, TrustStatus};
+
+    /// Discriminated union for the `trust_check` Tauri command
+    /// (issue #25). On success, the structured `TrustStatus` is
+    /// shipped as `ok`; on failure, the structured `AppError` is
+    /// shipped as `err`. Mirrors the `JsonResult` shape so the JS
+    /// side can pattern-match on `kind` the same way it does for
+    /// the other read-only commands.
+    #[derive(Debug, Serialize)]
+    #[serde(tag = "kind", rename_all = "snake_case")]
+    pub enum TrustResult {
+        Ok { ok: TrustStatus },
         Err { err: AppError },
     }
 }
@@ -332,6 +353,48 @@ fn read_lockfile(cwd: Option<String>) -> Result<Option<String>, AppError> {
     read_mise_lockfile(cwd_path)
 }
 
+/// `mise trust --show` for the active directory context. Read-only;
+/// returns a structured `TrustStatus` (configTrusted / configUntrusted
+/// / noConfig). Drives the directory-preview trust banner (issue #25)
+/// and the `useTrustGuard()` API surface that future mutating
+/// actions will call before running.
+#[tauri::command]
+fn trust_check(cwd: Option<String>) -> TrustResult {
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return TrustResult::Err { err: e },
+    };
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    match check_trust(&path, cwd_path) {
+        Ok(ok) => TrustResult::Ok { ok },
+        Err(e) => TrustResult::Err { err: e },
+    }
+}
+
+/// `mise trust` — mark the active directory's `mise.toml` as
+/// trusted. Streams each line via the same `RunEvent` channel the
+/// panel already knows, then returns the aggregated `RunOutcome`.
+/// The trust cache is the caller's responsibility to invalidate —
+/// `useTrustAction()` on the JS side does this once the
+/// `RunCommandResult` resolves Ok.
+#[tauri::command]
+fn mise_trust(
+    cwd: Option<String>,
+    on_event: tauri::ipc::Channel<RunEvent>,
+) -> RunCommandResult {
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return RunCommandResult::Err { err: e },
+    };
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    match run_trust(&path, cwd_path, move |evt| {
+        let _ = on_event.send(evt);
+    }) {
+        Ok(outcome) => RunCommandResult::Ok { outcome },
+        Err(e) => RunCommandResult::Err { err: e },
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -347,7 +410,9 @@ pub fn run() {
             tools_outdated,
             tools_ls_remote,
             tools_env,
-            read_lockfile
+            read_lockfile,
+            trust_check,
+            mise_trust
         ])
         .setup(|_app| {
             let mut guard = MISE_BINARY.lock().expect("mise path mutex poisoned");

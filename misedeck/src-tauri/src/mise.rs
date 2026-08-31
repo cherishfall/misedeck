@@ -550,6 +550,143 @@ pub fn mise_ls_remote(
     run_mise_json(mise_path, &req)
 }
 
+/// Trust state for a directory's mise config. Mirrors the
+/// architecture doc's "MISE_SAFE=1" semantics:
+///
+///   * `ConfigTrusted`   — a `mise.toml` was found in the cwd's
+///      ancestry and is trusted; the trust banner stays hidden and
+///      mutating actions are allowed.
+///   * `ConfigUntrusted` — a `mise.toml` was found but the user
+///      has not trusted it yet. The directory preview banner
+///      surfaces this; mutating actions must route to the banner.
+///   * `NoConfig`        — no `mise.toml` is in scope. There is
+///      nothing to trust, so the banner stays hidden and the
+///      `useTrustGuard()` API allows mutations.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum TrustSource {
+    ConfigTrusted,
+    ConfigUntrusted,
+    NoConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrustStatus {
+    pub source: TrustSource,
+    /// Absolute path of the config file the trust probe decided on
+    /// (or the cwd when `source = NoConfig`). The UI uses this for
+    /// debugging only; the trust gate only cares about `source`.
+    pub path: String,
+}
+
+/// Probe the trust state for `<cwd>` by running `mise trust --show`.
+/// The probe is read-only; `mise trust --show` exits 0 in every
+/// state — the only signal is the body of stdout. The output format
+/// is one line per config file in scope:
+///
+///   * `<path>: trusted`
+///   * `<path>: untrusted`
+///
+/// When no `mise.toml` is in scope, mise prints
+/// `No trusted config files found.` (exit code 0). The first
+/// status-bearing line wins — `trust --show` lists the nearest
+/// config first, and that is the one governing the cwd.
+pub fn check_trust(mise_path: &Path, cwd: Option<&Path>) -> Result<TrustStatus, AppError> {
+    let args = vec!["trust".to_string(), "--show".to_string()];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    let outcome = run_mise(mise_path, &req, |_| {})?;
+    if outcome.timed_out {
+        return Err(AppError::timeout());
+    }
+    if outcome.exit_code != 0 {
+        return Err(AppError::command_failed(
+            format!("mise trust --show exited with status {}", outcome.exit_code),
+            outcome.stderr,
+        ));
+    }
+    let cwd_fallback = cwd
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_default();
+    for line in outcome.stdout.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        if line.starts_with("No trusted") {
+            continue;
+        }
+        // `mise trust --show` emits lines like
+        //   `<path>: trusted` / `<path>: untrusted`
+        // and on some platforms the path may include a drive letter
+        // (Windows). Split on the LAST colon to keep the path
+        // intact.
+        if let Some((path_part, status_part)) = line.rsplit_once(':') {
+            let status = status_part.trim();
+            let path = path_part.trim().to_string();
+            if status == "trusted" {
+                return Ok(TrustStatus {
+                    source: TrustSource::ConfigTrusted,
+                    path,
+                });
+            }
+            if status == "untrusted" {
+                return Ok(TrustStatus {
+                    source: TrustSource::ConfigUntrusted,
+                    path,
+                });
+            }
+        }
+    }
+    Ok(TrustStatus {
+        source: TrustSource::NoConfig,
+        path: cwd_fallback,
+    })
+}
+
+/// `mise trust` — mark the active directory's `mise.toml` as
+/// trusted. Streams each line via `on_event` so the execution panel
+/// surfaces the trust attempt live. The caller is responsible for
+/// invalidating the trust cache (via `trust_check`) once the
+/// outcome returns Ok — this function does not refresh the cache
+/// itself, so a successful run followed by a re-probe is the
+/// intended pattern.
+///
+/// This is a thin wrapper around the runner that exists at the
+/// runner layer so the Tauri command surface can keep a one-line
+/// per-command shape; the underlying `run_mise` already does the
+/// heavy lifting. A non-zero exit maps to `COMMAND_FAILED` so the
+/// JS side can render stderr in the panel (matches the
+/// `run_self_update` pattern in `install.rs`).
+pub fn run_trust<F>(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+    on_event: F,
+) -> Result<RunOutcome, AppError>
+where
+    F: FnMut(RunEvent) + Send + 'static,
+{
+    let args = vec!["trust".to_string()];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    let outcome = run_mise(mise_path, &req, on_event)?;
+    if outcome.timed_out {
+        return Err(AppError::timeout());
+    }
+    if outcome.exit_code != 0 {
+        return Err(AppError::command_failed(
+            format!("mise trust exited with status {}", outcome.exit_code),
+            outcome.stderr,
+        ));
+    }
+    Ok(outcome)
+}
+
 /// Run `mise version --json` and return the parsed result. Thin wrapper
 /// around the generalized runner for the probe path.
 pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
@@ -637,5 +774,34 @@ mod tests {
         assert!(s.iter().any(|p| p.ends_with("/.local/bin/mise")), "paths = {s:?}");
         assert!(s.iter().any(|p| p == "/opt/homebrew/bin/mise"), "paths = {s:?}");
         assert!(s.iter().any(|p| p == "/usr/local/bin/mise"), "paths = {s:?}");
+    }
+
+    #[test]
+    fn trust_status_serializes_with_camel_case_keys() {
+        // The Rust↔TS boundary uses camelCase; the JS side imports
+        // `trustStatus.source === "configTrusted" | "configUntrusted"
+        // | "noConfig"`. Lock the on-the-wire shape so a stray rename
+        // does not silently break the wire contract.
+        let trusted = TrustStatus {
+            source: TrustSource::ConfigTrusted,
+            path: "/tmp/example".to_string(),
+        };
+        let v = serde_json::to_value(&trusted).unwrap();
+        assert_eq!(v["source"], "configTrusted");
+        assert_eq!(v["path"], "/tmp/example");
+
+        let untrusted = TrustStatus {
+            source: TrustSource::ConfigUntrusted,
+            path: "/tmp/example".to_string(),
+        };
+        let v = serde_json::to_value(&untrusted).unwrap();
+        assert_eq!(v["source"], "configUntrusted");
+
+        let no_config = TrustStatus {
+            source: TrustSource::NoConfig,
+            path: "/tmp/example".to_string(),
+        };
+        let v = serde_json::to_value(&no_config).unwrap();
+        assert_eq!(v["source"], "noConfig");
     }
 }

@@ -83,6 +83,16 @@ export const I18N_KEYS = {
     title: "starter.title",
     hint: "starter.hint",
   },
+  trust: {
+    banner: {
+      label: "trust.banner.label",
+      body: "trust.banner.body",
+      action: "trust.banner.action",
+    },
+    busy: "trust.busy",
+    ok: "trust.ok",
+    error: "trust.error",
+  },
   tools: {
     eyebrow: "tools.eyebrow",
     title: "tools.title",

@@ -9,7 +9,13 @@
 
 import { invoke } from "@tauri-apps/api/core";
 
-import type { AppError, DetectMiseResult, JsonResult, LockfileResult } from "../types/tauri";
+import type {
+  AppError,
+  DetectMiseResult,
+  JsonResult,
+  LockfileResult,
+  TrustResult,
+} from "../types/tauri";
 
 /** Type-guard for the structured AppError shape. Exported so the
  *  execution panel's reducer can pattern-match the IPC response. */
@@ -62,4 +68,12 @@ export async function readMiseLockfile(
   cwd: string | null,
 ): Promise<LockfileResult> {
   return (await invoke("read_lockfile", { cwd })) as LockfileResult;
+}
+
+/** Calls the `trust_check` Tauri command (`mise trust --show`).
+ *  Returns a structured `TrustResult` describing the cwd's
+ *  config trust state. The UI uses this to decide whether to
+ *  render the trust banner. */
+export async function trustCheck(cwd: string | null): Promise<TrustResult> {
+  return (await invoke("trust_check", { cwd })) as TrustResult;
 }

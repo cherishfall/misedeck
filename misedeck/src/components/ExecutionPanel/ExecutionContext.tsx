@@ -20,6 +20,8 @@ interface ExecutionContextValue {
   runInstall: () => Promise<void>;
   /** Run `mise self-update`. Streams into the panel. */
   runSelfUpdate: () => Promise<void>;
+  /** Run `mise trust` for the given directory. Streams into the panel. */
+  runTrust: (cwd: string | null) => Promise<void>;
   cancel: () => void;
   dismiss: () => void;
 }
@@ -27,10 +29,10 @@ interface ExecutionContextValue {
 const ExecutionContext = createContext<ExecutionContextValue | null>(null);
 
 export function ExecutionProvider({ children }: { children: ReactNode }) {
-  const { state, run, runInstall, runSelfUpdate, cancel, dismiss } = useExecution();
+  const { state, run, runInstall, runSelfUpdate, runTrust, cancel, dismiss } = useExecution();
   const value = useMemo<ExecutionContextValue>(
-    () => ({ state, run, runInstall, runSelfUpdate, cancel, dismiss }),
-    [state, run, runInstall, runSelfUpdate, cancel, dismiss],
+    () => ({ state, run, runInstall, runSelfUpdate, runTrust, cancel, dismiss }),
+    [state, run, runInstall, runSelfUpdate, runTrust, cancel, dismiss],
   );
   return <ExecutionContext.Provider value={value}>{children}</ExecutionContext.Provider>;
 }
