@@ -1,57 +1,46 @@
-# MiseDeck v<version>
+# MiseDeck <version>
 
-A faithful GUI over [mise](https://mise.jdx.dev). Cross-platform (macOS polished, Windows / Linux beta).
+First stable release of MiseDeck, a faithful desktop GUI for [mise](https://mise.jdx.dev). Cross-platform (macOS polished, Windows / Linux beta).
 
-> **Looking for the README in your language?** [English](../README.md) · [简体中文](../zh-CN/README.md)
+## What's in v1
 
-## Highlights
+- **Global tool management**: install, uninstall, switch, upgrade, and see outdated badges in one table.
+- **Directory context**: resolved tools, env vars, and lockfile previews with config-source badges.
+- **Config editor**: form-based `[tools]` and `[env]` editing for global and per-directory `mise.toml`.
+- **Tasks**: list, run with live output, and simple edits.
+- **Trust UX**: read-only untrusted directories with one-click trust.
+- **Settings, doctor, and plugin/backend browsing**.
+- **mise self-management**: guided install when mise is missing and one-click self-update.
+- **Activation helpers**: open the current directory in a terminal, copy the activation command, and check shell setup.
+- **English and Simplified Chinese UI**.
 
-See the full changelog in the README: [CHANGELOG](../CHANGELOG.md) (kept in the bilingual README until #32 lands).
+> [English](../README.md) · [简体中文](../zh-CN/README.md)
 
 ## Install
 
 ### macOS
 
-Download the `.dmg`, open it, and drag MiseDeck to Applications.
+```bash
+brew install --cask cherishfall/tap/misedeck
+```
 
-> **First launch (unsigned)**: the binary is **not notarized** (per
-> [ADR-0002 — Distribution via GitHub Releases and own Homebrew tap, unsigned](../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)).
-> macOS Gatekeeper will block the first open. Right-click the app in
-> Applications → **Open** → confirm. Subsequent launches work normally.
-> For Homebrew users: the tap at `cherishfall/homebrew-tap` ships a
-> cask that carries the same caveat.
+Or download the `.dmg` from the assets below, open it, and drag MiseDeck to Applications.
+
+> **First launch (unsigned)**: the binary is **not notarized** (per [ADR-0002](../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)). macOS Gatekeeper will block the first open. Right-click the app in Applications → **Open** → confirm. Subsequent launches work normally.
 
 ### Windows (beta)
 
 Download the `.exe` installer and run it.
 
-> **SmartScreen (unsigned)**: the binary is **not code-signed** (see
-> the same ADR-0002 above). Windows SmartScreen will show
-> "Windows protected your PC" — click **More info** → **Run anyway**.
-> Windows / Linux builds are labeled **beta** in this release.
+> **SmartScreen (unsigned)**: the binary is **not code-signed**. Windows SmartScreen will show "Windows protected your PC" — click **More info** → **Run anyway**.
 
 ### Linux (beta)
 
-Pick the package that matches your distro. All three formats are
-attached below.
+Pick the package that matches your distro:
 
 - `.deb` — Debian / Ubuntu
 - `.rpm` — Fedora / RHEL
 - `.AppImage` — portable, no install
-
-After installing, run `misedeck` from your application launcher or
-terminal.
-
-## Gatekeeper / SmartScreen note
-
-MiseDeck v1 is distributed **unsigned** on every platform, by design.
-This is documented in
-[ADR-0002 — Distribution via GitHub Releases and own Homebrew tap, unsigned](../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md).
-Code signing and Apple notarization are out of scope for v1; revisit
-once the project crosses the notability bar.
-
-If a security prompt from macOS or Windows blocks the launch, follow
-the per-platform steps above. This is expected, not a bug.
 
 ## Verify
 
@@ -65,9 +54,8 @@ shasum -a 256 -c SHA256SUMS
 Get-FileHash -Algorithm SHA256 .\<file-you-downloaded>
 ```
 
-Compare the hash in `SHA256SUMS` to the one printed for your file.
+## Notes
 
-## Full Changelog
-
-See [CHANGELOG](../CHANGELOG.md) in the bilingual README, and the
-commit history between this tag and the previous one.
+- MiseDeck v1 is distributed **unsigned** on every platform, by design. Code signing and Apple notarization are out of scope for v1.
+- Windows and Linux builds are labeled **beta** in this release.
+- MiseDeck is a community project, not affiliated with or endorsed by the official mise project.

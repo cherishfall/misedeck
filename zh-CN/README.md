@@ -4,8 +4,6 @@
 
 **[mise](https://mise.jdx.dev)（多语言工具版本管理器）的桌面 GUI。** 忠实于你已知的命令行：每个界面都对应一条 mise 命令，每个操作都向你展示它实际执行的命令。
 
-> 早期开发中 —— v1 正在构建。见 [spec](../../issues/16) 与 [tickets](../../issues?q=label%3Aready-for-agent)。
-
 ## 为什么
 
 - **一目了然**：已装工具、生效版本、可升级项、按目录的覆盖及其配置来源——不再用脑算 PATH。
@@ -15,21 +13,47 @@
 
 ## 功能（v1）
 
-- 全局工具管理：安装、卸载、切换、升级、过时提醒
-- 目录上下文：按目录解析工具与环境变量，标注配置来源
-- 配置编辑：全局与目录级 `mise.toml` 的 `[tools]`、`[env]` 表单
-- 任务：列表、实时输出运行、简单编辑
-- 信任机制：未信任目录默认只读
-- 设置、doctor 诊断、插件/后端浏览
-- 中英文双语界面
+- **全局工具管理**：在一个表格中安装、卸载、切换、升级，并查看过时提醒。
+- **目录上下文**：任意目录的解析工具、环境变量与 lockfile，并标注配置来源。
+- **配置编辑**：以表单方式编辑全局与目录级 `mise.toml` 的 `[tools]` 和 `[env]`。
+- **任务**：列表、实时输出运行、简单编辑。
+- **信任机制**：未信任目录默认只读，由你决定是否信任。
+- **设置、doctor 诊断、插件/后端浏览**：查看与调整设置、运行 `mise doctor`、浏览 registry。
+- **mise 自管理**：未检测到 mise 时引导安装，一键自我更新。
+- **激活辅助**：在当前目录打开终端、复制激活命令、检查 shell 配置。
+- **中英文双语界面**。
+
+## 截图
+
+| English | 简体中文 |
+| --- | --- |
+| ![Tools](../docs/screenshots/tools-en.png) | ![配置编辑器](../docs/screenshots/config-zh-CN.png) |
+| ![Config editor](../docs/screenshots/config-en.png) | ![状态](../docs/screenshots/scaffold-detected.png) |
+| ![Doctor](../docs/screenshots/doctor-en.png) |  |
+| ![Settings](../docs/screenshots/settings-en.png) |  |
+
+更多截图，包括语言切换器、执行面板与视觉系统图鉴，见 [`docs/screenshots/`](../docs/screenshots/)。
 
 ## 安装
 
-首个版本发布时提供：GitHub Releases 未签名构建，以及 `brew install --cask cherishfall/tap/misedeck`。macOS 优先；Windows 和 Linux 的 beta 构建由 CI 产出。
+未签名的预构建二进制文件可在 [GitHub Releases](https://github.com/cherishfall/misedeck/releases) 下载。
+
+```bash
+# macOS（推荐）
+brew install --cask cherishfall/tap/misedeck
+```
+
+macOS 构建未签名。首次打开时，请右键点击应用并选择**打开**，而不是双击，然后在 Gatekeeper 对话框中确认。也可以在终端移除隔离属性：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/MiseDeck.app
+```
+
+Windows 的 `.exe`/`.msi` 与 Linux 的 `.deb`/`.rpm`/`.AppImage` beta 构建由 CI 生成并附加到每个 release。
 
 ## 参与贡献
 
-本项目对 AI agent 友好：从 [AGENTS.md](./AGENTS.md)、术语表 [CONTEXT.md](./CONTEXT.md)、决策记录 [docs/adr/](./docs/adr/) 开始。
+本项目对 AI agent 友好：从 [AGENTS.md](../AGENTS.md)、术语表 [CONTEXT.md](../CONTEXT.md)、决策记录 [docs/adr/](../docs/adr/) 开始。
 
 ## 免责声明
 
@@ -37,4 +61,4 @@ MiseDeck 是社区项目，与 mise 官方项目无隶属或背书关系。
 
 ## 许可证
 
-[MIT](./LICENSE)
+[MIT](../LICENSE)
