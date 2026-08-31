@@ -1,0 +1,43 @@
+{
+  "app": {
+    "wordmark": "MISEDECK",
+    "tagline": "mise 的忠实 GUI"
+  },
+  "starter": {
+    "eyebrow": "▸ MISE / 状态",
+    "title": "Mise",
+    "hint": "运行工具、设置版本、信任配置 —— 所有变更都通过执行面板完成。"
+  },
+  "states": {
+    "detecting": "正在探测 mise…",
+    "ready": "就绪",
+    "notInstalled": {
+      "title": "未找到 mise",
+      "body": "在本机上未找到 mise 可执行文件。请从 {{url}} 安装后重新启动 MiseDeck。",
+      "installHint": "引导式安装将在 #30 中提供。"
+    },
+    "tooOld": {
+      "title": "mise 版本过旧",
+      "body": "检测到 {{found}}，但 MiseDeck 要求至少 {{minimum}}。请用 `mise self-update` 升级。"
+    },
+    "commandFailed": {
+      "title": "mise 执行失败",
+      "body": "`mise version --json` 返回了非零状态码。stderr 已在执行面板中保留。"
+    },
+    "parseFailed": {
+      "title": "无法解析 mise 响应",
+      "body": "MiseDeck 无法解析 `mise version --json`。你可能在运行一个 fork 版本。"
+    }
+  },
+  "labels": {
+    "version": "版本",
+    "binary": "路径",
+    "minimum": "最低要求"
+  },
+  "errors": {
+    "miseNotFound": "MiseDeck 在本机上未找到 mise 可执行文件。",
+    "miseTooOld": "mise {{found}} 低于最低要求 {{minimum}}。",
+    "timeout": "mise 未在超时时间内响应。",
+    "generic": "MiseDeck 遇到未知错误。"
+  }
+}

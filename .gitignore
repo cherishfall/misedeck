@@ -60,3 +60,7 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# Project-local mise env helper (hard-codes user path; not portable)
+.mise-shims/
+

@@ -1,0 +1,43 @@
+{
+  "app": {
+    "wordmark": "MISEDECK",
+    "tagline": "a faithful gui for mise"
+  },
+  "starter": {
+    "eyebrow": "▸ MISE / STATUS",
+    "title": "Mise",
+    "hint": "Run a tool, set a version, trust a config — every mutation goes through the execution panel."
+  },
+  "states": {
+    "detecting": "Probing mise…",
+    "ready": "READY",
+    "notInstalled": {
+      "title": "mise not found",
+      "body": "We could not locate the mise binary on this machine. Install it from {{url}} and relaunch MiseDeck.",
+      "installHint": "Guided install coming in #30."
+    },
+    "tooOld": {
+      "title": "mise is too old",
+      "body": "Found {{found}}, but MiseDeck requires at least {{minimum}}. Update with `mise self-update`."
+    },
+    "commandFailed": {
+      "title": "mise failed",
+      "body": "`mise version --json` exited with a non-zero status. Stderr is preserved in the execution panel."
+    },
+    "parseFailed": {
+      "title": "unrecognised mise response",
+      "body": "MiseDeck could not parse `mise version --json`. You may be running a forked build."
+    }
+  },
+  "labels": {
+    "version": "VERSION",
+    "binary": "BINARY",
+    "minimum": "MINIMUM"
+  },
+  "errors": {
+    "miseNotFound": "MiseDeck could not locate the mise binary on this machine.",
+    "miseTooOld": "mise {{found}} is older than the minimum supported {{minimum}}.",
+    "timeout": "mise did not respond within the timeout.",
+    "generic": "MiseDeck hit an unexpected error."
+  }
+}

@@ -1,0 +1,92 @@
+/* Design tokens — the minimal subset of the visual language from
+ * docs/design/visual-language.md. #20 will round out the token set and
+ * add component CSS modules; #17 only needs what's used on the starter
+ * page (mono data display, dark background, a couple of beam accents).
+ *
+ * Tokens are CSS custom properties; components consume the semantic
+ * names below and never hardcode hex values. Light-theme overrides are
+ * included so the swap is a one-line `data-theme` change later.
+ */
+
+:root {
+  --void: #04070c;
+  --hull: #0a1220;
+  --beam: #3be2ff;
+  --ice: #7fb3e8;
+  --flare: #ffb454;
+  --breach: #ff5470;
+  --text: #dce9f5;
+  --dim: #5f748c;
+
+  /* Derived from the tokens above via color-mix. */
+  --panel: color-mix(in srgb, var(--hull) 72%, transparent);
+  --line: color-mix(in srgb, var(--beam) 16%, transparent);
+  --line-strong: color-mix(in srgb, var(--beam) 40%, transparent);
+  --beam-soft: color-mix(in srgb, var(--beam) 60%, transparent);
+
+  /* Typography — see docs/design/visual-language.md. */
+  --font-display: "Space Grotesk", "PingFang SC", system-ui, sans-serif;
+  --font-ui: "Space Grotesk", "PingFang SC", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+
+  --size-base: 14px;
+  --size-data: 12px;
+  --size-label: 10px;
+  --tracking-display: 0.14em;
+  --tracking-wordmark: 0.32em;
+  --tracking-label: 0.2em;
+
+  /* Layout grid. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 22px;
+  --space-6: 26px;
+
+  --radius-panel: 8px;
+}
+
+[data-theme="light"] {
+  --void: #edf2f7;
+  --hull: #ffffff;
+  --beam: #0b8fb8;
+  --ice: #4a6fa5;
+  --flare: #b45309;
+  --breach: #d63b5c;
+  --text: #0f1c2b;
+  --dim: #64748b;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: var(--void);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  /* Faint dot grid background — the only background decoration per
+   * docs/design/visual-language.md. The grid fades toward the bottom
+   * via a soft radial mask. */
+  background-image:
+    radial-gradient(
+      circle at 50% -10%,
+      color-mix(in srgb, var(--beam) 8%, transparent) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 1px 1px,
+      color-mix(in srgb, var(--beam) 10%, transparent) 1px,
+      transparent 0
+    );
+  background-size:
+    100% 100%,
+    18px 18px;
+}

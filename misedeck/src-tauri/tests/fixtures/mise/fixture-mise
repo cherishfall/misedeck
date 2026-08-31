@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# fixture-mise — a tiny stand-in for the real `mise` binary used by Rust unit
+# tests. It is **not** a production artifact; it lives under tests/fixtures/
+# and is pointed at by `detect_mise(&Path)` when running `cargo test`.
+#
+# Layout:
+#   tests/fixtures/mise/
+#     fixture-mise            ← this script
+#     <slug>/                 ← one dir per test case
+#       stdout                ← bytes written to stdout
+#       stderr                ← bytes written to stderr
+#       exit_code             ← integer exit code
+#
+# The default slug is the argv joined by `-` (e.g. argv `version --json` →
+# slug `version---json`). Tests can override the slug with the
+# FIXTURE_MISE_SLUG environment variable so the same argv can drive
+# multiple scenarios (success, too-old, parse-failed, command-failed)
+# without duplicating the script.
+
+set -u
+
+FIXTURE_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [[ -n "${FIXTURE_MISE_SLUG:-}" ]]; then
+  SLUG="$FIXTURE_MISE_SLUG"
+else
+  SLUG="$(
+    IFS=-
+    echo "$*"
+  )"
+fi
+
+DIR="$FIXTURE_DIR/$SLUG"
+if [[ ! -d "$DIR" ]]; then
+  echo "fixture-mise: no fixture for slug '$SLUG' (argv: $*)" >&2
+  echo "fixture-mise: looked in $DIR" >&2
+  exit 127
+fi
+
+if [[ -f "$DIR/stdout" ]]; then
+  cat "$DIR/stdout"
+fi
+
+if [[ -f "$DIR/stderr" ]]; then
+  cat "$DIR/stderr" >&2
+fi
+
+if [[ -f "$DIR/exit_code" ]]; then
+  CODE="$(tr -d '[:space:]' < "$DIR/exit_code")"
+  exit "$CODE"
+fi
+
+exit 0
