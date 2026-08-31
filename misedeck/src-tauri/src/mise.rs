@@ -170,9 +170,10 @@ pub struct RunOutcome {
 /// A single line emitted by a streaming run. The frontend renders these
 /// in the execution panel; the final `Exit` event carries the same fields
 /// as `RunOutcome` minus the buffered stdout/stderr (the panel already has
-/// the lines).
+/// the lines). Uses camelCase on the wire to match `RunOutcome` and the
+/// frontend's channel parser.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum RunEvent {
     Stdout { line: String },
     Stderr { line: String },
@@ -1070,6 +1071,50 @@ pub fn mise_env_set_argv(key: &str, value: &str) -> Vec<String> {
 /// documented remove path for `[env]` table values.
 pub fn mise_env_unset_argv(key: &str) -> Vec<String> {
     vec!["unset".to_string(), key.to_string()]
+}
+
+// ---------- Global tool mutations (issue #22) ----------
+//
+// The tools page routes every global tool mutation through the
+// existing `run_mise_command` Tauri command — no new IPC surface is
+// needed. These pure helpers exist so the JS side has typed builders
+// for the four write commands. The argv shapes are documented against
+// `mise install --help`, `mise uninstall --help`, and
+// `mise upgrade --help`:
+//
+//   * `mise install <tool>@<version>`  → install a tool/version
+//   * `mise uninstall <tool>`           → remove an installed tool
+//   * `mise upgrade`                    → upgrade all outdated tools
+//   * `mise upgrade <tool>`             → upgrade a single tool
+//
+// The JS side prepends `-g` when the active context is global, so the
+// helpers here emit the pure argv and leave the global flag to the
+// caller (mirroring the config-editor builders in issue #26).
+
+/// Build the argv for `mise install <tool>@<version>`.
+pub fn mise_install_argv(tool: &str, version: &str) -> Vec<String> {
+    vec![
+        "install".to_string(),
+        format!("{tool}@{version}"),
+    ]
+}
+
+/// Build the argv for `mise uninstall <tool>`.
+pub fn mise_uninstall_argv(tool: &str) -> Vec<String> {
+    vec!["uninstall".to_string(), tool.to_string()]
+}
+
+/// Build the argv for `mise upgrade --bump [<tool>]`. The `--bump`
+/// flag is required so the upgrade respects the latest version
+/// reported by `mise outdated --json --bump` and bumps the version
+/// in the config file. When `tool` is `None` the command upgrades
+/// every outdated tool; when `Some` it targets a single tool.
+pub fn mise_upgrade_argv(tool: Option<&str>) -> Vec<String> {
+    let mut argv = vec!["upgrade".to_string(), "--bump".to_string()];
+    if let Some(tool) = tool {
+        argv.push(tool.to_string());
+    }
+    argv
 }
 
 // ---------- Tasks argv builders (issue #27) ----------

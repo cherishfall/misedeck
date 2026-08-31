@@ -62,7 +62,7 @@
   "tools": {
     "eyebrow": "▸ MISE / TOOLS",
     "title": "Tools",
-    "hint": "Tools installed and active for the current context. Outdated versions glow in the table; mutations arrive in the next ticket.",
+    "hint": "Tools installed and active for the current context. Switch versions, install, uninstall, or upgrade from the table; every mutation streams through the execution panel.",
     "columns": {
       "tool": "Tool",
       "version": "Version",
@@ -87,7 +87,19 @@
       "title": "Failed to load tools",
       "body": "`mise ls --json` did not return. Stderr is preserved in the execution panel."
     },
-    "noOutdated": "All installed tools are up to date."
+    "noOutdated": "All installed tools are up to date.",
+    "actions": {
+      "install": "Install",
+      "uninstall": "Uninstall",
+      "upgrade": "Upgrade",
+      "upgradeAll": "Upgrade all",
+      "switch": "Switch"
+    },
+    "installForm": {
+      "title": "Install a tool",
+      "toolPlaceholder": "tool (e.g. node)",
+      "versionPlaceholder": "version (e.g. 22.11.0)"
+    }
   },
   "preview": {
     "eyebrow": "▸ MISE / PREVIEW",

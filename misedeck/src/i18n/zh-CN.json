@@ -62,7 +62,7 @@
   "tools": {
     "eyebrow": "▸ MISE / 工具",
     "title": "工具",
-    "hint": "当前上下文中已安装并处于活动状态的工具。过期版本在表格中会发光；变更将在下一个 ticket 中提供。",
+    "hint": "当前上下文中已安装并处于活动状态的工具。在表格中切换版本、安装、卸载或升级；所有变更都通过执行面板实时显示。",
     "columns": {
       "tool": "工具",
       "version": "版本",
@@ -87,7 +87,19 @@
       "title": "加载工具列表失败",
       "body": "`mise ls --json` 未返回结果。stderr 已在执行面板中保留。"
     },
-    "noOutdated": "所有已安装工具均为最新版本。"
+    "noOutdated": "所有已安装工具均为最新版本。",
+    "actions": {
+      "install": "安装",
+      "uninstall": "卸载",
+      "upgrade": "升级",
+      "upgradeAll": "全部升级",
+      "switch": "切换"
+    },
+    "installForm": {
+      "title": "安装工具",
+      "toolPlaceholder": "工具名（如 node）",
+      "versionPlaceholder": "版本（如 22.11.0）"
+    }
   },
   "preview": {
     "eyebrow": "▸ MISE / 预览",

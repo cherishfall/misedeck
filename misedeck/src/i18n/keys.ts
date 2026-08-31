@@ -137,6 +137,18 @@ export const I18N_KEYS = {
       body: "tools.error.body",
     },
     noOutdated: "tools.noOutdated",
+    actions: {
+      install: "tools.actions.install",
+      uninstall: "tools.actions.uninstall",
+      upgrade: "tools.actions.upgrade",
+      upgradeAll: "tools.actions.upgradeAll",
+      switch: "tools.actions.switch",
+    },
+    installForm: {
+      title: "tools.installForm.title",
+      toolPlaceholder: "tools.installForm.toolPlaceholder",
+      versionPlaceholder: "tools.installForm.versionPlaceholder",
+    },
   },
   preview: {
     eyebrow: "preview.eyebrow",

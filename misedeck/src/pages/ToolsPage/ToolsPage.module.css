@@ -52,6 +52,12 @@
   flex-wrap: wrap;
 }
 
+.toolbarActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 .toolbarHint {
   font-family: var(--font-mono);
   font-size: var(--size-label);
@@ -229,4 +235,56 @@
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* ---------- Mutation controls ---------- */
+
+.input {
+  font-family: var(--font-mono);
+  font-size: var(--size-base);
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 8px;
+  min-width: 120px;
+  transition:
+    border-color var(--motion-state-change) ease,
+    box-shadow var(--motion-state-change) ease;
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--beam);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--beam) 25%, transparent);
+}
+
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.installForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--panel) 50%, transparent);
+}
+
+.installFormTitle {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--size-base);
+  color: var(--text);
+  margin: 0;
+}
+
+.installFormRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
 }
