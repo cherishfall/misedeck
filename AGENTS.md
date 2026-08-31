@@ -28,6 +28,15 @@ An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + Re
 
 English is the canonical documentation language; the Chinese versions exist for Chinese-reading audiences. Every doc has both versions, bidirectionally linked at the top (`[简体中文]` / `[English]`). All Chinese docs live under `zh-CN/`, mirroring the English directory structure and file names exactly (e.g. `docs/adr/0001-x.md` ↔ `zh-CN/docs/adr/0001-x.md`). Editing either version without cascading the same change to the other is a bug.
 
+## Session hygiene
+
+Context is a budget, not an archive. Long contexts degrade (context rot, lost-in-middle) and burn tokens; the smart zone is smaller than the window.
+
+- One ticket per context. When a ticket closes, the next one starts in a fresh session or a fresh subagent — never in the tail of the old context.
+- Memory lives in artifacts — issues, docs, code — never in the conversation. Before ending any session, externalize what the next one needs (an issue comment, a closing note).
+- Proactively suggest a fresh session when: a ticket just closed and another begins; the session has drifted across unrelated topics; or the context has grown long enough that a fresh read of the docs beats trusting compacted memory.
+- Delegate isolated subtasks (exploration, bulk edits, verification passes) to subagents with their own context instead of growing the main one. When driving tickets autonomously, run each ticket as a subagent and keep the driver context thin.
+
 ## Git
 
 Agents may commit and push as part of completing a ticket: commit to master once the Definition of done passes, message referencing the issue (`#N`). Use a `ticket/NN-*` branch + PR only when running parallel worktrees. master must always stay green. Never force-push, rewrite published history, or delete branches/tags.
