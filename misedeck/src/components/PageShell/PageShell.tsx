@@ -27,6 +27,7 @@ export function PageShell({ children }: PageShellProps) {
   const onStyleguide = location.pathname === "/__styleguide";
   const onTools = location.pathname === "/tools";
   const onPreview = location.pathname === "/preview";
+  const onConfig = location.pathname === "/config";
   const onHome = location.pathname === "/";
   return (
     <div className={styles.shell}>
@@ -55,6 +56,14 @@ export function PageShell({ children }: PageShellProps) {
           data-testid="wordmark-preview"
         >
           {t(I18N_KEYS.preview.nav)}
+        </Link>
+        <Link
+          to="/config"
+          className={styles.wordmarkNav}
+          aria-current={onConfig ? "page" : undefined}
+          data-testid="wordmark-config"
+        >
+          {t(I18N_KEYS.config.nav)}
         </Link>
         <Link
           to="/__styleguide"

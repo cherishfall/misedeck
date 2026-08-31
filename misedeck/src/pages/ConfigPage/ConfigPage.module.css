@@ -1,0 +1,250 @@
+/* ConfigPage — form-based config editor (issue #26).
+ *
+ * Layout mirrors DirectoryPreview: page head, toolbar-style header,
+ * signal line, then a series of section panels. The form elements
+ * reuse the visual vocabulary from the existing pages (no new
+ * tokens, no new animations). */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-6) var(--space-6);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ice);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--size-display);
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 0;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--beam) 30%, transparent);
+}
+
+.hint {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--dim);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 70ch;
+}
+
+.scopeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.scopePath {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  background: color-mix(in srgb, var(--hull) 60%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: var(--space-1) var(--space-3);
+  word-break: break-all;
+  max-width: 100%;
+}
+
+.signalLine {
+  margin: 0;
+}
+
+/* ---------- Section panels ---------- */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sectionHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sectionEyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ice);
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 0;
+}
+
+/* ---------- Cells ---------- */
+
+.cellTool {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.cellVersion {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--beam);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--beam) 35%, transparent);
+  font-weight: 600;
+}
+
+.cellEnvName {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.cellEnvValue {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  word-break: break-all;
+  display: inline-block;
+  max-width: 100%;
+}
+
+/* ---------- Per-row editor ---------- */
+
+.rowEditor {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.input,
+.inputName,
+.inputValue {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  background: color-mix(in srgb, var(--hull) 60%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 8px;
+  min-width: 0;
+  transition: border-color var(--motion-state-change) ease;
+}
+
+.input {
+  width: 11ch;
+}
+
+.inputName {
+  width: 14ch;
+  text-transform: uppercase;
+}
+
+.inputValue {
+  width: 18ch;
+}
+
+.input:focus,
+.inputName:focus,
+.inputValue:focus {
+  outline: none;
+  border-color: var(--line-strong);
+}
+
+.input:disabled,
+.inputName:disabled,
+.inputValue:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Add forms ---------- */
+
+.addForm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-3);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--hull) 40%, transparent);
+}
+
+.addLabel {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-right: var(--space-2);
+}
+
+/* ---------- Trust banner (issue #25) ---------- */
+
+.trustPath {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--dim);
+  word-break: break-all;
+}
+
+.trustNote {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--hull) 60%, transparent);
+}
+
+/* ---------- Loading ---------- */
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dim);
+}

@@ -140,6 +140,41 @@
     },
     "refresh": "刷新"
   },
+  "config": {
+    "eyebrow": "▸ MISE / CONFIG",
+    "title": "配置编辑器",
+    "subtitle": "以表单方式编辑当前上下文的 [tools] 和 [env]。写入通过 `mise use` 与 `mise set`，并在执行面板中实时显示。",
+    "nav": "配置",
+    "scope": {
+      "global": "全局",
+      "project": "本项目"
+    },
+    "toolsSection": {
+      "title": "工具",
+      "addToolLabel": "添加工具",
+      "toolPlaceholder": "工具名（如 node）",
+      "versionPlaceholder": "版本（如 22.11.0）",
+      "addButton": "添加",
+      "saveButton": "保存",
+      "removeButton": "移除",
+      "emptyTitle": "尚未配置任何工具",
+      "emptyBody": "使用下面的表单安装第一个工具。写入会进入当前上下文的 mise 配置文件。"
+    },
+    "envSection": {
+      "title": "环境变量",
+      "addEnvLabel": "添加环境变量",
+      "namePlaceholder": "变量名（大写下划线）",
+      "valuePlaceholder": "值",
+      "addButton": "添加",
+      "saveButton": "保存",
+      "removeButton": "移除",
+      "emptyTitle": "尚未配置任何环境变量",
+      "emptyBody": "使用下面的表单设置项目或全局环境变量。写入会进入当前配置文件的 [env] 表。"
+    },
+    "guard": {
+      "untrustedBody": "在修改此目录的配置之前，请先信任它。"
+    }
+  },
   "states": {
     "detecting": "正在探测 mise…",
     "ready": "就绪",
