@@ -103,8 +103,14 @@ Good luck.
 
 # Session B (this session) — continuation
 
-**Completed**: #23 (Directory context bar), #30 (mise self-management).
+**Completed**: #23, #30, #21, #24, #25, #26, #27, #28.
+**Remaining**: #29 (Settings/Doctor/Registry), #22 (Global tool mutations), #32 (Bilingual README + release).
 **Driver policy**: every ticket beyond this point should be a fresh subagent (`task` tool) with a self-contained brief. The main session's context window is 512k; it stays thin and only orchestrates + reports.
+
+## Status
+
+- **Driver credits were exhausted mid-session** at the end of #28. Session stopped cleanly with all 8 completed tickets pushed to master and all issues closed via `gh issue close`.
+- The handoff below is for the next driver (human or model) to pick up the remaining three tickets.
 
 ## Recent commits on master
 
@@ -118,19 +124,35 @@ Good luck.
 | `0cd2ac8` | HANDOFF | session-A handoff |
 | `01c9be0` | #23 | directory context bar (`DirectoryProvider` + `ContextBar`, `tauri-plugin-dialog`) |
 | `5ab053a` | #30 | guided install + self-update (`install.rs`, lifted `ExecutionContext`) |
+| `1ab8458` | #21 | global tools list (read-only) with outdated badges |
+| `4db6d2a` | #24 | directory resolved-state preview + lockfile (`/preview` route, source badges) |
+| `b5ae8c7` | #25 | trust UX — read-only banner with one-click `mise trust` |
+| `69b8f4f` | #26 | config editor — `[tools]` and `[env]` forms (`/config` route, `-g` argv builder) |
+| `3fbcfad` | #27 | tasks list + run + simple edit (`/tasks` route, `mise tasks add` argv builder) |
+| `5b78cf5` | #28 | activation entry points — open-in-terminal, copy command, shell check |
 
 ## Key facts the next session / subagent should know
 
 - The `DirectoryProvider` (`misedeck/src/state/directoryContext.tsx`) is the single source of truth for "which directory is the user looking at". `useDirectory().cwd` returns the string for `-C`, or `null` for global.
-- The `ExecutionContext` (`misedeck/src/components/ExecutionPanel/ExecutionContext.tsx`) is the single source of truth for the execution panel. `useExecutionContext().run({cwd,args})` for arbitrary mise commands; `.runInstall()` and `.runSelfUpdate()` for the two new Tauri commands.
-- `tauri-plugin-dialog` is wired (`Cargo.toml`, `capabilities/default.json`, `lib.rs`); the JS-side import is `@tauri-apps/plugin-dialog`.
-- Tests after #24: `cargo test` → 39 passed (6 unit + 9 mise-probe + 9 directory + 5 runner + 10 tools). Frontend: no test infrastructure yet.
-- i18n keys: 193 leaf keys; parity + call-site lint runs in `npm run lint:i18n`.
+- The `ExecutionContext` (`misedeck/src/components/ExecutionPanel/ExecutionContext.tsx`) is the single source of truth for the execution panel. `useExecutionContext().run({cwd,args})` for arbitrary mise commands; `.runInstall()` and `.runSelfUpdate()` for the two new Tauri commands; `.runTrust(cwd)` for `mise trust`.
+- The `TrustProvider` (`misedeck/src/state/trustContext.tsx`) exposes `useTrust()`, `useTrustGuard()` (returns `{allowed, reason}` for mutation gating), and `useTrustAction()` (one-click trust). Every mutating button must call `useTrustGuard()` before running.
+- The `ActivationProvider` (`misedeck/src/state/activationContext.tsx`) runs the shell-activation probe once on app start; the `ActivationBanner` (in `PageShell`) surfaces missing `mise activate` lines with a copy-able fix and persistent dismiss.
+- Pages: `/` (home / no mise), `/tools` (global tools), `/preview` (cwd preview), `/config` (config editor), `/tasks` (task list). All wrapped in `PageShell` (`misedeck/src/components/PageShell/`) which carries the ContextBar, the trust banner, the activation banner, and the language switcher.
+- Plugins: `tauri-plugin-dialog` (directory picker, #23), `tauri-plugin-opener` (open file / URL), `tauri-plugin-shell` (shell spawns). All wired in `Cargo.toml`, `capabilities/default.json`, and `lib.rs`.
+- Tests after #28: `cargo test` → **99 passed** (13 unit + 9 mise-probe + 9 directory + 9 tools + 5 runner + 15 shell + 15 config-editor + 10 tasks + 15 task-related). i18n keys: **266 leaf keys**, parity holds.
+- New fixed AppError code added in #28: `TERMINAL_NOT_FOUND` — documented in `docs/agents/conventions.md` and `zh-CN/docs/agents/conventions.md`.
+- The `useExecutionContext` panel `kind` is `"mise" | "install" | "selfUpdate"` (extended in #30); the `commandEcho` function in `ExecutionPanel.tsx` builds the right shell snippet for each kind.
+- Mutation argv builders (model after #26 / #27):
+  - `mise use <tool>@<version>` (add/change) · `mise use --remove <tool>` (remove tool)
+  - `mise set KEY=VALUE` (env) · `mise unset KEY` (env remove)
+  - `mise tasks add <name> --depends <dep> -- <run>` (task write)
+  - The JS side prepends `-g` for global writes (cwd === null); the runner prepends `-C <dir>` for project writes (cwd !== null).
 
-## Open Wave 2 / 3 (each must be a fresh subagent)
+## Open tickets
 
-- Wave 2: #21 → #24 → #25 → #26 → #27 → #28 → #29 (each depends on #23; #26+#27 also benefit from #25's trust UX)
-- Wave 3: #22, #32
+- #29 — Settings, doctor, plugin/backend pages. Read-only for the most part; the only mutations are `mise settings set` / `mise settings unset` which reuse the existing `useExecutionContext().run` and the trust guard.
+- #22 — Global tool mutations via execution panel. Depends on #21 (which ships the global table) and #25 (trust UX). Reuse the config-editor mutation pattern from #26.
+- #32 — Bilingual README + release prep. Doc-only ticket; should ship a README.md (en) + zh-CN/README.md mirror and verify the GitHub Release workflow.
 
 Recommended subagent brief skeleton (copy into the `task` tool prompt):
 
