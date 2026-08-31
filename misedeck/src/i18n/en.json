@@ -17,6 +17,17 @@
     "back": "Back",
     "next": "Next"
   },
+  "contextBar": {
+    "eyebrow": "▸ CONTEXT",
+    "regionLabel": "Directory context",
+    "globalButton": "Global",
+    "recentsButton": "Recent",
+    "recentsHeader": "Recent directories",
+    "pickerGlyph": "…",
+    "pickerLabel": "Pick a directory",
+    "pickerTitle": "Pick a directory for MiseDeck",
+    "removeRecentLabel": "Remove from recents"
+  },
   "nav": {
     "tools": "Tools",
     "tasks": "Tasks",

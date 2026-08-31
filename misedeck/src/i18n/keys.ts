@@ -37,6 +37,17 @@ export const I18N_KEYS = {
     back: "common.back",
     next: "common.next",
   },
+  contextBar: {
+    eyebrow: "contextBar.eyebrow",
+    regionLabel: "contextBar.regionLabel",
+    globalButton: "contextBar.globalButton",
+    recentsButton: "contextBar.recentsButton",
+    recentsHeader: "contextBar.recentsHeader",
+    pickerGlyph: "contextBar.pickerGlyph",
+    pickerLabel: "contextBar.pickerLabel",
+    pickerTitle: "contextBar.pickerTitle",
+    removeRecentLabel: "contextBar.removeRecentLabel",
+  },
   execution: {
     title: "execution.title",
     commandLabel: "execution.commandLabel",

@@ -7,6 +7,7 @@ import { I18N_KEYS } from "./i18n/keys";
 import type { AppError, AppErrorCode, DetectMiseOk } from "./types/tauri";
 
 import { LanguageSwitcher } from "./components/LanguageSwitcher/LanguageSwitcher";
+import { ContextBar } from "./components/ContextBar/ContextBar";
 
 import { ExecutionPanel } from "./components/ExecutionPanel";
 import "./App.css";
@@ -61,6 +62,7 @@ function App() {
 
   return (
     <div className="app-shell">
+      <ContextBar />
       <header className="wordmark">
         <Link to="/" className="wordmark__name">
           {t(I18N_KEYS.app.wordmark)}

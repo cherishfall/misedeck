@@ -6,6 +6,7 @@ import { BrowserRouter, Route, Routes } from "react-router";
 import "./tokens.css";
 import "./i18n";
 import { LanguageProvider } from "./i18n/useLanguage";
+import { DirectoryProvider } from "./state/directoryContext";
 import App from "./App";
 import { StyleGuide } from "./components/StyleGuide/StyleGuide";
 
@@ -22,12 +23,14 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<App />} />
-            <Route path="/__styleguide" element={<StyleGuide />} />
-          </Routes>
-        </BrowserRouter>
+        <DirectoryProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<App />} />
+              <Route path="/__styleguide" element={<StyleGuide />} />
+            </Routes>
+          </BrowserRouter>
+        </DirectoryProvider>
       </LanguageProvider>
     </QueryClientProvider>
   </React.StrictMode>,

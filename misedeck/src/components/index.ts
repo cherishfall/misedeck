@@ -5,6 +5,7 @@
 export { Badge } from "./Badge/Badge";
 export { Banner } from "./Banner/Banner";
 export { Button } from "./Button/Button";
+export { ContextBar } from "./ContextBar/ContextBar";
 export { DataRow } from "./DataRow/DataRow";
 export { EmptyState } from "./EmptyState/EmptyState";
 export { ExecutionPanel, useExecution } from "./ExecutionPanel";
