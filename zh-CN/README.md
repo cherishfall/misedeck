@@ -43,11 +43,15 @@
 brew install --cask cherishfall/tap/misedeck
 ```
 
-macOS 构建未签名。首次打开时，请右键点击应用并选择**打开**，而不是双击，然后在 Gatekeeper 对话框中确认。也可以在终端移除隔离属性：
+macOS 构建未签名、未公证。首次打开时，Gatekeeper 可能提示应用来自未认证开发者；把应用从 DMG 拖到`/应用程序`后，也可能弹出 **“misedeck”已损坏，无法打开**。这是 macOS 对未签名应用的隔离（quarantine）标记导致的。
+
+请在`/应用程序`里的应用副本上移除隔离属性：
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/MiseDeck.app
+xattr -dr com.apple.quarantine /Applications/misedeck.app
 ```
+
+然后正常打开即可。也可以尝试在 **系统设置 → 隐私与安全性 → 安全性** 中点击**仍要打开**。
 
 Windows 的 `.exe`/`.msi` 与 Linux 的 `.deb`/`.rpm`/`.AppImage` beta 构建由 CI 生成并附加到每个 release。
 

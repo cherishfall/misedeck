@@ -43,11 +43,15 @@ Pre-built unsigned binaries are available on [GitHub Releases](https://github.co
 brew install --cask cherishfall/tap/misedeck
 ```
 
-macOS builds are not signed. On first open, right-click the app and choose **Open** instead of double-clicking, then confirm in the Gatekeeper dialog. You can also remove the quarantine attribute from Terminal:
+macOS builds are not signed or notarized. On first open you may see a Gatekeeper dialog saying the app is from an unidentified developer, or—after dragging the app out of the DMG—macOS may report that **"misedeck" is damaged and can't be opened**. This is Gatekeeper's quarantine flag on an unsigned app.
+
+To open the app, remove the quarantine attribute from the copy in `/Applications`:
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/MiseDeck.app
+xattr -dr com.apple.quarantine /Applications/misedeck.app
 ```
+
+Then launch it normally. Alternatively, open **System Settings → Privacy & Security → Security** and click **Open Anyway** after a launch attempt.
 
 Windows `.exe`/`.msi` and Linux `.deb`/`.rpm`/`.AppImage` beta builds are produced by CI and attached to each release.
 
