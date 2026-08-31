@@ -21,8 +21,15 @@ The UI renders `code` via i18n and offers stderr through the execution panel. Ca
 **Boundary serialization**: every type crossing the Rust↔TS boundary uses `#[serde(rename_all = "camelCase")]` on the Rust side; the matching TS type is camelCase. `code` values come from this fixed set — inventing new ones is a bug:
 
 ```
-MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  UNTRUSTED  TIMEOUT
+MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  UNTRUSTED  TIMEOUT  TERMINAL_NOT_FOUND
 ```
+
+`TERMINAL_NOT_FOUND` is a one-off addition for issue #28's
+`open_in_terminal` Tauri command on Linux: the probe for
+`gnome-terminal` / `konsole` / `xfce4-terminal` found none on the
+user's `PATH`, so the UI surfaces the copyable command instead
+of guessing. It is the only non-mise error code in the set; future
+tickets should reuse the existing six when possible.
 
 ## Invoking mise
 

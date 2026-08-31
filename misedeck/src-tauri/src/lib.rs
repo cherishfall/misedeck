@@ -14,6 +14,7 @@ use serde::Serialize;
 
 pub mod install;
 pub mod mise;
+pub mod shell;
 
 use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
 use mise::{
@@ -21,6 +22,7 @@ use mise::{
     mise_outdated, mise_tasks_edit_path, mise_tasks_ls, read_mise_lockfile, run_mise, run_trust,
     AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
 };
+use shell::{check_shell_activation, open_in_terminal as open_in_terminal_inner};
 
 // Re-export `JsonResult` from the lib root so integration tests can
 // import it via `misedeck_lib::JsonResult` (mirrors the
@@ -28,6 +30,8 @@ use mise::{
 pub use self::json_result::JsonResult;
 pub use self::tasks_edit_result::TasksEditPathResult;
 pub use self::trust_result::TrustResult;
+pub use self::shell_activation_result::ShellActivationResult;
+pub use self::terminal_open_result::TerminalOpenResult;
 
 mod json_result {
     use serde::Serialize;
@@ -81,6 +85,44 @@ mod tasks_edit_result {
     #[serde(tag = "kind", rename_all = "snake_case")]
     pub enum TasksEditPathResult {
         Ok { path: Option<String> },
+        Err { err: AppError },
+    }
+}
+
+mod shell_activation_result {
+    use serde::Serialize;
+
+    use super::shell::ActivationStatus;
+    use super::mise::AppError;
+
+    /// Discriminated union for the `shell_activation_check` Tauri
+    /// command (issue #28). On success, the structured
+    /// `ActivationStatus` is shipped as `ok`; on failure, the
+    /// structured `AppError` is shipped as `err`. Mirrors
+    /// `TrustResult` so the JS side can pattern-match on `kind`.
+    #[derive(Debug, Serialize)]
+    #[serde(tag = "kind", rename_all = "snake_case")]
+    pub enum ShellActivationResult {
+        Ok { ok: ActivationStatus },
+        Err { err: AppError },
+    }
+}
+
+mod terminal_open_result {
+    use serde::Serialize;
+
+    use super::shell::TerminalOpenOutcome;
+    use super::mise::AppError;
+
+    /// Discriminated union for the `open_in_terminal` Tauri command
+    /// (issue #28). On success, the structured `TerminalOpenOutcome`
+    /// is shipped as `ok`; on failure, the structured `AppError`
+    /// is shipped as `err`. Mirrors `TrustResult` so the JS side
+    /// can pattern-match on `kind`.
+    #[derive(Debug, Serialize)]
+    #[serde(tag = "kind", rename_all = "snake_case")]
+    pub enum TerminalOpenResult {
+        Ok { ok: TerminalOpenOutcome },
         Err { err: AppError },
     }
 }
@@ -458,6 +500,39 @@ fn tasks_edit_path(cwd: Option<String>, name: String) -> TasksEditPathResult {
     }
 }
 
+/// Detect the user's shell and decide whether the rc file contains
+/// a `mise activate` line (issue #28). Read-only; never spawns mise.
+/// On a hard I/O error (e.g. permission denied on a sandboxed
+/// volume) the structured `AppError` is shipped so the UI can
+/// surface it alongside the banner.
+#[tauri::command]
+fn shell_activation_check() -> ShellActivationResult {
+    match check_shell_activation() {
+        Ok(ok) => ShellActivationResult::Ok { ok },
+        Err(e) => ShellActivationResult::Err {
+            err: AppError::command_failed(
+                format!("failed to read shell rc file: {e}"),
+                String::new(),
+            ),
+        },
+    }
+}
+
+/// Open a terminal at the given directory (or `$HOME` when `None`).
+/// The `path` is the absolute path of the directory the terminal
+/// should land in. Implementation is platform-specific (see the
+/// `shell` module); the outcome is a structured
+/// `TerminalOpenOutcome` with the platform the command used, so
+/// the UI can show a sensible "Opened Terminal.app at <path>"
+/// success line and a "no terminal detected" failure line.
+#[tauri::command]
+fn open_in_terminal(path: Option<String>) -> TerminalOpenResult {
+    match open_in_terminal_inner(path.as_deref()) {
+        Ok(ok) => TerminalOpenResult::Ok { ok },
+        Err(e) => TerminalOpenResult::Err { err: e },
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -477,7 +552,9 @@ pub fn run() {
             trust_check,
             mise_trust,
             tasks_ls,
-            tasks_edit_path
+            tasks_edit_path,
+            shell_activation_check,
+            open_in_terminal
         ])
         .setup(|_app| {
             let mut guard = MISE_BINARY.lock().expect("mise path mutex poisoned");

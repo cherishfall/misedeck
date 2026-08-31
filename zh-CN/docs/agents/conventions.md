@@ -21,8 +21,10 @@ UI 通过 i18n 渲染 `code`，并通过执行面板提供 stderr。调用方对
 **边界序列化**：每个跨越 Rust↔TS 边界的类型在 Rust 侧使用 `#[serde(rename_all = "camelCase")]`；对应的 TS 类型为 camelCase。`code` 的取值来自这个固定集合——发明新的是 bug：
 
 ```
-MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  UNTRUSTED  TIMEOUT
+MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  UNTRUSTED  TIMEOUT  TERMINAL_NOT_FOUND
 ```
+
+`TERMINAL_NOT_FOUND` 是 issue #28 的 `open_in_terminal` Tauri 命令在 Linux 上的特殊补充：探测 `gnome-terminal` / `konsole` / `xfce4-terminal` 都没找到，因此 UI 显示可复制的命令而不是猜测。它是集合中唯一一个非 mise 错误码；后续 ticket 应当尽量复用现有的六个。
 
 ## Invoking mise
 

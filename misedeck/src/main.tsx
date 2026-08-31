@@ -8,6 +8,7 @@ import "./i18n";
 import { LanguageProvider } from "./i18n/useLanguage";
 import { DirectoryProvider } from "./state/directoryContext";
 import { TrustProvider } from "./state/trustContext";
+import { ActivationProvider } from "./state/activationContext";
 import { ExecutionProvider } from "./components/ExecutionPanel";
 import App from "./App";
 import { StyleGuide } from "./components/StyleGuide/StyleGuide";
@@ -31,18 +32,20 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
       <LanguageProvider>
         <DirectoryProvider>
           <TrustProvider>
-            <ExecutionProvider>
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<App />} />
-                  <Route path="/tools" element={<ToolsPage />} />
-                  <Route path="/tasks" element={<TasksPage />} />
-                  <Route path="/preview" element={<DirectoryPreview />} />
-                  <Route path="/config" element={<ConfigPage />} />
-                  <Route path="/__styleguide" element={<StyleGuide />} />
-                </Routes>
-              </BrowserRouter>
-            </ExecutionProvider>
+            <ActivationProvider>
+              <ExecutionProvider>
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/" element={<App />} />
+                    <Route path="/tools" element={<ToolsPage />} />
+                    <Route path="/tasks" element={<TasksPage />} />
+                    <Route path="/preview" element={<DirectoryPreview />} />
+                    <Route path="/config" element={<ConfigPage />} />
+                    <Route path="/__styleguide" element={<StyleGuide />} />
+                  </Routes>
+                </BrowserRouter>
+              </ExecutionProvider>
+            </ActivationProvider>
           </TrustProvider>
         </DirectoryProvider>
       </LanguageProvider>

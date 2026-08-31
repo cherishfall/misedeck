@@ -11,6 +11,7 @@ import { Link, useLocation } from "react-router";
 
 import { I18N_KEYS } from "../../i18n/keys";
 
+import { ActivationBanner } from "../ActivationBanner/ActivationBanner";
 import { ContextBar } from "../ContextBar/ContextBar";
 import { ExecutionPanel } from "../ExecutionPanel";
 import { LanguageSwitcher } from "../LanguageSwitcher/LanguageSwitcher";
@@ -84,6 +85,8 @@ export function PageShell({ children }: PageShellProps) {
       </header>
 
       <LanguageSwitcher />
+
+      <ActivationBanner />
 
       <main className={styles.main}>{children}</main>
       <ExecutionPanel />

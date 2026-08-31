@@ -16,7 +16,9 @@ export interface DetectMiseOk {
 /**
  * Fixed set of error codes. See `src-tauri/src/mise.rs` (`code` module).
  * Adding a new code is a deliberate API change and must be mirrored
- * here and on the UI.
+ * here and on the UI. The `TERMINAL_NOT_FOUND` addition is for
+ * issue #28's open-in-terminal command (Linux only); see
+ * `docs/agents/conventions.md`.
  */
 export type AppErrorCode =
   | "MISE_NOT_FOUND"
@@ -24,7 +26,8 @@ export type AppErrorCode =
   | "COMMAND_FAILED"
   | "PARSE_FAILED"
   | "TIMEOUT"
-  | "UNTRUSTED";
+  | "UNTRUSTED"
+  | "TERMINAL_NOT_FOUND";
 
 export interface AppError {
   code: AppErrorCode;
@@ -169,4 +172,76 @@ export interface TrustStatus {
 
 export type TrustResult =
   | { kind: "ok"; ok: TrustStatus }
+  | { kind: "err"; err: AppError };
+
+/**
+ * The shell family the activation probe decided on. Mirrors
+ * `ShellKind` in `src-tauri/src/shell.rs`. `kind` is the
+ * discriminator; the `unknown` variant carries the raw name
+ * (e.g. "nushell") so the banner can show it back to the user.
+ */
+export type ShellKind =
+  | { kind: "zsh" }
+  | { kind: "bash" }
+  | { kind: "fish" }
+  | { kind: "powerShell" }
+  | { kind: "unknown"; name: string };
+
+/**
+ * Result of a shell-activation probe (issue #28). The
+ * `shell_activation_check` Tauri command surfaces one of these
+ * as the `ok` payload. `activated` is true when the rc file
+ * already contains a `mise activate` line; the banner stays
+ * hidden in that case. The `rcContents` field is for debugging
+ * — the UI never displays the full text.
+ */
+export interface ActivationStatus {
+  shell: ShellKind;
+  /** Absolute path of the rc file the probe decided on. Empty
+   *  when the shell family is unknown. */
+  rcPath: string;
+  /** Raw rc file contents (UTF-8, lossy). Empty when the file
+   *  does not exist. Debug-only — do not render in the UI. */
+  rcContents: string;
+  /** True when the rc file already contains a `mise activate` line. */
+  activated: boolean;
+}
+
+/**
+ * The `shell_activation_check` Tauri command returns this
+ * discriminated union (issue #28). On success, the structured
+ * `ActivationStatus` is shipped as `ok`; on failure, the
+ * structured `AppError` is shipped as `err`. Mirrors
+ * `ShellActivationResult` in `src-tauri/src/lib.rs`.
+ */
+export type ShellActivationResult =
+  | { kind: "ok"; ok: ActivationStatus }
+  | { kind: "err"; err: AppError };
+
+/**
+ * Result of a successful `open_in_terminal` invocation
+ * (issue #28). The `platform` label is what the runner decided
+ * ("macOS" / "Windows" / "Linux"); `terminalApp` is the exact
+ * binary or app the command targeted ("Terminal.app" /
+ * "cmd.exe" / "gnome-terminal"). `argv` is the exact argv that
+ * was spawned — surfaced in the success toast and in debug
+ * output.
+ */
+export interface TerminalOpenOutcome {
+  platform: string;
+  terminalApp: string;
+  path: string;
+  argv: string[];
+}
+
+/**
+ * The `open_in_terminal` Tauri command returns this
+ * discriminated union (issue #28). On success, the structured
+ * `TerminalOpenOutcome` is shipped as `ok`; on failure, the
+ * structured `AppError` is shipped as `err` (the only
+ * platform-specific error code is `TERMINAL_NOT_FOUND` on
+ * Linux). Mirrors `TerminalOpenResult` in `src-tauri/src/lib.rs`.
+ */
+export type TerminalOpenResult =
+  | { kind: "ok"; ok: TerminalOpenOutcome }
   | { kind: "err"; err: AppError };

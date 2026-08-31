@@ -347,5 +347,20 @@
     "dismiss": "Dismiss",
     "emptyHint": "No command has been run yet.",
     "demoRunDoctor": "Run mise doctor"
+  },
+  "activation": {
+    "openInTerminalLabel": "Open in terminal",
+    "openInTerminalError": "Could not open a terminal at {{path}}. Copy the command and run it yourself.",
+    "openInTerminalSuccess": "Opened {{terminal}} at {{path}}.",
+    "copyCommandLabel": "Copy command",
+    "copyCommandHint": "Copy the equivalent mise command to your clipboard.",
+    "copiedHint": "Copied",
+    "bannerLabel": "SHELL ACTIVATION MISSING",
+    "bannerBody": "Your {{shell}} config at {{rcPath}} does not have `mise activate`. Add the line below so mise can manage your shell's tools.",
+    "bannerBodyUnknownShell": "MiseDeck could not detect your shell ({{name}}). Add the appropriate `mise activate <shell>` line to your shell's rc file to use mise in interactive sessions.",
+    "copyLineButton": "Copy the line",
+    "dismissButton": "Dismiss",
+    "errorTitle": "Could not check shell activation",
+    "errorBody": "MiseDeck could not read your shell's rc file. The activation banner will reappear on the next launch."
   }
 }

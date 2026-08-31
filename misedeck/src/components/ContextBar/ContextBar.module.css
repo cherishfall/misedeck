@@ -206,6 +206,72 @@
   flex: none;
 }
 
+/* ---------- Activation row (issue #28) ----------
+ *
+ * The two entry points — "Open in terminal" and "Copy command" —
+ * live in a secondary row below the directory pickers. The row
+ * uses the same chip treatment as the pickers; the hint line on
+ * the right shows the result of the most recent action
+ * (success/error) and fades out after 4 seconds. */
+
+.activationRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-5) var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.activationToggle {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--dim);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease,
+    background var(--motion-state-change) ease;
+}
+
+.activationToggle:hover,
+.activationToggle:focus-visible {
+  color: var(--beam);
+  border-color: var(--line-strong);
+  background: color-mix(in srgb, var(--beam) 6%, transparent);
+  outline: none;
+}
+
+.openHintOk,
+.openHintError {
+  margin-left: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.openHintOk {
+  color: var(--beam);
+}
+
+.openHintError {
+  color: var(--breach, #ff6b6b);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .toggle,
   .toggleActive,

@@ -14,7 +14,9 @@ import type {
   DetectMiseResult,
   JsonResult,
   LockfileResult,
+  ShellActivationResult,
   TasksEditPathResult,
+  TerminalOpenResult,
   TrustResult,
 } from "../types/tauri";
 
@@ -97,4 +99,26 @@ export async function tasksEditPath(
   name: string,
 ): Promise<TasksEditPathResult> {
   return (await invoke("tasks_edit_path", { cwd, name })) as TasksEditPathResult;
+}
+
+/** Calls the `shell_activation_check` Tauri command
+ *  (issue #28). Detects the user's shell, reads its rc file,
+ *  and decides whether `mise activate` is already present. The
+ *  banner surfaces the result on every app start; the result is
+ *  also cached in the `ActivationProvider` so the panel does not
+ *  re-probe on every page render. */
+export async function shellActivationCheck(): Promise<ShellActivationResult> {
+  return (await invoke("shell_activation_check")) as ShellActivationResult;
+}
+
+/** Calls the `open_in_terminal` Tauri command (issue #28).
+ *  Launches the user's terminal at the given path (or `$HOME`
+ *  when `path` is `null`). On success, the structured
+ *  `TerminalOpenOutcome` is shipped as `ok`; on failure, the
+ *  structured `AppError` is shipped as `err` (the only
+ *  platform-specific code is `TERMINAL_NOT_FOUND` on Linux). */
+export async function openInTerminal(
+  path: string | null,
+): Promise<TerminalOpenResult> {
+  return (await invoke("open_in_terminal", { path })) as TerminalOpenResult;
 }

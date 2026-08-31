@@ -2,6 +2,7 @@
 // Every component consumes only design tokens from tokens.css; no hex
 // values, no new animations beyond the three allowed.
 
+export { ActivationBanner } from "./ActivationBanner/ActivationBanner";
 export { Badge } from "./Badge/Badge";
 export { Banner } from "./Banner/Banner";
 export { Button } from "./Button/Button";
