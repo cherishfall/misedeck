@@ -168,7 +168,7 @@ pub fn classify_shell(basename: &str, raw: &str) -> ShellKind {
     }
 }
 
-#[cfg(all(unix, not(target_os = "macos")))]
+#[allow(dead_code)]
 fn which_exists(name: &str) -> bool {
     // Probe the binary by trying to spawn it with a no-op arg. The
     // path is resolved by the OS, so a missing binary returns
