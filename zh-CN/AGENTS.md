@@ -14,6 +14,7 @@
 - 每个 session 只处理恰好一个 ticket。ticket 是带 `ready-for-agent` 标签的 GitHub issue；只有当其 "Blocked by" 列表中的每个 issue 都已关闭时，该 ticket 才可开始。用 `gh issue view <n> --json issueDependenciesSummary` 检查，或直接看 issue 页面。
 - 写代码之前：阅读该 ticket、本文件、`docs/agents/architecture.md` 和 `docs/agents/conventions.md`。要做脚手架 ticket（#17）？还需阅读 `docs/agents/getting-started.md`。
 - 严格限定在 ticket 的验收标准之内。发现 ticket 没覆盖到的东西？在 issue 上评论，而不是扩大范围。
+- 自主模式：当用户要求连续推进 ticket 时，关闭一个 ticket 后直接开始下一个可开工的。只在以下情况停下来询问：需要人类品味的决策（视觉设计、命名）、需要对外操作（发布、仓库设置、密钥）、同一 ticket 连续失败三次、需求含糊。
 
 ## 不可妥协项
 
@@ -29,7 +30,7 @@
 
 ## Git
 
-除非用户明确要求，不 commit、不 push、不做任何 git 状态变更。
+agent 可以在完成 ticket 的过程中 commit 和 push：DoD 全部通过后提交到 master，commit message 引用对应 issue（`#N`）。仅在并行 worktree 时使用 `ticket/NN-*` 分支 + PR。master 必须始终保持绿色。禁止 force-push、改写已发布历史、删除分支或 tag。
 
 ## Agent skills
 

@@ -14,6 +14,7 @@ An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + Re
 - Work on exactly ONE ticket per session. Tickets are GitHub issues labelled `ready-for-agent`; a ticket is startable only when every issue in its "Blocked by" list is closed. Check with `gh issue view <n> --json issueDependenciesSummary` or look at the issue page.
 - Before writing code: read the ticket, this file, `docs/agents/architecture.md`, and `docs/agents/conventions.md`. Starting the scaffold ticket (#17)? Also read `docs/agents/getting-started.md`.
 - Stay inside the ticket's acceptance criteria. Notice something the ticket does not cover? Comment on the issue instead of expanding scope.
+- Autonomous mode: when the user asks you to drive tickets continuously, after closing one ticket move straight to the next startable one. Stop and ask only when: a decision needs human taste (visual design, naming), an outward-facing action is required (release, repo settings, secrets), the same ticket has failed three attempts, or requirements are ambiguous.
 
 ## Non-negotiables
 
@@ -29,7 +30,7 @@ English is the canonical documentation language; the Chinese versions exist for 
 
 ## Git
 
-Do not commit, push, or otherwise mutate git state unless the user asks.
+Agents may commit and push as part of completing a ticket: commit to master once the Definition of done passes, message referencing the issue (`#N`). Use a `ticket/NN-*` branch + PR only when running parallel worktrees. master must always stay green. Never force-push, rewrite published history, or delete branches/tags.
 
 ## Agent skills
 
