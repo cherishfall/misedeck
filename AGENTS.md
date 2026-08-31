@@ -8,6 +8,7 @@ An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + Re
 
 - Read `CONTEXT.md` (domain glossary) and any ADR in `docs/adr/` touching your area. Use glossary vocabulary in code, issues, and UI copy.
 - The v1 spec and implementation tickets live in GitHub Issues (`ready-for-agent` label); see `docs/agents/issue-tracker.md`.
+- UI work derives color, type, layout, and motion from `docs/design/visual-language.md` (issue #33); never invent new tokens or effects.
 
 ## Working agreement (one ticket per session)
 

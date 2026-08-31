@@ -8,6 +8,7 @@
 
 - 阅读 `CONTEXT.md`（领域术语表）和 `docs/adr/` 中与你要动的区域相关的 ADR。代码、issue 和 UI 文案统一使用术语表词汇。
 - v1 spec 和实现 tickets 在 GitHub Issues（`ready-for-agent` 标签）；见 `docs/agents/issue-tracker.md`。
+- UI 工作的色彩、字体、布局、动效一律取自 `docs/design/visual-language.md`（issue #33）；禁止临时发明新 token 或动效。
 
 ## 工作约定（每个 session 一个 ticket）
 
