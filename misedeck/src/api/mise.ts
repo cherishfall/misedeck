@@ -122,3 +122,25 @@ export async function openInTerminal(
 ): Promise<TerminalOpenResult> {
   return (await invoke("open_in_terminal", { path })) as TerminalOpenResult;
 }
+
+/** Calls the `settings_ls` Tauri command (`mise settings ls --json-extended`).
+ *  Returns the raw JSON object mise emits; the JS side parses it into
+ *  a table of settings with source badges (issue #29). */
+export async function settingsLs(cwd: string | null): Promise<JsonResult> {
+  return (await invoke("settings_ls", { cwd })) as JsonResult;
+}
+
+/** Calls the `doctor` Tauri command (`mise doctor --json`). Returns the
+ *  raw JSON payload on success, or a structured fallback with
+ *  `rawLines` when the mise binary does not support `--json` (issue
+ *  #29). */
+export async function doctor(cwd: string | null): Promise<JsonResult> {
+  return (await invoke("doctor", { cwd })) as JsonResult;
+}
+
+/** Calls the `registry` Tauri command (`mise registry --json`). Returns
+ *  the raw JSON array on success, or a parsed table fallback when
+ *  `--json` is unavailable (issue #29). */
+export async function registry(cwd: string | null): Promise<JsonResult> {
+  return (await invoke("registry", { cwd })) as JsonResult;
+}

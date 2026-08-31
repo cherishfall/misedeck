@@ -1,0 +1,15 @@
+{
+  "version": "2026.8.14 macos-arm64 (2026-08-26)",
+  "activated": true,
+  "shims_on_path": true,
+  "self_update_available": false,
+  "warnings": [],
+  "config_files": ["/Users/example/project/mise.toml"],
+  "toolset": {
+    "node": [{"version": "22.11.0"}]
+  },
+  "shell": {
+    "name": "zsh",
+    "version": "zsh 5.9"
+  }
+}

@@ -220,6 +220,100 @@
       "body": "`mise tasks ls --json` did not return. Stderr is preserved in the execution panel."
     }
   },
+  "settings": {
+    "eyebrow": "▸ MISE / SETTINGS",
+    "title": "Settings",
+    "hint": "View and edit mise settings for the active context. Writes go through `mise settings set` / `mise settings unset` and stream into the panel.",
+    "columns": {
+      "key": "Key",
+      "value": "Value",
+      "type": "Type",
+      "source": "Source",
+      "actions": "Actions"
+    },
+    "empty": {
+      "title": "No settings configured",
+      "body": "There are no settings for the active context. Use the form below to add one."
+    },
+    "error": {
+      "title": "Failed to load settings",
+      "body": "`mise settings ls --json-extended` did not return. Stderr is preserved in the execution panel."
+    },
+    "saveButton": "Save",
+    "unsetButton": "Unset",
+    "addButton": "Add",
+    "addSettingLabel": "Add a setting",
+    "keyPlaceholder": "setting name",
+    "valuePlaceholder": "value",
+    "guard": {
+      "untrustedBody": "Trust this directory before mutating its settings."
+    }
+  },
+  "doctor": {
+    "eyebrow": "▸ MISE / DOCTOR",
+    "title": "Doctor",
+    "hint": "A health check for the active mise context. When `--json` is unavailable, the raw doctor output is rendered with row tinting.",
+    "statusLabel": "Health check",
+    "status": {
+      "ok": "OK",
+      "warn": "WARN",
+      "error": "ERROR"
+    },
+    "summary": {
+      "status": "Status",
+      "shell": "Shell",
+      "activated": "Activated",
+      "notActivated": "Not activated",
+      "shims": "Shims on PATH",
+      "update": "Update",
+      "updateAvailable": "Available",
+      "upToDate": "Up to date"
+    },
+    "warnings": {
+      "title": "Warnings",
+      "none": "No warnings."
+    },
+    "configFiles": {
+      "title": "Config files",
+      "none": "No config files in scope."
+    },
+    "toolset": {
+      "title": "Resolved toolset",
+      "emptyTitle": "No resolved tools",
+      "emptyBody": "`mise doctor --json` reported an empty toolset for this context."
+    },
+    "rawTitle": "Raw doctor output",
+    "error": {
+      "title": "Failed to load doctor",
+      "body": "`mise doctor --json` did not return. Stderr is preserved in the execution panel."
+    },
+    "columns": {
+      "tool": "Tool",
+      "version": "Version"
+    }
+  },
+  "plugins": {
+    "eyebrow": "▸ MISE / REGISTRY",
+    "title": "Registry",
+    "hint": "Browse the built-in mise registry of tool shorthands, backends, and aliases.",
+    "searchPlaceholder": "Search tools, backends, aliases…",
+    "columns": {
+      "tool": "Tool",
+      "backends": "Backends",
+      "description": "Description",
+      "aliases": "Aliases"
+    },
+    "empty": {
+      "title": "No registry entries",
+      "body": "`mise registry --json` returned an empty list.",
+      "searchTitle": "No matches",
+      "searchBody": "No registry entry matches your search."
+    },
+    "error": {
+      "title": "Failed to load registry",
+      "body": "`mise registry --json` did not return. Stderr is preserved in the execution panel."
+    }
+  },
   "states": {
     "detecting": "Probing mise…",
     "ready": "READY",

@@ -18,9 +18,10 @@ pub mod shell;
 
 use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
 use mise::{
-    check_trust, detect_mise as run_mise_probe, locate_mise, mise_env, mise_ls, mise_ls_remote,
-    mise_outdated, mise_tasks_edit_path, mise_tasks_ls, read_mise_lockfile, run_mise, run_trust,
-    AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
+    check_trust, detect_mise as run_mise_probe, locate_mise, mise_doctor, mise_env, mise_ls,
+    mise_ls_remote, mise_outdated, mise_registry, mise_settings_ls, mise_tasks_edit_path,
+    mise_tasks_ls, read_mise_lockfile, run_mise, run_trust, AppError, DetectMiseOk, RunEvent,
+    RunOutcome, RunRequest,
 };
 use shell::{check_shell_activation, open_in_terminal as open_in_terminal_inner};
 
@@ -500,6 +501,58 @@ fn tasks_edit_path(cwd: Option<String>, name: String) -> TasksEditPathResult {
     }
 }
 
+/// `mise settings ls --json-extended` for the active directory
+/// context. Returns the raw JSON object mise emits; the JS side
+/// parses it into a table of settings with source badges. When
+/// `cwd` is `Some`, `--local` is added so project-level settings
+/// are listed.
+#[tauri::command]
+fn settings_ls(cwd: Option<String>) -> JsonResult {
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return JsonResult::Err { err: e },
+    };
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    match mise_settings_ls(&path, cwd_path) {
+        Ok(value) => JsonResult::Ok { value },
+        Err(e) => JsonResult::Err { err: e },
+    }
+}
+
+/// `mise doctor --json` for the active directory context. Returns
+/// the raw JSON payload on success; if the mise binary does not
+/// support `--json`, the runner captures the raw doctor text and
+/// returns it as a structured array of tinted lines.
+#[tauri::command]
+fn doctor(cwd: Option<String>) -> JsonResult {
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return JsonResult::Err { err: e },
+    };
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    match mise_doctor(&path, cwd_path) {
+        Ok(value) => JsonResult::Ok { value },
+        Err(e) => JsonResult::Err { err: e },
+    }
+}
+
+/// `mise registry --json` for the active directory context.
+/// Returns the raw JSON array mise emits; if the mise binary does
+/// not support `--json`, the runner parses the plain-text registry
+/// table into a JSON array behind the boundary.
+#[tauri::command]
+fn registry(cwd: Option<String>) -> JsonResult {
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return JsonResult::Err { err: e },
+    };
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    match mise_registry(&path, cwd_path) {
+        Ok(value) => JsonResult::Ok { value },
+        Err(e) => JsonResult::Err { err: e },
+    }
+}
+
 /// Detect the user's shell and decide whether the rc file contains
 /// a `mise activate` line (issue #28). Read-only; never spawns mise.
 /// On a hard I/O error (e.g. permission denied on a sandboxed
@@ -553,6 +606,9 @@ pub fn run() {
             mise_trust,
             tasks_ls,
             tasks_edit_path,
+            settings_ls,
+            doctor,
+            registry,
             shell_activation_check,
             open_in_terminal
         ])

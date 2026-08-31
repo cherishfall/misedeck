@@ -30,6 +30,9 @@ export function PageShell({ children }: PageShellProps) {
   const onTasks = location.pathname === "/tasks";
   const onPreview = location.pathname === "/preview";
   const onConfig = location.pathname === "/config";
+  const onSettings = location.pathname === "/settings";
+  const onDoctor = location.pathname === "/doctor";
+  const onPlugins = location.pathname === "/plugins";
   const onHome = location.pathname === "/";
   return (
     <div className={styles.shell}>
@@ -74,6 +77,30 @@ export function PageShell({ children }: PageShellProps) {
           data-testid="wordmark-config"
         >
           {t(I18N_KEYS.config.nav)}
+        </Link>
+        <Link
+          to="/doctor"
+          className={styles.wordmarkNav}
+          aria-current={onDoctor ? "page" : undefined}
+          data-testid="wordmark-doctor"
+        >
+          {t(I18N_KEYS.nav.doctor)}
+        </Link>
+        <Link
+          to="/settings"
+          className={styles.wordmarkNav}
+          aria-current={onSettings ? "page" : undefined}
+          data-testid="wordmark-settings"
+        >
+          {t(I18N_KEYS.nav.settings)}
+        </Link>
+        <Link
+          to="/plugins"
+          className={styles.wordmarkNav}
+          aria-current={onPlugins ? "page" : undefined}
+          data-testid="wordmark-plugins"
+        >
+          {t(I18N_KEYS.nav.plugins)}
         </Link>
         <Link
           to="/__styleguide"

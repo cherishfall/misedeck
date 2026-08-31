@@ -1,0 +1,14 @@
+{
+  "always_keep_download": {
+    "value": true,
+    "type": "boolean",
+    "description": "keep downloaded files after installation for debugging",
+    "source": "/Users/example/.config/mise/config.toml"
+  },
+  "jobs": {
+    "value": 4,
+    "type": "number",
+    "description": "How many jobs to run concurrently such as tool installs.",
+    "source": "/Users/example/project/mise.toml"
+  }
+}

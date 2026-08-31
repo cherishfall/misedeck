@@ -1,0 +1,13 @@
+[
+  {
+    "short": "node",
+    "backends": ["core:node"],
+    "description": "Node.js JavaScript runtime",
+    "aliases": ["nodejs"]
+  },
+  {
+    "short": "go",
+    "backends": ["core:go"],
+    "description": "Go programming language"
+  }
+]

@@ -825,6 +825,199 @@ where
     Ok(outcome)
 }
 
+// ---------- Settings, doctor, registry surface (issue #29) ----------
+//
+// Three read-mostly pages that all follow the same runner pattern:
+//
+//   * `mise settings ls --json-extended`  → settings table with source
+//                                           badges (the only mutation is
+//                                           `mise settings set/unset`)
+//   * `mise doctor --json`                → structured health page
+//   * `mise registry --json`              → browsable registry table
+//
+// The runner ships the raw JSON (or a structured fallback) so the JS
+// side never has to parse CLI table output. For `doctor` and
+// `registry`, older mise versions may not support `--json`; in that
+// case the runner captures the plain text output and re-encodes it as
+// JSON behind the boundary (doctor lines keep their `[OK]`/`[WARN]`/
+// `[ERROR]` status, registry rows are parsed from the space-padded
+// table).
+
+/// `mise settings ls --json-extended` for the active context. When
+/// `cwd` is `Some`, `--local` is added so the list reflects the
+/// project `mise.toml`; otherwise the global config is queried.
+pub fn mise_settings_ls(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+) -> Result<serde_json::Value, AppError> {
+    let mut args = vec![
+        "settings".to_string(),
+        "ls".to_string(),
+        "--json-extended".to_string(),
+    ];
+    if cwd.is_some() {
+        args.push("--local".to_string());
+    }
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    run_mise_json(mise_path, &req)
+}
+
+/// Build the argv for `mise settings set [--local] <key> <value>`.
+/// The `local` flag is passed when the active context is a project.
+pub fn mise_settings_set_argv(key: &str, value: &str, local: bool) -> Vec<String> {
+    let mut argv = vec!["settings".to_string(), "set".to_string()];
+    if local {
+        argv.push("--local".to_string());
+    }
+    argv.push(key.to_string());
+    argv.push(value.to_string());
+    argv
+}
+
+/// Build the argv for `mise settings unset [--local] <key>`.
+pub fn mise_settings_unset_argv(key: &str, local: bool) -> Vec<String> {
+    let mut argv = vec!["settings".to_string(), "unset".to_string()];
+    if local {
+        argv.push("--local".to_string());
+    }
+    argv.push(key.to_string());
+    argv
+}
+
+/// Status tag the doctor parser extracts from a raw text line.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DoctorLineStatus {
+    Ok,
+    Warn,
+    Error,
+    Neutral,
+}
+
+/// One line of raw `mise doctor` output, parsed behind the runner so
+/// the UI can tint rows by status.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DoctorLine {
+    pub text: String,
+    pub status: DoctorLineStatus,
+}
+
+fn classify_doctor_line(line: &str) -> DoctorLineStatus {
+    if line.contains("[OK]") {
+        DoctorLineStatus::Ok
+    } else if line.contains("[WARN]") {
+        DoctorLineStatus::Warn
+    } else if line.contains("[ERROR]") {
+        DoctorLineStatus::Error
+    } else {
+        DoctorLineStatus::Neutral
+    }
+}
+
+fn doctor_text_fallback(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+) -> Result<serde_json::Value, AppError> {
+    let args = vec!["doctor".to_string()];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    let outcome = run_mise(mise_path, &req, |_| {})?;
+    if outcome.timed_out {
+        return Err(AppError::timeout());
+    }
+    // A non-zero exit is still valuable diagnostic output for the
+    // health page; surface the lines instead of failing the command.
+    let lines: Vec<DoctorLine> = outcome
+        .stdout
+        .lines()
+        .map(|line| DoctorLine {
+            text: line.to_string(),
+            status: classify_doctor_line(line),
+        })
+        .collect();
+    Ok(serde_json::json!({
+        "rawLines": lines,
+        "rawText": outcome.stdout,
+    }))
+}
+
+/// `mise doctor --json` for the active context. If the mise binary
+/// does not support `--json` (or the output is not valid JSON), the
+/// runner falls back to capturing the raw `mise doctor` text and
+/// returning it as a structured array of tinted lines.
+pub fn mise_doctor(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+) -> Result<serde_json::Value, AppError> {
+    let args = vec!["doctor".to_string(), "--json".to_string()];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    match run_mise_json(mise_path, &req) {
+        Ok(v) => Ok(v),
+        Err(_) => doctor_text_fallback(mise_path, cwd),
+    }
+}
+
+fn registry_table_fallback(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+) -> Result<serde_json::Value, AppError> {
+    let args = vec!["registry".to_string()];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    let outcome = run_mise(mise_path, &req, |_| {})?;
+    if outcome.timed_out {
+        return Err(AppError::timeout());
+    }
+    if outcome.exit_code != 0 {
+        return Err(AppError::command_failed(
+            format!("mise registry exited with status {}", outcome.exit_code),
+            outcome.stderr,
+        ));
+    }
+    let rows: Vec<serde_json::Value> = outcome
+        .stdout
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| {
+            let mut parts = line.split_whitespace();
+            let short = parts.next().unwrap_or("").to_string();
+            let backends: Vec<String> = parts.map(|s| s.to_string()).collect();
+            serde_json::json!({ "short": short, "backends": backends })
+        })
+        .collect();
+    Ok(serde_json::Value::Array(rows))
+}
+
+/// `mise registry --json` for the active context. If the mise binary
+/// does not support `--json` (or the output is not valid JSON), the
+/// runner falls back to parsing the plain-text registry table into a
+/// JSON array.
+pub fn mise_registry(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+) -> Result<serde_json::Value, AppError> {
+    let args = vec!["registry".to_string(), "--json".to_string()];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    match run_mise_json(mise_path, &req) {
+        Ok(v) => Ok(v),
+        Err(_) => registry_table_fallback(mise_path, cwd),
+    }
+}
+
 // ---------- Config-editor argv builders (issue #26) ----------
 //
 // The config editor routes every write through the existing

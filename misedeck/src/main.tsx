@@ -16,6 +16,9 @@ import { ToolsPage } from "./pages/ToolsPage/ToolsPage";
 import { DirectoryPreview } from "./pages/DirectoryPreview/DirectoryPreview";
 import { ConfigPage } from "./pages/ConfigPage/ConfigPage";
 import { TasksPage } from "./pages/TasksPage/TasksPage";
+import { SettingsPage } from "./pages/SettingsPage/SettingsPage";
+import { DoctorPage } from "./pages/DoctorPage/DoctorPage";
+import { PluginsPage } from "./pages/PluginsPage/PluginsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +44,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                     <Route path="/tasks" element={<TasksPage />} />
                     <Route path="/preview" element={<DirectoryPreview />} />
                     <Route path="/config" element={<ConfigPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/doctor" element={<DoctorPage />} />
+                    <Route path="/plugins" element={<PluginsPage />} />
                     <Route path="/__styleguide" element={<StyleGuide />} />
                   </Routes>
                 </BrowserRouter>

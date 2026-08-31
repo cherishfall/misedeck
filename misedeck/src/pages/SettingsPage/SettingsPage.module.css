@@ -1,0 +1,284 @@
+/* SettingsPage — settings list with source badges and inline editing.
+ * Layout and tokens mirror the config editor (issue #26). */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-6) var(--space-6);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ice);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--size-display);
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 0;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--beam) 30%, transparent);
+}
+
+.hint {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--dim);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 70ch;
+}
+
+.scopeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.scopePath {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  background: color-mix(in srgb, var(--hull) 60%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: var(--space-1) var(--space-3);
+  word-break: break-all;
+  max-width: 100%;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.toolbarHint {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.refresh {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ice);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease;
+}
+
+.refresh:hover:not(:disabled),
+.refresh:focus-visible {
+  color: var(--beam);
+  border-color: var(--line-strong);
+  outline: none;
+}
+
+.refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.signalLine {
+  margin: 0;
+}
+
+/* ---------- Table cells ---------- */
+
+.cellKey {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.cellValue {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--beam);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--beam) 35%, transparent);
+  font-weight: 600;
+}
+
+.cellSource {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--dim);
+  word-break: break-all;
+}
+
+.dim {
+  color: var(--dim);
+}
+
+/* ---------- Per-row editor ---------- */
+
+.rowEditor {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.input,
+.inputName {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  background: color-mix(in srgb, var(--hull) 60%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 8px;
+  min-width: 0;
+  transition: border-color var(--motion-state-change) ease;
+}
+
+.input {
+  width: 18ch;
+}
+
+.inputName {
+  width: 14ch;
+  text-transform: uppercase;
+}
+
+.input:focus,
+.inputName:focus {
+  outline: none;
+  border-color: var(--line-strong);
+}
+
+.input:disabled,
+.inputName:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Add form ---------- */
+
+.addForm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-3);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--hull) 40%, transparent);
+}
+
+.addLabel {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-right: var(--space-2);
+}
+
+/* ---------- Trust banner ---------- */
+
+.trustPath {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--dim);
+  word-break: break-all;
+}
+
+.trustNote {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--hull) 60%, transparent);
+}
+
+/* ---------- Loading / error ---------- */
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dim);
+}
+
+.errorState {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--tint-danger);
+  border-radius: var(--radius-panel);
+  background: var(--tint-danger-bg);
+}
+
+.errorLabel {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--breach);
+}
+
+.errorBody {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--text);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.errorStderr {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--breach);
+  background: color-mix(in srgb, var(--breach) 8%, transparent);
+  border: 1px solid var(--tint-danger);
+  border-radius: 4px;
+  padding: var(--space-3);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

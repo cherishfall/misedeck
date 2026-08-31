@@ -220,6 +220,100 @@
       "body": "`mise tasks ls --json` 未返回结果。stderr 已在执行面板中保留。"
     }
   },
+  "settings": {
+    "eyebrow": "▸ MISE / 设置",
+    "title": "设置",
+    "hint": "查看并编辑当前上下文的 mise 设置。写入通过 `mise settings set` / `mise settings unset` 并在执行面板中实时显示。",
+    "columns": {
+      "key": "键",
+      "value": "值",
+      "type": "类型",
+      "source": "来源",
+      "actions": "操作"
+    },
+    "empty": {
+      "title": "尚未配置任何设置",
+      "body": "当前上下文没有任何设置。使用下方表单添加一个。"
+    },
+    "error": {
+      "title": "加载设置失败",
+      "body": "`mise settings ls --json-extended` 未返回结果。stderr 已在执行面板中保留。"
+    },
+    "saveButton": "保存",
+    "unsetButton": "取消设置",
+    "addButton": "添加",
+    "addSettingLabel": "添加设置",
+    "keyPlaceholder": "设置名",
+    "valuePlaceholder": "值",
+    "guard": {
+      "untrustedBody": "在修改此目录的设置之前，请先信任它。"
+    }
+  },
+  "doctor": {
+    "eyebrow": "▸ MISE / 诊断",
+    "title": "诊断",
+    "hint": "当前 mise 上下文的健康检查。当 `--json` 不可用时，原始 doctor 输出会以行级色调渲染。",
+    "statusLabel": "健康检查",
+    "status": {
+      "ok": "正常",
+      "warn": "警告",
+      "error": "错误"
+    },
+    "summary": {
+      "status": "状态",
+      "shell": "Shell",
+      "activated": "已激活",
+      "notActivated": "未激活",
+      "shims": "Shims 在 PATH",
+      "update": "更新",
+      "updateAvailable": "可用",
+      "upToDate": "已最新"
+    },
+    "warnings": {
+      "title": "警告",
+      "none": "没有警告。"
+    },
+    "configFiles": {
+      "title": "配置文件",
+      "none": "当前范围内没有配置文件。"
+    },
+    "toolset": {
+      "title": "已解析工具集",
+      "emptyTitle": "没有已解析工具",
+      "emptyBody": "`mise doctor --json` 报告当前上下文的工具集为空。"
+    },
+    "rawTitle": "原始 doctor 输出",
+    "error": {
+      "title": "加载诊断失败",
+      "body": "`mise doctor --json` 未返回结果。stderr 已在执行面板中保留。"
+    },
+    "columns": {
+      "tool": "工具",
+      "version": "版本"
+    }
+  },
+  "plugins": {
+    "eyebrow": "▸ MISE / REGISTRY",
+    "title": "Registry",
+    "hint": "浏览 mise 内置的工具别名 registry，包括后端与别名。",
+    "searchPlaceholder": "搜索工具、后端、别名…",
+    "columns": {
+      "tool": "工具",
+      "backends": "后端",
+      "description": "说明",
+      "aliases": "别名"
+    },
+    "empty": {
+      "title": "没有 registry 条目",
+      "body": "`mise registry --json` 返回了空列表。",
+      "searchTitle": "无匹配",
+      "searchBody": "没有 registry 条目匹配你的搜索。"
+    },
+    "error": {
+      "title": "加载 registry 失败",
+      "body": "`mise registry --json` 未返回结果。stderr 已在执行面板中保留。"
+    }
+  },
   "states": {
     "detecting": "正在探测 mise…",
     "ready": "就绪",

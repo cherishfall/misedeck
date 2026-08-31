@@ -245,3 +245,60 @@ export interface TerminalOpenOutcome {
 export type TerminalOpenResult =
   | { kind: "ok"; ok: TerminalOpenOutcome }
   | { kind: "err"; err: AppError };
+
+/**
+ * One row of `mise settings ls --json-extended` (issue #29). The
+ * extended format includes the value, its type, a description, and
+ * the source config file.
+ */
+export interface SettingsItem {
+  key: string;
+  value: unknown;
+  type?: string;
+  description?: string;
+  source?: string;
+}
+
+/**
+ * Status the doctor raw-text fallback assigns to each line (issue
+ * #29). Mirrors the Rust `DoctorLineStatus` enum.
+ */
+export type DoctorLineStatus = "ok" | "warn" | "error" | "neutral";
+
+/**
+ * One line of raw `mise doctor` output when `--json` is not
+ * available.
+ */
+export interface DoctorLine {
+  text: string;
+  status: DoctorLineStatus;
+}
+
+/**
+ * Structured doctor payload. When `rawLines` is present, the page
+ * renders the raw text health view; otherwise it renders the JSON
+ * fields directly.
+ */
+export interface DoctorPayload {
+  version?: string;
+  activated?: boolean;
+  shimsOnPath?: boolean;
+  selfUpdateAvailable?: boolean;
+  warnings?: string[];
+  configFiles?: string[];
+  toolset?: Record<string, Array<{ version: string }>>;
+  shell?: { name?: string; version?: string };
+  rawLines?: DoctorLine[];
+  rawText?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * One row of `mise registry --json` (issue #29).
+ */
+export interface RegistryItem {
+  short: string;
+  backends: string[];
+  description?: string;
+  aliases?: string[];
+}

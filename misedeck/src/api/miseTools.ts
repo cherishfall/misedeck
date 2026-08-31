@@ -7,11 +7,15 @@
 // module is just a presentational convenience.
 
 import type {
+  DoctorLine,
+  DoctorPayload,
   MiseLsItem,
   MiseLsRemoteItem,
   MiseOutdatedItem,
   MiseSource,
   MiseTask,
+  RegistryItem,
+  SettingsItem,
 } from "../types/tauri";
 
 function asString(v: unknown): string {
@@ -332,4 +336,102 @@ export function parseDependsInput(text: string): string[] {
     .split(",")
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
+}
+
+// ---------- Settings / doctor / registry (issue #29) ----------
+
+/** Parse the `mise settings ls --json-extended` payload into typed
+ *  rows. Unknown or non-object values are dropped so a single bad
+ *  entry never poisons the table. */
+export function parseSettingsPayload(value: unknown): SettingsItem[] {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return [];
+  const obj = value as Record<string, unknown>;
+  const out: SettingsItem[] = [];
+  for (const [key, raw] of Object.entries(obj)) {
+    if (raw === null || typeof raw !== "object") {
+      // Fallback for the plain `--json` shape (key → value) when
+      // `--json-extended` is not available.
+      out.push({ key, value: raw });
+      continue;
+    }
+    const entry = raw as Record<string, unknown>;
+    out.push({
+      key,
+      value: entry.value,
+      type: asOptionalString(entry.type),
+      description: asOptionalString(entry.description),
+      source: asOptionalString(entry.source),
+    });
+  }
+  out.sort((a, b) => a.key.localeCompare(b.key));
+  return out;
+}
+
+/** Parse the `mise doctor --json` payload. Tolerant: the fallback
+ *  shape keeps the raw lines under `rawLines`. The real mise JSON uses
+ *  snake_case keys, so the parser normalises the fields the UI reads
+ *  to camelCase while preserving everything else. */
+export function parseDoctorPayload(value: unknown): DoctorPayload {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  const raw = value as Record<string, unknown>;
+  const out: DoctorPayload = { ...raw };
+  if (raw.shims_on_path !== undefined) {
+    out.shimsOnPath = !!raw.shims_on_path;
+  }
+  if (raw.self_update_available !== undefined) {
+    out.selfUpdateAvailable = !!raw.self_update_available;
+  }
+  if (Array.isArray(raw.config_files)) {
+    out.configFiles = raw.config_files.map((v) => String(v));
+  }
+  if (Array.isArray(raw.warnings)) {
+    out.warnings = raw.warnings.map((v) => String(v));
+  }
+  if (raw.toolset !== null && typeof raw.toolset === "object" && !Array.isArray(raw.toolset)) {
+    out.toolset = raw.toolset as Record<string, Array<{ version: string }>>;
+  }
+  if (raw.shell !== null && typeof raw.shell === "object" && !Array.isArray(raw.shell)) {
+    out.shell = raw.shell as { name?: string; version?: string };
+  }
+  if (typeof raw.activated === "boolean") {
+    out.activated = raw.activated;
+  }
+  if (typeof raw.version === "string") {
+    out.version = raw.version;
+  }
+  if (Array.isArray(raw.rawLines)) {
+    out.rawLines = raw.rawLines as DoctorLine[];
+  }
+  if (typeof raw.rawText === "string") {
+    out.rawText = raw.rawText;
+  }
+  return out;
+}
+
+/** Parse one `mise registry --json` row. */
+export function parseRegistryItem(value: unknown): RegistryItem | null {
+  if (value === null || typeof value !== "object") return null;
+  const o = value as Record<string, unknown>;
+  const short = asString(o.short);
+  if (short === "") return null;
+  return {
+    short,
+    backends: asStringArray(o.backends),
+    description: asOptionalString(o.description),
+    aliases: asStringArray(o.aliases),
+  };
+}
+
+/** Parse the `mise registry --json` payload (`[RegistryItem]`). */
+export function parseRegistryPayload(value: unknown): RegistryItem[] {
+  if (!Array.isArray(value)) return [];
+  const out: RegistryItem[] = [];
+  for (const row of value) {
+    const parsed = parseRegistryItem(row);
+    if (parsed) out.push(parsed);
+  }
+  out.sort((a, b) => a.short.localeCompare(b.short));
+  return out;
 }
