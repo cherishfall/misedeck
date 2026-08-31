@@ -4,7 +4,7 @@ This document is a continuation marker between autonomous driver sessions.
 Last updated: end of session A (5 tickets closed + scaffold + Rust toolchain).
 Next session should resume from the **Next up** section below.
 
-## Completed (6 tickets, all on master)
+## Completed (8 tickets, all on master)
 
 | # | Title | Commit | Notes |
 | - | ----- | ------ | ----- |
@@ -13,8 +13,12 @@ Next session should resume from the **Next up** section below.
 | #20 | Visual system — full token set, base components, gallery | `d537157` | Extended to 114 keys; components at `misedeck/src/components/` (Panel, Button, IconButton, Badge, Banner, Table, DataRow, EmptyState, ProgressDot, StyleGuide, LanguageSwitcher); StyleGuide at `/__styleguide` |
 | #31 | CI: three-platform builds + release automation | `a8da879` | `.github/workflows/{release,ci}.yml`; tag-push `v*.*.*` triggers matrix; per-platform bundle subset; SHA256SUMS attached |
 | #18 | Generalized mise runner + execution panel | `f5d8d9d` | `run_mise(mise_path, req, on_event)` is the single entry point; new `run_mise_command` Tauri command streams via `tauri::ipc::Channel<RunEvent>`; `ExecutionPanel` + `useExecution` hook; +12 execution.* keys; **126 keys total** |
+| #23 | Directory context bar + recent directories | `01c9be0` | `DirectoryProvider` + `ContextBar`; `tauri-plugin-dialog` wired; `useDirectory().cwd` is the single source of truth |
+| #30 | mise self-management: guided install + self-update | `5ab053a` | `install.rs`; `ExecutionContext` lifted so any page can trigger a run |
+| #21 | Global tools list (read-only) with outdated badges | `1ab8458` | `mise ls --json` + `mise outdated --json --bump` + `mise ls-remote --json`; `Table` / `Badge` / `EmptyState` wired; Tauri commands `tools_ls` / `tools_outdated` / `tools_ls_remote`; +6 keys (`tools.*`); **140 keys total** |
+| #24 | Directory resolved-state preview with config-source badges | `4db6d2a` | new `/preview` page (reuses #21's `tools_ls` path with `cwd`); `tools_env` Tauri command (`mise env --json`); `read_lockfile` Tauri command (reads `<cwd>/mise.lock`); convention list for tool-derived env vars (JAVA_HOME → "java", etc.); +53 keys (`preview.*`); **193 keys total** |
 
-**Test count after #18:** 4 unit + 9 mise-probe + 5 runner = 18 tests. All green.
+**Test count after #24:** 6 unit + 9 mise-probe + 9 directory + 5 runner + 10 tools = 39 tests. All green.
 **Lint gates:** `npm run typecheck && npm run lint:i18n && npm run build && cargo check && cargo test` — all pass.
 
 ## Next up (in dependency order)
@@ -27,7 +31,7 @@ The remaining 11 tickets in three waves:
 
 ### Wave 2 — depends on #23
 - **#21 Global tools list (read-only) with outdated badges** — `mise ls --json` + `mise outdated --json` + `mise ls-remote --json`. The Table component is ready; just needs the data and the type definitions.
-- **#24 Directory resolved-state preview with config-source badges** — `mise -C <dir> ls --json` + `mise -C <dir> env --json`; tool-bound vars shown as derived state.
+- **#24 Directory resolved-state preview with config-source badges** — DONE (`4db6d2a`). `mise -C <dir> ls --json` + `mise -C <dir> env --json`; tool-bound vars shown as derived state via a convention list (JAVA_HOME → "java", etc.); `<cwd>/mise.lock` rendered read-only when present. `/preview` route is a separate page (vs. query param on /tools) so #21 is untouched.
 - **#25 Trust UX: readonly + banner + one-click trust** — `MISE_SAFE=1` for untrusted directories; one-click `mise trust` via the panel.
 - **#26 Config editor: [tools] and [env] forms** — writes via `mise use` / `mise config set` through the panel; never direct TOML edits.
 - **#27 Tasks: list, run, simple edit** — `mise tasks ls --json` + run via panel; simple edit (name/run/depends).
@@ -120,8 +124,8 @@ Good luck.
 - The `DirectoryProvider` (`misedeck/src/state/directoryContext.tsx`) is the single source of truth for "which directory is the user looking at". `useDirectory().cwd` returns the string for `-C`, or `null` for global.
 - The `ExecutionContext` (`misedeck/src/components/ExecutionPanel/ExecutionContext.tsx`) is the single source of truth for the execution panel. `useExecutionContext().run({cwd,args})` for arbitrary mise commands; `.runInstall()` and `.runSelfUpdate()` for the two new Tauri commands.
 - `tauri-plugin-dialog` is wired (`Cargo.toml`, `capabilities/default.json`, `lib.rs`); the JS-side import is `@tauri-apps/plugin-dialog`.
-- Tests after #30: `cargo test` → 20 passed (6 unit + 9 mise-probe + 5 runner). Frontend: no test infrastructure yet.
-- i18n keys: 140 leaf keys; parity + call-site lint runs in `npm run lint:i18n`.
+- Tests after #24: `cargo test` → 39 passed (6 unit + 9 mise-probe + 9 directory + 5 runner + 10 tools). Frontend: no test infrastructure yet.
+- i18n keys: 193 leaf keys; parity + call-site lint runs in `npm run lint:i18n`.
 
 ## Open Wave 2 / 3 (each must be a fresh subagent)
 
