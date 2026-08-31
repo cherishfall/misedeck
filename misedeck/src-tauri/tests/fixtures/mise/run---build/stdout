@@ -1,0 +1,4 @@
+[build] $ npm run build
+> project@1.0.0 build
+> tsc
+build complete

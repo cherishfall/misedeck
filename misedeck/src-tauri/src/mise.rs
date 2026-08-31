@@ -550,6 +550,140 @@ pub fn mise_ls_remote(
     run_mise_json(mise_path, &req)
 }
 
+// ---------- Tasks surface (issue #27) ----------
+//
+// The mise CLI ships `mise tasks` as a first-class subcommand set
+// (add, ls, info, edit, run, …). For this ticket we only need:
+//
+//   * `mise tasks ls --json`        → list tasks for the cwd
+//                                     ([MiseTask, ...])
+//   * `mise run <name>`             → run a single task (reused via
+//                                     the existing `run_mise_command`
+//                                     Tauri command; no new IPC)
+//   * `mise tasks add <name> <...> -- <run>` → add or update a task
+//                                     (the only documented write path;
+//                                     direct TOML edits are forbidden
+//                                     by the architecture doc)
+//   * `mise tasks edit --path <n>`  → print the path of the file
+//                                     that defines the task (used as
+//                                     the "open the TOML directly"
+//                                     affordance for advanced users)
+//
+// All of these are wired through the existing `run_mise` and
+// `run_mise_json` primitives; this section only adds typed shapes,
+// thin wrappers, and the argv builders the JS side consumes.
+//
+//   The `run` field of `mise tasks ls --json` is an **array of
+//   strings** (a single command may be split across multiple lines in
+//   the TOML). The JS parser flattens it to a single string for
+//   display. Other fields are documented below; every field is
+//   `serde(default)` because mise's task JSON has drifted historically
+//   (new optional fields appear between minor releases).
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct MiseTask {
+    /// The task name (the key under `[tasks]` in mise.toml).
+    #[serde(default)]
+    pub name: String,
+    /// Alternative names for the task. Optional; mise's older versions
+    /// did not emit this field.
+    #[serde(default)]
+    pub aliases: Vec<String>,
+    /// Free-text description from `[tasks.<name>] description = "…"`.
+    /// Empty when unset.
+    #[serde(default)]
+    pub description: String,
+    /// The raw run command lines, one per TOML `run` line. The JS
+    /// side joins them with `\n` for display. Empty when the task is
+    /// defined only by `run_windows` / sources / outputs.
+    #[serde(default)]
+    pub run: Vec<String>,
+    /// Task names this task depends on. Empty when the task has no
+    /// `depends` array.
+    #[serde(default)]
+    pub depends: Vec<String>,
+    /// Absolute path of the config file the task came from. Empty
+    /// for tasks defined as standalone scripts under `.mise/tasks/`.
+    #[serde(default)]
+    pub source: String,
+    /// The `dir` field — the cwd the task is executed in, when set.
+    /// Empty when the task inherits the parent's cwd.
+    #[serde(default)]
+    pub dir: String,
+    /// True when the task is marked `hide = true` in the TOML.
+    #[serde(default)]
+    pub hide: bool,
+}
+
+/// `mise tasks ls --json` — the list of tasks for the current
+/// directory context. Returns the raw JSON array mise emits
+/// (`[MiseTask, ...]`); the typed `MiseTask` shape above documents
+/// the expected fields. The parser on the JS side walks the raw
+/// value and tolerates drift (see the rationale on `run_mise_json`).
+pub fn mise_tasks_ls(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+) -> Result<serde_json::Value, AppError> {
+    let args = vec![
+        "tasks".to_string(),
+        "ls".to_string(),
+        "--json".to_string(),
+    ];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    run_mise_json(mise_path, &req)
+}
+
+/// `mise tasks edit --path <name>` — return the absolute path of
+/// the file that defines the named task. mise prints a single line
+/// (the path) on stdout; the runner surfaces it as `Some(path)` on
+/// exit 0, `None` on non-zero exit (the file does not exist or the
+/// task is not in scope). The JS side uses this as the
+/// "open the TOML directly" affordance — the path is fed to
+/// `tauri-plugin-opener` which calls the OS's default editor.
+pub fn mise_tasks_edit_path(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+    name: &str,
+) -> Result<Option<String>, AppError> {
+    if name.is_empty() {
+        return Err(AppError::command_failed(
+            "mise_tasks_edit_path: task name is empty",
+            String::new(),
+        ));
+    }
+    let args = vec![
+        "tasks".to_string(),
+        "edit".to_string(),
+        "--path".to_string(),
+        name.to_string(),
+    ];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    let outcome = run_mise(mise_path, &req, |_| {})?;
+    if outcome.timed_out {
+        return Err(AppError::timeout());
+    }
+    if outcome.exit_code != 0 {
+        return Err(AppError::command_failed(
+            format!(
+                "mise tasks edit --path {} exited with status {}",
+                name, outcome.exit_code
+            ),
+            outcome.stderr,
+        ));
+    }
+    let path = outcome.stdout.trim().to_string();
+    if path.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(path))
+}
+
 /// Trust state for a directory's mise config. Mirrors the
 /// architecture doc's "MISE_SAFE=1" semantics:
 ///
@@ -739,6 +873,90 @@ pub fn mise_env_set_argv(key: &str, value: &str) -> Vec<String> {
 /// documented remove path for `[env]` table values.
 pub fn mise_env_unset_argv(key: &str) -> Vec<String> {
     vec!["unset".to_string(), key.to_string()]
+}
+
+// ---------- Tasks argv builders (issue #27) ----------
+//
+// The tasks page drives every write through `run_mise_command` and
+// the existing execution panel — no new IPC surface is needed. The
+// argv builders here mirror the `mise_use_argv` /
+// `mise_env_set_argv` family from issue #26 so a future mise CLI
+// change surfaces in `tests/tasks.rs` instead of in production.
+//
+// Documented against `mise tasks --help`, `mise tasks ls --help`,
+// `mise run --help`, and `mise tasks add --help`:
+//   * `mise run <name>`                      → run a task
+//   * `mise tasks ls --json`                 → list tasks (handled
+//                                              by `mise_tasks_ls`)
+//   * `mise tasks edit --path <name>`        → print task file path
+//   * `mise tasks add <name> [--dep X]… [-- <run>…]`
+//                                            → add / update a task;
+//                                              flags come before `--`,
+//                                              the run command (if
+//                                              any) comes after. A
+//                                              future v2 ticket that
+//                                              adds new task fields
+//                                              will extend this
+//                                              builder; the same
+//                                              shape is used in
+//                                              `tests/tasks.rs`.
+//
+// `run` is split across multiple argv entries (one per shell
+// token) so the runner's shell-metacharacter check rejects unsafe
+// input — passing the whole command as a single string would
+// defeat that guardrail.
+
+/// Build the argv for `mise run <name>`. Reused as the
+/// "Run" button on the tasks page; output streams through the
+/// execution panel via the existing `run_mise_command` IPC.
+pub fn mise_run_task_argv(name: &str) -> Vec<String> {
+    vec!["run".to_string(), name.to_string()]
+}
+
+/// Build the argv for `mise tasks add <name> [--dep X]… -- <run…>`.
+///
+/// When `run_tokens` is `Some` the run is emitted after `--` so
+/// mise preserves it. When `run_tokens` is `None` the call is
+/// `mise tasks add <name> [--dep X]…` (no `--`) — useful for
+/// commands that only flip metadata, but **dangerous for editing
+/// an existing task**: mise drops the existing `run` key when
+/// the new argv lacks the `-- <run>` clause. Callers editing an
+/// existing task must always pass `run_tokens`.
+///
+/// `depends` is appended as a sequence of `--depends <name>` pairs;
+/// the `description` flag is appended when present. Both are
+/// optional. The args are concatenated into the existing argv
+/// shape documented in `mise tasks add --help`:
+///
+///   `mise tasks add [--alias …] [--description …] [--depends …]… [-D …] [-f] [-H] [-q] [-r] [-s …] [-w …] [--depends-post …] [--outputs …] [--run-windows …] [--shell …] [--silent] <TASK> [-- <RUN>…]`
+pub fn mise_tasks_add_argv(
+    name: &str,
+    description: Option<&str>,
+    depends: &[String],
+    run_tokens: Option<&[String]>,
+) -> Vec<String> {
+    let mut argv: Vec<String> = vec!["tasks".to_string(), "add".to_string()];
+    if let Some(desc) = description {
+        if !desc.is_empty() {
+            argv.push("--description".to_string());
+            argv.push(desc.to_string());
+        }
+    }
+    for dep in depends {
+        if dep.is_empty() {
+            continue;
+        }
+        argv.push("--depends".to_string());
+        argv.push(dep.clone());
+    }
+    argv.push(name.to_string());
+    if let Some(tokens) = run_tokens {
+        argv.push("--".to_string());
+        for t in tokens {
+            argv.push(t.clone());
+        }
+    }
+    argv
 }
 
 /// Run `mise version --json` and return the parsed result. Thin wrapper

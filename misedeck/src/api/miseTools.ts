@@ -6,7 +6,13 @@
 // never poisons the rest. The runner is the trust boundary; this
 // module is just a presentational convenience.
 
-import type { MiseLsItem, MiseLsRemoteItem, MiseOutdatedItem, MiseSource } from "../types/tauri";
+import type {
+  MiseLsItem,
+  MiseLsRemoteItem,
+  MiseOutdatedItem,
+  MiseSource,
+  MiseTask,
+} from "../types/tauri";
 
 function asString(v: unknown): string {
   return typeof v === "string" ? v : "";
@@ -18,6 +24,13 @@ function asOptionalString(v: unknown): string | undefined {
 
 function asBoolean(v: unknown, fallback: boolean): boolean {
   return typeof v === "boolean" ? v : fallback;
+}
+
+function asStringArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((x) => (typeof x === "string" ? x : null))
+    .filter((x): x is string => x !== null);
 }
 
 function asSource(v: unknown): MiseSource | undefined {
@@ -260,4 +273,63 @@ export function reconcileEnvSources(
     }
   }
   return entries;
+}
+
+// ---------- Tasks (issue #27) ----------
+
+/** Parse one row of `mise tasks ls --json`. Tolerant: missing
+ *  fields fall back to the type's default, and a row without a
+ *  `name` is dropped (the name is the only stable key the table
+ *  needs). The `run` field is preserved as an array — the page
+ *  joins it for display. */
+export function parseTask(value: unknown): MiseTask | null {
+  if (value === null || typeof value !== "object") return null;
+  const o = value as Record<string, unknown>;
+  const name = asString(o.name);
+  if (name === "") return null;
+  return {
+    name,
+    aliases: asStringArray(o.aliases),
+    description: asString(o.description),
+    run: asStringArray(o.run),
+    depends: asStringArray(o.depends),
+    source: asString(o.source),
+    dir: asString(o.dir),
+    hide: asBoolean(o.hide, false),
+  };
+}
+
+/** Parse the `mise tasks ls --json` payload (`[MiseTask]`). The
+ *  result is sorted alphabetically by name so the table is stable
+ *  across refetches. A non-array payload yields an empty list. */
+export function parseTasksLsPayload(value: unknown): MiseTask[] {
+  if (!Array.isArray(value)) return [];
+  const out: MiseTask[] = [];
+  for (const row of value) {
+    const parsed = parseTask(row);
+    if (parsed) out.push(parsed);
+  }
+  out.sort((a, b) => a.name.localeCompare(b.name));
+  return out;
+}
+
+/** Flatten a `MiseTask.run` array into a single human-readable
+ *  string. mise represents a multi-line `run` as one entry per
+ *  line; for v1 we join with a space and surface the result
+ *  verbatim. Empty arrays surface as an em-dash so the column
+ *  still has a placeholder when a task has no run (e.g. a task
+ *  defined only by sources / outputs). */
+export function taskRunDisplay(run: string[]): string {
+  if (run.length === 0) return "";
+  return run.join(" ");
+}
+
+/** Split a comma-separated depends string into a trimmed,
+ *  empty-dropped array. The text input on the edit form
+ *  produces this shape; the argv builder consumes it. */
+export function parseDependsInput(text: string): string[] {
+  return text
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 }

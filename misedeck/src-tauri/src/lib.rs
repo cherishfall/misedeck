@@ -18,14 +18,15 @@ pub mod mise;
 use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
 use mise::{
     check_trust, detect_mise as run_mise_probe, locate_mise, mise_env, mise_ls, mise_ls_remote,
-    mise_outdated, read_mise_lockfile, run_mise, run_trust, AppError, DetectMiseOk, RunEvent,
-    RunOutcome, RunRequest,
+    mise_outdated, mise_tasks_edit_path, mise_tasks_ls, read_mise_lockfile, run_mise, run_trust,
+    AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
 };
 
 // Re-export `JsonResult` from the lib root so integration tests can
 // import it via `misedeck_lib::JsonResult` (mirrors the
 // `DetectMiseResult` re-export pattern).
 pub use self::json_result::JsonResult;
+pub use self::tasks_edit_result::TasksEditPathResult;
 pub use self::trust_result::TrustResult;
 
 mod json_result {
@@ -62,6 +63,24 @@ mod trust_result {
     #[serde(tag = "kind", rename_all = "snake_case")]
     pub enum TrustResult {
         Ok { ok: TrustStatus },
+        Err { err: AppError },
+    }
+}
+
+mod tasks_edit_result {
+    use serde::Serialize;
+
+    use super::mise::AppError;
+
+    /// Discriminated union for the `tasks_edit_path` Tauri command
+    /// (issue #27). On success, the absolute path of the file that
+    /// defines the task is shipped as `path`; on failure, the
+    /// structured `AppError` is shipped as `err`. Mirrors
+    /// `TrustResult` so the JS side can pattern-match on `kind`.
+    #[derive(Debug, Serialize)]
+    #[serde(tag = "kind", rename_all = "snake_case")]
+    pub enum TasksEditPathResult {
+        Ok { path: Option<String> },
         Err { err: AppError },
     }
 }
@@ -395,6 +414,50 @@ fn mise_trust(
     }
 }
 
+/// `mise tasks ls --json` for the current directory context.
+/// Read-only; returns the raw JSON array mise emits. Used by the
+/// tasks page (issue #27) to render the per-directory task table.
+/// When `cwd` is `None` the global task set is returned (the same
+/// surface `mise tasks ls --json` exposes from any directory).
+#[tauri::command]
+fn tasks_ls(cwd: Option<String>) -> JsonResult {
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return JsonResult::Err { err: e },
+    };
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    match mise_tasks_ls(&path, cwd_path) {
+        Ok(value) => JsonResult::Ok { value },
+        Err(e) => JsonResult::Err { err: e },
+    }
+}
+
+/// `mise tasks edit --path <name>` — return the absolute path of
+/// the file that defines the named task. The JS side feeds the
+/// path to `tauri-plugin-opener` for the "open the TOML
+/// directly" affordance. `name` is rejected when empty so the
+/// runner never sees a half-formed argv.
+#[tauri::command]
+fn tasks_edit_path(cwd: Option<String>, name: String) -> TasksEditPathResult {
+    if name.is_empty() {
+        return TasksEditPathResult::Err {
+            err: AppError::command_failed(
+                "tasks_edit_path: task name is empty",
+                String::new(),
+            ),
+        };
+    }
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return TasksEditPathResult::Err { err: e },
+    };
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    match mise_tasks_edit_path(&path, cwd_path, &name) {
+        Ok(p) => TasksEditPathResult::Ok { path: p },
+        Err(e) => TasksEditPathResult::Err { err: e },
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -412,7 +475,9 @@ pub fn run() {
             tools_env,
             read_lockfile,
             trust_check,
-            mise_trust
+            mise_trust,
+            tasks_ls,
+            tasks_edit_path
         ])
         .setup(|_app| {
             let mut guard = MISE_BINARY.lock().expect("mise path mutex poisoned");

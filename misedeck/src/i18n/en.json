@@ -175,6 +175,51 @@
       "untrustedBody": "Trust this directory before mutating its config."
     }
   },
+  "tasks": {
+    "eyebrow": "▸ MISE / TASKS",
+    "title": "Tasks",
+    "subtitle": "List, run, and edit the mise tasks for the active directory. Writes go through `mise tasks add` and stream into the panel.",
+    "nav": "Tasks",
+    "columns": {
+      "name": "Name",
+      "run": "Run",
+      "description": "Description",
+      "depends": "Depends",
+      "actions": "Actions"
+    },
+    "empty": {
+      "title": "No tasks in this directory",
+      "body": "Add a task to `<cwd>/mise.toml` to see it here, or use the Edit button on any existing global task to bind it to this directory."
+    },
+    "globalEmpty": {
+      "title": "Pick a directory to see its tasks",
+      "body": "Tasks are scoped to a directory's `mise.toml`. Use the bar above to point at a project, or look at the global task list with `mise tasks ls`."
+    },
+    "runButton": "Run",
+    "editButton": "Edit",
+    "openInEditorButton": "Open in editor",
+    "editForm": {
+      "title": "Edit task",
+      "runLabel": "Run command",
+      "runPlaceholder": "e.g. npm run build",
+      "dependsLabel": "Depends on (comma-separated)",
+      "dependsPlaceholder": "lint, test",
+      "dependsHelp": "Each name is a task in this directory's `mise.toml`. Separate with commas.",
+      "saveButton": "Save",
+      "cancelButton": "Cancel"
+    },
+    "guard": {
+      "untrustedBody": "Trust this directory before mutating its tasks."
+    },
+    "openEditorError": {
+      "title": "Could not open the config file",
+      "body": "`mise tasks edit --path` did not return a usable path. Stderr is preserved in the execution panel."
+    },
+    "readError": {
+      "title": "Failed to load tasks",
+      "body": "`mise tasks ls --json` did not return. Stderr is preserved in the execution panel."
+    }
+  },
   "states": {
     "detecting": "Probing mise…",
     "ready": "READY",

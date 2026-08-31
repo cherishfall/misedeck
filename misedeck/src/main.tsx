@@ -14,6 +14,7 @@ import { StyleGuide } from "./components/StyleGuide/StyleGuide";
 import { ToolsPage } from "./pages/ToolsPage/ToolsPage";
 import { DirectoryPreview } from "./pages/DirectoryPreview/DirectoryPreview";
 import { ConfigPage } from "./pages/ConfigPage/ConfigPage";
+import { TasksPage } from "./pages/TasksPage/TasksPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,6 +36,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                 <Routes>
                   <Route path="/" element={<App />} />
                   <Route path="/tools" element={<ToolsPage />} />
+                  <Route path="/tasks" element={<TasksPage />} />
                   <Route path="/preview" element={<DirectoryPreview />} />
                   <Route path="/config" element={<ConfigPage />} />
                   <Route path="/__styleguide" element={<StyleGuide />} />

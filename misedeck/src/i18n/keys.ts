@@ -209,6 +209,51 @@ export const I18N_KEYS = {
       untrustedBody: "config.guard.untrustedBody",
     },
   },
+  tasks: {
+    eyebrow: "tasks.eyebrow",
+    title: "tasks.title",
+    subtitle: "tasks.subtitle",
+    nav: "tasks.nav",
+    columns: {
+      name: "tasks.columns.name",
+      run: "tasks.columns.run",
+      description: "tasks.columns.description",
+      depends: "tasks.columns.depends",
+      actions: "tasks.columns.actions",
+    },
+    empty: {
+      title: "tasks.empty.title",
+      body: "tasks.empty.body",
+    },
+    globalEmpty: {
+      title: "tasks.globalEmpty.title",
+      body: "tasks.globalEmpty.body",
+    },
+    runButton: "tasks.runButton",
+    editButton: "tasks.editButton",
+    openInEditorButton: "tasks.openInEditorButton",
+    editForm: {
+      title: "tasks.editForm.title",
+      runLabel: "tasks.editForm.runLabel",
+      runPlaceholder: "tasks.editForm.runPlaceholder",
+      dependsLabel: "tasks.editForm.dependsLabel",
+      dependsPlaceholder: "tasks.editForm.dependsPlaceholder",
+      dependsHelp: "tasks.editForm.dependsHelp",
+      saveButton: "tasks.editForm.saveButton",
+      cancelButton: "tasks.editForm.cancelButton",
+    },
+    guard: {
+      untrustedBody: "tasks.guard.untrustedBody",
+    },
+    openEditorError: {
+      title: "tasks.openEditorError.title",
+      body: "tasks.openEditorError.body",
+    },
+    readError: {
+      title: "tasks.readError.title",
+      body: "tasks.readError.body",
+    },
+  },
   states: {
     detecting: "states.detecting",
     ready: "states.ready",

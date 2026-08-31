@@ -26,6 +26,7 @@ export function PageShell({ children }: PageShellProps) {
   const location = useLocation();
   const onStyleguide = location.pathname === "/__styleguide";
   const onTools = location.pathname === "/tools";
+  const onTasks = location.pathname === "/tasks";
   const onPreview = location.pathname === "/preview";
   const onConfig = location.pathname === "/config";
   const onHome = location.pathname === "/";
@@ -48,6 +49,14 @@ export function PageShell({ children }: PageShellProps) {
           data-testid="wordmark-tools"
         >
           {t(I18N_KEYS.nav.tools)}
+        </Link>
+        <Link
+          to="/tasks"
+          className={styles.wordmarkNav}
+          aria-current={onTasks ? "page" : undefined}
+          data-testid="wordmark-tasks"
+        >
+          {t(I18N_KEYS.nav.tasks)}
         </Link>
         <Link
           to="/preview"

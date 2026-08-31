@@ -175,6 +175,51 @@
       "untrustedBody": "在修改此目录的配置之前，请先信任它。"
     }
   },
+  "tasks": {
+    "eyebrow": "▸ MISE / 任务",
+    "title": "任务",
+    "subtitle": "列出、运行并编辑当前目录的 mise 任务。写入通过 `mise tasks add`，并在执行面板中实时显示。",
+    "nav": "任务",
+    "columns": {
+      "name": "名称",
+      "run": "运行",
+      "description": "说明",
+      "depends": "依赖",
+      "actions": "操作"
+    },
+    "empty": {
+      "title": "此目录没有任何任务",
+      "body": "在 `<cwd>/mise.toml` 中添加任务，或点击任意全局任务的「编辑」将其绑定到本目录。"
+    },
+    "globalEmpty": {
+      "title": "选择一个目录以查看任务",
+      "body": "任务与目录的 `mise.toml` 关联。请使用上方工具栏选择项目，或用 `mise tasks ls` 查看全局任务。"
+    },
+    "runButton": "运行",
+    "editButton": "编辑",
+    "openInEditorButton": "在编辑器中打开",
+    "editForm": {
+      "title": "编辑任务",
+      "runLabel": "运行命令",
+      "runPlaceholder": "例如 npm run build",
+      "dependsLabel": "依赖（逗号分隔）",
+      "dependsPlaceholder": "lint, test",
+      "dependsHelp": "每个名称是本目录 `mise.toml` 中的一个任务，使用逗号分隔。",
+      "saveButton": "保存",
+      "cancelButton": "取消"
+    },
+    "guard": {
+      "untrustedBody": "在修改此目录的任务之前，请先信任它。"
+    },
+    "openEditorError": {
+      "title": "无法打开配置文件",
+      "body": "`mise tasks edit --path` 没有返回可用路径。stderr 已在执行面板中保留。"
+    },
+    "readError": {
+      "title": "加载任务失败",
+      "body": "`mise tasks ls --json` 未返回结果。stderr 已在执行面板中保留。"
+    }
+  },
   "states": {
     "detecting": "正在探测 mise…",
     "ready": "就绪",

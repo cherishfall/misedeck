@@ -92,6 +92,44 @@ export interface MiseLsRemoteItem {
 }
 
 /**
+ * One row of `mise tasks ls --json` (issue #27). Mirrors
+ * `MiseTask` in `src-tauri/src/mise.rs`. All fields are
+ * `serde(default)` on the Rust side, so the JS parser tolerates
+ * drift. `run` is an array of strings — a single command may be
+ * split across multiple `run` lines in the TOML — and the page
+ * joins them with `\n` for display.
+ */
+export interface MiseTask {
+  /** Task name (the key under `[tasks]` in mise.toml). */
+  name: string;
+  /** Alternative names for the task. Empty when unset. */
+  aliases: string[];
+  /** Free-text description; empty when unset. */
+  description: string;
+  /** The run command lines (one per TOML `run` line). */
+  run: string[];
+  /** Task names this task depends on. */
+  depends: string[];
+  /** Absolute path of the config file the task came from. */
+  source: string;
+  /** The `dir` field; empty when the task inherits the cwd. */
+  dir: string;
+  /** True when the task is marked `hide = true` in the TOML. */
+  hide: boolean;
+}
+
+/**
+ * The `tasks_edit_path` Tauri command returns this discriminated
+ * union (issue #27). On success, the path is shipped as `path`
+ * (Option<String>); on failure, the structured `AppError` is
+ * shipped as `err`. Mirrors `TasksEditPathResult` in
+ * `src-tauri/src/lib.rs`.
+ */
+export type TasksEditPathResult =
+  | { kind: "ok"; path: string | null }
+  | { kind: "err"; err: AppError };
+
+/**
  * The `read_lockfile` Tauri command returns a discriminated union so
  * the JS side can tell "no lockfile" (None) apart from "the file
  * exists but is empty" (`Some("")`) apart from a hard I/O error
