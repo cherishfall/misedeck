@@ -1,6 +1,6 @@
 # Issue tracker: GitHub
 
-> [简体中文](./issue-tracker.zh-CN.md)
+> [简体中文](../../zh-CN/docs/agents/issue-tracker.md)
 
 Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 

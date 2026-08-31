@@ -1,6 +1,6 @@
 # Conventions
 
-> [简体中文](./conventions.zh-CN.md)
+> [简体中文](../../zh-CN/docs/agents/conventions.md)
 
 Rules for writing code in this repo. Read before invoking mise, handling errors, or writing tests.
 
@@ -48,7 +48,7 @@ MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  UNTRUSTED  TIMEOUT
 2. Every acceptance criterion in the ticket is demonstrably met.
 3. The app was run and the changed flow driven end-to-end; a screenshot (or harness-provided UI evidence) is attached to the closing comment.
 4. All new UI copy exists in both `en.json` and `zh-CN.json`.
-5. If a doc was touched, its `.zh-CN.md` sibling was updated in the same change.
+5. If a doc was touched, its mirrored counterpart under `zh-CN/` was updated in the same change.
 6. The closing comment states what was verified and how.
 
 ## Verification loop (replaces human code review)

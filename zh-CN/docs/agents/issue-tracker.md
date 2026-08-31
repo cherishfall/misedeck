@@ -1,6 +1,6 @@
 # Issue tracker: GitHub
 
-> [English](./issue-tracker.md)
+> [English](../../../docs/agents/issue-tracker.md)
 
 本仓库的 issue 和规格说明以 GitHub issues 的形式存在。所有操作使用 `gh` CLI。
 

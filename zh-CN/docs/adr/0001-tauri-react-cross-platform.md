@@ -1,6 +1,6 @@
 # Tauri 2 + React/TS, cross-platform with macOS polished first
 
-> [English](./0001-tauri-react-cross-platform.md)
+> [English](../../../docs/adr/0001-tauri-react-cross-platform.md)
 
 MiseDeck 使用 Tauri 2（轻量 Rust 外壳）和 React/TypeScript 前端构建，从单一代码库面向 macOS、Windows 和 Linux。该方案在原生 SwiftUI 和 Electron 中胜出。
 

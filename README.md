@@ -1,6 +1,6 @@
 # MiseDeck
 
-> [简体中文](./README.zh-CN.md)
+> [简体中文](./zh-CN/README.md)
 
 **A desktop GUI for [mise](https://mise.jdx.dev), the polyglot tool version manager.** Faithful to the command line you already know: every screen maps to a mise command, and every action shows you the exact command it runs.
 

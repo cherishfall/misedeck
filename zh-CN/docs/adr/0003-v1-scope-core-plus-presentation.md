@@ -1,6 +1,6 @@
 # v1 scope: core layer plus presentation layer
 
-> [English](./0003-v1-scope-core-plus-presentation.md)
+> [English](../../../docs/adr/0003-v1-scope-core-plus-presentation.md)
 
 v1 覆盖 mise 的**核心层**（Tool 的安装/切换/升级/outdated，Task 的查看/运行/编辑，环境变量管理，设置，插件/backend 浏览，全局与项目配置）和**展示层**（Lockfile 查看，`mise doctor` 诊断，配置层级可视化 —— 展示每个值来自哪个文件）。**深水区层** —— `mise bootstrap`、`mise oci`、`mise deps`、`mise mcp` —— 明确不在 v1 范围内，列在路线图上。
 

@@ -1,6 +1,6 @@
 # Getting Started（ticket #17 的黄金路径）
 
-> [English](./getting-started.md)
+> [English](../../../docs/agents/getting-started.md)
 
 通往可运行骨架的精确、已知良好的路径。照字面执行；不要即兴发挥。
 

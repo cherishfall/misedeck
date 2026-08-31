@@ -1,6 +1,6 @@
 # Architecture
 
-> [简体中文](./architecture.zh-CN.md)
+> [简体中文](../../zh-CN/docs/agents/architecture.md)
 
 Layering, top to bottom. Each layer only talks to the one below it.
 

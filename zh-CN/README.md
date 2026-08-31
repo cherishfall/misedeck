@@ -1,6 +1,6 @@
 # MiseDeck
 
-> [English](./README.md)
+> [English](../README.md)
 
 **[mise](https://mise.jdx.dev)（多语言工具版本管理器）的桌面 GUI。** 忠实于你已知的命令行：每个界面都对应一条 mise 命令，每个操作都向你展示它实际执行的命令。
 

@@ -1,6 +1,6 @@
 # Conventions
 
-> [English](./conventions.md)
+> [English](../../../docs/agents/conventions.md)
 
 本仓库的代码编写规则。在调用 mise、处理错误或编写测试之前阅读。
 
@@ -48,7 +48,7 @@ MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  UNTRUSTED  TIMEOUT
 2. ticket 中的每条验收标准都被确实满足。
 3. 应用已被运行，改动的流程已被端到端驱动；截图（或运行环境提供的 UI 证据）附在收尾评论中。
 4. 所有新增 UI 文案同时存在于 `en.json` 和 `zh-CN.json`。
-5. 如果改动了文档，其 `.zh-CN.md` 姊妹篇已在同一次改动中更新。
+5. 如果改动了文档，其在 `zh-CN/` 下的镜像对应文档已在同一次改动中更新。
 6. 收尾评论说明验证了什么、如何验证的。
 
 ## Verification loop (replaces human code review)

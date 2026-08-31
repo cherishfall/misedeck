@@ -1,6 +1,6 @@
 # MiseDeck
 
-> [简体中文](./CONTEXT.zh-CN.md)
+> [简体中文](./zh-CN/CONTEXT.md)
 
 MiseDeck is an open-source desktop GUI client for [mise](https://mise.jdx.dev), the polyglot tool version manager. It covers mise's core workflows with guided UX, targeting macOS first and Windows/Linux as beta.
 

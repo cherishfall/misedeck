@@ -1,6 +1,6 @@
 # MiseDeck
 
-> [English](./AGENTS.md)
+> [English](../AGENTS.md)
 
 [mise](https://mise.jdx.dev) 的开源桌面 GUI 客户端。Tauri 2 + React/TypeScript，跨平台（macOS 优先打磨，Windows/Linux 为 beta）。产品原则：忠实呈现 mise 的命令面——不发明 CLI 里没有的概念（ADR-0004）。
 
@@ -25,7 +25,7 @@
 
 ## 文档语言
 
-本仓库每份文档都有同目录下的简体中文姊妹篇，命名为 `<name>.zh-CN.md`。每对文档顶部互相链接（`[简体中文]` / `[English]`）。修改任何文档时，必须在同一次改动中同步更新其姊妹篇——过期的翻译就是 bug。
+英语是文档的规范语言（canonical）；中文版本面向中文读者。每份文档都有两个版本，并在顶部双向链接（`[简体中文]` / `[English]`）。所有中文文档位于 `zh-CN/` 目录下，目录结构与文件名与英文版完全镜像（例如 `docs/adr/0001-x.md` ↔ `zh-CN/docs/adr/0001-x.md`）。修改任一版本而不要把同样的改动级联到另一版本，就是 bug。
 
 ## Git
 

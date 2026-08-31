@@ -1,6 +1,6 @@
 # Getting Started (golden path for ticket #17)
 
-> [简体中文](./getting-started.zh-CN.md)
+> [简体中文](../../zh-CN/docs/agents/getting-started.md)
 
 The exact, known-good path to a running skeleton. Follow it literally; improvise nothing.
 

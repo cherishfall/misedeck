@@ -1,6 +1,6 @@
 # MiseDeck
 
-> [简体中文](./AGENTS.zh-CN.md)
+> [简体中文](./zh-CN/AGENTS.md)
 
 An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + React/TypeScript, cross-platform (macOS polished first, Windows/Linux beta). The product principle: a faithful GUI over mise's command surface — no concepts the CLI does not have (ADR-0004).
 
@@ -25,7 +25,7 @@ An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + Re
 
 ## Documentation languages
 
-Every doc in this repo has a Simplified Chinese sibling named `<name>.zh-CN.md` in the same directory. Cross-link each pair at the top (`[简体中文]` / `[English]`). When editing a doc, update its sibling in the same change — a stale translation is a bug.
+English is the canonical documentation language; the Chinese versions exist for Chinese-reading audiences. Every doc has both versions, bidirectionally linked at the top (`[简体中文]` / `[English]`). All Chinese docs live under `zh-CN/`, mirroring the English directory structure and file names exactly (e.g. `docs/adr/0001-x.md` ↔ `zh-CN/docs/adr/0001-x.md`). Editing either version without cascading the same change to the other is a bug.
 
 ## Git
 

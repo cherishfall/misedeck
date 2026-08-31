@@ -1,6 +1,6 @@
 # Architecture
 
-> [English](./architecture.md)
+> [English](../../../docs/agents/architecture.md)
 
 分层，自上而下。每一层只与它的下一层对话。
 

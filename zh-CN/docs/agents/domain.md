@@ -1,6 +1,6 @@
 # Domain Docs
 
-> [English](./domain.md)
+> [English](../../../docs/agents/domain.md)
 
 工程 skill 在探索代码库时应如何使用本仓库的领域文档。
 

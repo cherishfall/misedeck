@@ -1,6 +1,6 @@
 # v1 scope: core layer plus presentation layer
 
-> [简体中文](./0003-v1-scope-core-plus-presentation.zh-CN.md)
+> [简体中文](../../zh-CN/docs/adr/0003-v1-scope-core-plus-presentation.md)
 
 v1 covers mise's **core layer** (Tools install/switch/upgrade/outdated, Tasks view/run/edit, env var management, settings, plugin/backend browsing, global vs project config) and the **presentation layer** (Lockfile viewing, `mise doctor` diagnostics, config-hierarchy visualization showing which value comes from which file). The **deep-water layer** — `mise bootstrap`, `mise oci`, `mise deps`, `mise mcp` — is explicitly out of v1 and lives on the roadmap.
 

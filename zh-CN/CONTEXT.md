@@ -1,6 +1,6 @@
 # MiseDeck
 
-> [English](./CONTEXT.md)
+> [English](../CONTEXT.md)
 
 MiseDeck 是 [mise](https://mise.jdx.dev)（多语言工具版本管理器）的开源桌面 GUI 客户端。它以引导式 UX 覆盖 mise 的核心工作流，优先支持 macOS，Windows/Linux 为 beta。
 
