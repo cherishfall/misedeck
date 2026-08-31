@@ -9,7 +9,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 
-import type { AppError, DetectMiseResult } from "../types/tauri";
+import type { AppError, DetectMiseResult, JsonResult } from "../types/tauri";
 
 /** Type-guard for the structured AppError shape. Exported so the
  *  execution panel's reducer can pattern-match the IPC response. */
@@ -30,4 +30,22 @@ export async function detectMise(): Promise<DetectMiseResult> {
   // not throw on the happy path. We still wrap in try/catch as a defensive
   // net for IPC-level errors (channel closed, webview torn down, etc.).
   return (await invoke("detect_mise")) as DetectMiseResult;
+}
+
+/** Calls the `tools_ls` Tauri command and returns the typed union. */
+export async function toolsLs(cwd: string | null): Promise<JsonResult> {
+  return (await invoke("tools_ls", { cwd })) as JsonResult;
+}
+
+/** Calls the `tools_outdated` Tauri command and returns the typed union. */
+export async function toolsOutdated(cwd: string | null): Promise<JsonResult> {
+  return (await invoke("tools_outdated", { cwd })) as JsonResult;
+}
+
+/** Calls the `tools_ls_remote` Tauri command and returns the typed union. */
+export async function toolsLsRemote(
+  cwd: string | null,
+  tool: string,
+): Promise<JsonResult> {
+  return (await invoke("tools_ls_remote", { cwd, tool })) as JsonResult;
 }

@@ -83,6 +83,36 @@ export const I18N_KEYS = {
     title: "starter.title",
     hint: "starter.hint",
   },
+  tools: {
+    eyebrow: "tools.eyebrow",
+    title: "tools.title",
+    hint: "tools.hint",
+    columns: {
+      tool: "tools.columns.tool",
+      version: "tools.columns.version",
+      requested: "tools.columns.requested",
+      backend: "tools.columns.backend",
+      source: "tools.columns.source",
+      latest: "tools.columns.latest",
+      actions: "tools.columns.actions",
+    },
+    empty: {
+      title: "tools.empty.title",
+      body: "tools.empty.body",
+    },
+    missing: {
+      title: "tools.missing.title",
+      body: "tools.missing.body",
+    },
+    outdatedBadge: "tools.outdatedBadge",
+    refresh: "tools.refresh",
+    installHint: "tools.installHint",
+    error: {
+      title: "tools.error.title",
+      body: "tools.error.body",
+    },
+    noOutdated: "tools.noOutdated",
+  },
   states: {
     detecting: "states.detecting",
     ready: "states.ready",

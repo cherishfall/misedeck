@@ -49,6 +49,36 @@
     "title": "Mise",
     "hint": "Run a tool, set a version, trust a config — every mutation goes through the execution panel."
   },
+  "tools": {
+    "eyebrow": "▸ MISE / TOOLS",
+    "title": "Tools",
+    "hint": "Tools installed and active for the current context. Outdated versions glow in the table; mutations arrive in the next ticket.",
+    "columns": {
+      "tool": "Tool",
+      "version": "Version",
+      "requested": "Requested",
+      "backend": "Backend",
+      "source": "Source",
+      "latest": "Latest",
+      "actions": "Actions"
+    },
+    "empty": {
+      "title": "No tools installed",
+      "body": "Run `mise use -g node@latest` to install your first tool, or browse the registry for something else."
+    },
+    "missing": {
+      "title": "Tools unavailable",
+      "body": "MiseDeck needs the mise CLI to list installed tools. Go back and install mise to populate this page."
+    },
+    "outdatedBadge": "outdated",
+    "refresh": "Refresh",
+    "installHint": "Install a tool from the registry",
+    "error": {
+      "title": "Failed to load tools",
+      "body": "`mise ls --json` did not return. Stderr is preserved in the execution panel."
+    },
+    "noOutdated": "All installed tools are up to date."
+  },
   "states": {
     "detecting": "Probing mise…",
     "ready": "READY",

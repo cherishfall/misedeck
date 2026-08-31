@@ -1,0 +1,43 @@
+/* MiseMissingState — used by any page that needs mise but the
+ * binary is not on this machine. Token-only; no new colors or
+ * animations. */
+
+.missing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--hull) 40%, transparent);
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--flare);
+}
+
+.body {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: var(--space-2);
+}
+
+.back {
+  text-decoration: none;
+}

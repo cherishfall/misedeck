@@ -1,0 +1,75 @@
+/* PageShell — shared chrome. Mirrors the original App.css rules so
+ * nothing visually changes for the existing starter; the new
+ * /tools page picks up the same look. */
+
+.shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--line);
+}
+
+.wordmarkName {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: var(--tracking-wordmark);
+  text-transform: uppercase;
+  color: var(--beam);
+  text-decoration: none;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--beam) 35%, transparent);
+}
+
+.wordmarkName[aria-current="page"] {
+  text-shadow: 0 0 14px color-mix(in srgb, var(--beam) 50%, transparent);
+}
+
+.wordmarkTagline {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.wordmarkNav {
+  margin-left: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  padding: 2px var(--space-2);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease;
+}
+
+.wordmarkNav:hover,
+.wordmarkNav:focus-visible {
+  color: var(--beam);
+  border-color: var(--line);
+  outline: none;
+}
+
+.wordmarkNav[aria-current="page"] {
+  color: var(--beam);
+  border-color: var(--line-strong);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}

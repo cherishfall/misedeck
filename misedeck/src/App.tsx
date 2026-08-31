@@ -1,17 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation } from "react-router";
 
 import { detectMise } from "./api/mise";
 import { I18N_KEYS } from "./i18n/keys";
 import type { AppError, AppErrorCode, DetectMiseOk } from "./types/tauri";
 
-import { LanguageSwitcher } from "./components/LanguageSwitcher/LanguageSwitcher";
-import { ContextBar } from "./components/ContextBar/ContextBar";
+import { PageShell } from "./components/PageShell/PageShell";
 import { Button } from "./components/Button/Button";
 import { useExecutionContext } from "./components/ExecutionPanel";
 
-import { ExecutionPanel } from "./components/ExecutionPanel";
 import "./App.css";
 
 interface ViewState {
@@ -50,8 +47,6 @@ function toViewState(
 
 function App() {
   const { t } = useTranslation();
-  const location = useLocation();
-  const onStyleguide = location.pathname === "/__styleguide";
   const { runInstall, runSelfUpdate } = useExecutionContext();
   const queryClient = useQueryClient();
 
@@ -72,25 +67,8 @@ function App() {
   };
 
   return (
-    <div className="app-shell">
-      <ContextBar />
-      <header className="wordmark">
-        <Link to="/" className="wordmark__name">
-          {t(I18N_KEYS.app.wordmark)}
-        </Link>
-        <span className="wordmark__tagline">{t(I18N_KEYS.app.tagline)}</span>
-        <Link
-          to="/__styleguide"
-          className="wordmark__styleguide"
-          aria-current={onStyleguide ? "page" : undefined}
-        >
-          {t(I18N_KEYS.styleguide.styleguideLink)}
-        </Link>
-      </header>
-
-      <LanguageSwitcher />
-
-      <main className="starter">
+    <PageShell>
+      <div className="starter">
         <div className="starter__panel">
           <div className="signal-line" aria-hidden="true" />
           <div className="corner corner--tl" aria-hidden="true" />
@@ -240,9 +218,8 @@ function App() {
             </div>
           )}
         </div>
-      </main>
-      <ExecutionPanel />
-    </div>
+      </div>
+    </PageShell>
   );
 }
 

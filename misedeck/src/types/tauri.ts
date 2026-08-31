@@ -42,3 +42,51 @@ export interface AppError {
 export type DetectMiseResult =
   | { kind: "ok"; ok: DetectMiseOk }
   | { kind: "err"; err: AppError };
+
+/**
+ * Discriminated union for the read-only tools commands
+ * (`tools_ls`, `tools_outdated`, `tools_ls_remote`). The Rust
+ * boundary returns the raw JSON mise produced as `value`; the JS
+ * side parses it into the typed shapes below. Mirrors `JsonResult`
+ * in `src-tauri/src/lib.rs`.
+ */
+export type JsonResult =
+  | { kind: "ok"; value: Record<string, unknown> }
+  | { kind: "err"; err: AppError };
+
+/**
+ * Source of an installed tool's version, as reported by
+ * `mise ls --json`. The `type` is the discriminator (e.g. "mise.toml",
+ * "environment", "idfk"); other fields may be absent.
+ */
+export interface MiseSource {
+  type: string;
+  path?: string;
+}
+
+/** One row of `mise ls --json` (a single installed version of a tool). */
+export interface MiseLsItem {
+  version: string;
+  requestedVersion?: string;
+  installPath?: string;
+  symlinkedTo?: string;
+  source?: MiseSource;
+  installed: boolean;
+  active: boolean;
+}
+
+/** One row of `mise outdated --json --bump`. */
+export interface MiseOutdatedItem {
+  name: string;
+  requested?: string;
+  current?: string;
+  bump?: string;
+  latest?: string;
+  source?: MiseSource;
+}
+
+/** One row of `mise ls-remote --json <tool>`. */
+export interface MiseLsRemoteItem {
+  version: string;
+  createdAt?: string;
+}

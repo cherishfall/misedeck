@@ -348,6 +348,165 @@ where
     }
 }
 
+/// Source of an installed tool's version, as reported by `mise ls --json`.
+/// mise has a small set of well-known sources (the global / local
+/// toml files, environment overrides, idle). The `type` is the
+/// discriminator; other fields are optional and may be absent when
+/// the tool was not pinned by a config file.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct MiseSource {
+    #[serde(default)]
+    pub r#type: String,
+    #[serde(default)]
+    pub path: Option<String>,
+}
+
+/// One row of `mise ls --json` (a single installed version of a tool).
+/// All fields are `serde(default)` so a forked mise that omits one of
+/// them does not break the UI.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct MiseLsItem {
+    #[serde(default)]
+    pub version: String,
+    #[serde(default)]
+    pub requested_version: Option<String>,
+    #[serde(default)]
+    pub install_path: Option<String>,
+    #[serde(default)]
+    pub symlinked_to: Option<String>,
+    #[serde(default)]
+    pub source: Option<MiseSource>,
+    #[serde(default)]
+    pub installed: bool,
+    #[serde(default)]
+    pub active: bool,
+}
+
+/// One row of `mise outdated --json` (a tool with a newer version
+/// available than the one currently requested).
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct MiseOutdatedItem {
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub requested: Option<String>,
+    #[serde(default)]
+    pub current: Option<String>,
+    #[serde(default)]
+    pub bump: Option<String>,
+    #[serde(default)]
+    pub latest: Option<String>,
+    #[serde(default)]
+    pub source: Option<MiseSource>,
+}
+
+/// One row of `mise ls-remote --json <tool>`.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct MiseLsRemoteItem {
+    #[serde(default)]
+    pub version: String,
+    #[serde(default)]
+    pub created_at: Option<String>,
+}
+
+/// Run an arbitrary read-only mise command and return its JSON
+/// payload as a `serde_json::Value`. Used by the tools page (#21) for
+/// `mise ls --json`, `mise outdated --json`, and `mise ls-remote
+/// --json <tool>`. The typed shapes above document the expected
+/// shape; the actual parsing into TS types happens on the JS side
+/// because the mise JSON has drifted historically (new optional
+/// fields appear between minor releases) and keeping the boundary
+/// tolerant is cheaper than keeping the Rust types in lockstep.
+///
+/// Errors:
+/// * non-zero exit → `COMMAND_FAILED` with stderr preserved verbatim
+/// * malformed JSON → `PARSE_FAILED` with the raw payload logged
+/// * timeout → `TIMEOUT`
+pub fn run_mise_json(
+    mise_path: &Path,
+    req: &RunRequest,
+) -> Result<serde_json::Value, AppError> {
+    let outcome = run_mise(mise_path, req, |_| {})?;
+    if outcome.timed_out {
+        return Err(AppError::timeout());
+    }
+    if outcome.exit_code != 0 {
+        return Err(AppError::command_failed(
+            format!("mise exited with status {}", outcome.exit_code),
+            outcome.stderr,
+        ));
+    }
+    let value: serde_json::Value = serde_json::from_slice(outcome.stdout.as_bytes())
+        .map_err(|e| {
+            AppError::parse_failed(
+                format!("invalid mise JSON output: {e}"),
+                outcome.stderr.clone(),
+            )
+        })?;
+    Ok(value)
+}
+
+/// `mise ls --json` — the global tools list. Returns the raw JSON
+/// object mise emits (`{tool: [items...]}`); the typed `MiseLsItem`
+/// shape above documents the expected fields.
+pub fn mise_ls(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+) -> Result<serde_json::Value, AppError> {
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(vec!["ls".to_string(), "--json".to_string()], c),
+        None => RunRequest::new(vec!["ls".to_string(), "--json".to_string()]),
+    };
+    run_mise_json(mise_path, &req)
+}
+
+/// `mise outdated --json` — the outdated-tools map. Returns the raw
+/// JSON object mise emits (`{tool: MiseOutdatedItem}` or `{}` when
+/// no tools are outdated). The `--bump` flag is added to the
+/// invocation so the JSON includes both `current` and `bump` even
+/// when the current version is already the latest.
+pub fn mise_outdated(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+) -> Result<serde_json::Value, AppError> {
+    let args = vec!["outdated".to_string(), "--json".to_string(), "--bump".to_string()];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    run_mise_json(mise_path, &req)
+}
+
+/// `mise ls-remote --json <tool>` — the list of upstream versions
+/// for a single tool. Returns the raw JSON array mise emits
+/// (`[{version, created_at?}, ...]`).
+pub fn mise_ls_remote(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+    tool: &str,
+) -> Result<serde_json::Value, AppError> {
+    if tool.is_empty() {
+        return Err(AppError::command_failed(
+            "mise_ls_remote: tool name is empty",
+            String::new(),
+        ));
+    }
+    let args = vec![
+        "ls-remote".to_string(),
+        "--json".to_string(),
+        tool.to_string(),
+    ];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    run_mise_json(mise_path, &req)
+}
+
 /// Run `mise version --json` and return the parsed result. Thin wrapper
 /// around the generalized runner for the probe path.
 pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {

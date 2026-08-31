@@ -1,0 +1,232 @@
+/* ToolsPage — read-only tools list. Layout, color, and motion all
+ * consume design tokens; no new values, no new animations. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-6) var(--space-6);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ice);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--size-display);
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 0;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--beam) 30%, transparent);
+}
+
+.hint {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--dim);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 60ch;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.toolbarHint {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.refresh {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ice);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease;
+}
+
+.refresh:hover:not(:disabled),
+.refresh:focus-visible {
+  color: var(--beam);
+  border-color: var(--line-strong);
+  outline: none;
+}
+
+.refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.signalLine {
+  margin: 0;
+}
+
+/* ---------- Table cells ---------- */
+
+.cellTool {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.toolName {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.cellVersion {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--beam);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--beam) 35%, transparent);
+  font-weight: 600;
+}
+
+.cellVersionOutdated {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+}
+
+.cellRequested {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+}
+
+.cellSource {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--dim);
+  word-break: break-all;
+}
+
+.cellLatest {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+}
+
+.arrow {
+  color: var(--flare);
+}
+
+.latestValue {
+  color: var(--flare);
+  font-weight: 600;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--flare) 35%, transparent);
+}
+
+.dim {
+  color: var(--dim);
+}
+
+.cellActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ---------- Loading / error states ---------- */
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dim);
+}
+
+.loadingLabel {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.errorState {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--tint-danger);
+  border-radius: var(--radius-panel);
+  background: var(--tint-danger-bg);
+}
+
+.errorLabel {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--breach);
+}
+
+.errorBody {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--text);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.errorStderr {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--breach);
+  background: color-mix(in srgb, var(--breach) 8%, transparent);
+  border: 1px solid var(--tint-danger);
+  border-radius: 4px;
+  padding: var(--space-3);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

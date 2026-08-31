@@ -10,6 +10,7 @@ import { DirectoryProvider } from "./state/directoryContext";
 import { ExecutionProvider } from "./components/ExecutionPanel";
 import App from "./App";
 import { StyleGuide } from "./components/StyleGuide/StyleGuide";
+import { ToolsPage } from "./pages/ToolsPage/ToolsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,6 +30,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<App />} />
+                <Route path="/tools" element={<ToolsPage />} />
                 <Route path="/__styleguide" element={<StyleGuide />} />
               </Routes>
             </BrowserRouter>

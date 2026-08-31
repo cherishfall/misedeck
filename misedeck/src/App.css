@@ -4,66 +4,6 @@
  * layout and a couple of state-specific helpers. Every color and timing
  * is consumed from `tokens.css`; this file never hardcodes values. */
 
-.app-shell {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.wordmark {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--line);
-}
-
-.wordmark__name {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: var(--tracking-wordmark);
-  text-transform: uppercase;
-  color: var(--beam);
-  text-shadow: 0 0 12px color-mix(in srgb, var(--beam) 35%, transparent);
-}
-
-.wordmark__tagline {
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--dim);
-}
-
-.wordmark__styleguide {
-  margin-left: var(--space-3);
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--dim);
-  text-decoration: none;
-  padding: 2px var(--space-2);
-  border: 1px solid transparent;
-  border-radius: 4px;
-  transition:
-    color var(--motion-state-change) ease,
-    border-color var(--motion-state-change) ease;
-}
-
-.wordmark__styleguide:hover,
-.wordmark__styleguide:focus-visible {
-  color: var(--beam);
-  border-color: var(--line);
-  outline: none;
-}
-
-.wordmark__styleguide[aria-current="page"] {
-  color: var(--beam);
-  border-color: var(--line-strong);
-}
-
 .starter {
   flex: 1;
   display: flex;

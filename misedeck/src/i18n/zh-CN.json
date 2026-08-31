@@ -49,6 +49,36 @@
     "title": "Mise",
     "hint": "运行工具、设置版本、信任配置 —— 所有变更都通过执行面板完成。"
   },
+  "tools": {
+    "eyebrow": "▸ MISE / 工具",
+    "title": "工具",
+    "hint": "当前上下文中已安装并处于活动状态的工具。过期版本在表格中会发光；变更将在下一个 ticket 中提供。",
+    "columns": {
+      "tool": "工具",
+      "version": "版本",
+      "requested": "请求",
+      "backend": "后端",
+      "source": "来源",
+      "latest": "最新",
+      "actions": "操作"
+    },
+    "empty": {
+      "title": "尚未安装任何工具",
+      "body": "运行 `mise use -g node@latest` 安装第一个工具，或在 registry 中浏览其他工具。"
+    },
+    "missing": {
+      "title": "工具列表不可用",
+      "body": "MiseDeck 需要 mise CLI 才能列出已安装的工具。请返回并安装 mise 以填充此页面。"
+    },
+    "outdatedBadge": "过期",
+    "refresh": "刷新",
+    "installHint": "从 registry 安装工具",
+    "error": {
+      "title": "加载工具列表失败",
+      "body": "`mise ls --json` 未返回结果。stderr 已在执行面板中保留。"
+    },
+    "noOutdated": "所有已安装工具均为最新版本。"
+  },
   "states": {
     "detecting": "正在探测 mise…",
     "ready": "就绪",

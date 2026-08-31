@@ -1,0 +1,50 @@
+{
+  "go": [
+    {
+      "version": "1.26.7",
+      "requested_version": "1.26.7",
+      "install_path": "/Users/example/.local/share/mise/installs/go/1.26.7",
+      "source": {
+        "type": "mise.toml",
+        "path": "/Users/example/.config/mise/config.toml"
+      },
+      "installed": true,
+      "active": true
+    }
+  ],
+  "java": [
+    {
+      "version": "oracle-8",
+      "install_path": "/Users/example/.local/share/mise/installs/java/oracle-8",
+      "symlinked_to": "/Users/example/.local/share/mise/installs/java/oracle-8",
+      "installed": true,
+      "active": false
+    },
+    {
+      "version": "oracle-17",
+      "requested_version": "oracle-17",
+      "install_path": "/Users/example/.local/share/mise/installs/java/oracle-17",
+      "source": {
+        "type": "mise.toml",
+        "path": "/Users/example/.config/mise/config.toml"
+      },
+      "symlinked_to": "/Users/example/.local/share/mise/installs/java/oracle-17",
+      "installed": true,
+      "active": true
+    }
+  ],
+  "node": [
+    {
+      "version": "22.11.0",
+      "requested_version": "22",
+      "install_path": "/Users/example/.local/share/mise/installs/node/22.11.0",
+      "source": {
+        "type": "mise.toml",
+        "path": "/Users/example/.config/mise/config.toml"
+      },
+      "symlinked_to": "/Users/example/.local/share/mise/installs/node/22",
+      "installed": true,
+      "active": true
+    }
+  ]
+}

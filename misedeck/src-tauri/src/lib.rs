@@ -16,7 +16,34 @@ pub mod install;
 pub mod mise;
 
 use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
-use mise::{detect_mise as run_mise_probe, locate_mise, run_mise, AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest};
+use mise::{
+    detect_mise as run_mise_probe, locate_mise, mise_ls, mise_ls_remote, mise_outdated, run_mise,
+    AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
+};
+
+// Re-export `JsonResult` from the lib root so integration tests can
+// import it via `misedeck_lib::JsonResult` (mirrors the
+// `DetectMiseResult` re-export pattern).
+pub use self::json_result::JsonResult;
+
+mod json_result {
+    use serde::Serialize;
+
+    use super::mise::AppError;
+
+    /// Discriminated union for the read-only tools commands
+    /// (`tools_ls`, `tools_outdated`, `tools_ls_remote`). On success,
+    /// the raw JSON payload mise returned is shipped as `value`; on
+    /// failure, the structured `AppError` is shipped as `err`. The
+    /// JS side parses the `value` into the typed shapes defined in
+    /// `types/tauri.ts`.
+    #[derive(Debug, Serialize)]
+    #[serde(tag = "kind", rename_all = "snake_case")]
+    pub enum JsonResult {
+        Ok { value: serde_json::Value },
+        Err { err: AppError },
+    }
+}
 
 /// Cached path to the mise binary, resolved once on first call to `detect_mise`.
 /// Holding it lets subsequent commands skip the filesystem probe and keeps
@@ -201,6 +228,81 @@ fn mise_self_update(on_event: tauri::ipc::Channel<RunEvent>) -> InstallCommandRe
     }
 }
 
+/// Resolve the mise binary path, populating the cache on first call.
+/// Returns `Err(AppError)` (wrapped in the supplied closure) when the
+/// binary cannot be located.
+fn resolve_mise_binary<F>(on_err: F) -> Result<PathBuf, AppError>
+where
+    F: FnOnce(AppError) -> AppError,
+{
+    let path = {
+        let cached = MISE_BINARY.lock().expect("mise path mutex poisoned");
+        cached.clone()
+    };
+    match path {
+        Some(p) => Ok(p),
+        None => match locate_mise() {
+            Ok(p) => {
+                *MISE_BINARY.lock().expect("mise path mutex poisoned") = Some(p.clone());
+                Ok(p)
+            }
+            Err(e) => Err(on_err(e)),
+        },
+    }
+}
+
+/// `mise ls --json` for the current directory context. Read-only;
+/// returns the raw JSON object mise emits.
+#[tauri::command]
+fn tools_ls(cwd: Option<String>) -> JsonResult {
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return JsonResult::Err { err: e },
+    };
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    match mise_ls(&path, cwd_path) {
+        Ok(value) => JsonResult::Ok { value },
+        Err(e) => JsonResult::Err { err: e },
+    }
+}
+
+/// `mise outdated --json --bump` for the current directory context.
+/// Read-only; returns the raw JSON object mise emits (`{}` when no
+/// tools are outdated).
+#[tauri::command]
+fn tools_outdated(cwd: Option<String>) -> JsonResult {
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return JsonResult::Err { err: e },
+    };
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    match mise_outdated(&path, cwd_path) {
+        Ok(value) => JsonResult::Ok { value },
+        Err(e) => JsonResult::Err { err: e },
+    }
+}
+
+/// `mise ls-remote --json <tool>` for upstream version browsing.
+/// Read-only; returns the raw JSON array mise emits. `tool` is
+/// rejected when empty so the runner never sees a half-formed argv.
+#[tauri::command]
+fn tools_ls_remote(cwd: Option<String>, tool: String) -> JsonResult {
+    if tool.is_empty() {
+        return JsonResult::Err {
+            err: AppError::command_failed("tools_ls_remote: tool is empty", String::new()),
+        };
+    }
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return JsonResult::Err { err: e },
+    };
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    match mise_ls_remote(&path, cwd_path, &tool) {
+        Ok(value) => JsonResult::Ok { value },
+        Err(e) => JsonResult::Err { err: e },
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -211,7 +313,10 @@ pub fn run() {
             detect_mise,
             run_mise_command,
             install_mise,
-            mise_self_update
+            mise_self_update,
+            tools_ls,
+            tools_outdated,
+            tools_ls_remote
         ])
         .setup(|_app| {
             let mut guard = MISE_BINARY.lock().expect("mise path mutex poisoned");
