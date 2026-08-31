@@ -178,7 +178,8 @@ jobs:
           # Only auto-generate when we have nothing else to put there.
           generate_release_notes: ${{ steps.notes.outputs.source == 'auto' }}
           draft: false
-          prerelease: false
+          # Treat alpha/beta/rc/pre tags as pre-releases; stable tags are full releases.
+          prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') || contains(github.ref_name, '-pre') }}
           # Every file under artifacts/ — bundles and per-platform
           # SHA256SUMS — is attached with its original filename.
           files: |
