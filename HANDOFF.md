@@ -30,6 +30,7 @@ Last updated: end of session C — all v1 implementation tickets closed.
 | — | Pre-release workflow tweak | `de8c7df` | `.github/workflows/release.yml` marks `-alpha`/`-beta`/`-rc`/`-pre` tags as pre-releases |
 | — | Windows CI fix | `0df5c68` | `which_exists` in `shell.rs` was cfg-gated to Linux-only, causing Windows build to fail; made it cross-platform and added `#[allow(dead_code)]` |
 | — | macOS Gatekeeper docs fix | `daf5e7d` | README / release template had wrong app name (`MiseDeck.app`) and incomplete "damaged" workaround; corrected to `misedeck.app` + `xattr` command |
+| — | Version bump to 1.0.0-beta.3 | `c180742` | package.json / package-lock.json / tauri.conf.json / Cargo.toml / Cargo.lock bumped from `0.1.0` so bundle filenames include the beta version |
 
 **Test count after session C:** 119 Rust tests passed (13 unit + 9 mise-probe + 9 directory + 9 env + 11 settings + 9 runner + 5 cwd + 15 shell + 15 tasks + 5 install + 9 tool_mutations + 10 tools + 9 trust).
 **Lint gates:** `npm run typecheck && npm run lint:i18n && npm run build && cargo check && cargo test` — all pass.
@@ -44,6 +45,7 @@ Last updated: end of session C — all v1 implementation tickets closed.
 - Tag `v1.0.0-beta.1` pushed but Windows build failed due to a cfg-gated `which_exists` function.
 - Fixed in `0df5c68`; tag `v1.0.0-beta.2` pushed; CI passed on all three platforms and the pre-release is live: https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.2
 - Release body updated to include the corrected unsigned-macOS workaround after user hit the "damaged" Gatekeeper dialog.
+- Version bumped to `1.0.0-beta.3` in `c180742` so release bundle filenames include the beta version instead of `0.1.0`; tag `v1.0.0-beta.3` pushed and CI running: https://github.com/cherishfall/misedeck/actions/runs/33419640048
 - Final `v1.0.0` release was intentionally deferred per maintainer request (some adjustments still wanted).
 
 ---
