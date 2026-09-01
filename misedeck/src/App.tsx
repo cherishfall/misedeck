@@ -72,6 +72,7 @@ function App() {
         <div className="starter__panel">
           <div className="starter__eyebrow">{t(I18N_KEYS.starter.eyebrow)}</div>
           <h1 className="starter__title">{t(I18N_KEYS.starter.title)}</h1>
+          <p className="starter__command">{t(I18N_KEYS.starter.commandHint)}</p>
           <p className="starter__hint">{t(I18N_KEYS.starter.hint)}</p>
 
           {view.status === "loading" && (

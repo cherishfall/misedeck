@@ -33,6 +33,13 @@
   margin: 0;
 }
 
+.commandHint {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--ice);
+  margin: 0;
+}
+
 .hint {
   font-family: var(--font-ui);
   font-size: var(--size-base);

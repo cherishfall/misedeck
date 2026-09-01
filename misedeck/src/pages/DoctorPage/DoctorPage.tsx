@@ -69,6 +69,7 @@ export function DoctorPage() {
         <header className={styles.head}>
           <div className={styles.eyebrow}>{t(I18N_KEYS.doctor.eyebrow)}</div>
           <h1 className={styles.title}>{t(I18N_KEYS.doctor.title)}</h1>
+          <p className={styles.commandHint}>{t(I18N_KEYS.doctor.commandHint)}</p>
           <p className={styles.hint}>{t(I18N_KEYS.doctor.hint)}</p>
         </header>
 
@@ -269,7 +270,7 @@ function DoctorContent({
 function DoctorRawLine({ line }: { line: DoctorLine }) {
   return (
     <div className={`${styles.rawLine} ${styles[`rawLine-${line.status}`]}`}>
-      <span className={styles.rawStatus}>{line.status.toUpperCase()}</span>
+      <span className={styles.rawStatus}>{line.status}</span>
       <span className={styles.rawText}>{line.text}</span>
     </div>
   );

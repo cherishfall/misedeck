@@ -165,6 +165,7 @@ export function SettingsPage() {
         <header className={styles.head}>
           <div className={styles.eyebrow}>{t(I18N_KEYS.settings.eyebrow)}</div>
           <h1 className={styles.title}>{t(I18N_KEYS.settings.title)}</h1>
+          <p className={styles.commandHint}>{t(I18N_KEYS.settings.commandHint)}</p>
           <p className={styles.hint}>{t(I18N_KEYS.settings.hint)}</p>
           <ScopeBadge cwd={cwd} />
         </header>

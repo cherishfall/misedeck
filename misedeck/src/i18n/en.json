@@ -64,12 +64,14 @@
   "starter": {
     "eyebrow": "▸ MISE / STATUS",
     "title": "Mise",
-    "hint": "Run a tool, set a version, trust a config — every mutation goes through the execution panel."
+    "hint": "Run a tool, set a version, trust a config — every mutation goes through the execution panel.",
+    "commandHint": "mise version · mise self-update"
   },
   "tools": {
     "eyebrow": "▸ MISE / TOOLS",
     "title": "Tools",
     "hint": "Tools installed and active for the current context. Switch versions, install, uninstall, or upgrade from the table; every mutation streams through the execution panel.",
+    "commandHint": "mise ls · mise use · mise install · mise uninstall · mise upgrade · mise outdated",
     "columns": {
       "tool": "Tool",
       "version": "Version",
@@ -81,7 +83,7 @@
     },
     "empty": {
       "title": "No tools installed",
-      "body": "Run `mise use -g node@latest` to install your first tool, or browse the registry for something else."
+      "body": "`mise ls` shows installed tools. Run `mise use -g node@latest` to install your first tool, or browse the registry for something else."
     },
     "missing": {
       "title": "Tools unavailable",
@@ -112,10 +114,11 @@
     "eyebrow": "▸ MISE / PREVIEW",
     "title": "Directory preview",
     "hint": "Resolved tools, env, and lockfile for the active directory context. Switch directories from the bar above.",
+    "commandHint": "mise -C <dir> ls · mise env · mise config · mise.lock",
     "nav": "Preview",
     "empty": {
       "title": "Pick a directory to preview",
-      "body": "Directory preview shows the resolved tools, env, and lockfile for a project. Use the bar above to point at one."
+      "body": "Directory preview shows what `mise -C <dir> ls`, `mise env`, and `mise config` resolve for a project. Use the bar above to point at one."
     },
     "sections": {
       "tools": "Resolved tools",
@@ -163,6 +166,7 @@
     "eyebrow": "▸ MISE / CONFIG",
     "title": "Config editor",
     "subtitle": "Form-based editing of [tools] and [env] for the active context. Writes go through `mise use` and `mise set` and stream into the panel.",
+    "commandHint": "mise use · mise set · mise unset",
     "nav": "Config",
     "scope": {
       "global": "GLOBAL",
@@ -177,7 +181,7 @@
       "saveButton": "Save",
       "removeButton": "Remove",
       "emptyTitle": "No tools configured",
-      "emptyBody": "Use the form below to install your first tool. Writes go to mise's config file for the active context."
+      "emptyBody": "`mise use` populates this list. Use the form below to add your first tool; writes go to mise's config file for the active context."
     },
     "envSection": {
       "title": "Env",
@@ -188,7 +192,7 @@
       "saveButton": "Save",
       "removeButton": "Remove",
       "emptyTitle": "No env vars configured",
-      "emptyBody": "Use the form below to set a project or global env var. Writes go to the [env] table in the active config."
+      "emptyBody": "`mise set` populates this list. Use the form below to add a project or global env var; writes go to the [env] table in the active config."
     },
     "guard": {
       "untrustedBody": "Trust this directory before mutating its config."
@@ -198,6 +202,7 @@
     "eyebrow": "▸ MISE / TASKS",
     "title": "Tasks",
     "subtitle": "List, run, and edit the mise tasks for the active directory. Writes go through `mise tasks add` and stream into the panel.",
+    "commandHint": "mise tasks ls · mise run · mise tasks add",
     "nav": "Tasks",
     "columns": {
       "name": "Name",
@@ -208,7 +213,7 @@
     },
     "empty": {
       "title": "No tasks in this directory",
-      "body": "Add a task to `<cwd>/mise.toml` to see it here, or use the Edit button on any existing global task to bind it to this directory."
+      "body": "`mise tasks ls --json` populates this list. Add a task to `<cwd>/mise.toml` to see it here, or use the Edit button on any existing global task to bind it to this directory."
     },
     "globalEmpty": {
       "title": "Pick a directory to see its tasks",
@@ -243,6 +248,7 @@
     "eyebrow": "▸ MISE / SETTINGS",
     "title": "Settings",
     "hint": "View and edit mise settings for the active context. Writes go through `mise settings set` / `mise settings unset` and stream into the panel.",
+    "commandHint": "mise settings ls · mise settings set · mise settings unset",
     "columns": {
       "key": "Key",
       "value": "Value",
@@ -252,7 +258,7 @@
     },
     "empty": {
       "title": "No settings configured",
-      "body": "There are no settings for the active context. Use the form below to add one."
+      "body": "`mise settings ls --json-extended` populates this list. Use the form below to add one."
     },
     "error": {
       "title": "Failed to load settings",
@@ -272,6 +278,7 @@
     "eyebrow": "▸ MISE / DOCTOR",
     "title": "Doctor",
     "hint": "A health check for the active mise context. When `--json` is unavailable, the raw doctor output is rendered with row tinting.",
+    "commandHint": "mise doctor",
     "statusLabel": "Health check",
     "status": {
       "ok": "OK",
@@ -315,6 +322,7 @@
     "eyebrow": "▸ MISE / REGISTRY",
     "title": "Registry",
     "hint": "Browse the built-in mise registry of tool shorthands, backends, and aliases.",
+    "commandHint": "mise registry · mise plugins ls",
     "searchPlaceholder": "Search tools, backends, aliases…",
     "columns": {
       "tool": "Tool",

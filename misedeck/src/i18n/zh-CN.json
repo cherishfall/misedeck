@@ -64,12 +64,14 @@
   "starter": {
     "eyebrow": "▸ MISE / 状态",
     "title": "Mise",
-    "hint": "运行工具、设置版本、信任配置 —— 所有变更都通过执行面板完成。"
+    "hint": "运行工具、设置版本、信任配置 —— 所有变更都通过执行面板完成。",
+    "commandHint": "mise version · mise self-update"
   },
   "tools": {
     "eyebrow": "▸ MISE / 工具",
     "title": "工具",
     "hint": "当前上下文中已安装并处于活动状态的工具。在表格中切换版本、安装、卸载或升级；所有变更都通过执行面板实时显示。",
+    "commandHint": "mise ls · mise use · mise install · mise uninstall · mise upgrade · mise outdated",
     "columns": {
       "tool": "工具",
       "version": "版本",
@@ -81,7 +83,7 @@
     },
     "empty": {
       "title": "尚未安装任何工具",
-      "body": "运行 `mise use -g node@latest` 安装第一个工具，或在 registry 中浏览其他工具。"
+      "body": "`mise ls` 列出已安装工具。运行 `mise use -g node@latest` 安装第一个工具，或在 registry 中浏览其他工具。"
     },
     "missing": {
       "title": "工具列表不可用",
@@ -112,10 +114,11 @@
     "eyebrow": "▸ MISE / 预览",
     "title": "目录预览",
     "hint": "当前目录上下文的工具、环境与 lockfile。请使用上方工具栏切换目录。",
+    "commandHint": "mise -C <dir> ls · mise env · mise config · mise.lock",
     "nav": "预览",
     "empty": {
       "title": "选择一个目录以预览",
-      "body": "目录预览用于展示项目已解析的工具、环境与 lockfile。请使用上方工具栏选择一个目录。"
+      "body": "目录预览展示 `mise -C <dir> ls`、`mise env` 与 `mise config` 为项目解析出的内容。请使用上方工具栏选择一个目录。"
     },
     "sections": {
       "tools": "已解析的工具",
@@ -163,6 +166,7 @@
     "eyebrow": "▸ MISE / CONFIG",
     "title": "配置编辑器",
     "subtitle": "以表单方式编辑当前上下文的 [tools] 和 [env]。写入通过 `mise use` 与 `mise set`，并在执行面板中实时显示。",
+    "commandHint": "mise use · mise set · mise unset",
     "nav": "配置",
     "scope": {
       "global": "全局",
@@ -177,7 +181,7 @@
       "saveButton": "保存",
       "removeButton": "移除",
       "emptyTitle": "尚未配置任何工具",
-      "emptyBody": "使用下面的表单安装第一个工具。写入会进入当前上下文的 mise 配置文件。"
+      "emptyBody": "`mise use` 填充此列表。使用下面的表单添加第一个工具；写入会进入当前上下文的 mise 配置文件。"
     },
     "envSection": {
       "title": "环境变量",
@@ -188,7 +192,7 @@
       "saveButton": "保存",
       "removeButton": "移除",
       "emptyTitle": "尚未配置任何环境变量",
-      "emptyBody": "使用下面的表单设置项目或全局环境变量。写入会进入当前配置文件的 [env] 表。"
+      "emptyBody": "`mise set` 填充此列表。使用下面的表单添加一个项目或全局环境变量；写入会进入当前配置文件的 [env] 表。"
     },
     "guard": {
       "untrustedBody": "在修改此目录的配置之前，请先信任它。"
@@ -198,6 +202,7 @@
     "eyebrow": "▸ MISE / 任务",
     "title": "任务",
     "subtitle": "列出、运行并编辑当前目录的 mise 任务。写入通过 `mise tasks add`，并在执行面板中实时显示。",
+    "commandHint": "mise tasks ls · mise run · mise tasks add",
     "nav": "任务",
     "columns": {
       "name": "名称",
@@ -208,7 +213,7 @@
     },
     "empty": {
       "title": "此目录没有任何任务",
-      "body": "在 `<cwd>/mise.toml` 中添加任务，或点击任意全局任务的「编辑」将其绑定到本目录。"
+      "body": "`mise tasks ls --json` 填充此列表。在 `<cwd>/mise.toml` 中添加任务，或点击任意全局任务的「编辑」将其绑定到本目录。"
     },
     "globalEmpty": {
       "title": "选择一个目录以查看任务",
@@ -243,6 +248,7 @@
     "eyebrow": "▸ MISE / 设置",
     "title": "设置",
     "hint": "查看并编辑当前上下文的 mise 设置。写入通过 `mise settings set` / `mise settings unset` 并在执行面板中实时显示。",
+    "commandHint": "mise settings ls · mise settings set · mise settings unset",
     "columns": {
       "key": "键",
       "value": "值",
@@ -252,7 +258,7 @@
     },
     "empty": {
       "title": "尚未配置任何设置",
-      "body": "当前上下文没有任何设置。使用下方表单添加一个。"
+      "body": "`mise settings ls --json-extended` 填充此列表。使用下方表单添加一个。"
     },
     "error": {
       "title": "加载设置失败",
@@ -272,6 +278,7 @@
     "eyebrow": "▸ MISE / 诊断",
     "title": "诊断",
     "hint": "当前 mise 上下文的健康检查。当 `--json` 不可用时，原始 doctor 输出会以行级色调渲染。",
+    "commandHint": "mise doctor",
     "statusLabel": "健康检查",
     "status": {
       "ok": "正常",
@@ -315,6 +322,7 @@
     "eyebrow": "▸ MISE / REGISTRY",
     "title": "Registry",
     "hint": "浏览 mise 内置的工具别名 registry，包括后端与别名。",
+    "commandHint": "mise registry · mise plugins ls",
     "searchPlaceholder": "搜索工具、后端、别名…",
     "columns": {
       "tool": "工具",

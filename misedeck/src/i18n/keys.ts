@@ -106,6 +106,7 @@ export const I18N_KEYS = {
     eyebrow: "starter.eyebrow",
     title: "starter.title",
     hint: "starter.hint",
+    commandHint: "starter.commandHint",
   },
   trust: {
     banner: {
@@ -121,6 +122,7 @@ export const I18N_KEYS = {
     eyebrow: "tools.eyebrow",
     title: "tools.title",
     hint: "tools.hint",
+    commandHint: "tools.commandHint",
     columns: {
       tool: "tools.columns.tool",
       version: "tools.columns.version",
@@ -163,6 +165,7 @@ export const I18N_KEYS = {
     eyebrow: "preview.eyebrow",
     title: "preview.title",
     hint: "preview.hint",
+    commandHint: "preview.commandHint",
     nav: "preview.nav",
     empty: {
       title: "preview.empty.title",
@@ -214,6 +217,7 @@ export const I18N_KEYS = {
     eyebrow: "config.eyebrow",
     title: "config.title",
     subtitle: "config.subtitle",
+    commandHint: "config.commandHint",
     nav: "config.nav",
     scope: {
       global: "config.scope.global",
@@ -249,6 +253,7 @@ export const I18N_KEYS = {
     eyebrow: "tasks.eyebrow",
     title: "tasks.title",
     subtitle: "tasks.subtitle",
+    commandHint: "tasks.commandHint",
     nav: "tasks.nav",
     columns: {
       name: "tasks.columns.name",
@@ -294,6 +299,7 @@ export const I18N_KEYS = {
     eyebrow: "settings.eyebrow",
     title: "settings.title",
     hint: "settings.hint",
+    commandHint: "settings.commandHint",
     columns: {
       key: "settings.columns.key",
       value: "settings.columns.value",
@@ -323,6 +329,7 @@ export const I18N_KEYS = {
     eyebrow: "doctor.eyebrow",
     title: "doctor.title",
     hint: "doctor.hint",
+    commandHint: "doctor.commandHint",
     statusLabel: "doctor.statusLabel",
     status: {
       ok: "doctor.status.ok",
@@ -366,6 +373,7 @@ export const I18N_KEYS = {
     eyebrow: "plugins.eyebrow",
     title: "plugins.title",
     hint: "plugins.hint",
+    commandHint: "plugins.commandHint",
     searchPlaceholder: "plugins.searchPlaceholder",
     columns: {
       tool: "plugins.columns.tool",

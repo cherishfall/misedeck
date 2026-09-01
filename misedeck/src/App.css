@@ -41,6 +41,13 @@
   color: var(--text);
 }
 
+.starter__command {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--ice);
+  margin: 0;
+}
+
 .starter__hint {
   font-family: var(--font-ui);
   font-size: var(--size-base);
