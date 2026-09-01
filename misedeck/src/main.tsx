@@ -11,8 +11,8 @@ import { DirectoryProvider } from "./state/directoryContext";
 import { TrustProvider } from "./state/trustContext";
 import { ActivationProvider } from "./state/activationContext";
 import { ExecutionProvider } from "./components/ExecutionPanel";
-import App from "./App";
 import { StyleGuide } from "./components/StyleGuide/StyleGuide";
+import { HomePage } from "./pages/HomePage/HomePage";
 import { ToolsPage } from "./pages/ToolsPage/ToolsPage";
 import { DirectoryPreview } from "./pages/DirectoryPreview/DirectoryPreview";
 import { ConfigPage } from "./pages/ConfigPage/ConfigPage";
@@ -42,7 +42,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
               <ExecutionProvider>
                 <BrowserRouter>
                   <Routes>
-                    <Route path="/" element={<App />} />
+                    <Route path="/" element={<HomePage />} />
                     <Route path="/tools" element={<ToolsPage />} />
                     <Route path="/tasks" element={<TasksPage />} />
                     <Route path="/preview" element={<DirectoryPreview />} />

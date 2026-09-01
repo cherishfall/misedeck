@@ -103,11 +103,11 @@ export const I18N_KEYS = {
     mainGroupLabel: "nav.mainGroupLabel",
     bottomGroupLabel: "nav.bottomGroupLabel",
   },
-  starter: {
-    eyebrow: "starter.eyebrow",
-    title: "starter.title",
-    hint: "starter.hint",
-    commandHint: "starter.commandHint",
+  home: {
+    eyebrow: "home.eyebrow",
+    title: "home.title",
+    hint: "home.hint",
+    commandHint: "home.commandHint",
   },
   trust: {
     banner: {
@@ -496,7 +496,7 @@ export const I18N_KEYS = {
   styleguide: {
     eyebrow: "styleguide.eyebrow",
     title: "styleguide.title",
-    backToStarter: "styleguide.backToStarter",
+    backToHome: "styleguide.backToHome",
     sections: {
       color: "styleguide.sections.color",
       typography: "styleguide.sections.typography",

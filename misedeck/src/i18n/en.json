@@ -62,10 +62,10 @@
     "ok": "Trusted. You may need to re-run actions to see updated results.",
     "error": "Could not trust the directory. Check the execution panel for details."
   },
-  "starter": {
+  "home": {
     "eyebrow": "▸ MISE / STATUS",
-    "title": "Mise",
-    "hint": "Run a tool, set a version, trust a config — every mutation goes through the execution panel.",
+    "title": "Home",
+    "hint": "Is mise installed and new enough for MiseDeck? Guided install and self-update live here; every action streams through the execution panel.",
     "commandHint": "mise version · mise self-update"
   },
   "tools": {
@@ -445,7 +445,7 @@
   "styleguide": {
     "eyebrow": "▸ MISE / STYLEGUIDE",
     "title": "Visual system",
-    "backToStarter": "← back to starter",
+    "backToHome": "← back to Home",
     "sections": {
       "color": "Color tokens",
       "typography": "Typography tokens",
@@ -470,7 +470,7 @@
       "badge": "Mono label with tracked uppercase. The border picks up the variant tint; the background is a subtle wash so badges read as a stamp against a panel.",
       "banner": "Full-width notice with leading dot, label, body, optional trailing action. Tones inherit the system's signal colors.",
       "table": "Semantic <table> for the tools list and other data grids. Mono cells, tracked column headers, right-align numeric columns.",
-      "dataRow": "Definition-list row (dt + dd) with mono values. Used on the starter page and reused on settings, env, and plugin detail pages.",
+      "dataRow": "Definition-list row (dt + dd) with mono values. Used on the Home page and reused on settings, env, and plugin detail pages.",
       "emptyState": "Page-level 'nothing to show' panel. The eyebrow follows the ▸ GROUP / SECTION convention so the empty context is clear.",
       "progressDot": "Status dot (beam / flare / breach / dim) with the attention-pulse animation when the tone is flare/breach — the only ambient motion attached to a state component."
     },

@@ -1,5 +1,5 @@
-// DataRow — a definition-list row (dt + dd) with mono values, used in
-// #17's starter page and everywhere else a label → value pair shows up
+// DataRow — a definition-list row (dt + dd) with mono values, used on
+// the Home page and everywhere else a label → value pair shows up
 // (settings pages, env panels, plugin details). Promoted into its own
 // component so the visual treatment stays consistent.
 

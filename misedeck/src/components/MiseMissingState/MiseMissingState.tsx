@@ -2,7 +2,7 @@
 // used by any page that needs mise. Lives outside `pages/` because
 // the tools page and any later page that touches mise data (settings,
 // doctor, registry) all need it. The shape is intentionally close to
-// the existing not-installed block in App.tsx so the two read as
+// the not-installed block on the Home page so the two read as
 // the same screen in different contexts.
 //
 // Empty state follows the EmptyState pattern (eyebrow / title / body
@@ -20,7 +20,7 @@ import styles from "./MiseMissingState.module.css";
 
 interface MiseMissingStateProps {
   /** Optional override for the "back" link. Defaults to the root
-   *  route so users land on the mise-status starter. */
+   *  route so users land on the Home (mise status) page. */
   backHref?: string;
 }
 

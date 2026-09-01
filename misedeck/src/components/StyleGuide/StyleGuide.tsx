@@ -124,7 +124,7 @@ export function StyleGuide() {
   return (
     <div className={styles.page}>
       <Link to="/" className={styles.backLink} data-testid="styleguide-back">
-        {t(I18N_KEYS.styleguide.backToStarter)}
+        {t(I18N_KEYS.styleguide.backToHome)}
       </Link>
       <header className={styles.head}>
         <div className={styles.eyebrow}>{t(I18N_KEYS.styleguide.eyebrow)}</div>
@@ -402,7 +402,7 @@ export function StyleGuide() {
         note={t(I18N_KEYS.styleguide.notes.emptyState)}
       >
         <EmptyState
-          eyebrow={t(I18N_KEYS.starter.eyebrow)}
+          eyebrow={t(I18N_KEYS.home.eyebrow)}
           title={t(I18N_KEYS.styleguide.samples.emptyTitle)}
           body={t(I18N_KEYS.styleguide.samples.emptyBody)}
           action={

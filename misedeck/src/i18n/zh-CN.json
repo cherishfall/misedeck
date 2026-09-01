@@ -62,10 +62,10 @@
     "ok": "已信任。可能需要重新执行操作以查看最新结果。",
     "error": "无法信任该目录。请查看执行面板了解详情。"
   },
-  "starter": {
+  "home": {
     "eyebrow": "▸ MISE / 状态",
-    "title": "Mise",
-    "hint": "运行工具、设置版本、信任配置 —— 所有变更都通过执行面板完成。",
+    "title": "首页",
+    "hint": "检测 mise 是否已安装且版本满足 MiseDeck 的要求；引导安装与自更新都在这里进行，所有操作都通过执行面板实时显示。",
     "commandHint": "mise version · mise self-update"
   },
   "tools": {
@@ -445,7 +445,7 @@
   "styleguide": {
     "eyebrow": "▸ MISE / 视觉系统",
     "title": "视觉系统",
-    "backToStarter": "← 返回 starter",
+    "backToHome": "← 返回首页",
     "sections": {
       "color": "颜色令牌",
       "typography": "排版令牌",
@@ -470,7 +470,7 @@
       "badge": "带间距的等宽大写标签。边框跟随 variant 色调；背景为同色淡洗，使徽章如印章般贴于面板之上。",
       "banner": "通栏提示，含前导点、标签、正文与可选尾部动作。色调继承系统信号色。",
       "table": "用于工具列表等数据网格的语义化 <table>。等宽单元格，间距化的列标题，数值列右对齐。",
-      "dataRow": "dt + dd 形式的数据行，等宽值。在 starter 页面使用，并在设置、env、插件详情页复用。",
+      "dataRow": "dt + dd 形式的数据行，等宽值。在首页使用，并在设置、env、插件详情页复用。",
       "emptyState": "页面级“无内容”面板。眉签遵循 ▸ GROUP / SECTION 约定,便于说明空状态的上下文。",
       "progressDot": "状态点(beam / flare / breach / dim),在 flare/breach 色调下自动播放注意力脉冲 —— 唯一与状态组件绑定的环境动效。"
     },

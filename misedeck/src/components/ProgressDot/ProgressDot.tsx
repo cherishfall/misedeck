@@ -1,7 +1,6 @@
 // ProgressDot — a tiny status dot (beam / grove / flare / breach / dim) with
 // an attention-pulse animation. Replaces the hand-rolled `.dot` /
-// `.dot--flare` rules in App.css for new components; the legacy class
-// names remain for the starter page.
+// `.dot--flare` rules the #17 starter page used to carry in App.css.
 
 import type { CSSProperties } from "react";
 
