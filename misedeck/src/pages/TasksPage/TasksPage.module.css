@@ -2,8 +2,7 @@
  *
  * Mirrors the directory-preview / config-page styles: a header
  * strip with eyebrow + title + hint, a sub-toolbar with refresh,
- * a signal line, and then the table (or the appropriate empty
- * state). The edit form, when open, sits below the row being
+ * and then the table (or the appropriate empty state). The edit form, when open, sits below the row being
  * edited inside a subtle frame.
  *
  * Token mapping fixed in issue #35: this module previously referenced
@@ -96,32 +95,6 @@
 .refresh:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.signalLine {
-  height: 1px;
-  background: var(--line);
-  position: relative;
-  overflow: hidden;
-}
-
-.signalLine::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--beam) 50%,
-    transparent
-  );
-  animation: signal-sweep 6s linear infinite;
-  opacity: 0.6;
-}
-
-@keyframes signal-sweep {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
 }
 
 .errorState {

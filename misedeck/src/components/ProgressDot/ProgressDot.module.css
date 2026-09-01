@@ -1,5 +1,5 @@
 /* ProgressDot — status dot. The attention pulse uses the global
- * `pulse` keyframe from tokens.css, one of the three allowed
+ * `pulse` keyframe from tokens.css, one of the two allowed
  * ambient motions. */
 
 .dot {
@@ -12,22 +12,22 @@
 
 .tone-beam {
   background: var(--beam);
-  box-shadow: 0 0 8px var(--beam);
+}
+
+.tone-grove {
+  background: var(--grove);
 }
 
 .tone-ice {
   background: var(--ice);
-  box-shadow: 0 0 6px var(--ice);
 }
 
 .tone-flare {
   background: var(--flare);
-  box-shadow: 0 0 8px var(--flare);
 }
 
 .tone-breach {
   background: var(--breach);
-  box-shadow: 0 0 8px var(--breach);
 }
 
 .tone-dim {

@@ -29,10 +29,8 @@
   font-weight: 600;
   font-size: var(--size-display);
   letter-spacing: var(--tracking-display);
-  text-transform: uppercase;
   color: var(--text);
   margin: 0;
-  text-shadow: 0 0 18px color-mix(in srgb, var(--beam) 30%, transparent);
 }
 
 .hint {
@@ -94,10 +92,6 @@
   cursor: not-allowed;
 }
 
-.signalLine {
-  margin: 0;
-}
-
 /* ---------- Table cells ---------- */
 
 .cellTool {
@@ -117,7 +111,6 @@
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--beam);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--beam) 35%, transparent);
   font-weight: 600;
 }
 
@@ -156,7 +149,6 @@
 .latestValue {
   color: var(--flare);
   font-weight: 600;
-  text-shadow: 0 0 10px color-mix(in srgb, var(--flare) 35%, transparent);
 }
 
 .dim {

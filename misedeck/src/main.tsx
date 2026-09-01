@@ -6,6 +6,7 @@ import { BrowserRouter, Route, Routes } from "react-router";
 import "./tokens.css";
 import "./i18n";
 import { LanguageProvider } from "./i18n/useLanguage";
+import { ThemeProvider } from "./state/themeContext";
 import { DirectoryProvider } from "./state/directoryContext";
 import { TrustProvider } from "./state/trustContext";
 import { ActivationProvider } from "./state/activationContext";
@@ -33,7 +34,8 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <DirectoryProvider>
+        <ThemeProvider>
+          <DirectoryProvider>
           <TrustProvider>
             <ActivationProvider>
               <ExecutionProvider>
@@ -58,6 +60,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             </ActivationProvider>
           </TrustProvider>
         </DirectoryProvider>
+        </ThemeProvider>
       </LanguageProvider>
     </QueryClientProvider>
   </React.StrictMode>,

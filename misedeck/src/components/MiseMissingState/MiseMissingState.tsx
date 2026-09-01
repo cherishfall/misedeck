@@ -6,7 +6,7 @@
 // the same screen in different contexts.
 //
 // Empty state follows the EmptyState pattern (eyebrow / title / body
-// + optional CTA); the eyebrow uses the HUD ▸ GROUP / SECTION
+// + optional CTA); the eyebrow uses the ▸ GROUP / SECTION
 // convention.
 
 import { useTranslation } from "react-i18next";

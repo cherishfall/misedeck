@@ -87,7 +87,6 @@ export function DoctorPage() {
           </button>
         </div>
 
-        <div className={styles.signalLine} aria-hidden="true" />
 
         {doctorError && (
           <div className={styles.errorState} data-testid="doctor-read-error">

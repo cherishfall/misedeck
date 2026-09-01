@@ -28,10 +28,8 @@
   font-weight: 600;
   font-size: var(--size-display);
   letter-spacing: var(--tracking-display);
-  text-transform: uppercase;
   color: var(--text);
   margin: 0;
-  text-shadow: 0 0 18px color-mix(in srgb, var(--beam) 30%, transparent);
 }
 
 .hint {
@@ -99,10 +97,6 @@
 .refresh:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.signalLine {
-  margin: 0;
 }
 
 /* ---------- Table cells ---------- */

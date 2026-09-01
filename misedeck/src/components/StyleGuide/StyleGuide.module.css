@@ -43,10 +43,8 @@
   font-weight: 600;
   font-size: var(--size-display);
   letter-spacing: var(--tracking-display);
-  text-transform: uppercase;
   color: var(--text);
   margin: 0;
-  text-shadow: 0 0 18px color-mix(in srgb, var(--beam) 30%, transparent);
 }
 
 .intro {
@@ -56,10 +54,6 @@
   margin: 0;
   line-height: 1.5;
   max-width: 60ch;
-}
-
-.signalLine {
-  margin: var(--space-4) 0;
 }
 
 /* ---------- Section ---------- */
@@ -94,7 +88,6 @@
   font-weight: 600;
   font-size: 16px;
   letter-spacing: var(--tracking-display);
-  text-transform: uppercase;
   color: var(--text);
   margin: 0;
 }
@@ -198,9 +191,7 @@
   font-weight: 600;
   font-size: var(--size-display);
   letter-spacing: var(--tracking-display);
-  text-transform: uppercase;
   color: var(--text);
-  text-shadow: 0 0 14px color-mix(in srgb, var(--beam) 30%, transparent);
 }
 
 .typeUi {
@@ -214,7 +205,6 @@
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--beam) 30%, transparent);
 }
 
 /* ---------- Motion ---------- */
@@ -262,7 +252,6 @@
   height: 14px;
   background: var(--beam);
   vertical-align: middle;
-  box-shadow: 0 0 8px var(--beam);
   animation: caret-blink var(--motion-caret-blink) steps(1) infinite;
 }
 
@@ -329,7 +318,6 @@
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--beam) 30%, transparent);
 }
 
 .cellLatest {
@@ -348,7 +336,6 @@
 .latestValue {
   color: var(--flare);
   font-weight: 600;
-  text-shadow: 0 0 10px color-mix(in srgb, var(--flare) 35%, transparent);
 }
 
 .cellSource {

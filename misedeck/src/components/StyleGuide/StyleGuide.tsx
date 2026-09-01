@@ -1,7 +1,7 @@
 // StyleGuide — in-app gallery page that renders every base component
 // (and the foundational tokens) in both languages. Used to verify the
-// visual system against the HUD direction in issue #9 and the
-// prototype in issue #33. Not a real Storybook — just a dev surface:
+// visual system derived from mise.jdx.dev (rewritten in #37).
+// Not a real Storybook — just a dev surface:
 // internal design documentation, routed only in dev builds (#36), so
 // it carries its own back link instead of the product navigation.
 
@@ -53,6 +53,7 @@ const SWATCHES: Swatch[] = [
   { name: "ice", token: "var(--ice)" },
   { name: "flare", token: "var(--flare)" },
   { name: "breach", token: "var(--breach)" },
+  { name: "grove", token: "var(--grove)" },
   { name: "text", token: "var(--text)" },
   { name: "dim", token: "var(--dim)" },
   { name: "panel", token: "var(--panel)" },
@@ -133,7 +134,6 @@ export function StyleGuide() {
         </p>
       </header>
 
-      <div className={styles.signalLine} aria-hidden="true" />
 
       {/* ---------- Color ---------- */}
       <Section
@@ -194,15 +194,11 @@ export function StyleGuide() {
       >
         <div className={styles.motionGrid}>
           <div className={styles.motionItem}>
-            <span className={styles.motionLabel}>SIGNAL SWEEP · 6s</span>
-            <div className={styles.signalLine} aria-hidden="true" />
-          </div>
-          <div className={styles.motionItem}>
             <span className={styles.motionLabel}>PULSE · 1.6s</span>
             <div className={styles.motionRow}>
               <ProgressDot tone="flare" title="attention" />
               <ProgressDot tone="breach" title="error" />
-              <ProgressDot tone="beam" title="ready" />
+              <ProgressDot tone="grove" title="ready" />
               <ProgressDot tone="dim" title="idle" />
             </div>
           </div>
@@ -226,12 +222,6 @@ export function StyleGuide() {
           <Panel>
             <div className={styles.demoLabel}>
               {t(I18N_KEYS.styleguide.samples.panelDefault)}
-            </div>
-            <p className={styles.demoBody}>{t(I18N_KEYS.styleguide.notes.panel)}</p>
-          </Panel>
-          <Panel corner="tl-br">
-            <div className={styles.demoLabel}>
-              {t(I18N_KEYS.styleguide.samples.panelCorner)}
             </div>
             <p className={styles.demoBody}>{t(I18N_KEYS.styleguide.notes.panel)}</p>
           </Panel>
@@ -319,7 +309,7 @@ export function StyleGuide() {
           <Badge variant="danger">{t(I18N_KEYS.styleguide.samples.badgeDanger)}</Badge>
         </div>
         <div className={styles.demoRow}>
-          <Badge variant="success" leading={<ProgressDot tone="beam" size={6} />}>
+          <Badge variant="success" leading={<ProgressDot tone="grove" size={6} />}>
             {t(I18N_KEYS.styleguide.samples.badgeSuccess)}
           </Badge>
           <Badge variant="warning" leading={<ProgressDot tone="flare" size={6} />}>
@@ -431,7 +421,7 @@ export function StyleGuide() {
       >
         <div className={styles.demoRow}>
           <span className={styles.dotRow}>
-            <ProgressDot tone="beam" title={t(I18N_KEYS.styleguide.samples.dotReady)} />
+            <ProgressDot tone="grove" title={t(I18N_KEYS.styleguide.samples.dotReady)} />
             <span className={styles.dotLabel}>
               {t(I18N_KEYS.styleguide.samples.dotReady)}
             </span>

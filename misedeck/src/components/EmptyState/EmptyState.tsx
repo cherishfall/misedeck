@@ -1,6 +1,6 @@
 // EmptyState — eyebrow + title + body + optional CTA. Used when a page
 // or panel has nothing to show yet (no tools installed, no tasks
-// defined, no plugins registered). The eyebrow follows the HUD
+// defined, no plugins registered). The eyebrow follows the
 // `▸ GROUP / SECTION` convention so the empty context is clear.
 
 import type { ReactNode } from "react";

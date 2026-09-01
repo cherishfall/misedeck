@@ -3,9 +3,8 @@
 // One-line strip that surfaces the active directory context ("Global"
 // or a directory path) and the controls to change it: jump back to
 // Global, open the directory picker, or pick from the recents list.
-// Per the visual language the bar carries the signature signal line
-// along its bottom edge; the picked directory is set in the
-// DirectoryProvider (React context, see state/directoryContext.tsx).
+// The picked directory is set in the DirectoryProvider (React
+// context, see state/directoryContext.tsx).
 //
 // Issue #28 adds the "Open in Terminal" and "Copy command"
 // affordances to a secondary row. Both sit underneath the
@@ -285,7 +284,6 @@ export function ContextBar() {
         )}
       </div>
 
-      <div className={`signal-line ${styles.signal}`} aria-hidden="true" />
     </div>
   );
 }

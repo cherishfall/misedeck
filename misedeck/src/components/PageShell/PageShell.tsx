@@ -15,6 +15,7 @@ import { ActivationBanner } from "../ActivationBanner/ActivationBanner";
 import { ContextBar } from "../ContextBar/ContextBar";
 import { ExecutionPanel } from "../ExecutionPanel";
 import { LanguageSwitcher } from "../LanguageSwitcher/LanguageSwitcher";
+import { ThemeSwitcher } from "../ThemeSwitcher/ThemeSwitcher";
 
 import styles from "./PageShell.module.css";
 
@@ -101,9 +102,11 @@ export function PageShell({ children }: PageShellProps) {
         >
           {t(I18N_KEYS.nav.plugins)}
         </Link>
+        <div className={styles.controls}>
+          <ThemeSwitcher />
+          <LanguageSwitcher />
+        </div>
       </header>
-
-      <LanguageSwitcher />
 
       <ActivationBanner />
 

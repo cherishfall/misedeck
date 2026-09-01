@@ -35,7 +35,6 @@
 
 .tone-beam {
   color: var(--beam);
-  text-shadow: 0 0 12px color-mix(in srgb, var(--beam) 35%, transparent);
 }
 
 .tone-muted {

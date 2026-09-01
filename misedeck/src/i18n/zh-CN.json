@@ -1,6 +1,6 @@
 {
   "app": {
-    "wordmark": "MISEDECK",
+    "wordmark": "MiseDeck",
     "tagline": "mise 的忠实 GUI"
   },
   "common": {
@@ -370,6 +370,12 @@
     "simplifiedChinese": "中文",
     "switcherLabel": "语言"
   },
+  "theme": {
+    "switcherLabel": "主题",
+    "system": "跟随系统",
+    "light": "浅色",
+    "dark": "深色"
+  },
   "styleguide": {
     "eyebrow": "▸ MISE / 视觉系统",
     "title": "视觉系统",
@@ -389,22 +395,21 @@
       "progressDot": "ProgressDot 状态点"
     },
     "notes": {
-      "color": "所有颜色均通过 CSS 自定义属性消费；组件绝不硬编码十六进制色值。深色为默认；浅色是 [data-theme=light] 下的设计对位。",
-      "typography": "Display 用 Space Grotesk 600，UI 用 Space Grotesk 400–500，数据用 JetBrains Mono。Latin 数据保持 JetBrains Mono；zh-CN 文本回退到 PingFang SC。",
-      "motion": "系统只存在三种环境动效：signal-sweep（≈6s）、注意力脉冲（≈1.6s）、光标闪烁（≈1.1s）。其他全部为 ≤120ms ease-out 状态变化。在 prefers-reduced-motion 下自动禁用。",
-      "panel": "半透明 hull/72% 填充，1px line 边框，8px 圆角，背景模糊。角标仅为页面的主面板保留 —— 每屏仅一个。",
+      "color": "所有颜色均通过 CSS 自定义属性消费；组件绝不硬编码十六进制色值。两个主题都继承 mise.jdx.dev 的观感 —— 浅色为暖羊皮纸,深色为暖炭黑;深色为默认,浅色覆盖位于 [data-theme=light]。",
+      "typography": "Display 用 Cormorant Garamond(衬线,正常大小写)—— mise.jdx.dev 的编辑式签名。UI 用 Space Grotesk 400–500,数据用 JetBrains Mono。zh-CN 的 display 回退到宋体(Songti SC),UI 文本回退到 PingFang SC。",
+      "motion": "系统只存在两种环境动效:注意力脉冲(≈1.6s)与光标闪烁(≈1.1s)。其他全部为 ≤120ms ease-out 状态变化。在 prefers-reduced-motion 下自动禁用。",
+      "panel": "实心 hull 填充,1px line 边框,8px 圆角。扁平、安静 —— 无辉光,无半透明。",
       "button": "primary（beam 填充）、secondary（line 边框）、ghost（无边框，dim → text）、danger（breach 填充）。Loading 与 disabled 共用降透明度。",
       "iconButton": "仅承载字形的方形按钮。用于只需要视觉而不需要标签的位置 —— 表格中的 kebab、内联工具按钮。",
       "badge": "带间距的等宽大写标签。边框跟随 variant 色调；背景为同色淡洗，使徽章如印章般贴于面板之上。",
       "banner": "通栏提示，含前导点、标签、正文与可选尾部动作。色调继承系统信号色。",
       "table": "用于工具列表等数据网格的语义化 <table>。等宽单元格，间距化的列标题，数值列右对齐。",
       "dataRow": "dt + dd 形式的数据行，等宽值。在 starter 页面使用，并在设置、env、插件详情页复用。",
-      "emptyState": "页面级“无内容”面板。眉签遵循 HUD 的 ▸ GROUP / SECTION 约定，便于说明空状态的上下文。",
-      "progressDot": "状态点（beam / flare / breach / dim），在 flare/breach 色调下自动播放注意力脉冲 —— 唯一与状态组件绑定的环境动效。"
+      "emptyState": "页面级“无内容”面板。眉签遵循 ▸ GROUP / SECTION 约定,便于说明空状态的上下文。",
+      "progressDot": "状态点(beam / flare / breach / dim),在 flare/breach 色调下自动播放注意力脉冲 —— 唯一与状态组件绑定的环境动效。"
     },
     "samples": {
       "panelDefault": "任意内容块的标准表面。",
-      "panelCorner": "页面的主面板 —— 每屏仅一个。",
       "panelInfo": "info 色调 —— 二级信息。",
       "panelWarning": "warning 色调 —— 需要尽快关注。",
       "panelDanger": "danger 色调 —— 破坏性或失败状态。",

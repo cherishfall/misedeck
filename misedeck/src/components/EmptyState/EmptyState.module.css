@@ -26,9 +26,7 @@
   font-weight: 600;
   font-size: 18px;
   letter-spacing: var(--tracking-display);
-  text-transform: uppercase;
   color: var(--text);
-  text-shadow: 0 0 12px color-mix(in srgb, var(--beam) 30%, transparent);
 }
 
 .body {

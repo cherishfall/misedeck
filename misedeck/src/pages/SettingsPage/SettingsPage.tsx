@@ -186,7 +186,6 @@ export function SettingsPage() {
           </button>
         </div>
 
-        <div className={styles.signalLine} aria-hidden="true" />
 
         <TrustBanner
           ref={bannerRef}

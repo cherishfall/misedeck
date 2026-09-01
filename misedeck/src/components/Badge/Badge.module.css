@@ -41,7 +41,7 @@
 }
 
 .variant-success {
-  color: var(--beam);
+  color: var(--grove);
   border-color: var(--tint-success);
   background: var(--tint-success-bg);
 }

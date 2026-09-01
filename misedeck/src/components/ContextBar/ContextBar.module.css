@@ -1,8 +1,8 @@
 /* ContextBar — the top directory bar (issue #23 / ADR-0004).
  *
- * Per the visual language: 52px tall, the signature signal line runs
- * along the bottom edge, mono labels, dim → beam on hover. Every
- * value comes from `tokens.css`; no hex, no new animations. */
+ * Per the visual language: 52px tall, a 1px `--line` bottom border,
+ * mono labels, dim → beam on hover. Every value comes from
+ * `tokens.css`; no hex, no new animations. */
 
 .bar {
   position: relative;
@@ -11,8 +11,6 @@
   height: var(--layout-context-bar-height);
   background: color-mix(in srgb, var(--hull) 60%, transparent);
   border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .row {
@@ -56,12 +54,10 @@
 
 .contextValueGlobal {
   color: var(--beam);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--beam) 35%, transparent);
 }
 
 .contextValueDir {
   color: var(--text);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--beam) 30%, transparent);
 }
 
 .actions {
@@ -73,7 +69,7 @@
 
 /* Toggle buttons — chip-style with mono label. Two states:
  *   .toggle          — inactive (dim border, dim text)
- *   .toggleActive    — active (beam border, beam text, soft glow)
+ *   .toggleActive    — active (beam border, beam text, soft tint)
  *   .toggleDisabled  — recents button when no recents exist
  */
 .toggle,
@@ -111,7 +107,6 @@
   border: 1px solid var(--beam-soft);
   color: var(--beam);
   background: color-mix(in srgb, var(--beam) 8%, transparent);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--beam) 35%, transparent);
 }
 
 .toggleDisabled {
@@ -132,8 +127,6 @@
   background: var(--panel);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-panel);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--void) 60%, transparent);
   z-index: 20;
   overflow: hidden;
@@ -200,12 +193,6 @@
   min-width: 0;
 }
 
-/* The signature signal line is a global utility; we just constrain it
- * to the bar's bottom edge. The keyframe lives in tokens.css. */
-.signal {
-  flex: none;
-}
-
 /* ---------- Activation row (issue #28) ----------
  *
  * The two entry points — "Open in terminal" and "Copy command" —
@@ -269,7 +256,7 @@
 }
 
 .openHintError {
-  color: var(--breach, #ff6b6b);
+  color: var(--breach);
 }
 
 @media (prefers-reduced-motion: reduce) {

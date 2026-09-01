@@ -1,77 +1,87 @@
 /* Design tokens — the source of truth for every color, type, spacing,
  * motion, and z-index used in the MiseDeck UI.
  *
- * Derives from `docs/design/visual-language.md` (issue #33). Every value
- * below is consumed by component CSS modules; components never hardcode
- * hex values, font sizes, or animation durations. The `I18N_KEYS` catalog
+ * Derives from `docs/design/visual-language.md` (rewritten for #37):
+ * both themes inherit mise.jdx.dev's look — warm parchment light,
+ * warm charcoal dark, wine brand accent. Every value below is consumed
+ * by component CSS modules; components never hardcode hex values, font
+ * sizes, or animation durations. The `I18N_KEYS` catalog
  * (`src/i18n/keys.ts`) is the analogous single source of truth for copy.
  *
  * Rules of engagement (mirrored from the visual language):
  *   - Dark values are the default; light overrides live under
- *     `[data-theme="light"]` (e.g. `html[data-theme="light"]`).
- *   - Derived colors (panel, line, beam-soft) are computed via
+ *     `[data-theme="light"]`. `html[data-theme]` is always set to the
+ *     *resolved* theme by the ThemeProvider (system/light/dark →
+ *     light/dark) before first paint.
+ *   - Derived colors (line, tints, beam-soft) are computed via
  *     `color-mix` from the base palette — never hardcoded.
- *   - Only the three ambient motions exist: signal-sweep, pulse,
- *     caret-blink. Everything else is a ≤120ms state change.
- *   - If a screen needs a fourth animation, the design is wrong, not the
- *     rule — surface it in the issue, do not invent one here.
- *
- * The `.signal-line` utility class is a reusable signature element.
- * It's the only background decoration allowed in the system; the page
- * that owns the *primary* panel may add the corner brackets via
- * `<Panel corner>`.
+ *   - The only ambient motions are the attention pulse and the log
+ *     caret blink. Everything else is a ≤120ms state change.
+ *   - If a screen needs a third ambient animation, the design is wrong,
+ *     not the rule — surface it in the issue, do not invent one here.
  */
 
-/* ---------- 1. Base palette (dark, default) ---------- */
+/* ---------- 1. Base palette (dark, default) ----------
+ * Warm charcoal surfaces, warm off-white text, rose brand accent —
+ * the dark counterpart of mise.jdx.dev's parchment light. */
 
 :root {
+  color-scheme: dark;
+
   /* Surface + background. */
-  --void: #04070c; /* app background — deep blue-black */
-  --hull: #0a1220; /* panel surface base */
+  --void: #141010; /* app background — warm near-black */
+  --hull: #1c1614; /* panel surface base */
 
   /* Signal colors (named per the visual language). */
-  --beam: #3be2ff; /* primary signal — active / focus */
-  --ice: #7fb3e8; /* secondary info — backends, links */
-  --flare: #ffb454; /* attention — outdated / warning */
-  --breach: #ff5470; /* destructive / error */
+  --beam: #c75b7a; /* brand accent — active / focus / links */
+  --ice: #9e9288; /* secondary info — labels, log prefixes */
+  --flare: #c5975b; /* attention — outdated / warning */
+  --breach: #c44536; /* destructive / error */
+  --grove: #8fa86e; /* success — installed / ok states */
 
   /* Text. */
-  --text: #dce9f5;
-  --dim: #5f748c;
+  --text: #ede6df;
+  --dim: #c9bfb5;
 
   /* Derived (color-mix) — semantic discipline lives here. Components
-   * reach for these, not the raw palette. */
-  --panel: color-mix(in srgb, var(--hull) 72%, transparent);
-  --line: color-mix(in srgb, var(--beam) 16%, transparent);
-  --line-strong: color-mix(in srgb, var(--beam) 40%, transparent);
+   * reach for these, not the raw palette. Surfaces are solid; borders
+   * are neutral warm tones derived from the text color so both themes
+   * stay in family. */
+  --panel: var(--hull);
+  --line: color-mix(in srgb, var(--text) 16%, transparent);
+  --line-strong: color-mix(in srgb, var(--text) 34%, transparent);
   --beam-soft: color-mix(in srgb, var(--beam) 60%, transparent);
 
   /* Per-variant tinted borders / backgrounds for state components.
    * Same rule: derived from the palette, never raw hex. */
-  --tint-info: color-mix(in srgb, var(--ice) 25%, transparent);
-  --tint-success: color-mix(in srgb, var(--beam) 18%, transparent);
-  --tint-warning: color-mix(in srgb, var(--flare) 22%, transparent);
-  --tint-danger: color-mix(in srgb, var(--breach) 20%, transparent);
+  --tint-info: color-mix(in srgb, var(--ice) 30%, transparent);
+  --tint-success: color-mix(in srgb, var(--grove) 32%, transparent);
+  --tint-warning: color-mix(in srgb, var(--flare) 30%, transparent);
+  --tint-danger: color-mix(in srgb, var(--breach) 34%, transparent);
 
-  --tint-info-bg: color-mix(in srgb, var(--ice) 8%, transparent);
-  --tint-success-bg: color-mix(in srgb, var(--beam) 9%, transparent);
-  --tint-warning-bg: color-mix(in srgb, var(--flare) 10%, transparent);
-  --tint-danger-bg: color-mix(in srgb, var(--breach) 10%, transparent);
+  --tint-info-bg: color-mix(in srgb, var(--ice) 9%, transparent);
+  --tint-success-bg: color-mix(in srgb, var(--grove) 12%, transparent);
+  --tint-warning-bg: color-mix(in srgb, var(--flare) 12%, transparent);
+  --tint-danger-bg: color-mix(in srgb, var(--breach) 13%, transparent);
 
-  /* ---------- 2. Typography ---------- */
-
-  --font-display: "Space Grotesk", "PingFang SC", system-ui, sans-serif;
+  /* ---------- 2. Typography ----------
+   * Display is a serif — the editorial signature of mise.jdx.dev —
+   * used for page titles and the wordmark, normal case, no tracking.
+   * UI is a quiet grotesque; data is JetBrains Mono, the same face
+   * the mise site uses for code. zh-CN display text falls back to
+   * Songti SC / SimSun (Chinese serifs), UI text to PingFang SC. */
+  --font-display: "Cormorant Garamond", Georgia, "Songti SC", "SimSun", serif;
   --font-ui: "Space Grotesk", "PingFang SC", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
 
-  --size-display: 22px; /* page title (e.g. "TOOLS") */
+  --size-display: 26px; /* page title (serif, normal case) */
   --size-base: 14px; /* body, nav, buttons */
   --size-data: 12px; /* versions, paths, commands, logs */
   --size-label: 10px; /* section eyebrows, badges */
 
-  --tracking-display: 0.14em; /* page title */
-  --tracking-wordmark: 0.32em; /* wordmark */
-  --tracking-label: 0.2em; /* section eyebrows, badges */
+  --tracking-display: 0; /* serif display type takes no tracking */
+  --tracking-wordmark: 0.01em; /* wordmark — near-natural */
+  --tracking-label: 0.18em; /* section eyebrows, badges */
 
   /* ---------- 3. Spacing (4px grid) ---------- */
 
@@ -91,9 +101,8 @@
   --layout-deck-collapsed-height: 48px;
 
   /* ---------- 5. Motion ----------
-   * Three ambient loops + one state-change budget. Everything else is
+   * Two ambient loops + one state-change budget. Everything else is
    * a bug. See docs/design/visual-language.md. */
-  --motion-signal-sweep: 6s; /* signature data-bus line */
   --motion-pulse: 1.6s; /* attention pulse on flare dots */
   --motion-caret-blink: 1.1s; /* execution-deck caret */
   --motion-state-change: 120ms; /* hover, focus, panel slide — ease */
@@ -103,45 +112,38 @@
   --z-context-bar: 50; /* top context bar (above panels) */
   --z-deck: 40; /* execution deck (above main, below modal) */
   --z-modal: 100; /* future modal layer */
-
-  /* ---------- 7. Background decoration (the only one allowed) ---------- */
-
-  --bg-dot-color: color-mix(in srgb, var(--ice) 10%, transparent);
-  --bg-glow-color: color-mix(in srgb, var(--beam) 8%, transparent);
 }
 
-/* ---------- Light theme overrides (day-shift HUD) ----------
+/* ---------- Light theme overrides (mise.jdx.dev parchment) ----------
  * Same token slots, different values. Components stay untouched. */
 [data-theme="light"] {
-  --void: #edf2f7;
-  --hull: #ffffff;
-  --beam: #0b8fb8;
-  --ice: #4a6fa5;
-  --flare: #b45309;
-  --breach: #d63b5c;
-  --text: #0f1c2b;
-  --dim: #64748b;
+  color-scheme: light;
+
+  --void: #fdf8f3; /* parchment */
+  --hull: #ffffff; /* elevated panel surface */
+  --beam: #8b2252; /* mise wine */
+  --ice: #7d7068; /* warm taupe */
+  --flare: #9a7245; /* deep amber — keeps contrast on cream */
+  --breach: #c44536; /* terracotta */
+  --grove: #6b7f4e; /* olive */
+  --text: #2a1f1a;
+  --dim: #5a4d42;
 
   /* Derived — the color-mix() expressions above recompute automatically
-   * because they reference the new token values, no overrides needed. */
-
-  /* Light-day tinted backgrounds: a touch more saturated to keep the
-   * same visual weight against the cooler paper. */
-  --tint-info: color-mix(in srgb, var(--ice) 30%, transparent);
-  --tint-success: color-mix(in srgb, var(--beam) 22%, transparent);
-  --tint-warning: color-mix(in srgb, var(--flare) 28%, transparent);
-  --tint-danger: color-mix(in srgb, var(--breach) 24%, transparent);
+   * because they reference the new token values. Tinted backgrounds get
+   * a touch more saturation to keep the same visual weight on paper. */
+  --tint-info: color-mix(in srgb, var(--ice) 34%, transparent);
+  --tint-success: color-mix(in srgb, var(--grove) 36%, transparent);
+  --tint-warning: color-mix(in srgb, var(--flare) 34%, transparent);
+  --tint-danger: color-mix(in srgb, var(--breach) 32%, transparent);
 
   --tint-info-bg: color-mix(in srgb, var(--ice) 10%, transparent);
-  --tint-success-bg: color-mix(in srgb, var(--beam) 10%, transparent);
-  --tint-warning-bg: color-mix(in srgb, var(--flare) 12%, transparent);
-  --tint-danger-bg: color-mix(in srgb, var(--breach) 10%, transparent);
-
-  --bg-dot-color: color-mix(in srgb, var(--ice) 14%, transparent);
-  --bg-glow-color: color-mix(in srgb, var(--beam) 10%, transparent);
+  --tint-success-bg: color-mix(in srgb, var(--grove) 12%, transparent);
+  --tint-warning-bg: color-mix(in srgb, var(--flare) 13%, transparent);
+  --tint-danger-bg: color-mix(in srgb, var(--breach) 11%, transparent);
 }
 
-/* ---------- 8. App shell baseline ---------- */
+/* ---------- 7. App shell baseline ---------- */
 
 html,
 body,
@@ -157,23 +159,8 @@ body,
   text-rendering: optimizeLegibility;
 }
 
-body {
-  /* The only background decoration in the system. A faint dot grid
-   * fading toward the bottom + a soft radial glow at the top. */
-  background-image:
-    radial-gradient(
-      circle at 50% -10%,
-      var(--bg-glow-color) 0%,
-      transparent 55%
-    ),
-    radial-gradient(circle at 1px 1px, var(--bg-dot-color) 1px, transparent 0);
-  background-size:
-    100% 100%,
-    18px 18px;
-}
-
 ::selection {
-  background: color-mix(in srgb, var(--beam) 30%, transparent);
+  background: color-mix(in srgb, var(--beam) 26%, transparent);
 }
 
 :focus-visible {
@@ -181,73 +168,9 @@ body {
   outline-offset: 2px;
 }
 
-/* ---------- 9. The signature: .signal-line ----------
- * A 1px luminous line carrying a slow traveling highlight — the data
- * bus running through the interface. Reserve for primary surfaces:
- * the context bar's bottom edge, the execution deck's top edge, and
- * one per page's primary panel. Never more than one sweep per surface.
- * Always horizontal (or a 2px vertical edge tick). Never diagonal. */
-.signal-line {
-  position: relative;
-  height: 1px;
-  background: var(--line);
-  overflow: hidden;
-  flex: none;
-}
-
-.signal-line::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -30%;
-  height: 1px;
-  width: 30%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--beam),
-    transparent
-  );
-  animation: signal-sweep var(--motion-signal-sweep) linear infinite;
-  pointer-events: none;
-}
-
-/* Vertical edge-tick variant — 2px wide, used as a panel accent on
- * the left edge of a "primary" panel. */
-.signal-line--vertical {
-  width: 2px;
-  height: 100%;
-}
-
-.signal-line--vertical::after {
-  top: -30%;
-  left: 0;
-  width: 2px;
-  height: 30%;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    var(--beam),
-    transparent
-  );
-  animation: signal-sweep-vertical var(--motion-signal-sweep) linear infinite;
-}
-
-/* ---------- 10. Ambient keyframes ----------
- * The three ambient motions allowed in the system. Everything else
+/* ---------- 8. Ambient keyframes ----------
+ * The two ambient motions allowed in the system. Everything else
  * (panel slide, button hover, etc.) uses --motion-state-change. */
-
-@keyframes signal-sweep {
-  to {
-    left: 100%;
-  }
-}
-
-@keyframes signal-sweep-vertical {
-  to {
-    top: 100%;
-  }
-}
 
 @keyframes pulse {
   0%,
@@ -270,10 +193,6 @@ body {
 /* Reduced-motion: disable every ambient loop. State changes remain
  * instant; the user has opted out of decoration. */
 @media (prefers-reduced-motion: reduce) {
-  .signal-line::after,
-  .signal-line--vertical::after {
-    animation: none;
-  }
   .pulse {
     animation: none;
   }

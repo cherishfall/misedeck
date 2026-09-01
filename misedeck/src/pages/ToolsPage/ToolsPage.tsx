@@ -310,7 +310,6 @@ export function ToolsPage() {
           </span>
         </div>
 
-        <div className={styles.signalLine} aria-hidden="true" />
 
         {toolsError && (
           <div className={styles.errorState}>

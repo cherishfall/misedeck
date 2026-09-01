@@ -192,7 +192,6 @@ export function DirectoryPreview() {
             <h1 className={styles.title}>{t(I18N_KEYS.preview.title)}</h1>
             <p className={styles.hint}>{t(I18N_KEYS.preview.hint)}</p>
           </header>
-          <div className={styles.signalLine} aria-hidden="true" />
           <EmptyState
             eyebrow={t(I18N_KEYS.preview.eyebrow)}
             title={t(I18N_KEYS.preview.empty.title)}
@@ -333,7 +332,6 @@ export function DirectoryPreview() {
           </button>
         </div>
 
-        <div className={styles.signalLine} aria-hidden="true" />
 
         {/* ---------- Trust banner (issue #25) ---------- */}
         <TrustBanner

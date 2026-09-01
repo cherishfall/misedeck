@@ -1,4 +1,4 @@
-// ProgressDot — a tiny status dot (beam / flare / breach / dim) with
+// ProgressDot — a tiny status dot (beam / grove / flare / breach / dim) with
 // an attention-pulse animation. Replaces the hand-rolled `.dot` /
 // `.dot--flare` rules in App.css for new components; the legacy class
 // names remain for the starter page.
@@ -7,7 +7,7 @@ import type { CSSProperties } from "react";
 
 import styles from "./ProgressDot.module.css";
 
-export type ProgressDotTone = "beam" | "flare" | "breach" | "dim" | "ice";
+export type ProgressDotTone = "beam" | "flare" | "breach" | "dim" | "ice" | "grove";
 
 interface ProgressDotProps {
   tone?: ProgressDotTone;

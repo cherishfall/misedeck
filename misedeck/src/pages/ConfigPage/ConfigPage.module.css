@@ -1,7 +1,7 @@
 /* ConfigPage — form-based config editor (issue #26).
  *
  * Layout mirrors DirectoryPreview: page head, toolbar-style header,
- * signal line, then a series of section panels. The form elements
+ * then a series of section panels. The form elements
  * reuse the visual vocabulary from the existing pages (no new
  * tokens, no new animations). */
 
@@ -33,10 +33,8 @@
   font-weight: 600;
   font-size: var(--size-display);
   letter-spacing: var(--tracking-display);
-  text-transform: uppercase;
   color: var(--text);
   margin: 0;
-  text-shadow: 0 0 18px color-mix(in srgb, var(--beam) 30%, transparent);
 }
 
 .hint {
@@ -65,10 +63,6 @@
   padding: var(--space-1) var(--space-3);
   word-break: break-all;
   max-width: 100%;
-}
-
-.signalLine {
-  margin: 0;
 }
 
 /* ---------- Section panels ---------- */
@@ -116,7 +110,6 @@
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--beam);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--beam) 35%, transparent);
   font-weight: 600;
 }
 

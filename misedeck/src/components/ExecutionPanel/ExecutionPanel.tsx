@@ -72,7 +72,6 @@ export function ExecutionPanel() {
 
   return (
     <div className={styles.deck}>
-      <div className={styles.signalLine} aria-hidden="true" />
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <span className={styles.label}>{t(I18N_KEYS.execution.title)}</span>

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
@@ -7,10 +7,33 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <title>MiseDeck</title>
+    <script>
+      // Theme bootstrap (#37): resolve the persisted setting
+      // (system / light / dark, default system) against the OS
+      // preference and set `html[data-theme]` before first paint, so
+      // tokens.css never flashes the wrong theme. The ThemeProvider
+      // (`src/state/themeContext.tsx`) takes over after React mounts.
+      (function () {
+        var setting = "system";
+        try {
+          var stored = window.localStorage.getItem("misedeck.theme");
+          if (stored === "system" || stored === "light" || stored === "dark") {
+            setting = stored;
+          }
+        } catch (e) {
+          /* storage unavailable — fall back to system */
+        }
+        var dark =
+          setting === "dark" ||
+          (setting === "system" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

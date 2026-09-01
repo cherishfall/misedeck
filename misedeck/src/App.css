@@ -1,8 +1,8 @@
 /* App layout — the minimal subset needed for the starter page (#17).
- * The visual system (#20) owns tokens, keyframes, and the reusable
- * `.signal-line` utility class; this file only carries the page-level
- * layout and a couple of state-specific helpers. Every color and timing
- * is consumed from `tokens.css`; this file never hardcodes values. */
+ * The visual system (#20, re-skinned for #37) owns tokens and keyframes;
+ * this file only carries the page-level layout and a couple of
+ * state-specific helpers. Every color and timing is consumed from
+ * `tokens.css`; this file never hardcodes values. */
 
 .starter {
   flex: 1;
@@ -19,8 +19,6 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
   padding: var(--space-6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -37,12 +35,10 @@
 .starter__title {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 28px;
+  font-size: var(--size-display);
   letter-spacing: var(--tracking-display);
-  text-transform: uppercase;
   margin: 0;
   color: var(--text);
-  text-shadow: 0 0 16px color-mix(in srgb, var(--beam) 30%, transparent);
 }
 
 .starter__hint {
@@ -144,20 +140,17 @@
   display: inline-block;
 }
 
-.dot--beam {
-  background: var(--beam);
-  box-shadow: 0 0 8px var(--beam);
+.dot--grove {
+  background: var(--grove);
 }
 
 .dot--flare {
   background: var(--flare);
-  box-shadow: 0 0 8px var(--flare);
   animation: pulse var(--motion-pulse) ease-in-out infinite;
 }
 
 .dot--breach {
   background: var(--breach);
-  box-shadow: 0 0 8px var(--breach);
 }
 
 .dot--dim {
@@ -202,7 +195,6 @@
 
 .data__value--beam {
   color: var(--beam);
-  text-shadow: 0 0 12px color-mix(in srgb, var(--beam) 35%, transparent);
 }
 
 .data__value--raw {

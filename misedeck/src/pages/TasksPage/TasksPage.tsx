@@ -308,7 +308,6 @@ export function TasksPage() {
             <h1 className={styles.title}>{t(I18N_KEYS.tasks.title)}</h1>
             <p className={styles.hint}>{t(I18N_KEYS.tasks.subtitle)}</p>
           </header>
-          <div className={styles.signalLine} aria-hidden="true" />
           <EmptyState
             eyebrow={t(I18N_KEYS.tasks.eyebrow)}
             title={t(I18N_KEYS.tasks.globalEmpty.title)}
@@ -446,7 +445,6 @@ export function TasksPage() {
           </button>
         </div>
 
-        <div className={styles.signalLine} aria-hidden="true" />
 
         {/* Trust banner (issue #25). Same forwardRef pattern
             the config / preview pages use so the guard can focus

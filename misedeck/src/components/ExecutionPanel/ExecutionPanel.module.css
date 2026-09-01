@@ -7,34 +7,8 @@
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
-  backdrop-filter: blur(12px);
   font-family: var(--font-mono);
   font-size: var(--size-data);
-}
-
-.signalLine {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: var(--line-strong);
-  overflow: hidden;
-}
-
-.signalLine::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 30%;
-  background: linear-gradient(90deg, transparent, var(--beam), transparent);
-  animation: signal-sweep var(--motion-signal-sweep) linear infinite;
-}
-
-@keyframes signal-sweep {
-  from { left: -30%; }
-  to { left: 100%; }
 }
 
 .header {
@@ -89,12 +63,11 @@
 
 .statusDot[data-tone="beam"] {
   background: var(--beam);
-  box-shadow: 0 0 8px var(--beam-soft);
   animation: dot-pulse var(--motion-pulse) ease-in-out infinite;
 }
 
 .statusDot[data-tone="ok"] {
-  background: var(--beam);
+  background: var(--grove);
 }
 
 .statusDot[data-tone="fail"] {

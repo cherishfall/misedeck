@@ -1,11 +1,7 @@
-/* Language switcher — see docs/agents/i18n.md.
- * Lives in PageShell's floating `.controls` cluster next to the theme
- * switcher (#37); the sidebar footer (#38) will own the permanent
- * placement later.
- *
- * No hex values; every color is consumed from tokens.css. The active
- * language gets a small beam-colored underline; hover / focus states
- * use the same accent at lower opacity. */
+/* Theme switcher — the minimal system / light / dark toggle (#37).
+ * Floats top-right, left of the language switcher; the sidebar footer
+ * (#38) will own the permanent placement. Mirrors the language
+ * switcher's shape; every color is consumed from tokens.css. */
 
 .switcher {
   display: inline-flex;
@@ -47,7 +43,7 @@
 
 .option:hover,
 .option:focus-visible {
-  color: var(--ice);
+  color: var(--text);
   outline: none;
 }
 

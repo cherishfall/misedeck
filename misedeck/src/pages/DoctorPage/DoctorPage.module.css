@@ -28,10 +28,8 @@
   font-weight: 600;
   font-size: var(--size-display);
   letter-spacing: var(--tracking-display);
-  text-transform: uppercase;
   color: var(--text);
   margin: 0;
-  text-shadow: 0 0 18px color-mix(in srgb, var(--beam) 30%, transparent);
 }
 
 .hint {
@@ -87,10 +85,6 @@
   cursor: not-allowed;
 }
 
-.signalLine {
-  margin: 0;
-}
-
 /* ---------- Summary panel ---------- */
 
 .summary {
@@ -101,7 +95,6 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
   background: var(--panel);
-  backdrop-filter: blur(12px);
 }
 
 .summaryRow {
@@ -133,17 +126,14 @@
 
 .statusDot[data-tone="beam"] {
   background: var(--beam);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--beam) 60%, transparent);
 }
 
 .statusDot[data-tone="flare"] {
   background: var(--flare);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--flare) 60%, transparent);
 }
 
 .statusDot[data-tone="breach"] {
   background: var(--breach);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--breach) 60%, transparent);
 }
 
 /* ---------- Sections ---------- */
@@ -249,7 +239,6 @@
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--beam);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--beam) 35%, transparent);
   font-weight: 600;
 }
 

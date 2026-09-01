@@ -286,7 +286,6 @@ export function ConfigPage() {
           <ScopeBadge cwd={cwd} />
         </header>
 
-        <div className={styles.signalLine} aria-hidden="true" />
 
         {/* Trust banner (issue #25). Re-uses the same forwardRef
             pattern the preview page uses so the guard can focus

@@ -11,8 +11,6 @@
   border: 1px solid var(--line);
   border-left-width: 3px;
   border-radius: var(--radius-panel);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .row {
@@ -49,7 +47,6 @@
   height: 8px;
   border-radius: 50%;
   background: var(--beam);
-  box-shadow: 0 0 6px var(--beam);
   flex: none;
 }
 
@@ -59,21 +56,19 @@
 }
 .tone-info .dot {
   background: var(--ice);
-  box-shadow: 0 0 6px var(--ice);
 }
 .tone-info .label {
   color: var(--ice);
 }
 
 .tone-success {
-  border-left-color: var(--beam);
+  border-left-color: var(--grove);
 }
 .tone-success .dot {
-  background: var(--beam);
-  box-shadow: 0 0 6px var(--beam);
+  background: var(--grove);
 }
 .tone-success .label {
-  color: var(--beam);
+  color: var(--grove);
 }
 
 .tone-warning {
@@ -81,7 +76,6 @@
 }
 .tone-warning .dot {
   background: var(--flare);
-  box-shadow: 0 0 6px var(--flare);
   animation: pulse var(--motion-pulse) ease-in-out infinite;
 }
 .tone-warning .label {
@@ -93,7 +87,6 @@
 }
 .tone-danger .dot {
   background: var(--breach);
-  box-shadow: 0 0 6px var(--breach);
 }
 .tone-danger .label {
   color: var(--breach);

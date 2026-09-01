@@ -70,10 +70,6 @@ function App() {
     <PageShell>
       <div className="starter">
         <div className="starter__panel">
-          <div className="signal-line" aria-hidden="true" />
-          <div className="corner corner--tl" aria-hidden="true" />
-          <div className="corner corner--br" aria-hidden="true" />
-
           <div className="starter__eyebrow">{t(I18N_KEYS.starter.eyebrow)}</div>
           <h1 className="starter__title">{t(I18N_KEYS.starter.title)}</h1>
           <p className="starter__hint">{t(I18N_KEYS.starter.hint)}</p>
@@ -88,7 +84,7 @@ function App() {
           {view.status === "ready" && view.ok && (
             <div className="state state--ready">
               <div className="state__indicator">
-                <span className="dot dot--beam" />
+                <span className="dot dot--grove" />
                 <span className="state__label">{t(I18N_KEYS.states.ready)}</span>
               </div>
               <dl className="data">

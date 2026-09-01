@@ -419,6 +419,12 @@ export const I18N_KEYS = {
     simplifiedChinese: "languages.simplifiedChinese",
     switcherLabel: "languages.switcherLabel",
   },
+  theme: {
+    switcherLabel: "theme.switcherLabel",
+    system: "theme.system",
+    light: "theme.light",
+    dark: "theme.dark",
+  },
   styleguide: {
     eyebrow: "styleguide.eyebrow",
     title: "styleguide.title",
@@ -453,7 +459,6 @@ export const I18N_KEYS = {
     },
     samples: {
       panelDefault: "styleguide.samples.panelDefault",
-      panelCorner: "styleguide.samples.panelCorner",
       panelInfo: "styleguide.samples.panelInfo",
       panelWarning: "styleguide.samples.panelWarning",
       panelDanger: "styleguide.samples.panelDanger",

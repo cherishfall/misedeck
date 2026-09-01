@@ -134,7 +134,6 @@ export function PluginsPage() {
           </button>
         </div>
 
-        <div className={styles.signalLine} aria-hidden="true" />
 
         {registryError && (
           <div className={styles.errorState} data-testid="plugins-read-error">

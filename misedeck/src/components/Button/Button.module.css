@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-weight: 600;
   letter-spacing: 0.04em;
   border-radius: 6px;
@@ -27,7 +27,6 @@
 
 .button:hover:not(:disabled) {
   border-color: var(--beam-soft);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--beam) 18%, transparent);
 }
 
 .button:focus-visible {
@@ -62,17 +61,16 @@
 
 /* ---------- Variants ---------- */
 
-/* Primary — beam fill, void text. The "go" button. */
+/* Primary — solid beam fill, void text. The "go" button. */
 .variant-primary {
-  background: color-mix(in srgb, var(--beam) 14%, transparent);
-  border-color: var(--beam-soft);
-  color: var(--beam);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--beam) 45%, transparent);
+  background: var(--beam);
+  border-color: var(--beam);
+  color: var(--void);
 }
 
 .variant-primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--beam) 22%, transparent);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--beam) 30%, transparent);
+  background: color-mix(in srgb, var(--beam) 86%, var(--text));
+  border-color: color-mix(in srgb, var(--beam) 86%, var(--text));
 }
 
 /* Secondary — line border, text fill. The default for most actions. */
@@ -100,19 +98,16 @@
   background: var(--tint-danger-bg);
   border-color: var(--tint-danger);
   color: var(--breach);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--breach) 35%, transparent);
 }
 
 .variant-danger:hover:not(:disabled) {
   background: color-mix(in srgb, var(--breach) 18%, transparent);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--breach) 30%, transparent);
 }
 
-/* Loading state — replace label with a tracked mono string. The
- * string itself is the loading indicator; the system has no
- * spinner animation. */
+/* Loading state — the reduced opacity on the button itself carries
+ * the state; the label keeps its variant color. */
 .loading .label {
-  color: var(--dim);
+  color: inherit;
 }
 
 .loading .affix {
