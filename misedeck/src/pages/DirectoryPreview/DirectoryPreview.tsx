@@ -310,9 +310,6 @@ export function DirectoryPreview() {
           <div className={styles.eyebrow}>{t(I18N_KEYS.preview.eyebrow)}</div>
           <h1 className={styles.title}>{t(I18N_KEYS.preview.title)}</h1>
           <p className={styles.hint}>{t(I18N_KEYS.preview.hint)}</p>
-          <div className={styles.contextPath} data-testid="preview-cwd">
-            {cwd}
-          </div>
         </header>
 
         <div className={styles.toolbar}>

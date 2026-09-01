@@ -1,28 +1,28 @@
-/* ContextBar — the top directory bar (issue #23 / ADR-0004).
+/* DirectoryIndicator — slim strip at the top of the content area.
  *
- * Per the visual language: 52px tall, a 1px `--line` bottom border,
- * mono labels, dim → beam on hover. Every value comes from
- * `tokens.css`; no hex, no new animations. */
+ * Only renders when a directory context is active; hidden in Global.
+ * Shows the real-case path with Open-in-Terminal, Copy-Command, and
+ * pick/recent actions. Derives colors and type from tokens.css. */
 
-.bar {
-  position: relative;
+.strip {
+  flex: none;
   display: flex;
   flex-direction: column;
-  height: var(--layout-context-bar-height);
-  background: color-mix(in srgb, var(--hull) 60%, transparent);
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  background: var(--panel);
   border-bottom: 1px solid var(--line);
 }
 
 .row {
-  flex: 1;
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  padding: 0 var(--space-5);
-  min-height: 0;
+  min-width: 0;
 }
 
 .eyebrow {
+  flex: none;
   font-family: var(--font-mono);
   font-size: var(--size-label);
   letter-spacing: var(--tracking-label);
@@ -31,50 +31,26 @@
   white-space: nowrap;
 }
 
-.contextBlock {
+.path {
   flex: 1;
   min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  overflow: hidden;
-}
-
-.contextValueGlobal,
-.contextValueDir {
   font-family: var(--font-mono);
   font-size: var(--size-data);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0;
-}
-
-.contextValueGlobal {
-  color: var(--beam);
-}
-
-.contextValueDir {
-  color: var(--text);
 }
 
 .actions {
+  flex: none;
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  flex: none;
 }
 
-/* Toggle buttons — chip-style with mono label. Two states:
- *   .toggle          — inactive (dim border, dim text)
- *   .toggleActive    — active (beam border, beam text, soft tint)
- *   .toggleDisabled  — recents button when no recents exist
- */
-.toggle,
-.toggleActive,
-.toggleDisabled {
+.action,
+.actionDisabled {
   font-family: var(--font-mono);
   font-size: var(--size-label);
   letter-spacing: var(--tracking-label);
@@ -90,26 +66,22 @@
     background var(--motion-state-change) ease;
 }
 
-.toggle,
-.toggleDisabled {
+.action {
   border: 1px solid var(--line);
   color: var(--dim);
 }
 
-.toggle:hover:not(:disabled),
-.toggle:focus-visible {
-  color: var(--text);
+.action:hover:not(:disabled),
+.action:focus-visible {
+  color: var(--beam);
   border-color: var(--line-strong);
+  background: color-mix(in srgb, var(--beam) 6%, transparent);
   outline: none;
 }
 
-.toggleActive {
-  border: 1px solid var(--beam-soft);
-  color: var(--beam);
-  background: color-mix(in srgb, var(--beam) 8%, transparent);
-}
-
-.toggleDisabled {
+.actionDisabled {
+  border: 1px solid var(--line);
+  color: var(--dim);
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -176,7 +148,9 @@
   text-align: left;
   font-family: var(--font-mono);
   font-size: var(--size-data);
-  transition: color var(--motion-state-change) ease, background var(--motion-state-change) ease;
+  transition:
+    color var(--motion-state-change) ease,
+    background var(--motion-state-change) ease;
 }
 
 .recentPick:hover,
@@ -193,54 +167,15 @@
   min-width: 0;
 }
 
-/* ---------- Activation row (issue #28) ----------
- *
- * The two entry points — "Open in terminal" and "Copy command" —
- * live in a secondary row below the directory pickers. The row
- * uses the same chip treatment as the pickers; the hint line on
- * the right shows the result of the most recent action
- * (success/error) and fades out after 4 seconds. */
-
-.activationRow {
+.hintRow {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 0 var(--space-5) var(--space-2);
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-}
-
-.activationToggle {
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 4px;
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--dim);
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    color var(--motion-state-change) ease,
-    border-color var(--motion-state-change) ease,
-    background var(--motion-state-change) ease;
-}
-
-.activationToggle:hover,
-.activationToggle:focus-visible {
-  color: var(--beam);
-  border-color: var(--line-strong);
-  background: color-mix(in srgb, var(--beam) 6%, transparent);
-  outline: none;
+  min-height: 0;
 }
 
 .openHintOk,
 .openHintError {
-  margin-left: var(--space-2);
   font-family: var(--font-mono);
   font-size: var(--size-label);
   letter-spacing: var(--tracking-label);
@@ -260,9 +195,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .toggle,
-  .toggleActive,
-  .toggleDisabled,
+  .action,
   .recentPick {
     transition: none;
   }

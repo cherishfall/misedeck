@@ -1,117 +1,163 @@
-// PageShell — the chrome (context bar + wordmark + language switcher
-// + execution panel) shared by every app page. Lifted out of App.tsx
-// when the tools page (#21) needed the same chrome as the starter;
-// future pages (#24 directory resolved-state, #27 tasks, #29
-// doctor, …) get it for free. The `<main>` slot is whatever the
-// route renders.
+// PageShell — app chrome: collapsible sidebar, directory indicator,
+// activation banner, execution panel. Replaces the top wordmark nav from
+// issue #38, per docs/design/product-logic.md.
 
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router";
 
 import { I18N_KEYS } from "../../i18n/keys";
 
 import { ActivationBanner } from "../ActivationBanner/ActivationBanner";
-import { ContextBar } from "../ContextBar/ContextBar";
+import { DirectoryIndicator } from "../DirectoryIndicator/DirectoryIndicator";
 import { ExecutionPanel } from "../ExecutionPanel";
 import { LanguageSwitcher } from "../LanguageSwitcher/LanguageSwitcher";
 import { ThemeSwitcher } from "../ThemeSwitcher/ThemeSwitcher";
 
 import styles from "./PageShell.module.css";
 
+const SIDEBAR_COLLAPSED_KEY = "misedeck.sidebarCollapsed.v1";
+
 interface PageShellProps {
   children: ReactNode;
+}
+
+function loadCollapsed(): boolean {
+  try {
+    const raw = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    return raw === "true";
+  } catch {
+    return false;
+  }
+}
+
+function persistCollapsed(collapsed: boolean) {
+  try {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
+  } catch {
+    // ignore
+  }
 }
 
 export function PageShell({ children }: PageShellProps) {
   const { t } = useTranslation();
   const location = useLocation();
-  const onTools = location.pathname === "/tools";
-  const onTasks = location.pathname === "/tasks";
-  const onPreview = location.pathname === "/preview";
-  const onConfig = location.pathname === "/config";
-  const onSettings = location.pathname === "/settings";
-  const onDoctor = location.pathname === "/doctor";
-  const onPlugins = location.pathname === "/plugins";
-  const onHome = location.pathname === "/";
+  const [collapsed, setCollapsed] = useState(() => loadCollapsed());
+
+  useEffect(() => {
+    persistCollapsed(collapsed);
+  }, [collapsed]);
+
+  const nav = NAV_ITEMS.map((item) => (
+    <NavItem
+      key={item.path}
+      path={item.path}
+      label={t(item.labelKey)}
+      glyph={item.glyph}
+      active={location.pathname === item.path}
+      collapsed={collapsed}
+    />
+  ));
+
+  const bottomNav = BOTTOM_ITEMS.map((item) => (
+    <NavItem
+      key={item.path}
+      path={item.path}
+      label={t(item.labelKey)}
+      glyph={item.glyph}
+      active={location.pathname === item.path}
+      collapsed={collapsed}
+    />
+  ));
+
   return (
     <div className={styles.shell}>
-      <ContextBar />
-      <header className={styles.wordmark}>
-        <Link
-          to="/"
-          className={styles.wordmarkName}
-          aria-current={onHome ? "page" : undefined}
-        >
-          {t(I18N_KEYS.app.wordmark)}
-        </Link>
-        <span className={styles.wordmarkTagline}>{t(I18N_KEYS.app.tagline)}</span>
-        <Link
-          to="/tools"
-          className={styles.wordmarkNav}
-          aria-current={onTools ? "page" : undefined}
-          data-testid="wordmark-tools"
-        >
-          {t(I18N_KEYS.nav.tools)}
-        </Link>
-        <Link
-          to="/tasks"
-          className={styles.wordmarkNav}
-          aria-current={onTasks ? "page" : undefined}
-          data-testid="wordmark-tasks"
-        >
-          {t(I18N_KEYS.nav.tasks)}
-        </Link>
-        <Link
-          to="/preview"
-          className={styles.wordmarkNav}
-          aria-current={onPreview ? "page" : undefined}
-          data-testid="wordmark-preview"
-        >
-          {t(I18N_KEYS.preview.nav)}
-        </Link>
-        <Link
-          to="/config"
-          className={styles.wordmarkNav}
-          aria-current={onConfig ? "page" : undefined}
-          data-testid="wordmark-config"
-        >
-          {t(I18N_KEYS.config.nav)}
-        </Link>
-        <Link
-          to="/doctor"
-          className={styles.wordmarkNav}
-          aria-current={onDoctor ? "page" : undefined}
-          data-testid="wordmark-doctor"
-        >
-          {t(I18N_KEYS.nav.doctor)}
-        </Link>
-        <Link
-          to="/settings"
-          className={styles.wordmarkNav}
-          aria-current={onSettings ? "page" : undefined}
-          data-testid="wordmark-settings"
-        >
-          {t(I18N_KEYS.nav.settings)}
-        </Link>
-        <Link
-          to="/plugins"
-          className={styles.wordmarkNav}
-          aria-current={onPlugins ? "page" : undefined}
-          data-testid="wordmark-plugins"
-        >
-          {t(I18N_KEYS.nav.plugins)}
-        </Link>
-        <div className={styles.controls}>
-          <ThemeSwitcher />
-          <LanguageSwitcher />
+      <aside
+        className={collapsed ? styles.sidebarCollapsed : styles.sidebar}
+        aria-label={t(I18N_KEYS.nav.regionLabel)}
+      >
+        <div className={styles.sidebarTop}>
+          <Link to="/" className={styles.brand} aria-label={t(I18N_KEYS.app.wordmark)}>
+            <span className={styles.brandName}>{t(I18N_KEYS.app.wordmark)}</span>
+            {!collapsed && (
+              <span className={styles.brandTagline}>{t(I18N_KEYS.app.tagline)}</span>
+            )}
+          </Link>
+
+          <nav className={styles.navGroup} aria-label={t(I18N_KEYS.nav.mainGroupLabel)}>
+            {nav}
+          </nav>
         </div>
-      </header>
 
-      <ActivationBanner />
+        <div className={styles.sidebarBottom}>
+          <nav className={styles.navGroup} aria-label={t(I18N_KEYS.nav.bottomGroupLabel)}>
+            {bottomNav}
+          </nav>
 
-      <main className={styles.main}>{children}</main>
-      <ExecutionPanel />
+          <button
+            type="button"
+            className={styles.collapseToggle}
+            onClick={() => setCollapsed((v) => !v)}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? t(I18N_KEYS.sidebar.expandLabel) : t(I18N_KEYS.sidebar.collapseLabel)}
+            title={collapsed ? t(I18N_KEYS.sidebar.expandLabel) : t(I18N_KEYS.sidebar.collapseLabel)}
+          >
+            <span aria-hidden="true">{collapsed ? "▸" : "◂"}</span>
+          </button>
+
+          {!collapsed && (
+            <div className={styles.footer}>
+              <LanguageSwitcher />
+              <ThemeSwitcher />
+            </div>
+          )}
+        </div>
+      </aside>
+
+      <div className={styles.content}>
+        <DirectoryIndicator />
+        <ActivationBanner />
+        <main className={styles.main}>{children}</main>
+        <ExecutionPanel />
+      </div>
     </div>
   );
 }
+
+interface NavItemProps {
+  path: string;
+  label: string;
+  glyph: string;
+  active: boolean;
+  collapsed: boolean;
+}
+
+function NavItem({ path, label, glyph, active, collapsed }: NavItemProps) {
+  return (
+    <Link
+      to={path}
+      className={active ? styles.navItemActive : styles.navItem}
+      aria-current={active ? "page" : undefined}
+      title={collapsed ? label : undefined}
+    >
+      <span className={styles.navGlyph} aria-hidden="true">
+        {glyph}
+      </span>
+      {!collapsed && <span className={styles.navLabel}>{label}</span>}
+    </Link>
+  );
+}
+
+const NAV_ITEMS = [
+  { path: "/preview", labelKey: I18N_KEYS.preview.nav, glyph: "P" },
+  { path: "/tools", labelKey: I18N_KEYS.nav.tools, glyph: "T" },
+  { path: "/tasks", labelKey: I18N_KEYS.nav.tasks, glyph: "K" },
+  { path: "/config", labelKey: I18N_KEYS.nav.config, glyph: "C" },
+  { path: "/plugins", labelKey: I18N_KEYS.nav.plugins, glyph: "X" },
+];
+
+const BOTTOM_ITEMS = [
+  { path: "/doctor", labelKey: I18N_KEYS.nav.doctor, glyph: "D" },
+  { path: "/settings", labelKey: I18N_KEYS.nav.settings, glyph: "S" },
+];

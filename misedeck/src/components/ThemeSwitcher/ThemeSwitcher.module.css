@@ -1,12 +1,13 @@
-/* Theme switcher — the minimal system / light / dark toggle (#37).
- * Floats top-right, left of the language switcher; the sidebar footer
- * (#38) will own the permanent placement. Mirrors the language
- * switcher's shape; every color is consumed from tokens.css. */
+/* Theme switcher — system / light / dark toggle (#37), permanent home in
+ * the sidebar footer (#38). Compact enough to sit next to the language
+ * dropdown inside the narrow sidebar footer; every color comes from
+ * tokens.css. */
 
 .switcher {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
@@ -19,7 +20,6 @@
 
 .label {
   color: var(--dim);
-  margin-right: var(--space-1);
 }
 
 .options {

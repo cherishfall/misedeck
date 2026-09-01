@@ -96,8 +96,8 @@
 
   --radius-panel: 8px;
 
-  --layout-context-bar-height: 52px;
   --layout-nav-width: 196px;
+  --layout-nav-collapsed-width: 56px;
   --layout-deck-collapsed-height: 48px;
 
   /* ---------- 5. Motion ----------
@@ -109,7 +109,6 @@
 
   /* ---------- 6. Z-index ---------- */
 
-  --z-context-bar: 50; /* top context bar (above panels) */
   --z-deck: 40; /* execution deck (above main, below modal) */
   --z-modal: 100; /* future modal layer */
 }
@@ -145,6 +144,12 @@
 
 /* ---------- 7. App shell baseline ---------- */
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html,
 body,
 #root {
@@ -157,6 +162,10 @@ body,
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+body {
+  overflow-x: hidden;
 }
 
 ::selection {

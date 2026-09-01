@@ -1,8 +1,10 @@
-// Language switcher — toggles between the two languages MiseDeck ships
-// with. The directory context bar (#23) will own a permanent copy of
-// this control; this floating version is a temporary home so the
-// switcher is independently demoable per the ticket.
+// Language switcher — compact dropdown for the sidebar footer (#38).
+//
+// Shows a globe icon + current locale. Clicking opens a popover menu of
+// supported languages so the control scales beyond the two shipped locales.
+// The chosen language persists via the LanguageProvider.
 
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
@@ -15,37 +17,66 @@ import {
 
 import styles from "./LanguageSwitcher.module.css";
 
-/** Stable display order; do not derive from SUPPORTED_LANGUAGES so the UI
- * doesn't flicker if a new language is appended later. */
 const ORDERED: readonly SupportedLanguage[] = SUPPORTED_LANGUAGES;
 
 export function LanguageSwitcher() {
   const { t } = useTranslation();
   const { language, setLanguage } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (e: PointerEvent) => {
+      const root = rootRef.current;
+      if (root && e.target instanceof Node && !root.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   return (
-    <div className={styles.switcher} role="group" aria-label={t(I18N_KEYS.languages.switcherLabel)}>
-      <span className={styles.label}>{t(I18N_KEYS.languages.switcherLabel)}</span>
-      <div className={styles.options}>
-        {ORDERED.map((code, index) => {
-          const isActive = code === language;
-          return (
-            <span key={code} className={styles.options}>
-              <button
-                type="button"
-                className={styles.option}
-                aria-current={isActive ? "true" : undefined}
-                onClick={() => {
-                  if (!isActive) setLanguage(code);
-                }}
-              >
-                {t(LANGUAGE_LABELS[code])}
-              </button>
-              {index < ORDERED.length - 1 && <span className={styles.divider} aria-hidden="true" />}
-            </span>
-          );
-        })}
-      </div>
+    <div className={styles.root} ref={rootRef}>
+      <button
+        type="button"
+        className={styles.trigger}
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={t(I18N_KEYS.languages.switcherLabel)}
+      >
+        <span aria-hidden="true">◐</span>
+        <span className={styles.current}>{t(LANGUAGE_LABELS[language])}</span>
+        <span aria-hidden="true">▾</span>
+      </button>
+      {open && (
+        <div className={styles.popover} role="menu">
+          {ORDERED.map((code) => (
+            <button
+              key={code}
+              type="button"
+              className={code === language ? styles.optionActive : styles.option}
+              role="menuitem"
+              aria-current={code === language ? "true" : undefined}
+              onClick={() => {
+                setLanguage(code);
+                setOpen(false);
+              }}
+            >
+              {t(LANGUAGE_LABELS[code])}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

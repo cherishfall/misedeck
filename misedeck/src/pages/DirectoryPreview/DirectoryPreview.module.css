@@ -44,19 +44,6 @@
   max-width: 60ch;
 }
 
-.contextPath {
-  font-family: var(--font-mono);
-  font-size: var(--size-data);
-  color: var(--text);
-  background: color-mix(in srgb, var(--hull) 60%, transparent);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: var(--space-1) var(--space-3);
-  align-self: flex-start;
-  word-break: break-all;
-  max-width: 100%;
-}
-
 .toolbar {
   display: flex;
   align-items: center;

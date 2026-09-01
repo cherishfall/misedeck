@@ -17,9 +17,9 @@
     "back": "Back",
     "next": "Next"
   },
-  "contextBar": {
-    "eyebrow": "▸ CONTEXT",
-    "regionLabel": "Directory context",
+  "directory": {
+    "eyebrow": "▸ DIRECTORY",
+    "regionLabel": "Directory",
     "globalButton": "Global",
     "recentsButton": "Recent",
     "recentsHeader": "Recent directories",
@@ -27,6 +27,10 @@
     "pickerLabel": "Pick a directory",
     "pickerTitle": "Pick a directory for MiseDeck",
     "removeRecentLabel": "Remove from recents"
+  },
+  "sidebar": {
+    "collapseLabel": "Collapse sidebar",
+    "expandLabel": "Expand sidebar"
   },
   "miseManagement": {
     "guidedInstallButton": "▸ Guided install",
@@ -42,7 +46,10 @@
     "doctor": "Doctor",
     "settings": "Settings",
     "plugins": "Plugins",
-    "about": "About"
+    "about": "About",
+    "regionLabel": "Navigation",
+    "mainGroupLabel": "Main navigation",
+    "bottomGroupLabel": "App navigation"
   },
   "trust": {
     "banner": {

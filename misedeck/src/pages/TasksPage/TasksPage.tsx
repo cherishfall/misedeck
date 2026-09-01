@@ -421,9 +421,6 @@ export function TasksPage() {
           <div className={styles.eyebrow}>{t(I18N_KEYS.tasks.eyebrow)}</div>
           <h1 className={styles.title}>{t(I18N_KEYS.tasks.title)}</h1>
           <p className={styles.hint}>{t(I18N_KEYS.tasks.subtitle)}</p>
-          <div className={styles.contextPath} data-testid="tasks-cwd">
-            {cwd}
-          </div>
         </header>
 
         <div className={styles.toolbar}>
