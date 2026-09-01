@@ -373,7 +373,6 @@
   "styleguide": {
     "eyebrow": "▸ MISE / STYLEGUIDE",
     "title": "Visual system",
-    "styleguideLink": "▸ STYLEGUIDE",
     "backToStarter": "← back to starter",
     "sections": {
       "color": "Color tokens",

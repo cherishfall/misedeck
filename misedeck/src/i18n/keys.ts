@@ -422,7 +422,6 @@ export const I18N_KEYS = {
   styleguide: {
     eyebrow: "styleguide.eyebrow",
     title: "styleguide.title",
-    styleguideLink: "styleguide.styleguideLink",
     backToStarter: "styleguide.backToStarter",
     sections: {
       color: "styleguide.sections.color",

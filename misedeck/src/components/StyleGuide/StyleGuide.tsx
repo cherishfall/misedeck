@@ -1,10 +1,12 @@
 // StyleGuide — in-app gallery page that renders every base component
 // (and the foundational tokens) in both languages. Used to verify the
 // visual system against the HUD direction in issue #9 and the
-// prototype in issue #33. Not a real Storybook — just a dev surface
-// the next ticket can reach for when the first page is being styled.
+// prototype in issue #33. Not a real Storybook — just a dev surface:
+// internal design documentation, routed only in dev builds (#36), so
+// it carries its own back link instead of the product navigation.
 
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 
 import { I18N_KEYS } from "../../i18n/keys";
 
@@ -120,6 +122,9 @@ export function StyleGuide() {
 
   return (
     <div className={styles.page}>
+      <Link to="/" className={styles.backLink} data-testid="styleguide-back">
+        {t(I18N_KEYS.styleguide.backToStarter)}
+      </Link>
       <header className={styles.head}>
         <div className={styles.eyebrow}>{t(I18N_KEYS.styleguide.eyebrow)}</div>
         <h1 className={styles.title}>{t(I18N_KEYS.styleguide.title)}</h1>

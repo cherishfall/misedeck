@@ -16,6 +16,20 @@
   gap: var(--space-2);
 }
 
+.backLink {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--beam);
+  text-decoration: none;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
 .eyebrow {
   font-family: var(--font-mono);
   font-size: var(--size-label);

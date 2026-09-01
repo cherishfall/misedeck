@@ -25,7 +25,6 @@ interface PageShellProps {
 export function PageShell({ children }: PageShellProps) {
   const { t } = useTranslation();
   const location = useLocation();
-  const onStyleguide = location.pathname === "/__styleguide";
   const onTools = location.pathname === "/tools";
   const onTasks = location.pathname === "/tasks";
   const onPreview = location.pathname === "/preview";
@@ -101,13 +100,6 @@ export function PageShell({ children }: PageShellProps) {
           data-testid="wordmark-plugins"
         >
           {t(I18N_KEYS.nav.plugins)}
-        </Link>
-        <Link
-          to="/__styleguide"
-          className={styles.wordmarkNav}
-          aria-current={onStyleguide ? "page" : undefined}
-        >
-          {t(I18N_KEYS.styleguide.styleguideLink)}
         </Link>
       </header>
 
