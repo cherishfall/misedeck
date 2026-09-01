@@ -7,7 +7,7 @@
 //
 // All mutations route through the execution panel so the exact argv
 // and live log are visible. Mutations are trust-gated in directory
-// contexts, reusing the same guard/banner pattern as the Config page.
+// contexts; the trust banner follows the same pattern as Preview.
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";

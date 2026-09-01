@@ -15,7 +15,7 @@
 
 - **Global tool management**: install, uninstall, switch, upgrade, and see outdated badges in one table.
 - **Directory context**: resolved tools, env vars, and lockfile for any directory, with config-source badges.
-- **Config editing**: form-based `[tools]` and `[env]` editing for global and per-directory `mise.toml`.
+- **Env vars**: first-class env-var management per directory or global (`mise env` / `mise set` / `mise unset`), plus config-file visibility on Preview.
 - **Tasks**: list, run with live output, and simple edits.
 - **Trust UX**: untrusted directories stay read-only until you choose to trust them.
 - **Settings, doctor, and plugin/backend browsing**: inspect and tweak settings, run `mise doctor`, and browse the registry.
@@ -27,8 +27,8 @@
 
 | English | 简体中文 |
 | --- | --- |
-| ![Tools](./docs/screenshots/tools-en.png) | ![配置编辑器](./docs/screenshots/config-zh-CN.png) |
-| ![Config editor](./docs/screenshots/config-en.png) | ![状态](./docs/screenshots/scaffold-detected.png) |
+| ![Tools](./docs/screenshots/tools-en.png) | ![环境变量](./docs/screenshots/env-zh-CN.png) |
+| ![Env](./docs/screenshots/env-en.png) | ![状态](./docs/screenshots/scaffold-detected.png) |
 | ![Doctor](./docs/screenshots/doctor-en.png) |  |
 | ![Settings](./docs/screenshots/settings-en.png) |  |
 

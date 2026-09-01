@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 
 import "./tokens.css";
 import "./i18n";
@@ -15,7 +15,6 @@ import { StyleGuide } from "./components/StyleGuide/StyleGuide";
 import { HomePage } from "./pages/HomePage/HomePage";
 import { ToolsPage } from "./pages/ToolsPage/ToolsPage";
 import { DirectoryPreview } from "./pages/DirectoryPreview/DirectoryPreview";
-import { ConfigPage } from "./pages/ConfigPage/ConfigPage";
 import { EnvPage } from "./pages/EnvPage/EnvPage";
 import { TasksPage } from "./pages/TasksPage/TasksPage";
 import { SettingsPage } from "./pages/SettingsPage/SettingsPage";
@@ -47,7 +46,11 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                     <Route path="/tasks" element={<TasksPage />} />
                     <Route path="/preview" element={<DirectoryPreview />} />
                     <Route path="/env" element={<EnvPage />} />
-                    <Route path="/config" element={<ConfigPage />} />
+                    {/* The Config editor page is retired (#43): [tools]
+                        editing lives on Tools, [env] editing on Env, and
+                        config-file visibility on Preview. Redirect the old
+                        route for one release. */}
+                    <Route path="/config" element={<Navigate to="/preview" replace />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/doctor" element={<DoctorPage />} />
                     <Route path="/plugins" element={<PluginsPage />} />

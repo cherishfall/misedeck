@@ -17,8 +17,8 @@
 // All mutations and the open-in-editor side-effect go through
 // `useTrustGuard()` — when the cwd's `mise.toml` is untrusted,
 // the click handlers focus the trust banner instead of
-// executing. The pattern is the same one the config page
-// (#26) uses; the trust banner lives on the preview page
+// executing. The pattern is the same one the env page
+// (#41) uses; the trust banner lives on the preview page
 // (#25) and the JS side navigates to it via a `key` prefix
 // shared with the preview's banner.
 
@@ -159,7 +159,7 @@ export function TasksPage() {
 
   // After a successful task write, the read query becomes stale.
   // Observe the running → ok transition (the same transition the
-  // config page and the trust action use) and invalidate the
+  // env page and the trust action use) and invalidate the
   // task list so the table refreshes with the new shape.
   const lastWriteStatusRef = useRef<ExecutionStatus>("idle");
   useEffect(() => {

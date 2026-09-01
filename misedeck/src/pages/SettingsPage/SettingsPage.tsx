@@ -250,8 +250,8 @@ function ScopeBadge({ cwd }: { cwd: string | null }) {
     <div className={styles.scopeRow}>
       <Badge variant={isGlobal ? "default" : "info"}>
         {isGlobal
-          ? t(I18N_KEYS.config.scope.global)
-          : t(I18N_KEYS.config.scope.project)}
+          ? t(I18N_KEYS.env.scope.global)
+          : t(I18N_KEYS.env.scope.project)}
       </Badge>
       {!isGlobal && (
         <span className={styles.scopePath} data-testid="settings-cwd">

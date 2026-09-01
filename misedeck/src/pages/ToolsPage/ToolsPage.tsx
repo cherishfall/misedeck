@@ -115,7 +115,7 @@ export function ToolsPage() {
 
   // After a successful mutation, the read queries become stale.
   // Observe the running → ok transition (the same transition the
-  // config page and the trust action use) and invalidate the
+  // env page and the trust action use) and invalidate the
   // dependent queries so the table refreshes.
   const lastWriteStatusRef = useRef<ExecutionStatus>("idle");
   useEffect(() => {

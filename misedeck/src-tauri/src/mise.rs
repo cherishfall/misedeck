@@ -1116,60 +1116,6 @@ pub fn mise_registry(
     }
 }
 
-// ---------- Config-editor argv builders (issue #26) ----------
-//
-// The config editor routes every write through the existing
-// `run_mise_command` Tauri command — no new IPC surface is needed.
-// These pure helpers exist so the JS side has a typed builder for
-// the four write commands. The argv shapes are documented against
-// `mise use --help`, `mise set --help`, and `mise unset --help`:
-//
-//   * `mise use <tool>@<version>`     → adds / changes a tool version
-//   * `mise use --remove <tool>`      → removes a tool from the config
-//   * `mise set <KEY>=<value>`        → sets an env var in `[env]`
-//   * `mise unset <KEY>`              → removes an env var from `[env]`
-//
-// The runner already validates the argv (no shell metacharacters,
-// non-empty), so these builders only do string concatenation. Unit
-// tests in `tests/config.rs` pin the exact shape so a future mise
-// CLI change surfaces here, not in production.
-
-/// Build the argv for `mise use <tool>@<version>`. The `tool` may
-/// contain a backend prefix (e.g. `cargo:ripgrep`); the helper is a
-/// pure string builder and does not interpret it.
-pub fn mise_use_argv(tool: &str, version: &str) -> Vec<String> {
-    vec![
-        "use".to_string(),
-        format!("{tool}@{version}"),
-    ]
-}
-
-/// Build the argv for `mise use --remove <tool>`.
-pub fn mise_use_remove_argv(tool: &str) -> Vec<String> {
-    vec![
-        "use".to_string(),
-        "--remove".to_string(),
-        tool.to_string(),
-    ]
-}
-
-/// Build the argv for `mise set <KEY>=<value>`. mise's `set` (alias
-/// `ev` / `env-vars`) is the documented write path for `[env]`
-/// table values; `mise config set env.X Y` works too but `set` is
-/// the natural surface and accepts a single `KEY=VALUE` token.
-pub fn mise_env_set_argv(key: &str, value: &str) -> Vec<String> {
-    vec![
-        "set".to_string(),
-        format!("{key}={value}"),
-    ]
-}
-
-/// Build the argv for `mise unset <KEY>`. mise's `unset` is the
-/// documented remove path for `[env]` table values.
-pub fn mise_env_unset_argv(key: &str) -> Vec<String> {
-    vec!["unset".to_string(), key.to_string()]
-}
-
 // ---------- Global tool mutations (issue #22) ----------
 //
 // The tools page routes every global tool mutation through the
@@ -1186,7 +1132,7 @@ pub fn mise_env_unset_argv(key: &str) -> Vec<String> {
 //
 // The JS side prepends `-g` when the active context is global, so the
 // helpers here emit the pure argv and leave the global flag to the
-// caller (mirroring the config-editor builders in issue #26).
+// caller.
 
 /// Build the argv for `mise install <tool>@<version>`.
 pub fn mise_install_argv(tool: &str, version: &str) -> Vec<String> {
@@ -1218,9 +1164,9 @@ pub fn mise_upgrade_argv(tool: Option<&str>) -> Vec<String> {
 //
 // The tasks page drives every write through `run_mise_command` and
 // the existing execution panel — no new IPC surface is needed. The
-// argv builders here mirror the `mise_use_argv` /
-// `mise_env_set_argv` family from issue #26 so a future mise CLI
-// change surfaces in `tests/tasks.rs` instead of in production.
+// argv builders here follow the same pure-builder pattern as the
+// tool-mutation builders above so a future mise CLI change surfaces
+// in `tests/tasks.rs` instead of in production.
 //
 // Documented against `mise tasks --help`, `mise tasks ls --help`,
 // `mise run --help`, and `mise tasks add --help`:

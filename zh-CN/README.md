@@ -15,7 +15,7 @@
 
 - **全局工具管理**：在一个表格中安装、卸载、切换、升级，并查看过时提醒。
 - **目录上下文**：任意目录的解析工具、环境变量与 lockfile，并标注配置来源。
-- **配置编辑**：以表单方式编辑全局与目录级 `mise.toml` 的 `[tools]` 和 `[env]`。
+- **环境变量**：按目录或全局进行一等环境变量管理（`mise env` / `mise set` / `mise unset`），配置文件可见性在预览页。
 - **任务**：列表、实时输出运行、简单编辑。
 - **信任机制**：未信任目录默认只读，由你决定是否信任。
 - **设置、doctor 诊断、插件/后端浏览**：查看与调整设置、运行 `mise doctor`、浏览 registry。
@@ -27,8 +27,8 @@
 
 | English | 简体中文 |
 | --- | --- |
-| ![Tools](../docs/screenshots/tools-en.png) | ![配置编辑器](../docs/screenshots/config-zh-CN.png) |
-| ![Config editor](../docs/screenshots/config-en.png) | ![状态](../docs/screenshots/scaffold-detected.png) |
+| ![Tools](../docs/screenshots/tools-en.png) | ![环境变量](../docs/screenshots/env-zh-CN.png) |
+| ![Env](../docs/screenshots/env-en.png) | ![状态](../docs/screenshots/scaffold-detected.png) |
 | ![Doctor](../docs/screenshots/doctor-en.png) |  |
 | ![Settings](../docs/screenshots/settings-en.png) |  |
 

@@ -43,7 +43,6 @@
     "tools": "Tools",
     "tasks": "Tasks",
     "env": "Env",
-    "config": "Config",
     "doctor": "Doctor",
     "settings": "Settings",
     "plugins": "Plugins",
@@ -211,42 +210,6 @@
     "valuePlaceholder": "value",
     "guard": {
       "untrustedBody": "Trust this directory before mutating its env vars."
-    }
-  },
-  "config": {
-    "eyebrow": "▸ MISE / CONFIG",
-    "title": "Config editor",
-    "subtitle": "Form-based editing of [tools] and [env] for the active context. Writes go through `mise use` and `mise set` and stream into the panel.",
-    "commandHint": "mise use · mise set · mise unset",
-    "nav": "Config",
-    "scope": {
-      "global": "GLOBAL",
-      "project": "THIS PROJECT"
-    },
-    "toolsSection": {
-      "title": "Tools",
-      "addToolLabel": "Add a tool",
-      "toolPlaceholder": "tool (e.g. node)",
-      "versionPlaceholder": "version (e.g. 22.11.0)",
-      "addButton": "Add",
-      "saveButton": "Save",
-      "removeButton": "Remove",
-      "emptyTitle": "No tools configured",
-      "emptyBody": "`mise use` populates this list. Use the form below to add your first tool; writes go to mise's config file for the active context."
-    },
-    "envSection": {
-      "title": "Env",
-      "addEnvLabel": "Add an env var",
-      "namePlaceholder": "KEY (UPPER_SNAKE)",
-      "valuePlaceholder": "value",
-      "addButton": "Add",
-      "saveButton": "Save",
-      "removeButton": "Remove",
-      "emptyTitle": "No env vars configured",
-      "emptyBody": "`mise set` populates this list. Use the form below to add a project or global env var; writes go to the [env] table in the active config."
-    },
-    "guard": {
-      "untrustedBody": "Trust this directory before mutating its config."
     }
   },
   "tasks": {

@@ -155,9 +155,9 @@ export function useParsedLsRemote(
 /**
  * `mise env --json` for the current directory context. Cache key is
  * `["tools", "env", cwd]`. Enabled in both global and directory
- * contexts so the config editor (#26) can show the resolved env
+ * contexts so the env page (#41) can show the resolved env
  * the user is editing. (The preview page guards against an empty
- * cwd separately; the config page consumes this hook in both
+ * cwd separately; the env page consumes this hook in both
  * contexts and shows an empty list when no vars are returned.)
  */
 export function useEnv(): UseQueryResult<JsonResult> {
