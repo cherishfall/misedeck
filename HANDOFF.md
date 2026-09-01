@@ -1,9 +1,9 @@
 # MiseDeck handoff
 
 This document is a continuation marker between autonomous driver sessions.
-Last updated: 2026-09-01 — #39 closed; #40 is the active ticket.
+Last updated: 2026-09-01 — #40 closed; #41 is the active ticket.
 
-**Status:** v1 product-logic implementation in progress. 6 of 11 `ready-for-agent` v1 tickets closed; #40 is the next ticket to pick up.
+**Status:** v1 product-logic implementation in progress. 7 of 11 `ready-for-agent` v1 tickets closed; #41 is the next ticket to pick up.
 
 ---
 
@@ -17,15 +17,16 @@ Last updated: 2026-09-01 — #39 closed; #40 is the active ticket.
 | #37 | Visual language overhaul: mise.jdx.dev look for light + dark, theme switching infrastructure | `ee24dc9`, `6a0c73b`, `1696e6e` | Rewrote `visual-language.md` (en + zh-CN); added `ThemeProvider`/`themeContext.tsx` + `ThemeSwitcher`; wired `html[data-theme]` with system/light/dark defaulting to system and persisting across launches; updated all components/pages to the new mise.jdx.dev palette. A follow-up commit fixed a React hooks-order crash on the Plugins registry page. |
 | #38 | App shell: collapsible sidebar, directory indicator, window sizing discipline | `d2225b6` | Rebuilt `PageShell` as a collapsible left sidebar with brand lockup, main/bottom nav groups, collapse toggle, and sidebar footer; renamed `ContextBar` to `DirectoryIndicator` and moved it into the content area; added a Global button; enforced window minimum size and body-level overflow discipline. |
 | #39 | Execution panel on demand: hidden by default, slides in on run, absent on read-only pages | `5035de6` | Added `isOpen` visibility state to the execution reducer; panel hidden by default and auto-opens on any command; `dismiss` now hides while preserving history; added persistent `ExecutionPanelAffordance` to reopen from any page; read-only routes (`/doctor`, `/plugins`, `/preview`) close the panel when idle. |
+| #40 | Command-teaching page headers + data-is-never-uppercased typography audit | `dba5565` | Added backing-command hints to every page header; updated empty states to name populating commands; removed uppercase transforms from Doctor raw-status data; verified real-case paths/versions/values in both locales. |
 
-**Lint gates at the end of #39:** `npm run ci` (typecheck + `lint:i18n` + `lint:css-tokens` + build) green; `cargo check` green; i18n parity at 343 keys.
+**Lint gates at the end of #40:** `npm run ci` (typecheck + `lint:i18n` + `lint:css-tokens` + build) green; `cargo check` green; i18n parity at 351 keys.
 
 ---
 
 ## Paused work
 
-- **#40 — Command-teaching page headers + data-is-never-uppercased typography audit** is the active ticket.
-- No commit for #40 has been made yet.
+- **#41 — Env page: first-class env-vars management (mise env / set / unset)** is the active ticket.
+- No commit for #41 has been made yet.
 
 ---
 
@@ -33,10 +34,8 @@ Last updated: 2026-09-01 — #39 closed; #40 is the active ticket.
 
 Dependency order (check `gh issue view <n> --json blockedBy` before starting):
 
-1. **#40** Command-teaching page headers + data-is-never-uppercased typography audit  
+1. **#41** Env page: first-class env-vars management (mise env / set / unset)  
    → blocked by: #38 (closed). Start here.
-2. **#41** Env page: first-class env-vars management (mise env / set / unset)  
-   → blocked by: #38 (closed).
 3. **#42** Preview absorbs config-file hierarchy (mise config: loaded files in precedence order)  
    → blocked by: #38 (closed).
 4. **#44** Home (mise status) page in the new shell  
@@ -55,12 +54,12 @@ Also open but **not** currently in scope:
    `git checkout master && git pull origin master`
 2. Read this `HANDOFF.md`.
 3. Read `AGENTS.md`, `CONTEXT.md`, `docs/design/product-logic.md`, `docs/design/visual-language.md`, `docs/agents/conventions.md`, `docs/agents/architecture.md`.
-4. Run `gh issue view 40 --comments`, then implement per acceptance criteria.
+4. Run `gh issue view 41 --comments`, then implement per acceptance criteria.
 5. Follow the implement skill: TDD at seams, regular typechecks, full `npm run ci` + `cargo check`, build/run/screenshot verification.
-6. Commit to `master` referencing `#40`, push with:  
+6. Commit to `master` referencing `#41`, push with:  
    `git -c http.proxy=http://127.0.0.1:7890 push origin master`
-7. Close the issue with `gh issue close 40 --comment "..."`.
-8. Continue with #41–#44 in the same dependency order, one ticket per session/subagent.
+7. Close the issue with `gh issue close 41 --comment "..."`.
+8. Continue with #42–#44 in the same dependency order, one ticket per session/subagent.
 
 ---
 
