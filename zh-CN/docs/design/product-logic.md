@@ -80,7 +80,7 @@ MiseDeck 是 **mise CLI 的 GUI 版**。它的目的不是取代终端，而是*
 
 ## 与既有文档的关系
 
-- 取代 `visual-language.md` 中关于框架/布局的部分（顶部导航、固定 context bar、常驻执行面板）。向 mise 官网风格重写 `visual-language.md` 是独立 ticket；在其落地前，凡是未被本文档推翻的 token/动效纪律仍然有效。
+- 取代 `visual-language.md` 中关于框架/布局的部分（顶部导航、固定 context bar、常驻执行面板）。向 mise 官网风格重写 `visual-language.md` 已在 #37 落地；本文档仍然管辖框架，视觉语言文档管辖框架内的表面。
 - ADR-0004 继续有效；本文档是它的操作化。没有新增概念——*预览*与*目录指示条*是 `mise -C` 解析结果的呈现方式，不是新的领域名词。
 
 ## 不在范围内（roadmap，非本期）

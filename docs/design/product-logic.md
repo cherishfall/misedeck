@@ -80,7 +80,7 @@ The `/config` route redirects to `/preview` for one release, then is removed.
 
 ## Relationship to existing docs
 
-- Supersedes the chrome/layout portions of `visual-language.md` (top nav, fixed context bar, always-docked execution deck). A rewrite of `visual-language.md` toward mise's website look is its own ticket; until it lands, token/animation discipline from that doc still applies to anything not contradicted here.
+- Supersedes the chrome/layout portions of `visual-language.md` (top nav, fixed context bar, always-docked execution deck). The rewrite of `visual-language.md` toward mise's website look landed in #37; this document still owns the chrome, that one owns the surfaces inside it.
 - ADR-0004 stands; this document operationalizes it. No new concepts were added — *Preview* and *Directory indicator* are presentations of `mise -C` resolution, not new domain nouns.
 
 ## Out of scope (roadmap, not now)
