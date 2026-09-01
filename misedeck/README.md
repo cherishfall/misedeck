@@ -15,14 +15,15 @@ npm run tauri dev      # opens the desktop app
 ## Verify
 
 ```bash
-npm run ci             # typecheck + i18n parity guard + production build
+npm run ci             # typecheck + i18n parity guard + CSS token guard + production build
 ```
 
 `npm run ci` is the green-bar gate. It runs, in order:
 
 1. `npm run typecheck` — `tsc --noEmit`.
 2. `npm run lint:i18n` — `en.json` and `zh-CN.json` must have the same key set.
-3. `npm run build` — `tsc --noEmit && vite build`.
+3. `npm run lint:css-tokens` — every `var(--*)` reference must resolve to a defined token.
+4. `npm run build` — `tsc --noEmit && vite build`.
 
 ## i18n
 

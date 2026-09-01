@@ -10,7 +10,7 @@ maintainer cuts a release.
 
 | Workflow    | Trigger                                  | What it does                                                                                                                                       | Wall-clock budget |
 | ----------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run lint:i18n` · `npm run build` · `cargo check` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu. | < 5 min            |
+| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run lint:i18n` · `npm run lint:css-tokens` · `npm run build` · `cargo check` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu. | < 5 min            |
 | `release.yml` | push of a `v*.*.*` tag, or `workflow_dispatch` | Builds Tauri bundles for `macos-latest`, `windows-latest`, `ubuntu-latest` in parallel; uploads per-platform artifacts; on a real tag push, publishes a GitHub Release. | matrix-driven     |
 
 The `ci.yml` workflow is the gate that keeps `master` green. The

@@ -9,7 +9,7 @@
 
 | Workflow      | 触发时机                                    | 做了什么                                                                                                                                  | 墙钟预算   |
 | ------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `tsc --noEmit` · `npm run lint:i18n` · `npm run build` · `cargo check` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu。 | < 5 分钟    |
+| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `tsc --noEmit` · `npm run lint:i18n` · `npm run lint:css-tokens` · `npm run build` · `cargo check` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu。 | < 5 分钟    |
 | `release.yml` | 推送 `v*.*.*` tag，或 `workflow_dispatch`   | 在 `macos-latest`、`windows-latest`、`ubuntu-latest` 上并行构建 Tauri bundle；上传各平台 artifact；真实 tag 推送时发布 GitHub Release。       | 由矩阵决定 |
 
 `ci.yml` 是保证 `master` 绿色的闸门。`release.yml` 才是真正产出

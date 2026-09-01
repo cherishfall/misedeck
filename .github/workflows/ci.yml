@@ -55,6 +55,10 @@ jobs:
         working-directory: misedeck
         run: npm run lint:i18n
 
+      - name: CSS design-token reference check
+        working-directory: misedeck
+        run: npm run lint:css-tokens
+
       - name: Frontend production build
         working-directory: misedeck
         run: npm run build

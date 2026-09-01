@@ -15,14 +15,15 @@ npm run tauri dev      # 打开桌面应用
 ## 验证
 
 ```bash
-npm run ci             # typecheck + i18n 对等守门 + 生产构建
+npm run ci             # typecheck + i18n 对等守门 + CSS token 守门 + 生产构建
 ```
 
 `npm run ci` 是绿门。它按以下顺序运行：
 
 1. `npm run typecheck` —— `tsc --noEmit`。
 2. `npm run lint:i18n` —— `en.json` 与 `zh-CN.json` 必须有相同的键集合。
-3. `npm run build` —— `tsc --noEmit && vite build`。
+3. `npm run lint:css-tokens` —— 每个 `var(--*)` 引用必须能解析到已定义的 token。
+4. `npm run build` —— `tsc --noEmit && vite build`。
 
 ## i18n
 

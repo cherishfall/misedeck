@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "lint:i18n": "tsx scripts/check-i18n.ts",
-    "ci": "npm run typecheck && npm run lint:i18n && npm run build",
+    "lint:css-tokens": "tsx scripts/check-css-tokens.ts",
+    "ci": "npm run typecheck && npm run lint:i18n && npm run lint:css-tokens && npm run build",
     "preview": "vite preview",
     "tauri": "tauri"
   },

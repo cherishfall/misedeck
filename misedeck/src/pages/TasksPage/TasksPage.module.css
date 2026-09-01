@@ -4,13 +4,19 @@
  * strip with eyebrow + title + hint, a sub-toolbar with refresh,
  * a signal line, and then the table (or the appropriate empty
  * state). The edit form, when open, sits below the row being
- * edited inside a subtle frame. */
+ * edited inside a subtle frame.
+ *
+ * Token mapping fixed in issue #35: this module previously referenced
+ * non-existent custom properties (--color-fg-*, --color-line-*,
+ * --radius-sm/md, --space-7, …) so whole declarations dropped silently.
+ * Every reference now resolves to tokens.css; small-element radii use
+ * the 4px literal, matching the other pages. */
 
 .page {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  padding: var(--space-6) var(--space-7);
+  padding: var(--space-6) var(--space-6);
   max-width: 1280px;
   margin: 0 auto;
 }
@@ -26,7 +32,7 @@
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-fg-dim);
+  color: var(--dim);
 }
 
 .title {
@@ -34,14 +40,14 @@
   font-size: 32px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--color-fg-default);
+  color: var(--text);
   margin: 0;
 }
 
 .hint {
   font-family: var(--font-ui);
   font-size: 14px;
-  color: var(--color-fg-mute);
+  color: var(--dim);
   margin: 0;
   max-width: 70ch;
 }
@@ -49,7 +55,7 @@
 .contextPath {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--color-fg-mute);
+  color: var(--dim);
   word-break: break-all;
 }
 
@@ -65,7 +71,7 @@
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--color-fg-dim);
+  color: var(--dim);
 }
 
 .refresh {
@@ -73,18 +79,18 @@
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--color-fg-default);
+  color: var(--text);
   background: transparent;
-  border: 1px solid var(--color-line-soft);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  border-radius: 4px;
   padding: 6px 10px;
   cursor: pointer;
   transition: border-color 120ms ease-out, color 120ms ease-out;
 }
 
 .refresh:hover:not(:disabled) {
-  border-color: var(--color-line-strong);
-  color: var(--color-fg-strong);
+  border-color: var(--line-strong);
+  color: var(--text);
 }
 
 .refresh:disabled {
@@ -94,7 +100,7 @@
 
 .signalLine {
   height: 1px;
-  background: var(--color-line-soft);
+  background: var(--line);
   position: relative;
   overflow: hidden;
 }
@@ -106,7 +112,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    var(--color-beam) 50%,
+    var(--beam) 50%,
     transparent
   );
   animation: signal-sweep 6s linear infinite;
@@ -119,9 +125,9 @@
 }
 
 .errorState {
-  border: 1px solid var(--color-breach);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-panel);
+  border: 1px solid var(--breach);
+  border-radius: var(--radius-panel);
+  background: var(--panel);
   padding: var(--space-4);
   display: flex;
   flex-direction: column;
@@ -133,23 +139,23 @@
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-breach);
+  color: var(--breach);
 }
 
 .errorBody {
   font-family: var(--font-ui);
   font-size: 13px;
-  color: var(--color-fg-mute);
+  color: var(--dim);
   margin: 0;
 }
 
 .errorStderr {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--color-fg-dim);
-  background: var(--color-bg-deep);
-  border: 1px solid var(--color-line-soft);
-  border-radius: var(--radius-sm);
+  color: var(--dim);
+  background: var(--void);
+  border: 1px solid var(--line);
+  border-radius: 4px;
   padding: var(--space-3);
   overflow-x: auto;
   white-space: pre-wrap;
@@ -162,7 +168,7 @@
 .cellName {
   font-family: var(--font-mono);
   font-size: 13px;
-  color: var(--color-fg-strong);
+  color: var(--text);
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -173,44 +179,44 @@
 }
 
 .taskHidden {
-  color: var(--color-fg-dim);
+  color: var(--dim);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  border: 1px solid var(--color-line-soft);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  border-radius: 4px;
   padding: 1px 6px;
 }
 
 .cellRun {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--color-fg-default);
+  color: var(--text);
   word-break: break-word;
   display: block;
   max-width: 360px;
 }
 
 .cellRunEmpty {
-  color: var(--color-fg-dim);
+  color: var(--dim);
 }
 
 .cellDescription {
   font-family: var(--font-ui);
   font-size: 12px;
-  color: var(--color-fg-mute);
+  color: var(--dim);
   display: block;
   max-width: 280px;
 }
 
 .cellDescriptionEmpty {
-  color: var(--color-fg-dim);
+  color: var(--dim);
 }
 
 .cellDepends {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--color-fg-default);
+  color: var(--text);
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -218,15 +224,15 @@
 }
 
 .dependsTag {
-  border: 1px solid var(--color-line-soft);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  border-radius: 4px;
   padding: 2px 6px;
-  color: var(--color-fg-default);
-  background: var(--color-bg-panel);
+  color: var(--text);
+  background: var(--panel);
 }
 
 .dependsEmpty {
-  color: var(--color-fg-dim);
+  color: var(--dim);
 }
 
 .cellActions {
@@ -242,9 +248,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  border: 1px solid var(--color-line-soft);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--panel);
   padding: var(--space-4);
   margin-top: var(--space-3);
   margin-bottom: var(--space-3);
@@ -254,14 +260,14 @@
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-fg-strong);
+  color: var(--text);
   margin: 0;
 }
 
 .editFormSub {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--color-fg-dim);
+  color: var(--dim);
   margin: 0;
 }
 
@@ -276,23 +282,23 @@
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-fg-dim);
+  color: var(--dim);
 }
 
 .editFormInput {
   font-family: var(--font-mono);
   font-size: 13px;
-  color: var(--color-fg-default);
-  background: var(--color-bg-deep);
-  border: 1px solid var(--color-line-soft);
-  border-radius: var(--radius-sm);
+  color: var(--text);
+  background: var(--void);
+  border: 1px solid var(--line);
+  border-radius: 4px;
   padding: 6px 10px;
   outline: none;
   transition: border-color 120ms ease-out;
 }
 
 .editFormInput:focus {
-  border-color: var(--color-beam);
+  border-color: var(--beam);
 }
 
 .editFormInput:disabled {
@@ -301,14 +307,14 @@
 }
 
 .editFormInput[name="name"] {
-  color: var(--color-fg-dim);
+  color: var(--dim);
   cursor: not-allowed;
 }
 
 .editFormHelp {
   font-family: var(--font-ui);
   font-size: 11px;
-  color: var(--color-fg-dim);
+  color: var(--dim);
   margin: 0;
 }
 
@@ -321,7 +327,7 @@
 .editFormError {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--color-breach);
+  color: var(--breach);
   margin: 0;
 }
 
@@ -329,8 +335,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: var(--space-7);
-  color: var(--color-fg-dim);
+  padding: var(--space-6);
+  color: var(--dim);
   font-family: var(--font-mono);
   font-size: 12px;
 }
@@ -339,6 +345,6 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--color-fg-dim);
+  background: var(--dim);
   display: inline-block;
 }
