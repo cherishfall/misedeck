@@ -1,87 +1,99 @@
 # MiseDeck handoff
 
 This document is a continuation marker between autonomous driver sessions.
-Last updated: end of session C — all v1 implementation tickets closed.
+Last updated: 2026-09-01 — session paused because the agent's usage quota was exhausted (403 / 5-hour limit). The next session should be run under a fresh quota window or a different model/agent.
 
-**Status: v1 implementation complete.** No further `ready-for-agent` implementation tickets remain. Issue #16 (the v1 spec) stays open as the living spec document.
+**Status:** v1 product-logic implementation in progress. 4 of 11 `ready-for-agent` v1 tickets closed; #38 is the next ticket to pick up.
 
 ---
 
-## Completed (11 implementation tickets, all on master)
+## Completed this session (on `origin/master`)
 
 | # | Title | Commit | Notes |
 | - | ----- | ------ | ----- |
-| #17 | Tauri 2 scaffold + end-to-end mise detection | `756f93b` | `misedeck/` is the Tauri app; `DetectMiseResult` enum returns `{kind, ok/err}` so the JS side never has to recover from a thrown error |
-| #19 | i18n infrastructure (en + zh-CN) | `650d534` | 52 keys; `react-i18next` + `LanguageProvider` + `LanguageSwitcher`; `npm run lint:i18n` parity check |
-| #20 | Visual system — full token set, base components, gallery | `d537157` | Extended to 114 keys; components at `misedeck/src/components/` (Panel, Button, IconButton, Badge, Banner, Table, DataRow, EmptyState, ProgressDot, StyleGuide, LanguageSwitcher); StyleGuide at `/__styleguide` |
-| #31 | CI: three-platform builds + release automation | `a8da879` | `.github/workflows/{release,ci}.yml`; tag-push `v*.*.*` triggers matrix; per-platform bundle subset; SHA256SUMS attached |
-| #18 | Generalized mise runner + execution panel | `f5d8d9d` | `run_mise(mise_path, req, on_event)` is the single entry point; new `run_mise_command` Tauri command streams via `tauri::ipc::Channel<RunEvent>`; `ExecutionPanel` + `useExecution` hook; +12 execution.* keys; **126 keys total** |
-| #23 | Directory context bar + recent directories | `01c9be0` | `DirectoryProvider` + `ContextBar`; `tauri-plugin-dialog` wired; `useDirectory().cwd` is the single source of truth |
-| #30 | mise self-management: guided install + self-update | `5ab053a` | `install.rs`; `ExecutionContext` lifted so any page can trigger a run |
-| #21 | Global tools list (read-only) with outdated badges | `1ab8458` | `mise ls --json` + `mise outdated --json --bump` + `mise ls-remote --json`; `Table` / `Badge` / `EmptyState` wired; Tauri commands `tools_ls` / `tools_outdated` / `tools_ls_remote`; +6 keys (`tools.*`); **140 keys total** |
-| #24 | Directory resolved-state preview with config-source badges | `4db6d2a` | new `/preview` page (reuses #21's `tools_ls` path with `cwd`); `tools_env` Tauri command (`mise env --json`); `read_lockfile` Tauri command (reads `<cwd>/mise.lock`); convention list for tool-derived env vars (JAVA_HOME → "java", etc.); +53 keys (`preview.*`); **193 keys total** |
-| #25 | Trust UX: readonly + banner + one-click trust | `b5ae8c7` | `MISE_SAFE=1` for untrusted directories; one-click `mise trust` via the panel |
-| #26 | Config editor: [tools] and [env] forms | `69b8f4f` | `/config` route; writes via `mise use` / `mise config set` / `mise set` / `mise unset` through the panel; never direct TOML edits |
-| #27 | Tasks: list, run, simple edit | `3fbcfad` | `/tasks` route; `mise tasks ls --json` + run via panel; simple edit (name/run/depends) |
-| #28 | Activation entry points: open-in-terminal, copy command, shell check | `5b78cf5` | `tauri-plugin-opener` + `tauri-plugin-shell`; `ActivationBanner` in `PageShell`; `TERMINAL_NOT_FOUND` error code |
-| #29 | Settings, doctor, plugin/backend pages | `7ea4e83` | `/settings`, `/doctor`, `/plugins`; `mise settings ls --json-extended`, `mise doctor --json` with raw-text fallback, `mise registry --json`; +60 keys; **326 keys total** |
-| #22 | Global tool mutations via execution panel | `7973cdb` | Install / uninstall / switch / upgrade on `/tools`; list refreshes on `running → ok`; `RunEvent` enum serialization fixed to camelCase fields on the wire |
-| #32 | Bilingual README + release prep | `b84776e` | README.md + zh-CN/README.md with current screenshots, install notes, Gatekeeper note, disclaimer; `.github/release-template.md` created |
-| — | Pre-release workflow tweak | `de8c7df` | `.github/workflows/release.yml` marks `-alpha`/`-beta`/`-rc`/`-pre` tags as pre-releases |
-| — | Windows CI fix | `0df5c68` | `which_exists` in `shell.rs` was cfg-gated to Linux-only, causing Windows build to fail; made it cross-platform and added `#[allow(dead_code)]` |
-| — | macOS Gatekeeper docs fix | `daf5e7d` | README / release template had wrong app name (`MiseDeck.app`) and incomplete "damaged" workaround; corrected to `misedeck.app` + `xattr` command |
-| — | Version bump to 1.0.0-beta.3 | `c180742` | package.json / package-lock.json / tauri.conf.json / Cargo.toml / Cargo.lock bumped from `0.1.0` so bundle filenames include the beta version |
+| #34 | SPEC: Product logic — sidebar IA, on-demand execution panel, mise-native concepts | `18977d8` | Ratified and landed `docs/design/product-logic.md` + `zh-CN/docs/design/product-logic.md`; added product principles to `AGENTS.md`. |
+| #35 | Fix undefined CSS design tokens (TasksPage and repo-wide sweep) | `31f80ee` | Mapped 13 broken `TasksPage` tokens to existing `tokens.css` values; added `scripts/check-css-tokens.ts` and wired it into `npm run ci` + CI workflow; docs updated bilingually. |
+| #36 | Remove Styleguide from product navigation; keep dev-only route with working back navigation | `3673a47` | Dropped Styleguide from product nav; made `/__styleguide` dev-only; added a working back link on the Styleguide page; removed dead i18n nav key. |
+| #37 | Visual language overhaul: mise.jdx.dev look for light + dark, theme switching infrastructure | `ee24dc9`, `6a0c73b`, `1696e6e` | Rewrote `visual-language.md` (en + zh-CN); added `ThemeProvider`/`themeContext.tsx` + `ThemeSwitcher`; wired `html[data-theme]` with system/light/dark defaulting to system and persisting across launches; updated all components/pages to the new mise.jdx.dev palette. A follow-up commit fixed a React hooks-order crash on the Plugins registry page. |
 
-**Test count after session C:** 119 Rust tests passed (13 unit + 9 mise-probe + 9 directory + 9 env + 11 settings + 9 runner + 5 cwd + 15 shell + 15 tasks + 5 install + 9 tool_mutations + 10 tools + 9 trust).
-**Lint gates:** `npm run typecheck && npm run lint:i18n && npm run build && cargo check && cargo test` — all pass.
-**i18n keys:** 334 leaf keys, parity holds.
+**Lint gates at the end of #37:** `npm run ci` (typecheck + `lint:i18n` + `lint:css-tokens` + build) green; `cargo check` green; i18n parity at 336 keys.
 
 ---
 
-## Release status
+## Paused work
 
-- Repository renamed to `cherishfall/misedeck`; old `cherishfall/mise-ui` URL redirects correctly.
-- GitHub description and topics set.
-- Tag `v1.0.0-beta.1` pushed but Windows build failed due to a cfg-gated `which_exists` function.
-- Fixed in `0df5c68`; tag `v1.0.0-beta.2` pushed; CI passed on all three platforms and the pre-release is live: https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.2
-- Release body updated to include the corrected unsigned-macOS workaround after user hit the "damaged" Gatekeeper dialog.
-- Version bumped to `1.0.0-beta.3` in `c180742` so release bundle filenames include the beta version instead of `0.1.0`; tag `v1.0.0-beta.3` pushed and CI running: https://github.com/cherishfall/misedeck/actions/runs/33419640048
-- Final `v1.0.0` release was intentionally deferred per maintainer request (some adjustments still wanted).
+- **#38 — App shell: collapsible sidebar, directory indicator, window sizing discipline** was the active ticket when the quota ran out.
+- No commit for #38 has been made yet; the working tree on `master` is clean aside from the unrelated untracked file `beta3-feedback-scratch.md`.
 
 ---
 
-## Open items
+## Remaining `ready-for-agent` v1 tickets
 
-- Issue #16 (SPEC: MiseDeck v1) remains open as the living spec / roadmap document.
-- No `ready-for-agent` implementation tickets remain.
+Dependency order (check `gh issue view <n> --json blockedBy` before starting):
+
+1. **#38** App shell: collapsible sidebar, directory indicator, window sizing discipline  
+   → blocked by: none. Start here.
+2. **#39** Execution panel on demand: hidden by default, slides in on run, absent on read-only pages  
+   → blocked by: #38.
+3. **#40** Command-teaching page headers + data-is-never-uppercased typography audit  
+   → blocked by: #38.
+4. **#41** Env page: first-class env-vars management (mise env / set / unset)  
+   → blocked by: #38.
+5. **#42** Preview absorbs config-file hierarchy (mise config: loaded files in precedence order)  
+   → blocked by: #38.
+6. **#44** Home (mise status) page in the new shell  
+   → blocked by: #38.
+7. **#43** Retire the Config page (redirect /config to /preview, remove residue)  
+   → blocked by: #41, #42.
+
+Also open but **not** currently in scope:
+- #14, #15, #13, #12, #11 (chore/roadmap, no `ready-for-agent` label).
+
+---
+
+## Recommended next-session startup
+
+1. Ensure you are on `master` and synced:  
+   `git checkout master && git pull origin master`
+2. Read this `HANDOFF.md`.
+3. Read `AGENTS.md`, `CONTEXT.md`, `docs/design/product-logic.md`, `docs/design/visual-language.md`, `docs/agents/conventions.md`, `docs/agents/architecture.md`.
+4. Run `gh issue view 38 --comments`, then implement per acceptance criteria.
+5. Follow the implement skill: TDD at seams, regular typechecks, full `npm run ci` + `cargo check`, build/run/screenshot verification.
+6. Commit to `master` referencing `#38`, push with:  
+   `git -c http.proxy=http://127.0.0.1:7890 push origin master`
+7. Close the issue with `gh issue close 38 --comment "..."`.
+8. Continue with #39–#44 in the same dependency order, one ticket per session/subagent.
 
 ---
 
 ## Working agreement reminders
 
-These come from `AGENTS.md` and `docs/agents/conventions.md` and apply to every ticket:
-
-- **One ticket per session.** The next session should start fresh with `gh issue view <n>` and the relevant docs.
-- **Build before commit.** `cargo check` + frontend typecheck must pass; all tests must pass.
-- **Verify visually when feasible.** The user opted to skip per-ticket screenshots — do the Vite-driven smoke check (Chrome DevTools Protocol), but skip taking a screenshot unless the page is visually complex.
-- **All UI copy through i18n.** `npm run lint:i18n` must stay clean.
+- **One ticket per session.** Do not batch unrelated tickets.
+- **Build before commit.** `npm run ci` and `cargo check` must pass.
+- **Verify visually when feasible.** Run the Tauri app and screenshot complex UI changes.
+- **All UI copy through i18n.** `npm run lint:i18n` must stay green.
 - **Mirror docs to zh-CN** when any doc is touched.
 - **Commit to master** with a message referencing the issue. Push after. Master must stay green.
 - **Close the issue** with a verification block.
+
+---
 
 ## Critical files
 
 | File | Purpose |
 | ---- | ------- |
-| `misedeck/src-tauri/src/mise.rs` | The general runner (`run_mise`, `RunRequest`, `RunOutcome`, `RunEvent`); the probe (`detect_mise`); the fixtures |
-| `misedeck/src-tauri/src/lib.rs` | Tauri command surface: `detect_mise` + `run_mise_command`; `MISE_BINARY` cache; `DetectMiseResult` and `RunCommandResult` enums |
-| `misedeck/src/components/ExecutionPanel/` | ExecutionPanel + useExecution hook; the docked deck per visual language |
-| `misedeck/src/components/index.ts` | Re-exports the base library; **add new components here when you create them** |
-| `misedeck/src/i18n/{en,zh-CN}.json` + `keys.ts` | The i18n catalog; lint:i18n enforces parity |
-| `misedeck/scripts/check-i18n.ts` | Parity + call-site lint (use `npm run lint:i18n`) |
-| `docs/design/visual-language.md` | Source of truth for every token and effect — never invent new colors or animations |
-| `misedeck/src-tauri/tests/fixtures/mise/fixture-mise` | The fixture-mise harness; add new slugs by creating a new directory under `tests/fixtures/mise/<slug>/` with `stdout`/`stderr`/`exit_code` |
-| `docs/agents/{architecture,conventions,getting-started,runner}.md` | The running agreement; read each ticket's "Read first" before starting |
+| `docs/design/product-logic.md` | Source of truth for IA, navigation, execution-panel rules, and page inventory. |
+| `docs/design/visual-language.md` | mise.jdx.dev-derived tokens for light + dark themes. |
+| `misedeck/src/state/themeContext.tsx` | Theme state (system/light/dark, persistence, `html[data-theme]`). |
+| `misedeck/src/components/ThemeSwitcher/` | Theme toggle component. |
+| `misedeck/src/components/PageShell/PageShell.tsx` | Current app shell — the starting point for #38. |
+| `misedeck/src/components/ContextBar/` | Existing directory-context bar — will likely be refactored into the #38 directory indicator. |
+| `misedeck/src/components/ExecutionPanel/` | Existing execution panel — #39 will change its visibility rules. |
+| `misedeck/src/i18n/{en,zh-CN}.json` + `keys.ts` | i18n catalog; `npm run lint:i18n` enforces parity. |
+| `misedeck/scripts/check-css-tokens.ts` | CSS token guard — `npm run lint:css-tokens`. |
+| `misedeck/src-tauri/src/lib.rs` / `mise.rs` | Tauri commands and general mise runner. |
+
+---
 
 ## Environment reminders
 
@@ -93,4 +105,7 @@ These come from `AGENTS.md` and `docs/agents/conventions.md` and apply to every 
 - mise is at `/Users/lifan/.local/bin/mise`; mise shims are at `/Users/lifan/.local/share/mise/shims/`.
 - For Tauri dev: `cd misedeck && npm run tauri dev` (the macOS app opens).
 - For frontend-only: `cd misedeck && npx tsc --noEmit` and `npm run build`.
-- The project root has a `mise.toml` pinning `rust = "latest"`.
+- Git push in this environment requires a one-time proxy parameter:
+  ```
+  git -c http.proxy=http://127.0.0.1:7890 push origin master
+  ```
