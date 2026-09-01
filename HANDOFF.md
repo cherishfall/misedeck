@@ -1,9 +1,9 @@
 # MiseDeck handoff
 
 This document is a continuation marker between autonomous driver sessions.
-Last updated: 2026-09-01 — #40 closed; #41 is the active ticket.
+Last updated: 2026-09-02 — #41, #42, #44 closed; #43 is the active ticket (the last v1 ticket).
 
-**Status:** v1 product-logic implementation in progress. 7 of 11 `ready-for-agent` v1 tickets closed; #41 is the next ticket to pick up.
+**Status:** v1 product-logic implementation in progress. 10 of 11 `ready-for-agent` v1 tickets closed; #43 is the next ticket to pick up.
 
 ---
 
@@ -18,15 +18,18 @@ Last updated: 2026-09-01 — #40 closed; #41 is the active ticket.
 | #38 | App shell: collapsible sidebar, directory indicator, window sizing discipline | `d2225b6` | Rebuilt `PageShell` as a collapsible left sidebar with brand lockup, main/bottom nav groups, collapse toggle, and sidebar footer; renamed `ContextBar` to `DirectoryIndicator` and moved it into the content area; added a Global button; enforced window minimum size and body-level overflow discipline. |
 | #39 | Execution panel on demand: hidden by default, slides in on run, absent on read-only pages | `5035de6` | Added `isOpen` visibility state to the execution reducer; panel hidden by default and auto-opens on any command; `dismiss` now hides while preserving history; added persistent `ExecutionPanelAffordance` to reopen from any page; read-only routes (`/doctor`, `/plugins`, `/preview`) close the panel when idle. |
 | #40 | Command-teaching page headers + data-is-never-uppercased typography audit | `dba5565` | Added backing-command hints to every page header; updated empty states to name populating commands; removed uppercase transforms from Doctor raw-status data; verified real-case paths/versions/values in both locales. |
+| #41 | Env page: first-class env-vars management (mise env / set / unset) | `95a0ad3` | New `EnvPage` with resolved env vars + source for the active context; add/edit/remove via `mise set` / `mise unset` through the execution panel; trust-gated; sidebar order Preview → Tools → Env → Tasks → Plugins; explicit query refetch after mutations. |
+| #42 | Preview absorbs config-file hierarchy (mise config: loaded files in precedence order) | `2f80c51` | New Config files section on Preview backed by `mise config ls --json`; files in precedence order with real-case paths and read-only content view; works in Global and directory contexts; fixture-backed precedence-order test. |
+| #44 | Home (mise status) page in the new shell | `95ee434` | Moved the mise status page out of `App.tsx` into `pages/HomePage/`; all detection states (missing / too old / ready / command-failed / parse-failed) as panels in the new shell; brand lockup links Home, Home absent from nav; `starter.*` → `home.*` i18n. |
 
-**Lint gates at the end of #40:** `npm run ci` (typecheck + `lint:i18n` + `lint:css-tokens` + build) green; `cargo check` green; i18n parity at 351 keys.
+**Lint gates at the end of #44:** `npm run ci` (typecheck + `lint:i18n` + `lint:css-tokens` + build) green; `cargo check` + `cargo test` green; i18n parity at 386 keys.
 
 ---
 
 ## Paused work
 
-- **#41 — Env page: first-class env-vars management (mise env / set / unset)** is the active ticket.
-- No commit for #41 has been made yet.
+- **#43 — Retire the Config page (redirect /config to /preview, remove residue)** is the active ticket — the last v1 ticket.
+- No commit for #43 has been made yet; working tree is clean aside from the unrelated untracked file `beta3-feedback-scratch.md`.
 
 ---
 
@@ -34,14 +37,8 @@ Last updated: 2026-09-01 — #40 closed; #41 is the active ticket.
 
 Dependency order (check `gh issue view <n> --json blockedBy` before starting):
 
-1. **#41** Env page: first-class env-vars management (mise env / set / unset)  
-   → blocked by: #38 (closed). Start here.
-3. **#42** Preview absorbs config-file hierarchy (mise config: loaded files in precedence order)  
-   → blocked by: #38 (closed).
-4. **#44** Home (mise status) page in the new shell  
-   → blocked by: #38 (closed).
-5. **#43** Retire the Config page (redirect /config to /preview, remove residue)  
-   → blocked by: #41, #42.
+1. **#43** Retire the Config page (redirect /config to /preview, remove residue)  
+   → blocked by: #41 (closed), #42 (closed). Start here.
 
 Also open but **not** currently in scope:
 - #14, #15, #13, #12, #11 (chore/roadmap, no `ready-for-agent` label).
@@ -54,12 +51,12 @@ Also open but **not** currently in scope:
    `git checkout master && git pull origin master`
 2. Read this `HANDOFF.md`.
 3. Read `AGENTS.md`, `CONTEXT.md`, `docs/design/product-logic.md`, `docs/design/visual-language.md`, `docs/agents/conventions.md`, `docs/agents/architecture.md`.
-4. Run `gh issue view 41 --comments`, then implement per acceptance criteria.
+4. Run `gh issue view 43 --comments`, then implement per acceptance criteria.
 5. Follow the implement skill: TDD at seams, regular typechecks, full `npm run ci` + `cargo check`, build/run/screenshot verification.
-6. Commit to `master` referencing `#41`, push with:  
+6. Commit to `master` referencing `#43`, push with:  
    `git -c http.proxy=http://127.0.0.1:7890 push origin master`
-7. Close the issue with `gh issue close 41 --comment "..."`.
-8. Continue with #42–#44 in the same dependency order, one ticket per session/subagent.
+7. Close the issue with `gh issue close 43 --comment "..."`.
+8. #43 is the final v1 ticket — after it closes, all 11 `ready-for-agent` v1 tickets are done.
 
 ---
 
