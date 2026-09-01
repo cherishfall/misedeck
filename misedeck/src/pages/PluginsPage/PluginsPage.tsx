@@ -30,26 +30,6 @@ export function PluginsPage() {
 
   const registry = useParsedRegistry();
 
-  if (detect.isPending) {
-    return <PluginsLoading />;
-  }
-  const detectValue = detect.data;
-  if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
-    if (detectValue.err.code === "MISE_NOT_FOUND" || detectValue.err.code === "MISE_TOO_OLD") {
-      return (
-        <PageShell>
-          <div className={styles.page}>
-            <EmptyState
-              eyebrow={t(I18N_KEYS.states.notInstalled.title)}
-              title={t(I18N_KEYS.tools.missing.title)}
-              body={t(I18N_KEYS.tools.missing.body)}
-            />
-          </div>
-        </PageShell>
-      );
-    }
-  }
-
   const registryError = registry.error?.kind === "err" ? registry.error.err : null;
 
   const rows = useMemo(() => {
@@ -103,6 +83,26 @@ export function PluginsPage() {
         ),
     },
   ];
+
+  if (detect.isPending) {
+    return <PluginsLoading />;
+  }
+  const detectValue = detect.data;
+  if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
+    if (detectValue.err.code === "MISE_NOT_FOUND" || detectValue.err.code === "MISE_TOO_OLD") {
+      return (
+        <PageShell>
+          <div className={styles.page}>
+            <EmptyState
+              eyebrow={t(I18N_KEYS.states.notInstalled.title)}
+              title={t(I18N_KEYS.tools.missing.title)}
+              body={t(I18N_KEYS.tools.missing.body)}
+            />
+          </div>
+        </PageShell>
+      );
+    }
+  }
 
   return (
     <PageShell>
