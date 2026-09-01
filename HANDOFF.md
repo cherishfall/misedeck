@@ -1,9 +1,9 @@
 # MiseDeck handoff
 
 This document is a continuation marker between autonomous driver sessions.
-Last updated: 2026-09-02 — #41, #42, #44 closed; #43 is the active ticket (the last v1 ticket).
+Last updated: 2026-09-02 — #43 closed; all 11 `ready-for-agent` v1 tickets are done.
 
-**Status:** v1 product-logic implementation in progress. 10 of 11 `ready-for-agent` v1 tickets closed; #43 is the next ticket to pick up.
+**Status:** v1 product-logic implementation complete. All 11 `ready-for-agent` v1 tickets are closed.
 
 ---
 
@@ -21,24 +21,21 @@ Last updated: 2026-09-02 — #41, #42, #44 closed; #43 is the active ticket (the
 | #41 | Env page: first-class env-vars management (mise env / set / unset) | `95a0ad3` | New `EnvPage` with resolved env vars + source for the active context; add/edit/remove via `mise set` / `mise unset` through the execution panel; trust-gated; sidebar order Preview → Tools → Env → Tasks → Plugins; explicit query refetch after mutations. |
 | #42 | Preview absorbs config-file hierarchy (mise config: loaded files in precedence order) | `2f80c51` | New Config files section on Preview backed by `mise config ls --json`; files in precedence order with real-case paths and read-only content view; works in Global and directory contexts; fixture-backed precedence-order test. |
 | #44 | Home (mise status) page in the new shell | `95ee434` | Moved the mise status page out of `App.tsx` into `pages/HomePage/`; all detection states (missing / too old / ready / command-failed / parse-failed) as panels in the new shell; brand lockup links Home, Home absent from nav; `starter.*` → `home.*` i18n. |
+| #43 | Retire the Config page (redirect /config to /preview, remove residue) | `d885c1f` | `/config` now redirects to `/preview`; `ConfigPage` component, `config.*`/`nav.config` i18n keys, dead Rust argv builders, and config-editor tests/fixtures removed; `tests/config.rs` keeps the #42 precedence test; README (en + zh-CN) updated with Env screenshots. |
 
-**Lint gates at the end of #44:** `npm run ci` (typecheck + `lint:i18n` + `lint:css-tokens` + build) green; `cargo check` + `cargo test` green; i18n parity at 386 keys.
+**Lint gates at the end of #43:** `npm run ci` (typecheck + `lint:i18n` + `lint:css-tokens` + build) green; `cargo check` + `cargo test` green; i18n parity at 359 keys.
 
 ---
 
 ## Paused work
 
-- **#43 — Retire the Config page (redirect /config to /preview, remove residue)** is the active ticket — the last v1 ticket.
-- No commit for #43 has been made yet; working tree is clean aside from the unrelated untracked file `beta3-feedback-scratch.md`.
+None. The working tree is clean aside from the unrelated untracked file `beta3-feedback-scratch.md`.
 
 ---
 
 ## Remaining `ready-for-agent` v1 tickets
 
-Dependency order (check `gh issue view <n> --json blockedBy` before starting):
-
-1. **#43** Retire the Config page (redirect /config to /preview, remove residue)  
-   → blocked by: #41 (closed), #42 (closed). Start here.
+None — all 11 are closed.
 
 Also open but **not** currently in scope:
 - #14, #15, #13, #12, #11 (chore/roadmap, no `ready-for-agent` label).
@@ -50,13 +47,9 @@ Also open but **not** currently in scope:
 1. Ensure you are on `master` and synced:  
    `git checkout master && git pull origin master`
 2. Read this `HANDOFF.md`.
-3. Read `AGENTS.md`, `CONTEXT.md`, `docs/design/product-logic.md`, `docs/design/visual-language.md`, `docs/agents/conventions.md`, `docs/agents/architecture.md`.
-4. Run `gh issue view 43 --comments`, then implement per acceptance criteria.
-5. Follow the implement skill: TDD at seams, regular typechecks, full `npm run ci` + `cargo check`, build/run/screenshot verification.
-6. Commit to `master` referencing `#43`, push with:  
+3. All v1 `ready-for-agent` tickets are closed. Start a **fresh session** for whatever comes next (post-v1 polish, release work, or the open chore/roadmap issues above) — do not continue in a ticket-session tail.
+4. Git push in this environment requires the proxy parameter:  
    `git -c http.proxy=http://127.0.0.1:7890 push origin master`
-7. Close the issue with `gh issue close 43 --comment "..."`.
-8. #43 is the final v1 ticket — after it closes, all 11 `ready-for-agent` v1 tickets are done.
 
 ---
 
