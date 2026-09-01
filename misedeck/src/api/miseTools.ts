@@ -165,6 +165,16 @@ export interface EnvEntry {
    * produced a tool-derived var. Used in the badge label.
    */
   sourceDetail?: string;
+  /**
+   * Absolute path of the config file mise reports as the source,
+   * when available (`mise env --json-extended`).
+   */
+  sourcePath?: string;
+  /**
+   * Tool name mise reports as the contributor, when available
+   * (`mise env --json-extended`).
+   */
+  sourceTool?: string;
 }
 
 /**
@@ -241,6 +251,79 @@ export function parseEnvPayload(value: unknown): EnvEntry[] {
       source = "project";
     }
     out.push({ name, value: v, source, sourceDetail });
+  }
+  out.sort((a, b) => a.name.localeCompare(b.name));
+  return out;
+}
+
+function isGlobalConfigPath(path: string): boolean {
+  // mise's global config path is conventionally
+  // `~/.config/mise/config.toml`; the extended source reports the
+  // absolute path. Match the tail so we don't depend on the user's
+  // home directory.
+  return path.endsWith(".config/mise/config.toml") || path.endsWith("/mise/config.toml");
+}
+
+/**
+ * Parse the `mise env --json-extended` payload
+ * (`{name: {value, source?, tool?}, ...}`) into typed entries. The
+ * source path and tool name from mise are preserved; the badge
+ * category is derived from them, falling back to the same
+ * conventions as `parseEnvPayload` when mise omits source info.
+ */
+export function parseEnvExtendedPayload(value: unknown): EnvEntry[] {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return [];
+  const obj = value as Record<string, unknown>;
+  const out: EnvEntry[] = [];
+  for (const [name, raw] of Object.entries(obj)) {
+    let value = "";
+    let sourcePath: string | undefined;
+    let sourceTool: string | undefined;
+
+    if (typeof raw === "string") {
+      // Older mise or a fork that doesn't support --json-extended
+      // may return the flat shape. Coerce and fall back to
+      // inference.
+      value = raw;
+    } else if (raw !== null && typeof raw === "object") {
+      const entry = raw as Record<string, unknown>;
+      const rawValue = entry.value;
+      value =
+        typeof rawValue === "string"
+          ? rawValue
+          : rawValue == null
+            ? ""
+            : JSON.stringify(rawValue);
+      sourcePath = asOptionalString(entry.source);
+      sourceTool = asOptionalString(entry.tool);
+    }
+
+    let source: EnvSource;
+    let sourceDetail: string | undefined;
+    if (sourceTool && sourceTool.length > 0) {
+      source = "tool";
+      sourceDetail = sourceTool;
+    } else if (sourcePath && isGlobalConfigPath(sourcePath)) {
+      source = "global";
+    } else if (sourcePath && sourcePath.length > 0) {
+      source = "project";
+    } else if (TOOL_DERIVED[name]) {
+      source = "tool";
+      sourceDetail = TOOL_DERIVED[name];
+    } else if (DEFAULT_VARS.has(name)) {
+      source = "default";
+    } else {
+      source = "default";
+    }
+
+    out.push({
+      name,
+      value,
+      source,
+      sourceDetail,
+      sourcePath,
+      sourceTool,
+    });
   }
   out.sort((a, b) => a.name.localeCompare(b.name));
   return out;

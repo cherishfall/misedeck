@@ -172,8 +172,8 @@ function NavItem({ path, label, glyph, active, collapsed }: NavItemProps) {
 const NAV_ITEMS = [
   { path: "/preview", labelKey: I18N_KEYS.preview.nav, glyph: "P" },
   { path: "/tools", labelKey: I18N_KEYS.nav.tools, glyph: "T" },
+  { path: "/env", labelKey: I18N_KEYS.nav.env, glyph: "E" },
   { path: "/tasks", labelKey: I18N_KEYS.nav.tasks, glyph: "K" },
-  { path: "/config", labelKey: I18N_KEYS.nav.config, glyph: "C" },
   { path: "/plugins", labelKey: I18N_KEYS.nav.plugins, glyph: "X" },
 ];
 

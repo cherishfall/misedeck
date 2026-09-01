@@ -505,6 +505,23 @@ pub fn mise_env(
     run_mise_json(mise_path, &req)
 }
 
+/// `mise env --json-extended` — the resolved environment with source
+/// annotations for the current directory context. Returns the raw JSON
+/// object mise emits (`{VAR: {value, source?, tool?}, ...}`). Used by
+/// the first-class Env page (#41) so each row can show where the var
+/// came from (config file path and/or contributing tool).
+pub fn mise_env_extended(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+) -> Result<serde_json::Value, AppError> {
+    let args = vec!["env".to_string(), "--json-extended".to_string()];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    run_mise_json(mise_path, &req)
+}
+
 /// Read the `mise.lock` file at `<cwd>/mise.lock` and return its raw
 /// text. Returns `Ok(None)` when the file does not exist (a normal
 /// outcome — the lockfile is optional). Any other I/O error is

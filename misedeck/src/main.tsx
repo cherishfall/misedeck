@@ -16,6 +16,7 @@ import { StyleGuide } from "./components/StyleGuide/StyleGuide";
 import { ToolsPage } from "./pages/ToolsPage/ToolsPage";
 import { DirectoryPreview } from "./pages/DirectoryPreview/DirectoryPreview";
 import { ConfigPage } from "./pages/ConfigPage/ConfigPage";
+import { EnvPage } from "./pages/EnvPage/EnvPage";
 import { TasksPage } from "./pages/TasksPage/TasksPage";
 import { SettingsPage } from "./pages/SettingsPage/SettingsPage";
 import { DoctorPage } from "./pages/DoctorPage/DoctorPage";
@@ -45,6 +46,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                     <Route path="/tools" element={<ToolsPage />} />
                     <Route path="/tasks" element={<TasksPage />} />
                     <Route path="/preview" element={<DirectoryPreview />} />
+                    <Route path="/env" element={<EnvPage />} />
                     <Route path="/config" element={<ConfigPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/doctor" element={<DoctorPage />} />

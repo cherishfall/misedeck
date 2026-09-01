@@ -93,6 +93,7 @@ export const I18N_KEYS = {
   nav: {
     tools: "nav.tools",
     tasks: "nav.tasks",
+    env: "nav.env",
     config: "nav.config",
     doctor: "nav.doctor",
     settings: "nav.settings",
@@ -212,6 +213,46 @@ export const I18N_KEYS = {
       errorBody: "preview.lockfile.errorBody",
     },
     refresh: "preview.refresh",
+  },
+  env: {
+    eyebrow: "env.eyebrow",
+    title: "env.title",
+    hint: "env.hint",
+    commandHint: "env.commandHint",
+    nav: "env.nav",
+    listTitle: "env.listTitle",
+    scope: {
+      global: "env.scope.global",
+      project: "env.scope.project",
+    },
+    columns: {
+      name: "env.columns.name",
+      value: "env.columns.value",
+      source: "env.columns.source",
+      actions: "env.columns.actions",
+    },
+    source: {
+      global: "env.source.global",
+      project: "env.source.project",
+      tool: "env.source.tool",
+      default: "env.source.default",
+    },
+    empty: {
+      title: "env.empty.title",
+      body: "env.empty.body",
+    },
+    error: {
+      title: "env.error.title",
+      body: "env.error.body",
+    },
+    addLabel: "env.addLabel",
+    addButton: "env.addButton",
+    removeButton: "env.removeButton",
+    namePlaceholder: "env.namePlaceholder",
+    valuePlaceholder: "env.valuePlaceholder",
+    guard: {
+      untrustedBody: "env.guard.untrustedBody",
+    },
   },
   config: {
     eyebrow: "config.eyebrow",

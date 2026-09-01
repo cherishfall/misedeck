@@ -42,6 +42,7 @@
   "nav": {
     "tools": "Tools",
     "tasks": "Tasks",
+    "env": "Env",
     "config": "Config",
     "doctor": "Doctor",
     "settings": "Settings",
@@ -161,6 +162,46 @@
       "errorBody": "MiseDeck could not read the project's mise.lock. Stderr is preserved in the execution panel."
     },
     "refresh": "Refresh"
+  },
+  "env": {
+    "eyebrow": "▸ MISE / ENV",
+    "title": "Env",
+    "hint": "Resolved environment variables for the active context. Add, edit, or remove vars; every write goes through `mise set` / `mise unset` and streams into the panel.",
+    "commandHint": "mise env --json-extended · mise set · mise unset",
+    "nav": "Env",
+    "listTitle": "Resolved env vars",
+    "scope": {
+      "global": "GLOBAL",
+      "project": "THIS PROJECT"
+    },
+    "columns": {
+      "name": "Name",
+      "value": "Value",
+      "source": "Source",
+      "actions": "Actions"
+    },
+    "source": {
+      "global": "GLOBAL",
+      "project": "PROJECT",
+      "tool": "TOOL",
+      "default": "DEFAULT"
+    },
+    "empty": {
+      "title": "No env vars",
+      "body": "`mise env --json-extended` returned an empty map. Use the form below to add your first env var; writes go to mise's config file for the active context."
+    },
+    "error": {
+      "title": "Failed to load env vars",
+      "body": "`mise env --json-extended` did not return. Stderr is preserved in the execution panel."
+    },
+    "addLabel": "Add an env var",
+    "addButton": "Add",
+    "removeButton": "Remove",
+    "namePlaceholder": "KEY (UPPER_SNAKE)",
+    "valuePlaceholder": "value",
+    "guard": {
+      "untrustedBody": "Trust this directory before mutating its env vars."
+    }
   },
   "config": {
     "eyebrow": "▸ MISE / CONFIG",

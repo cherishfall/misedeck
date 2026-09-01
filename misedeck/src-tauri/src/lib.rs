@@ -18,10 +18,10 @@ pub mod shell;
 
 use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
 use mise::{
-    check_trust, detect_mise as run_mise_probe, locate_mise, mise_doctor, mise_env, mise_ls,
-    mise_ls_remote, mise_outdated, mise_registry, mise_settings_ls, mise_tasks_edit_path,
-    mise_tasks_ls, read_mise_lockfile, run_mise, run_trust, AppError, DetectMiseOk, RunEvent,
-    RunOutcome, RunRequest,
+    check_trust, detect_mise as run_mise_probe, locate_mise, mise_doctor, mise_env,
+    mise_env_extended, mise_ls, mise_ls_remote, mise_outdated, mise_registry, mise_settings_ls,
+    mise_tasks_edit_path, mise_tasks_ls, read_mise_lockfile, run_mise, run_trust, AppError,
+    DetectMiseOk, RunEvent, RunOutcome, RunRequest,
 };
 use shell::{check_shell_activation, open_in_terminal as open_in_terminal_inner};
 
@@ -404,6 +404,23 @@ fn tools_env(cwd: Option<String>) -> JsonResult {
     }
 }
 
+/// `mise env --json-extended` for the current directory context.
+/// Read-only; returns the raw JSON object mise emits
+/// (`{VAR: {value, source?, tool?}, ...}`) with source annotations.
+/// Used by the first-class Env page (#41).
+#[tauri::command]
+fn env_ls(cwd: Option<String>) -> JsonResult {
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return JsonResult::Err { err: e },
+    };
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    match mise_env_extended(&path, cwd_path) {
+        Ok(value) => JsonResult::Ok { value },
+        Err(e) => JsonResult::Err { err: e },
+    }
+}
+
 /// Read the `mise.lock` file at `<cwd>/mise.lock`. Returns
 /// `Ok(Some(content))` when present (content may be empty when the
 /// file is zero-byte), `Ok(None)` when absent, or `Err(AppError)`
@@ -601,6 +618,7 @@ pub fn run() {
             tools_outdated,
             tools_ls_remote,
             tools_env,
+            env_ls,
             read_lockfile,
             trust_check,
             mise_trust,

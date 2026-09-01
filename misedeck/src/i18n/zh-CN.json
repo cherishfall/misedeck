@@ -42,6 +42,7 @@
   "nav": {
     "tools": "工具",
     "tasks": "任务",
+    "env": "环境变量",
     "config": "配置",
     "doctor": "诊断",
     "settings": "设置",
@@ -161,6 +162,46 @@
       "errorBody": "MiseDeck 无法读取项目的 mise.lock。stderr 已在执行面板中保留。"
     },
     "refresh": "刷新"
+  },
+  "env": {
+    "eyebrow": "▸ MISE / 环境变量",
+    "title": "环境变量",
+    "hint": "当前上下文已解析的环境变量。添加、编辑或移除变量；所有写入都通过 `mise set` / `mise unset` 并在执行面板中实时显示。",
+    "commandHint": "mise env --json-extended · mise set · mise unset",
+    "nav": "环境变量",
+    "listTitle": "已解析的环境变量",
+    "scope": {
+      "global": "全局",
+      "project": "本项目"
+    },
+    "columns": {
+      "name": "名称",
+      "value": "值",
+      "source": "来源",
+      "actions": "操作"
+    },
+    "source": {
+      "global": "全局",
+      "project": "项目",
+      "tool": "工具",
+      "default": "默认"
+    },
+    "empty": {
+      "title": "没有环境变量",
+      "body": "`mise env --json-extended` 返回了空映射。使用下面的表单添加第一个环境变量；写入会进入当前上下文的 mise 配置文件。"
+    },
+    "error": {
+      "title": "加载环境变量失败",
+      "body": "`mise env --json-extended` 未返回结果。stderr 已在执行面板中保留。"
+    },
+    "addLabel": "添加环境变量",
+    "addButton": "添加",
+    "removeButton": "移除",
+    "namePlaceholder": "变量名（大写下划线）",
+    "valuePlaceholder": "值",
+    "guard": {
+      "untrustedBody": "在修改此目录的环境变量之前，请先信任它。"
+    }
   },
   "config": {
     "eyebrow": "▸ MISE / CONFIG",

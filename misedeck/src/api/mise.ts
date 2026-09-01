@@ -65,6 +65,14 @@ export async function toolsEnv(cwd: string | null): Promise<JsonResult> {
   return (await invoke("tools_env", { cwd })) as JsonResult;
 }
 
+/** Calls the `env_ls` Tauri command (`mise env --json-extended`).
+ *  The payload is the object mise emits with source annotations
+ *  (`{VAR: {value, source?, tool?}, ...}`). Used by the Env page
+ *  (#41) so each row can show where the var came from. */
+export async function envLs(cwd: string | null): Promise<JsonResult> {
+  return (await invoke("env_ls", { cwd })) as JsonResult;
+}
+
 /** Calls the `read_lockfile` Tauri command. Returns the file's text
  *  or `null` when the directory has no `mise.lock`. */
 export async function readMiseLockfile(

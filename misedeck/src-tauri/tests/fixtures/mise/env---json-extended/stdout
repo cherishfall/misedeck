@@ -1,0 +1,21 @@
+{
+  "GOBIN": {
+    "value": "/Users/example/.local/share/mise/installs/go/1.26.7/bin",
+    "tool": "go"
+  },
+  "GOROOT": {
+    "value": "/Users/example/.local/share/mise/installs/go/1.26.7",
+    "tool": "go"
+  },
+  "JAVA_HOME": {
+    "value": "/Users/example/.local/share/mise/installs/java/oracle-17",
+    "tool": "java"
+  },
+  "NODE_ENV": {
+    "value": "preview",
+    "source": "/Users/example/project/mise.toml"
+  },
+  "PATH": {
+    "value": "/Users/example/.local/share/mise/installs/go/1.26.7/bin:/usr/bin:/bin"
+  }
+}

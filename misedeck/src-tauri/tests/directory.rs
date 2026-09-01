@@ -12,7 +12,7 @@
 
 use std::path::PathBuf;
 
-use misedeck_lib::mise::{code, mise_env, read_mise_lockfile, AppError};
+use misedeck_lib::mise::{code, mise_env, mise_env_extended, read_mise_lockfile, AppError};
 use serial_test::serial;
 use tempfile::TempDir;
 
@@ -96,6 +96,66 @@ fn tools_env_passes_cwd_via_dash_c() {
         let v = mise_env(&script, Some(std::path::Path::new("/tmp/some-cwd")))
             .expect("env --json with cwd should yield Ok");
         let obj = v.as_object().expect("env payload must be a JSON object");
+        assert!(obj.contains_key("JAVA_HOME"));
+    });
+}
+
+// ---------- mise_env_extended (issue #41) ----------
+
+#[test]
+#[serial]
+fn mise_env_extended_returns_source_annotations() {
+    let script = fixture_script();
+    with_slug("env---json-extended", || {
+        let v = mise_env_extended(&script, None).expect("env --json-extended should yield Ok");
+        let obj = v.as_object().expect("extended env payload must be a JSON object");
+        // Tool-derived vars carry a `tool` field.
+        let java = obj["JAVA_HOME"].as_object().expect("JAVA_HOME must be an object");
+        assert_eq!(
+            java["value"].as_str(),
+            Some("/Users/example/.local/share/mise/installs/java/oracle-17")
+        );
+        assert_eq!(java["tool"].as_str(), Some("java"));
+        // Project-set vars carry a `source` path.
+        let node_env = obj["NODE_ENV"].as_object().expect("NODE_ENV must be an object");
+        assert_eq!(node_env["value"].as_str(), Some("preview"));
+        assert_eq!(node_env["source"].as_str(), Some("/Users/example/project/mise.toml"));
+    });
+}
+
+#[test]
+#[serial]
+fn mise_env_extended_command_failed_keeps_stderr() {
+    let script = fixture_script();
+    with_slug("env---json-extended-command-failed", || {
+        let err = mise_env_extended(&script, None).expect_err("non-zero exit should yield Err");
+        assert_eq!(err.code, code::COMMAND_FAILED);
+        assert!(
+            err.stderr.contains("ERROR"),
+            "stderr should be preserved verbatim, got {:?}",
+            err.stderr
+        );
+    });
+}
+
+#[test]
+#[serial]
+fn mise_env_extended_garbage_stdout_returns_parse_failed() {
+    let script = fixture_script();
+    with_slug("env---json-extended-parse-failed", || {
+        let err = mise_env_extended(&script, None).expect_err("non-JSON stdout should yield Err");
+        assert_eq!(err.code, code::PARSE_FAILED);
+    });
+}
+
+#[test]
+#[serial]
+fn mise_env_extended_passes_cwd_via_dash_c() {
+    let script = fixture_script();
+    with_slug("env---json-extended", || {
+        let v = mise_env_extended(&script, Some(std::path::Path::new("/tmp/some-cwd")))
+            .expect("env --json-extended with cwd should yield Ok");
+        let obj = v.as_object().expect("extended env payload must be a JSON object");
         assert!(obj.contains_key("JAVA_HOME"));
     });
 }
