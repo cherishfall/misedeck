@@ -35,6 +35,9 @@ export interface ExecutionState {
   error: AppError | null;
   /** Post-update version string when `kind === "selfUpdate"`. */
   newVersion: string | null;
+  /** Panel visibility. Hidden by default; opens automatically when a
+   *  command starts and can be dismissed without clearing history. */
+  isOpen: boolean;
 }
 
 const initial: ExecutionState = {
@@ -46,6 +49,7 @@ const initial: ExecutionState = {
   durationMs: 0,
   error: null,
   newVersion: null,
+  isOpen: false,
 };
 
 type Action =
@@ -55,7 +59,8 @@ type Action =
   | { type: "complete"; newVersion: string | null }
   | { type: "fail"; error: AppError }
   | { type: "cancel" }
-  | { type: "dismiss" };
+  | { type: "close" }
+  | { type: "open" };
 
 function reducer(state: ExecutionState, action: Action): ExecutionState {
   switch (action.type) {
@@ -65,6 +70,7 @@ function reducer(state: ExecutionState, action: Action): ExecutionState {
         kind: action.kind,
         status: "running",
         request: action.request,
+        isOpen: true,
       };
     case "line":
       return {
@@ -84,8 +90,10 @@ function reducer(state: ExecutionState, action: Action): ExecutionState {
       return { ...state, status: "failed", error: action.error };
     case "cancel":
       return { ...state, status: "cancelled" };
-    case "dismiss":
-      return { ...initial };
+    case "close":
+      return { ...state, isOpen: false };
+    case "open":
+      return { ...state, isOpen: true };
   }
 }
 
@@ -254,10 +262,18 @@ export function useExecution() {
     cancelRef.current?.();
   }, []);
 
+  /** Hide the panel without clearing its history. The next run will
+   *  replace the state and re-open automatically. */
   const dismiss = useCallback(() => {
-    dispatch({ type: "dismiss" });
+    dispatch({ type: "close" });
   }, []);
 
-  return { state, run, runInstall, runSelfUpdate, runTrust, cancel, dismiss };
+  /** Re-open a hidden panel so the user can inspect an active run or
+   *  the history of the last one. */
+  const openPanel = useCallback(() => {
+    dispatch({ type: "open" });
+  }, []);
+
+  return { state, run, runInstall, runSelfUpdate, runTrust, cancel, dismiss, openPanel };
 }
 

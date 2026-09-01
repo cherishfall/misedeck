@@ -463,7 +463,9 @@
     "cancel": "Cancel",
     "dismiss": "Dismiss",
     "emptyHint": "No command has been run yet.",
-    "demoRunDoctor": "Run mise doctor"
+    "demoRunDoctor": "Run mise doctor",
+    "reopen": "Execution",
+    "reopenRunning": "Execution · running"
   },
   "activation": {
     "openInTerminalLabel": "Open in terminal",

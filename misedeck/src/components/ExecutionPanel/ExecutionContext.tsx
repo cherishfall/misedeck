@@ -23,16 +23,19 @@ interface ExecutionContextValue {
   /** Run `mise trust` for the given directory. Streams into the panel. */
   runTrust: (cwd: string | null) => Promise<void>;
   cancel: () => void;
+  /** Hide the panel while preserving history. */
   dismiss: () => void;
+  /** Re-open a hidden panel to inspect an active run or history. */
+  openPanel: () => void;
 }
 
 const ExecutionContext = createContext<ExecutionContextValue | null>(null);
 
 export function ExecutionProvider({ children }: { children: ReactNode }) {
-  const { state, run, runInstall, runSelfUpdate, runTrust, cancel, dismiss } = useExecution();
+  const { state, run, runInstall, runSelfUpdate, runTrust, cancel, dismiss, openPanel } = useExecution();
   const value = useMemo<ExecutionContextValue>(
-    () => ({ state, run, runInstall, runSelfUpdate, runTrust, cancel, dismiss }),
-    [state, run, runInstall, runSelfUpdate, runTrust, cancel, dismiss],
+    () => ({ state, run, runInstall, runSelfUpdate, runTrust, cancel, dismiss, openPanel }),
+    [state, run, runInstall, runSelfUpdate, runTrust, cancel, dismiss, openPanel],
   );
   return <ExecutionContext.Provider value={value}>{children}</ExecutionContext.Provider>;
 }

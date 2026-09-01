@@ -11,13 +11,22 @@ import { I18N_KEYS } from "../../i18n/keys";
 
 import { ActivationBanner } from "../ActivationBanner/ActivationBanner";
 import { DirectoryIndicator } from "../DirectoryIndicator/DirectoryIndicator";
-import { ExecutionPanel } from "../ExecutionPanel";
+import { ExecutionPanel, ExecutionPanelAffordance, useExecutionContext } from "../ExecutionPanel";
 import { LanguageSwitcher } from "../LanguageSwitcher/LanguageSwitcher";
 import { ThemeSwitcher } from "../ThemeSwitcher/ThemeSwitcher";
 
 import styles from "./PageShell.module.css";
 
 const SIDEBAR_COLLAPSED_KEY = "misedeck.sidebarCollapsed.v1";
+
+/** Pages that carry no mutating actions and therefore start without the
+ *  execution panel visible. Preview is read-only apart from its trust
+ *  action; when trust runs the panel opens on demand like any mutation. */
+const READ_ONLY_PATHS = ["/doctor", "/plugins", "/preview"];
+
+function isReadOnlyPath(path: string): boolean {
+  return READ_ONLY_PATHS.some((p) => path === p);
+}
 
 interface PageShellProps {
   children: ReactNode;
@@ -44,10 +53,20 @@ export function PageShell({ children }: PageShellProps) {
   const { t } = useTranslation();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => loadCollapsed());
+  const { state: execState, dismiss } = useExecutionContext();
 
   useEffect(() => {
     persistCollapsed(collapsed);
   }, [collapsed]);
+
+  // Read-only pages render without the panel. If the user navigates to one
+  // while no command is running, hide the panel while preserving history so
+  // the persistent affordance can still reopen it.
+  useEffect(() => {
+    if (isReadOnlyPath(location.pathname) && execState.status !== "running") {
+      dismiss();
+    }
+  }, [location.pathname, execState.status, dismiss]);
 
   const nav = NAV_ITEMS.map((item) => (
     <NavItem
@@ -119,6 +138,7 @@ export function PageShell({ children }: PageShellProps) {
         <DirectoryIndicator />
         <ActivationBanner />
         <main className={styles.main}>{children}</main>
+        <ExecutionPanelAffordance />
         <ExecutionPanel />
       </div>
     </div>

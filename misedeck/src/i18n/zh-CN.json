@@ -463,7 +463,9 @@
     "cancel": "取消",
     "dismiss": "关闭",
     "emptyHint": "尚未执行任何命令。",
-    "demoRunDoctor": "运行 mise doctor"
+    "demoRunDoctor": "运行 mise doctor",
+    "reopen": "执行面板",
+    "reopenRunning": "执行面板 · 运行中"
   },
   "activation": {
     "openInTerminalLabel": "在终端中打开",

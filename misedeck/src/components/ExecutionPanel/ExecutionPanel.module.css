@@ -1,5 +1,4 @@
 .deck {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -9,6 +8,24 @@
   border-radius: var(--radius-panel);
   font-family: var(--font-mono);
   font-size: var(--size-data);
+  animation: deck-slide-up var(--motion-state-change) ease-out;
+}
+
+@keyframes deck-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.deckInner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .header {
@@ -175,4 +192,62 @@
   border-color: var(--beam-soft);
   background: color-mix(in srgb, var(--beam) 8%, transparent);
   outline: none;
+}
+
+.affordance {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 var(--space-4) var(--space-4) auto;
+  padding: var(--space-2) var(--space-3);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-state-change) ease,
+    background var(--motion-state-change) ease;
+}
+
+.affordance:hover,
+.affordance:focus-visible {
+  border-color: var(--line-strong);
+  background: color-mix(in srgb, var(--beam) 6%, transparent);
+  outline: none;
+}
+
+.affordanceDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dim);
+  flex-shrink: 0;
+}
+
+.affordanceDot[data-tone="beam"] {
+  background: var(--beam);
+  animation: dot-pulse var(--motion-pulse) ease-in-out infinite;
+}
+
+.affordanceDot[data-tone="ok"] {
+  background: var(--grove);
+}
+
+.affordanceDot[data-tone="fail"] {
+  background: var(--breach);
+}
+
+.affordanceDot[data-tone="dim"] {
+  background: var(--dim);
+}
+
+.affordanceLabel {
+  color: var(--text);
 }

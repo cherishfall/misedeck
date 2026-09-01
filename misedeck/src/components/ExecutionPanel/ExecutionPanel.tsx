@@ -70,100 +70,104 @@ export function ExecutionPanel() {
     ? commandEcho(state.kind, state.request.cwd, state.request.args)
     : null;
 
+  if (!state.isOpen) return null;
+
   return (
     <div className={styles.deck}>
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <span className={styles.label}>{t(I18N_KEYS.execution.title)}</span>
-          {echo && <span className={styles.command}>{echo}</span>}
-        </div>
-        <div className={styles.headerRight}>
-          {state.status === "running" && (
-            <>
-              <span className={styles.statusDot} data-tone="beam" />
-              <span className={styles.statusLabel}>{t(I18N_KEYS.execution.statusRunning)}</span>
-              <button
-                type="button"
-                className={styles.actionBtn}
-                onClick={cancel}
-                aria-label={t(I18N_KEYS.execution.cancel)}
-              >
-                {t(I18N_KEYS.execution.cancel)}
-              </button>
-            </>
-          )}
-          {state.status === "ok" && (
-            <>
-              <span className={styles.statusDot} data-tone="ok" />
-              <span className={styles.statusLabel}>
-                {t(I18N_KEYS.execution.statusOk, {
-                  duration: (state.durationMs / 1000).toFixed(1),
-                })}
-              </span>
-              <button
-                type="button"
-                className={styles.actionBtn}
-                onClick={dismiss}
-                aria-label={t(I18N_KEYS.execution.dismiss)}
-              >
-                ×
-              </button>
-            </>
-          )}
-          {state.status === "failed" && (
-            <>
-              <span className={styles.statusDot} data-tone="fail" />
-              <span className={styles.statusLabel}>
-                {t(I18N_KEYS.execution.statusFailed, {
-                  duration: (state.durationMs / 1000).toFixed(1),
-                  code: state.exitCode,
-                })}
-              </span>
-              <button
-                type="button"
-                className={styles.actionBtn}
-                onClick={dismiss}
-                aria-label={t(I18N_KEYS.execution.dismiss)}
-              >
-                ×
-              </button>
-            </>
-          )}
-          {state.status === "cancelled" && (
-            <>
-              <span className={styles.statusDot} data-tone="dim" />
-              <span className={styles.statusLabel}>
-                {t(I18N_KEYS.execution.statusCancelled)}
-              </span>
-              <button
-                type="button"
-                className={styles.actionBtn}
-                onClick={dismiss}
-                aria-label={t(I18N_KEYS.execution.dismiss)}
-              >
-                ×
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-      <div
-        ref={logRef}
-        onScroll={handleScroll}
-        className={styles.log}
-        data-testid="execution-log"
-      >
-        {state.lines.length === 0 && state.status === "idle" && (
-          <div className={styles.emptyHint}>{t(I18N_KEYS.execution.emptyHint)}</div>
-        )}
-        {state.lines.map((line, i) => (
-          <div
-            key={i}
-            className={line.stream === "stderr" ? styles.stderrLine : styles.stdoutLine}
-          >
-            {line.text}
+      <div className={styles.deckInner}>
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <span className={styles.label}>{t(I18N_KEYS.execution.title)}</span>
+            {echo && <span className={styles.command}>{echo}</span>}
           </div>
-        ))}
+          <div className={styles.headerRight}>
+            {state.status === "running" && (
+              <>
+                <span className={styles.statusDot} data-tone="beam" />
+                <span className={styles.statusLabel}>{t(I18N_KEYS.execution.statusRunning)}</span>
+                <button
+                  type="button"
+                  className={styles.actionBtn}
+                  onClick={cancel}
+                  aria-label={t(I18N_KEYS.execution.cancel)}
+                >
+                  {t(I18N_KEYS.execution.cancel)}
+                </button>
+              </>
+            )}
+            {state.status === "ok" && (
+              <>
+                <span className={styles.statusDot} data-tone="ok" />
+                <span className={styles.statusLabel}>
+                  {t(I18N_KEYS.execution.statusOk, {
+                    duration: (state.durationMs / 1000).toFixed(1),
+                  })}
+                </span>
+                <button
+                  type="button"
+                  className={styles.actionBtn}
+                  onClick={dismiss}
+                  aria-label={t(I18N_KEYS.execution.dismiss)}
+                >
+                  ×
+                </button>
+              </>
+            )}
+            {state.status === "failed" && (
+              <>
+                <span className={styles.statusDot} data-tone="fail" />
+                <span className={styles.statusLabel}>
+                  {t(I18N_KEYS.execution.statusFailed, {
+                    duration: (state.durationMs / 1000).toFixed(1),
+                    code: state.exitCode,
+                  })}
+                </span>
+                <button
+                  type="button"
+                  className={styles.actionBtn}
+                  onClick={dismiss}
+                  aria-label={t(I18N_KEYS.execution.dismiss)}
+                >
+                  ×
+                </button>
+              </>
+            )}
+            {state.status === "cancelled" && (
+              <>
+                <span className={styles.statusDot} data-tone="dim" />
+                <span className={styles.statusLabel}>
+                  {t(I18N_KEYS.execution.statusCancelled)}
+                </span>
+                <button
+                  type="button"
+                  className={styles.actionBtn}
+                  onClick={dismiss}
+                  aria-label={t(I18N_KEYS.execution.dismiss)}
+                >
+                  ×
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+        <div
+          ref={logRef}
+          onScroll={handleScroll}
+          className={styles.log}
+          data-testid="execution-log"
+        >
+          {state.lines.length === 0 && state.status === "idle" && (
+            <div className={styles.emptyHint}>{t(I18N_KEYS.execution.emptyHint)}</div>
+          )}
+          {state.lines.map((line, i) => (
+            <div
+              key={i}
+              className={line.stream === "stderr" ? styles.stderrLine : styles.stdoutLine}
+            >
+              {line.text}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

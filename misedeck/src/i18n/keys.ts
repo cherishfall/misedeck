@@ -72,6 +72,8 @@ export const I18N_KEYS = {
     dismiss: "execution.dismiss",
     emptyHint: "execution.emptyHint",
     demoRunDoctor: "execution.demoRunDoctor",
+    reopen: "execution.reopen",
+    reopenRunning: "execution.reopenRunning",
   },
   activation: {
     openInTerminalLabel: "activation.openInTerminalLabel",
