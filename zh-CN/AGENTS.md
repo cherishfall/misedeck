@@ -2,7 +2,11 @@
 
 > [English](../AGENTS.md)
 
-[mise](https://mise.jdx.dev) 的开源桌面 GUI 客户端。Tauri 2 + React/TypeScript，跨平台（macOS 优先打磨，Windows/Linux 为 beta）。产品原则：忠实呈现 mise 的命令面——不发明 CLI 里没有的概念（ADR-0004）。
+[mise](https://mise.jdx.dev) 的开源桌面 GUI 客户端。Tauri 2 + React/TypeScript，跨平台（macOS 优先打磨，Windows/Linux 为 beta）。产品原则：
+
+1. **CLI 的 GUI 版**：MiseDeck 是 mise CLI 的 GUI 形态——用 GUI 应当能慢慢学会用 CLI，而不是把 CLI 藏起来。
+2. **贴合 CLI 的交互**：遵循 mise CLI 的使用逻辑和交互逻辑，不发明 CLI 里没有的产品/交互花样。
+3. **只用 CLI 的词汇**：不发明 mise 没有的新概念和新名词（ADR-0004），用 mise 原有的概念和名词构建产品。
 
 ## 动手写代码前
 

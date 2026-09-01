@@ -2,7 +2,11 @@
 
 > [简体中文](./zh-CN/AGENTS.md)
 
-An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + React/TypeScript, cross-platform (macOS polished first, Windows/Linux beta). The product principle: a faithful GUI over mise's command surface — no concepts the CLI does not have (ADR-0004).
+An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + React/TypeScript, cross-platform (macOS polished first, Windows/Linux beta). Product principles:
+
+1. **GUI edition of the CLI**: MiseDeck is the GUI counterpart of the mise CLI — using the GUI should gradually teach the CLI, not hide it.
+2. **CLI-shaped interaction**: follow mise CLI's usage and interaction logic; do not invent foreign product or interaction patterns the CLI does not have.
+3. **CLI vocabulary only**: no concepts or terms that mise does not have (ADR-0004); build the product from mise's own concepts and nouns.
 
 ## Before you code
 
