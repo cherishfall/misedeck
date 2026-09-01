@@ -114,7 +114,7 @@
   "preview": {
     "eyebrow": "▸ MISE / 预览",
     "title": "目录预览",
-    "hint": "当前目录上下文的工具、环境与 lockfile。请使用上方工具栏切换目录。",
+    "hint": "当前目录上下文的工具、环境变量、配置文件与 lockfile。请使用上方工具栏切换目录。",
     "commandHint": "mise -C <dir> ls · mise env · mise config · mise.lock",
     "nav": "预览",
     "empty": {
@@ -124,7 +124,17 @@
     "sections": {
       "tools": "已解析的工具",
       "env": "已解析的环境变量",
-      "lockfile": "Lockfile"
+      "lockfile": "Lockfile",
+      "config": "配置文件"
+    },
+    "config": {
+      "orderNote": "按优先级从高到低排列——与 `mise config ls --json` 输出的顺序一致。",
+      "empty": "`mise config ls` 在当前上下文中没有找到配置文件。",
+      "view": "查看内容",
+      "hide": "收起内容",
+      "unreadable": "（无法读取此文件）",
+      "errorTitle": "加载配置文件失败",
+      "errorBody": "`mise config ls --json` 未返回结果。stderr 已在执行面板中保留。"
     },
     "columns": {
       "tool": "工具",

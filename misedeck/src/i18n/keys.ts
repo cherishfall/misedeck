@@ -176,6 +176,16 @@ export const I18N_KEYS = {
       tools: "preview.sections.tools",
       env: "preview.sections.env",
       lockfile: "preview.sections.lockfile",
+      config: "preview.sections.config",
+    },
+    config: {
+      orderNote: "preview.config.orderNote",
+      empty: "preview.config.empty",
+      view: "preview.config.view",
+      hide: "preview.config.hide",
+      unreadable: "preview.config.unreadable",
+      errorTitle: "preview.config.errorTitle",
+      errorBody: "preview.config.errorBody",
     },
     columns: {
       tool: "preview.columns.tool",

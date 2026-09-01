@@ -4,6 +4,10 @@
 //                                 hook; the `cwd` arg drives `-C`)
 //   * mise -C <dir> env --json  → resolved env vars, each row badged
 //                                 with GLOBAL / PROJECT / TOOL / DEFAULT
+//   * mise config ls --json     → loaded config files in precedence
+//                                 order (highest first), each with a
+//                                 read-only content view (issue #42);
+//                                 rendered in Global context too
 //   * <dir>/mise.lock           → read-only pre block when present;
 //                                 a muted "missing" line when not
 //
@@ -17,21 +21,24 @@
 // The page consumes the same Table / Badge / EmptyState / PageShell
 // primitives the tools page (#21) uses. The directory context comes
 // from `useDirectory()`; when no directory is picked, the page
-// renders a single "Pick a directory" empty state and never
-// invokes the runner. Switching back to Global re-uses the global
-// tools page at /tools — the directory preview is meaningful only
-// when a project is selected.
+// renders the Config files section (the global config files) plus a
+// "Pick a directory" empty state for the directory-scoped sections.
+// Switching back to Global re-uses the global tools page at /tools —
+// the resolved-tools/env/lockfile sections are meaningful only when
+// a project is selected.
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { forwardRef, useMemo, useRef } from "react";
+import { forwardRef, useMemo, useRef, useState } from "react";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
 import { useTrust, useTrustAction } from "../../state/trustContext";
 import { detectMise, isAppError } from "../../api/mise";
 import { reconcileEnvSources, type EnvSource } from "../../api/miseTools";
+import type { ConfigFile } from "../../types/tauri";
 import {
+  useConfigFiles,
   useParsedEnv,
   useParsedGlobalEnv,
   useParsedOutdatedTools,
@@ -158,6 +165,7 @@ export function DirectoryPreview() {
     void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "env", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "lockfile", cwd] });
+    void queryClient.invalidateQueries({ queryKey: ["tools", "config", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "env", null] });
   };
 
@@ -182,7 +190,10 @@ export function DirectoryPreview() {
     }
   }
 
-  // No directory picked — show the "Pick a directory" empty state.
+  // No directory picked — the Config files section still works in
+  // the Global context (issue #42: it lists the global config
+  // files), so render it beside the "Pick a directory" empty state
+  // that covers the directory-scoped sections.
   if (cwd === null) {
     return (
       <PageShell>
@@ -193,6 +204,7 @@ export function DirectoryPreview() {
             <p className={styles.commandHint}>{t(I18N_KEYS.preview.commandHint)}</p>
             <p className={styles.hint}>{t(I18N_KEYS.preview.hint)}</p>
           </header>
+          <ConfigFilesSection />
           <EmptyState
             eyebrow={t(I18N_KEYS.preview.eyebrow)}
             title={t(I18N_KEYS.preview.empty.title)}
@@ -404,6 +416,9 @@ export function DirectoryPreview() {
           )}
         </section>
 
+        {/* ---------- Config files (issue #42) ---------- */}
+        <ConfigFilesSection />
+
         {/* ---------- Lockfile ---------- */}
         <section className={styles.section} data-testid="preview-section-lockfile">
           <header className={styles.sectionHead}>
@@ -437,6 +452,98 @@ export function DirectoryPreview() {
         </section>
       </div>
     </PageShell>
+  );
+}
+
+// ---------- Config files (issue #42) ----------
+
+/**
+ * The config files mise loads for the active context, in the
+ * precedence order `mise config ls --json` reports (highest first).
+ * Each file's raw text is shown behind a read-only expand toggle.
+ * Rendered in both Global (global config files) and directory
+ * contexts — the runner keys the query off the directory context,
+ * so switching contexts refetches.
+ */
+function ConfigFilesSection() {
+  const { t } = useTranslation();
+  const configFiles = useConfigFiles();
+
+  const configError =
+    configFiles.data && configFiles.data.kind === "err" ? configFiles.data.err : null;
+  const files =
+    configFiles.data && configFiles.data.kind === "ok" ? configFiles.data.files : null;
+
+  return (
+    <section className={styles.section} data-testid="preview-section-config">
+      <header className={styles.sectionHead}>
+        <span className={styles.sectionEyebrow}>{t(I18N_KEYS.preview.eyebrow)}</span>
+        <h2 className={styles.sectionTitle}>{t(I18N_KEYS.preview.sections.config)}</h2>
+        <p className={styles.configOrderNote}>{t(I18N_KEYS.preview.config.orderNote)}</p>
+      </header>
+      {configError && (
+        <div className={styles.errorState}>
+          <div className={styles.errorLabel}>{t(I18N_KEYS.preview.config.errorTitle)}</div>
+          <p className={styles.errorBody}>{t(I18N_KEYS.preview.config.errorBody)}</p>
+          {configError.stderr && (
+            <pre className={styles.errorStderr}>{configError.stderr}</pre>
+          )}
+        </div>
+      )}
+      {!configError && configFiles.isPending && (
+        <div className={styles.lockfileMuted} data-testid="preview-config-loading">
+          {t(I18N_KEYS.common.loading)}
+        </div>
+      )}
+      {!configError && files !== null && files.length === 0 && (
+        <div className={styles.lockfileMuted} data-testid="preview-config-empty">
+          {t(I18N_KEYS.preview.config.empty)}
+        </div>
+      )}
+      {!configError && files !== null && files.length > 0 && (
+        <ol className={styles.configList}>
+          {files.map((file, index) => (
+            <ConfigFileRow key={file.path} file={file} rank={index + 1} />
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+/** One loaded config file: rank, path, pinned tools, and an
+ *  expandable read-only content view. */
+function ConfigFileRow({ file, rank }: { file: ConfigFile; rank: number }) {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <li className={styles.configFile} data-testid="preview-config-file">
+      <div className={styles.configFileHead}>
+        <span className={styles.configRank}>{rank}</span>
+        <span className={styles.configPath}>{file.path}</span>
+        {file.tools.length > 0 && (
+          <span className={styles.configTools}>{file.tools.join(", ")}</span>
+        )}
+        <button
+          type="button"
+          className={styles.refresh}
+          onClick={() => setExpanded((v) => !v)}
+          data-testid="preview-config-toggle"
+        >
+          {expanded ? t(I18N_KEYS.preview.config.hide) : t(I18N_KEYS.preview.config.view)}
+        </button>
+      </div>
+      {expanded &&
+        (file.content !== null ? (
+          <pre className={styles.lockfile} data-testid="preview-config-content">
+            {file.content}
+          </pre>
+        ) : (
+          <div className={styles.lockfileMuted} data-testid="preview-config-unreadable">
+            {t(I18N_KEYS.preview.config.unreadable)}
+          </div>
+        ))}
+    </li>
   );
 }
 

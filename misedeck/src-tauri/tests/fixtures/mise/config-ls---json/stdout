@@ -1,0 +1,15 @@
+[
+  {
+    "path": "/nonexistent/misedeck-test/src/app/mise.toml",
+    "tools": [
+      "node",
+      "python"
+    ]
+  },
+  {
+    "path": "/nonexistent/misedeck-test/.config/mise/config.toml",
+    "tools": [
+      "go"
+    ]
+  }
+]

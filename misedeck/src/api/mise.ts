@@ -11,6 +11,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 import type {
   AppError,
+  ConfigFilesResult,
   DetectMiseResult,
   JsonResult,
   LockfileResult,
@@ -79,6 +80,16 @@ export async function readMiseLockfile(
   cwd: string | null,
 ): Promise<LockfileResult> {
   return (await invoke("read_lockfile", { cwd })) as LockfileResult;
+}
+
+/** Calls the `config_files` Tauri command (`mise config ls --json`).
+ *  Returns the loaded config files in precedence order (highest
+ *  first), each with its raw text for the read-only content view.
+ *  Used by the preview page (issue #42). */
+export async function configFiles(
+  cwd: string | null,
+): Promise<ConfigFilesResult> {
+  return (await invoke("config_files", { cwd })) as ConfigFilesResult;
 }
 
 /** Calls the `trust_check` Tauri command (`mise trust --show`).

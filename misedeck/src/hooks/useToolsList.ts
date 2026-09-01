@@ -11,7 +11,7 @@
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
-import { readMiseLockfile, toolsEnv, toolsLs, toolsLsRemote, toolsOutdated } from "../api/mise";
+import { readMiseLockfile, configFiles, toolsEnv, toolsLs, toolsLsRemote, toolsOutdated } from "../api/mise";
 import {
   parseEnvPayload,
   parseLsPayload,
@@ -21,6 +21,7 @@ import {
 } from "../api/miseTools";
 import { useDirectory } from "../state/directoryContext";
 import type {
+  ConfigFilesResult,
   JsonResult,
   LockfileResult,
   MiseLsItem,
@@ -222,6 +223,24 @@ export function useLockfile(): UseQueryResult<LockfileResult> {
     queryKey: ["tools", "lockfile", cwd],
     queryFn: () => readMiseLockfile(cwd),
     enabled: cwd !== null,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+}
+
+/**
+ * `mise config ls --json` for the current directory context — the
+ * config files mise loads, in precedence order (highest first), each
+ * with its raw text for the preview page's read-only content view
+ * (issue #42). The cache key is `["tools", "config", cwd]`. Enabled
+ * in both Global and directory contexts: in Global the runner
+ * reports the global config files.
+ */
+export function useConfigFiles(): UseQueryResult<ConfigFilesResult> {
+  const { cwd } = useDirectory();
+  return useQuery({
+    queryKey: ["tools", "config", cwd],
+    queryFn: () => configFiles(cwd),
     refetchOnWindowFocus: false,
     retry: false,
   });

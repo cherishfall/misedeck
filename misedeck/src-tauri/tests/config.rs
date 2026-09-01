@@ -171,3 +171,26 @@ fn run_mise_with_env_unset_argv_streams_to_exit() {
         assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
     });
 }
+
+// ---------- Config-file hierarchy (issue #42) ----------
+
+#[test]
+#[serial]
+fn config_files_preserve_mise_precedence_order() {
+    let script = fixture_script();
+    with_slug("config-ls---json", || {
+        let files = misedeck_lib::mise::mise_config_files(&script, None)
+            .expect("config ls --json fixture should yield Ok");
+        // mise emits the array highest-precedence-first; the runner
+        // must preserve that order verbatim.
+        assert_eq!(files.len(), 2, "files = {files:?}");
+        assert_eq!(files[0].path, "/nonexistent/misedeck-test/src/app/mise.toml");
+        assert_eq!(files[1].path, "/nonexistent/misedeck-test/.config/mise/config.toml");
+        assert_eq!(files[0].tools, vec!["node".to_string(), "python".to_string()]);
+        assert_eq!(files[1].tools, vec!["go".to_string()]);
+        // The fixture paths do not exist on disk, so the content view
+        // falls back to None rather than failing the whole section.
+        assert_eq!(files[0].content, None);
+        assert_eq!(files[1].content, None);
+    });
+}

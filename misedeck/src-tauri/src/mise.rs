@@ -546,6 +546,86 @@ pub fn read_mise_lockfile(cwd: Option<&Path>) -> Result<Option<String>, AppError
     }
 }
 
+/// One loaded config file, as reported by `mise config ls --json`
+/// and enriched with the file's raw text for the preview page's
+/// read-only content view (issue #42).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfigFile {
+    /// Absolute path of the config file, as mise reports it.
+    pub path: String,
+    /// Tool names the file pins (the `tools` array of
+    /// `mise config ls --json`). Empty when the file pins none.
+    pub tools: Vec<String>,
+    /// Raw file text for the read-only content view. `None` when the
+    /// file could not be read (deleted between listing and reading,
+    /// permission denied, …) — the UI renders a muted fallback.
+    pub content: Option<String>,
+}
+
+/// Read a config file's raw text. `None` on any I/O failure — a
+/// config file listed by mise that vanished before we could read it
+/// is a normal outcome, not an error worth failing the whole
+/// section over.
+fn read_config_file_content(path: &str) -> Option<String> {
+    std::fs::read_to_string(path).ok()
+}
+
+/// `mise config ls --json` — the config files mise loads for the
+/// current directory context, each enriched with its raw text for
+/// the preview page's read-only content view (issue #42).
+///
+/// mise's JSON array is ordered highest-precedence-first (nearest
+/// config file first, global config last — verified against nested
+/// directories; the plain-text table prints the same files in the
+/// reverse order). The runner preserves that order verbatim so the
+/// UI shows precedence exactly as mise resolves it.
+///
+/// The file paths come from mise itself, never from the UI, so
+/// reading their content here is the same read-only surface
+/// `read_mise_lockfile` already exposes.
+pub fn mise_config_files(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+) -> Result<Vec<ConfigFile>, AppError> {
+    let args = vec!["config".to_string(), "ls".to_string(), "--json".to_string()];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    let value = run_mise_json(mise_path, &req)?;
+    let entries = value.as_array().ok_or_else(|| {
+        AppError::parse_failed(
+            "mise config ls --json did not return an array",
+            String::new(),
+        )
+    })?;
+    let mut files = Vec::with_capacity(entries.len());
+    for entry in entries {
+        let Some(path) = entry.get("path").and_then(|p| p.as_str()) else {
+            return Err(AppError::parse_failed(
+                "mise config ls --json entry missing a `path` string",
+                String::new(),
+            ));
+        };
+        let tools = entry
+            .get("tools")
+            .and_then(|t| t.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|t| t.as_str().map(|s| s.to_string()))
+                    .collect()
+            })
+            .unwrap_or_default();
+        files.push(ConfigFile {
+            path: path.to_string(),
+            tools,
+            content: read_config_file_content(path),
+        });
+    }
+    Ok(files)
+}
+
 /// `mise ls-remote --json <tool>` — the list of upstream versions
 /// for a single tool. Returns the raw JSON array mise emits
 /// (`[{version, created_at?}, ...]`).
@@ -1334,5 +1414,27 @@ mod tests {
         };
         let v = serde_json::to_value(&no_config).unwrap();
         assert_eq!(v["source"], "noConfig");
+    }
+
+    #[test]
+    fn read_config_file_content_roundtrips_a_real_file() {
+        // The preview page's read-only content view (issue #42)
+        // ships the file's raw text; a missing file yields None
+        // instead of failing the section.
+        let dir = std::env::temp_dir().join(format!(
+            "misedeck-config-content-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("mise.toml");
+        std::fs::write(&file, "[tools]\nnode = \"22\"\n").unwrap();
+        let path = file.to_string_lossy().to_string();
+        assert_eq!(
+            read_config_file_content(&path),
+            Some("[tools]\nnode = \"22\"\n".to_string())
+        );
+        std::fs::remove_file(&file).unwrap();
+        assert_eq!(read_config_file_content(&path), None);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -18,10 +18,10 @@ pub mod shell;
 
 use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
 use mise::{
-    check_trust, detect_mise as run_mise_probe, locate_mise, mise_doctor, mise_env,
-    mise_env_extended, mise_ls, mise_ls_remote, mise_outdated, mise_registry, mise_settings_ls,
-    mise_tasks_edit_path, mise_tasks_ls, read_mise_lockfile, run_mise, run_trust, AppError,
-    DetectMiseOk, RunEvent, RunOutcome, RunRequest,
+    check_trust, detect_mise as run_mise_probe, locate_mise, mise_config_files, mise_doctor,
+    mise_env, mise_env_extended, mise_ls, mise_ls_remote, mise_outdated, mise_registry,
+    mise_settings_ls, mise_tasks_edit_path, mise_tasks_ls, read_mise_lockfile, run_mise, run_trust,
+    AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
 };
 use shell::{check_shell_activation, open_in_terminal as open_in_terminal_inner};
 
@@ -30,6 +30,7 @@ use shell::{check_shell_activation, open_in_terminal as open_in_terminal_inner};
 // `DetectMiseResult` re-export pattern).
 pub use self::json_result::JsonResult;
 pub use self::tasks_edit_result::TasksEditPathResult;
+pub use self::config_files_result::ConfigFilesResult;
 pub use self::trust_result::TrustResult;
 pub use self::shell_activation_result::ShellActivationResult;
 pub use self::terminal_open_result::TerminalOpenResult;
@@ -86,6 +87,26 @@ mod tasks_edit_result {
     #[serde(tag = "kind", rename_all = "snake_case")]
     pub enum TasksEditPathResult {
         Ok { path: Option<String> },
+        Err { err: AppError },
+    }
+}
+
+mod config_files_result {
+    use serde::Serialize;
+
+    use super::mise::{AppError, ConfigFile};
+
+    /// Discriminated union for the `config_files` Tauri command
+    /// (issue #42). On success, the loaded config files are shipped
+    /// as `files` in mise's precedence order (highest first), each
+    /// carrying its raw text for the read-only content view; on
+    /// failure, the structured `AppError` is shipped as `err`.
+    /// Mirrors `TrustResult` so the JS side can pattern-match on
+    /// `kind`.
+    #[derive(Debug, Serialize)]
+    #[serde(tag = "kind", rename_all = "snake_case")]
+    pub enum ConfigFilesResult {
+        Ok { files: Vec<ConfigFile> },
         Err { err: AppError },
     }
 }
@@ -432,6 +453,24 @@ fn read_lockfile(cwd: Option<String>) -> Result<Option<String>, AppError> {
     read_mise_lockfile(cwd_path)
 }
 
+/// `mise config ls --json` for the current directory context.
+/// Read-only; returns the config files mise loads in precedence
+/// order (highest first), each carrying its raw text for the
+/// read-only content view. Used by the preview page (issue #42) in
+/// both Global and directory contexts.
+#[tauri::command]
+fn config_files(cwd: Option<String>) -> ConfigFilesResult {
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return ConfigFilesResult::Err { err: e },
+    };
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    match mise_config_files(&path, cwd_path) {
+        Ok(files) => ConfigFilesResult::Ok { files },
+        Err(e) => ConfigFilesResult::Err { err: e },
+    }
+}
+
 /// `mise trust --show` for the active directory context. Read-only;
 /// returns a structured `TrustStatus` (configTrusted / configUntrusted
 /// / noConfig). Drives the directory-preview trust banner (issue #25)
@@ -620,6 +659,7 @@ pub fn run() {
             tools_env,
             env_ls,
             read_lockfile,
+            config_files,
             trust_check,
             mise_trust,
             tasks_ls,

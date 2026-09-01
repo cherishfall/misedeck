@@ -114,7 +114,7 @@
   "preview": {
     "eyebrow": "▸ MISE / PREVIEW",
     "title": "Directory preview",
-    "hint": "Resolved tools, env, and lockfile for the active directory context. Switch directories from the bar above.",
+    "hint": "Resolved tools, env, config files, and lockfile for the active directory context. Switch directories from the bar above.",
     "commandHint": "mise -C <dir> ls · mise env · mise config · mise.lock",
     "nav": "Preview",
     "empty": {
@@ -124,7 +124,17 @@
     "sections": {
       "tools": "Resolved tools",
       "env": "Resolved env",
-      "lockfile": "Lockfile"
+      "lockfile": "Lockfile",
+      "config": "Config files"
+    },
+    "config": {
+      "orderNote": "In precedence order, highest first — the same order `mise config ls --json` reports.",
+      "empty": "`mise config ls` found no config files in scope for this context.",
+      "view": "View content",
+      "hide": "Hide content",
+      "unreadable": "(could not read this file)",
+      "errorTitle": "Failed to load config files",
+      "errorBody": "`mise config ls --json` did not return. Stderr is preserved in the execution panel."
     },
     "columns": {
       "tool": "Tool",

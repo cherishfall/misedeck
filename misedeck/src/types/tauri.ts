@@ -144,6 +144,32 @@ export type LockfileResult =
   | { kind: "err"; err: AppError };
 
 /**
+ * One loaded config file as reported by `mise config ls --json`
+ * (issue #42). Mirrors `ConfigFile` in `src-tauri/src/mise.rs`. The
+ * array order on the wire is mise's precedence order, highest first.
+ */
+export interface ConfigFile {
+  /** Absolute path of the config file, as mise reports it. */
+  path: string;
+  /** Tool names the file pins. Empty when the file pins none. */
+  tools: string[];
+  /** Raw file text for the read-only content view; `null` when the
+   *  file could not be read. */
+  content: string | null;
+}
+
+/**
+ * The `config_files` Tauri command returns this discriminated union
+ * (issue #42). On success, the loaded config files are shipped as
+ * `files` in precedence order; on failure, the structured `AppError`
+ * is shipped as `err`. Mirrors `ConfigFilesResult` in
+ * `src-tauri/src/lib.rs`.
+ */
+export type ConfigFilesResult =
+  | { kind: "ok"; files: ConfigFile[] }
+  | { kind: "err"; err: AppError };
+
+/**
  * Trust state for a directory's mise config (issue #25). Mirrors
  * `TrustSource` in `src-tauri/src/mise.rs` and the architecture
  * doc's "MISE_SAFE=1" semantics.
