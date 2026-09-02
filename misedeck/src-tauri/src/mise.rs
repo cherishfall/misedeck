@@ -25,6 +25,16 @@ pub const DETECT_TIMEOUT: Duration = Duration::from_secs(10);
 /// the runner auto-kills if a process runs past this.
 pub const STREAMING_TIMEOUT: Duration = Duration::from_secs(60 * 30);
 
+/// Finite, generous-but-bounded timeout for read-only (non-streaming)
+/// mise queries (`mise ls`, `mise outdated`, `mise env`, `mise config
+/// ls`, `mise settings ls`, `mise doctor`, `mise registry`, `mise
+/// plugins ls`, `mise tasks ls`, `mise trust --show`, …). These run on
+/// a background thread (issue #46) so the window stays responsive, but a
+/// genuinely hung mise process must still be reaped rather than lingering
+/// for the streaming ceiling. `mise outdated` hits the network per backend
+/// and can be slow, so this is generous — but it is no longer 30 minutes.
+pub const READ_TIMEOUT: Duration = Duration::from_secs(120);
+
 /// Fixed set of AppError codes (see docs/agents/conventions.md).
 /// Adding a new code is a deliberate API change.
 pub mod code {
@@ -206,12 +216,18 @@ impl RunRequest {
 }
 
 /// Spawn the mise binary and capture its output, enforcing a finite
-/// timeout. This is the entry point used by the runner.
+/// `timeout`. This is the low-level entry point the runner routes every
+/// call through.
 ///
 /// `on_event` is called for each line and once at the end with `Exit`.
 /// The callback runs on a background thread; keep it cheap (the Tauri
 /// command's `Channel::send` is cheap by design).
-pub fn run_mise<F>(mise_path: &Path, req: &RunRequest, mut on_event: F) -> Result<RunOutcome, AppError>
+fn run_mise_timed<F>(
+    mise_path: &Path,
+    req: &RunRequest,
+    mut on_event: F,
+    timeout: Duration,
+) -> Result<RunOutcome, AppError>
 where
     F: FnMut(RunEvent) + Send + 'static,
 {
@@ -266,7 +282,7 @@ where
     });
 
     let started = Instant::now();
-    let deadline = STREAMING_TIMEOUT;
+    let deadline = timeout;
     let mut stdout_buf = String::new();
     let mut stderr_buf = String::new();
 
@@ -353,6 +369,19 @@ where
     }
 }
 
+/// Streaming (cancellable) entry point for the execution panel. Keeps
+/// the 30-minute `STREAMING_TIMEOUT` ceiling so a long install / run /
+/// self-update is reaped if the user does not cancel it first. Read-only
+/// queries must not use this — they route through `run_mise_json` /
+/// `run_mise_timed(..., READ_TIMEOUT)` so a hung process is reaped far
+/// sooner and never blocks the window (issue #46).
+pub fn run_mise<F>(mise_path: &Path, req: &RunRequest, on_event: F) -> Result<RunOutcome, AppError>
+where
+    F: FnMut(RunEvent) + Send + 'static,
+{
+    run_mise_timed(mise_path, req, on_event, STREAMING_TIMEOUT)
+}
+
 /// Source of an installed tool's version, as reported by `mise ls --json`.
 /// mise has a small set of well-known sources (the global / local
 /// toml files, environment overrides, idle). The `type` is the
@@ -435,7 +464,7 @@ pub fn run_mise_json(
     mise_path: &Path,
     req: &RunRequest,
 ) -> Result<serde_json::Value, AppError> {
-    let outcome = run_mise(mise_path, req, |_| {})?;
+    let outcome = run_mise_timed(mise_path, req, |_| {}, READ_TIMEOUT)?;
     if outcome.timed_out {
         return Err(AppError::timeout());
     }
@@ -766,7 +795,7 @@ pub fn mise_tasks_edit_path(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise(mise_path, &req, |_| {})?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
     if outcome.timed_out {
         return Err(AppError::timeout());
     }
@@ -834,7 +863,7 @@ pub fn check_trust(mise_path: &Path, cwd: Option<&Path>) -> Result<TrustStatus, 
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise(mise_path, &req, |_| {})?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
     if outcome.timed_out {
         return Err(AppError::timeout());
     }
@@ -1032,7 +1061,7 @@ fn doctor_text_fallback(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise(mise_path, &req, |_| {})?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
     if outcome.timed_out {
         return Err(AppError::timeout());
     }
@@ -1080,7 +1109,7 @@ fn registry_table_fallback(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise(mise_path, &req, |_| {})?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
     if outcome.timed_out {
         return Err(AppError::timeout());
     }
@@ -1144,7 +1173,7 @@ pub fn mise_plugins_ls(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise(mise_path, &req, |_| {})?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
     if outcome.timed_out {
         return Err(AppError::timeout());
     }
@@ -1303,7 +1332,7 @@ pub fn mise_tasks_add_argv(
 /// around the generalized runner for the probe path.
 pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
     let req = RunRequest::new(vec!["version".to_string(), "--json".to_string()]);
-    let outcome = run_mise(mise_path, &req, |_| {})?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, DETECT_TIMEOUT)?;
 
     if outcome.timed_out {
         return Err(AppError::timeout());

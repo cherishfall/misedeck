@@ -201,7 +201,7 @@ pub enum InstallCommandResult {
 /// Probe for the mise binary, run `mise version --json`, and return the
 /// typed result as a structured enum (never throws on the JS side).
 #[tauri::command]
-fn detect_mise() -> DetectMiseResult {
+async fn detect_mise() -> DetectMiseResult {
     let path = {
         let cached = MISE_BINARY.lock().expect("mise path mutex poisoned");
         cached.clone()
@@ -216,9 +216,9 @@ fn detect_mise() -> DetectMiseResult {
             Err(e) => return DetectMiseResult::Err { err: e },
         },
     };
-    match run_mise_probe(&path) {
+    match spawn_run(move || run_mise_probe(&path)).await {
         Ok(ok) => DetectMiseResult::Ok { ok },
-        Err(e) => DetectMiseResult::Err { err: e },
+        Err(err) => DetectMiseResult::Err { err },
     }
 }
 
@@ -226,7 +226,7 @@ fn detect_mise() -> DetectMiseResult {
 /// `on_event` channel. The final result is returned as a structured
 /// `RunCommandResult`.
 #[tauri::command]
-fn run_mise_command(
+async fn run_mise_command(
     cwd: Option<String>,
     args: Vec<String>,
     on_event: tauri::ipc::Channel<RunEvent>,
@@ -273,13 +273,24 @@ fn run_mise_command(
         args,
     };
 
-    match run_mise(&path, &req, move |evt| {
-        // Channel::send is fallible only if the receiver is dropped;
-        // swallow the error rather than panicking in the runner thread.
-        let _ = on_event.send(evt);
-    }) {
-        Ok(outcome) => RunCommandResult::Ok { outcome },
-        Err(e) => RunCommandResult::Err { err: e },
+    // Run the (process-spawning) work off the main thread so the
+    // window chrome stays responsive while the process runs.
+    let res = tauri::async_runtime::spawn_blocking(move || {
+        run_mise(&path, &req, move |evt| {
+            // Channel::send is fallible only if the receiver is dropped;
+            // swallow the error rather than panicking in the runner thread.
+            let _ = on_event.send(evt);
+        })
+    }).await;
+    match res {
+        Ok(Ok(outcome)) => RunCommandResult::Ok { outcome },
+        Ok(Err(e)) => RunCommandResult::Err { err: e },
+        Err(_) => RunCommandResult::Err {
+            err: AppError::command_failed(
+                "run_mise_command: background task failed",
+                String::new(),
+            ),
+        },
     }
 }
 
@@ -288,15 +299,24 @@ fn run_mise_command(
 /// `InstallCommandResult` (the streaming events have already been
 /// delivered by the time the final result is returned).
 #[tauri::command]
-fn install_mise(on_event: tauri::ipc::Channel<RunEvent>) -> InstallCommandResult {
-    match run_install_script(move |evt| {
-        let _ = on_event.send(evt);
-    }) {
-        Ok(outcome) => InstallCommandResult::Ok {
+async fn install_mise(on_event: tauri::ipc::Channel<RunEvent>) -> InstallCommandResult {
+    let res = tauri::async_runtime::spawn_blocking(move || {
+        run_install_script(move |evt| {
+            let _ = on_event.send(evt);
+        })
+    }).await;
+    match res {
+        Ok(Ok(outcome)) => InstallCommandResult::Ok {
             outcome,
             new_version: None,
         },
-        Err(e) => InstallCommandResult::Err { err: e },
+        Ok(Err(e)) => InstallCommandResult::Err { err: e },
+        Err(_) => InstallCommandResult::Err {
+            err: AppError::command_failed(
+                "install_mise: background task failed",
+                String::new(),
+            ),
+        },
     }
 }
 
@@ -305,7 +325,7 @@ fn install_mise(on_event: tauri::ipc::Channel<RunEvent>) -> InstallCommandResult
 /// `InstallCommandResult` with the post-update version (when the
 /// post-update probe succeeded).
 #[tauri::command]
-fn mise_self_update(on_event: tauri::ipc::Channel<RunEvent>) -> InstallCommandResult {
+async fn mise_self_update(on_event: tauri::ipc::Channel<RunEvent>) -> InstallCommandResult {
     // Resolve the mise binary path.
     let path = {
         let cached = MISE_BINARY.lock().expect("mise path mutex poisoned");
@@ -322,14 +342,25 @@ fn mise_self_update(on_event: tauri::ipc::Channel<RunEvent>) -> InstallCommandRe
         },
     };
 
-    match run_self_update(&path, move |evt| {
-        let _ = on_event.send(evt);
-    }) {
-        Ok(SelfUpdateOutcome { outcome, new_version }) => InstallCommandResult::Ok {
+    // Run the (process-spawning) self-update off the main thread so the
+    // window chrome stays responsive while the process runs.
+    let res = tauri::async_runtime::spawn_blocking(move || {
+        run_self_update(&path, move |evt| {
+            let _ = on_event.send(evt);
+        })
+    }).await;
+    match res {
+        Ok(Ok(SelfUpdateOutcome { outcome, new_version })) => InstallCommandResult::Ok {
             outcome,
             new_version,
         },
-        Err(e) => InstallCommandResult::Err { err: e },
+        Ok(Err(e)) => InstallCommandResult::Err { err: e },
+        Err(_) => InstallCommandResult::Err {
+            err: AppError::command_failed(
+                "mise_self_update: background task failed",
+                String::new(),
+            ),
+        },
     }
 }
 
@@ -356,18 +387,41 @@ where
     }
 }
 
+/// Run a blocking mise call on Tauri's blocking thread pool so the UI
+/// event loop stays responsive (issue #46). The runner spawns a child
+/// process and waits on it; doing that work off the main thread is what
+/// keeps window chrome from freezing during any command. A panicked
+/// background task surfaces as a structured `COMMAND_FAILED` rather than
+/// taking down the process.
+async fn spawn_run<F, T>(f: F) -> Result<T, AppError>
+where
+    F: FnOnce() -> Result<T, AppError> + Send + 'static,
+    T: Send + 'static,
+{
+    match tauri::async_runtime::spawn_blocking(f).await {
+        Ok(result) => result,
+        Err(_) => Err(AppError::command_failed(
+            "mise background task failed",
+            String::new(),
+        )),
+    }
+}
+
 /// `mise ls --json` for the current directory context. Read-only;
 /// returns the raw JSON object mise emits.
 #[tauri::command]
-fn tools_ls(cwd: Option<String>) -> JsonResult {
+async fn tools_ls(cwd: Option<String>) -> JsonResult {
     let path = match resolve_mise_binary(|e| e) {
         Ok(p) => p,
         Err(e) => return JsonResult::Err { err: e },
     };
-    let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match mise_ls(&path, cwd_path) {
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    match spawn_run(move || {
+        let cwd = cwd_owned.as_deref();
+        mise_ls(&path, cwd)
+    }).await {
         Ok(value) => JsonResult::Ok { value },
-        Err(e) => JsonResult::Err { err: e },
+        Err(err) => JsonResult::Err { err },
     }
 }
 
@@ -375,15 +429,18 @@ fn tools_ls(cwd: Option<String>) -> JsonResult {
 /// Read-only; returns the raw JSON object mise emits (`{}` when no
 /// tools are outdated).
 #[tauri::command]
-fn tools_outdated(cwd: Option<String>) -> JsonResult {
+async fn tools_outdated(cwd: Option<String>) -> JsonResult {
     let path = match resolve_mise_binary(|e| e) {
         Ok(p) => p,
         Err(e) => return JsonResult::Err { err: e },
     };
-    let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match mise_outdated(&path, cwd_path) {
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    match spawn_run(move || {
+        let cwd = cwd_owned.as_deref();
+        mise_outdated(&path, cwd)
+    }).await {
         Ok(value) => JsonResult::Ok { value },
-        Err(e) => JsonResult::Err { err: e },
+        Err(err) => JsonResult::Err { err },
     }
 }
 
@@ -391,7 +448,7 @@ fn tools_outdated(cwd: Option<String>) -> JsonResult {
 /// Read-only; returns the raw JSON array mise emits. `tool` is
 /// rejected when empty so the runner never sees a half-formed argv.
 #[tauri::command]
-fn tools_ls_remote(cwd: Option<String>, tool: String) -> JsonResult {
+async fn tools_ls_remote(cwd: Option<String>, tool: String) -> JsonResult {
     if tool.is_empty() {
         return JsonResult::Err {
             err: AppError::command_failed("tools_ls_remote: tool is empty", String::new()),
@@ -401,10 +458,13 @@ fn tools_ls_remote(cwd: Option<String>, tool: String) -> JsonResult {
         Ok(p) => p,
         Err(e) => return JsonResult::Err { err: e },
     };
-    let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match mise_ls_remote(&path, cwd_path, &tool) {
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    match spawn_run(move || {
+        let cwd = cwd_owned.as_deref();
+        mise_ls_remote(&path, cwd, &tool)
+    }).await {
         Ok(value) => JsonResult::Ok { value },
-        Err(e) => JsonResult::Err { err: e },
+        Err(err) => JsonResult::Err { err },
     }
 }
 
@@ -414,15 +474,18 @@ fn tools_ls_remote(cwd: Option<String>, tool: String) -> JsonResult {
 /// directory-preview page (#24) to surface the env alongside the
 /// tools.
 #[tauri::command]
-fn tools_env(cwd: Option<String>) -> JsonResult {
+async fn tools_env(cwd: Option<String>) -> JsonResult {
     let path = match resolve_mise_binary(|e| e) {
         Ok(p) => p,
         Err(e) => return JsonResult::Err { err: e },
     };
-    let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match mise_env(&path, cwd_path) {
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    match spawn_run(move || {
+        let cwd = cwd_owned.as_deref();
+        mise_env(&path, cwd)
+    }).await {
         Ok(value) => JsonResult::Ok { value },
-        Err(e) => JsonResult::Err { err: e },
+        Err(err) => JsonResult::Err { err },
     }
 }
 
@@ -431,15 +494,18 @@ fn tools_env(cwd: Option<String>) -> JsonResult {
 /// (`{VAR: {value, source?, tool?}, ...}`) with source annotations.
 /// Used by the first-class Env page (#41).
 #[tauri::command]
-fn env_ls(cwd: Option<String>) -> JsonResult {
+async fn env_ls(cwd: Option<String>) -> JsonResult {
     let path = match resolve_mise_binary(|e| e) {
         Ok(p) => p,
         Err(e) => return JsonResult::Err { err: e },
     };
-    let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match mise_env_extended(&path, cwd_path) {
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    match spawn_run(move || {
+        let cwd = cwd_owned.as_deref();
+        mise_env_extended(&path, cwd)
+    }).await {
         Ok(value) => JsonResult::Ok { value },
-        Err(e) => JsonResult::Err { err: e },
+        Err(err) => JsonResult::Err { err },
     }
 }
 
@@ -460,15 +526,18 @@ fn read_lockfile(cwd: Option<String>) -> Result<Option<String>, AppError> {
 /// read-only content view. Used by the preview page (issue #42) in
 /// both Global and directory contexts.
 #[tauri::command]
-fn config_files(cwd: Option<String>) -> ConfigFilesResult {
+async fn config_files(cwd: Option<String>) -> ConfigFilesResult {
     let path = match resolve_mise_binary(|e| e) {
         Ok(p) => p,
         Err(e) => return ConfigFilesResult::Err { err: e },
     };
-    let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match mise_config_files(&path, cwd_path) {
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    match spawn_run(move || {
+        let cwd = cwd_owned.as_deref();
+        mise_config_files(&path, cwd)
+    }).await {
         Ok(files) => ConfigFilesResult::Ok { files },
-        Err(e) => ConfigFilesResult::Err { err: e },
+        Err(err) => ConfigFilesResult::Err { err },
     }
 }
 
@@ -478,15 +547,18 @@ fn config_files(cwd: Option<String>) -> ConfigFilesResult {
 /// and the `useTrustGuard()` API surface that future mutating
 /// actions will call before running.
 #[tauri::command]
-fn trust_check(cwd: Option<String>) -> TrustResult {
+async fn trust_check(cwd: Option<String>) -> TrustResult {
     let path = match resolve_mise_binary(|e| e) {
         Ok(p) => p,
         Err(e) => return TrustResult::Err { err: e },
     };
-    let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match check_trust(&path, cwd_path) {
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    match spawn_run(move || {
+        let cwd = cwd_owned.as_deref();
+        check_trust(&path, cwd)
+    }).await {
         Ok(ok) => TrustResult::Ok { ok },
-        Err(e) => TrustResult::Err { err: e },
+        Err(err) => TrustResult::Err { err },
     }
 }
 
@@ -497,7 +569,7 @@ fn trust_check(cwd: Option<String>) -> TrustResult {
 /// `useTrustAction()` on the JS side does this once the
 /// `RunCommandResult` resolves Ok.
 #[tauri::command]
-fn mise_trust(
+async fn mise_trust(
     cwd: Option<String>,
     on_event: tauri::ipc::Channel<RunEvent>,
 ) -> RunCommandResult {
@@ -505,12 +577,23 @@ fn mise_trust(
         Ok(p) => p,
         Err(e) => return RunCommandResult::Err { err: e },
     };
-    let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match run_trust(&path, cwd_path, move |evt| {
-        let _ = on_event.send(evt);
-    }) {
-        Ok(outcome) => RunCommandResult::Ok { outcome },
-        Err(e) => RunCommandResult::Err { err: e },
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    // Run the (process-spawning) trust stream off the main thread so the
+    // window chrome stays responsive while the process runs.
+    let res = tauri::async_runtime::spawn_blocking(move || {
+        run_trust(&path, cwd_owned.as_deref(), move |evt| {
+            let _ = on_event.send(evt);
+        })
+    }).await;
+    match res {
+        Ok(Ok(outcome)) => RunCommandResult::Ok { outcome },
+        Ok(Err(e)) => RunCommandResult::Err { err: e },
+        Err(_) => RunCommandResult::Err {
+            err: AppError::command_failed(
+                "mise_trust: background task failed",
+                String::new(),
+            ),
+        },
     }
 }
 
@@ -520,15 +603,18 @@ fn mise_trust(
 /// When `cwd` is `None` the global task set is returned (the same
 /// surface `mise tasks ls --json` exposes from any directory).
 #[tauri::command]
-fn tasks_ls(cwd: Option<String>) -> JsonResult {
+async fn tasks_ls(cwd: Option<String>) -> JsonResult {
     let path = match resolve_mise_binary(|e| e) {
         Ok(p) => p,
         Err(e) => return JsonResult::Err { err: e },
     };
-    let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match mise_tasks_ls(&path, cwd_path) {
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    match spawn_run(move || {
+        let cwd = cwd_owned.as_deref();
+        mise_tasks_ls(&path, cwd)
+    }).await {
         Ok(value) => JsonResult::Ok { value },
-        Err(e) => JsonResult::Err { err: e },
+        Err(err) => JsonResult::Err { err },
     }
 }
 
@@ -538,7 +624,7 @@ fn tasks_ls(cwd: Option<String>) -> JsonResult {
 /// directly" affordance. `name` is rejected when empty so the
 /// runner never sees a half-formed argv.
 #[tauri::command]
-fn tasks_edit_path(cwd: Option<String>, name: String) -> TasksEditPathResult {
+async fn tasks_edit_path(cwd: Option<String>, name: String) -> TasksEditPathResult {
     if name.is_empty() {
         return TasksEditPathResult::Err {
             err: AppError::command_failed(
@@ -551,10 +637,13 @@ fn tasks_edit_path(cwd: Option<String>, name: String) -> TasksEditPathResult {
         Ok(p) => p,
         Err(e) => return TasksEditPathResult::Err { err: e },
     };
-    let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match mise_tasks_edit_path(&path, cwd_path, &name) {
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    match spawn_run(move || {
+        let cwd = cwd_owned.as_deref();
+        mise_tasks_edit_path(&path, cwd, &name)
+    }).await {
         Ok(p) => TasksEditPathResult::Ok { path: p },
-        Err(e) => TasksEditPathResult::Err { err: e },
+        Err(err) => TasksEditPathResult::Err { err },
     }
 }
 
@@ -565,15 +654,18 @@ fn tasks_edit_path(cwd: Option<String>, name: String) -> TasksEditPathResult {
 /// are listed. When `all` is true, `--all` is added so unset keys
 /// are listed with their defaults (issue #52).
 #[tauri::command]
-fn settings_ls(cwd: Option<String>, all: Option<bool>) -> JsonResult {
+async fn settings_ls(cwd: Option<String>, all: Option<bool>) -> JsonResult {
     let path = match resolve_mise_binary(|e| e) {
         Ok(p) => p,
         Err(e) => return JsonResult::Err { err: e },
     };
-    let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match mise_settings_ls(&path, cwd_path, all.unwrap_or(false)) {
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    match spawn_run(move || {
+        let cwd = cwd_owned.as_deref();
+        mise_settings_ls(&path, cwd, all.unwrap_or(false))
+    }).await {
         Ok(value) => JsonResult::Ok { value },
-        Err(e) => JsonResult::Err { err: e },
+        Err(err) => JsonResult::Err { err },
     }
 }
 
@@ -582,15 +674,18 @@ fn settings_ls(cwd: Option<String>, all: Option<bool>) -> JsonResult {
 /// support `--json`, the runner captures the raw doctor text and
 /// returns it as a structured array of tinted lines.
 #[tauri::command]
-fn doctor(cwd: Option<String>) -> JsonResult {
+async fn doctor(cwd: Option<String>) -> JsonResult {
     let path = match resolve_mise_binary(|e| e) {
         Ok(p) => p,
         Err(e) => return JsonResult::Err { err: e },
     };
-    let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match mise_doctor(&path, cwd_path) {
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    match spawn_run(move || {
+        let cwd = cwd_owned.as_deref();
+        mise_doctor(&path, cwd)
+    }).await {
         Ok(value) => JsonResult::Ok { value },
-        Err(e) => JsonResult::Err { err: e },
+        Err(err) => JsonResult::Err { err },
     }
 }
 
@@ -599,15 +694,18 @@ fn doctor(cwd: Option<String>) -> JsonResult {
 /// not support `--json`, the runner parses the plain-text registry
 /// table into a JSON array behind the boundary.
 #[tauri::command]
-fn registry(cwd: Option<String>) -> JsonResult {
+async fn registry(cwd: Option<String>) -> JsonResult {
     let path = match resolve_mise_binary(|e| e) {
         Ok(p) => p,
         Err(e) => return JsonResult::Err { err: e },
     };
-    let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match mise_registry(&path, cwd_path) {
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    match spawn_run(move || {
+        let cwd = cwd_owned.as_deref();
+        mise_registry(&path, cwd)
+    }).await {
         Ok(value) => JsonResult::Ok { value },
-        Err(e) => JsonResult::Err { err: e },
+        Err(err) => JsonResult::Err { err },
     }
 }
 
@@ -617,15 +715,18 @@ fn registry(cwd: Option<String>) -> JsonResult {
 /// of `{name, source}` rows (issue #51). Used by the plugins page's
 /// installed-plugins section.
 #[tauri::command]
-fn plugins_ls(cwd: Option<String>) -> JsonResult {
+async fn plugins_ls(cwd: Option<String>) -> JsonResult {
     let path = match resolve_mise_binary(|e| e) {
         Ok(p) => p,
         Err(e) => return JsonResult::Err { err: e },
     };
-    let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match mise_plugins_ls(&path, cwd_path) {
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    match spawn_run(move || {
+        let cwd = cwd_owned.as_deref();
+        mise_plugins_ls(&path, cwd)
+    }).await {
         Ok(value) => JsonResult::Ok { value },
-        Err(e) => JsonResult::Err { err: e },
+        Err(err) => JsonResult::Err { err },
     }
 }
 
@@ -635,15 +736,17 @@ fn plugins_ls(cwd: Option<String>) -> JsonResult {
 /// volume) the structured `AppError` is shipped so the UI can
 /// surface it alongside the banner.
 #[tauri::command]
-fn shell_activation_check() -> ShellActivationResult {
-    match check_shell_activation() {
-        Ok(ok) => ShellActivationResult::Ok { ok },
-        Err(e) => ShellActivationResult::Err {
-            err: AppError::command_failed(
+async fn shell_activation_check() -> ShellActivationResult {
+    match spawn_run(move || {
+        check_shell_activation().map_err(|e| {
+            AppError::command_failed(
                 format!("failed to read shell rc file: {e}"),
                 String::new(),
-            ),
-        },
+            )
+        })
+    }).await {
+        Ok(ok) => ShellActivationResult::Ok { ok },
+        Err(err) => ShellActivationResult::Err { err },
     }
 }
 
@@ -655,10 +758,10 @@ fn shell_activation_check() -> ShellActivationResult {
 /// the UI can show a sensible "Opened Terminal.app at <path>"
 /// success line and a "no terminal detected" failure line.
 #[tauri::command]
-fn open_in_terminal(path: Option<String>) -> TerminalOpenResult {
-    match open_in_terminal_inner(path.as_deref()) {
+async fn open_in_terminal(path: Option<String>) -> TerminalOpenResult {
+    match spawn_run(move || open_in_terminal_inner(path.as_deref())).await {
         Ok(ok) => TerminalOpenResult::Ok { ok },
-        Err(e) => TerminalOpenResult::Err { err: e },
+        Err(err) => TerminalOpenResult::Err { err },
     }
 }
 
