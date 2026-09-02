@@ -286,11 +286,16 @@ export const I18N_KEYS = {
     },
     addLabel: "env.addLabel",
     addButton: "env.addButton",
+    editButton: "env.editButton",
     removeButton: "env.removeButton",
     namePlaceholder: "env.namePlaceholder",
     valuePlaceholder: "env.valuePlaceholder",
     guard: {
       untrustedBody: "env.guard.untrustedBody",
+    },
+    tooltip: {
+      tool: "env.tooltip.tool",
+      default: "env.tooltip.default",
     },
   },
   tasks: {

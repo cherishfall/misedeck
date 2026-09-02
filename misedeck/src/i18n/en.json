@@ -235,11 +235,16 @@
     },
     "addLabel": "Add an env var",
     "addButton": "Add",
+    "editButton": "Edit",
     "removeButton": "Remove",
     "namePlaceholder": "KEY (UPPER_SNAKE)",
     "valuePlaceholder": "value",
     "guard": {
       "untrustedBody": "Trust this directory before mutating its env vars."
+    },
+    "tooltip": {
+      "tool": "Injected by {{tool}} via `mise env`; resolved at runtime, not settable via `mise set`.",
+      "default": "Inherited from the host environment; not written by mise, so not settable via `mise set`."
     }
   },
   "tasks": {

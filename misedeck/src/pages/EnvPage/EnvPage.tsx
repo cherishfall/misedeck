@@ -183,7 +183,7 @@ export function EnvPage() {
     {
       key: "actions",
       header: t(I18N_KEYS.env.columns.actions),
-      cell: (r) => <EnvRowEditor row={r} onWrite={runWrite} disabled={isRunning} />,
+      cell: (r) => <EnvRowActions row={r} onWrite={runWrite} disabled={isRunning} />,
       width: "360px",
     },
   ];
@@ -293,15 +293,34 @@ function envSourceVariant(source: EnvSource): "default" | "info" | "warning" {
   }
 }
 
+/**
+ * A row is editable only when its value is config-file-sourced. Tool
+ * vars (`tool`) and host-inherited vars (`default`) are not written by
+ * mise config, so `mise set` / `mise unset` must never target them
+ * (issue #58).
+ */
+function isConfigSource(source: EnvSource): boolean {
+  return source === "project" || source === "global";
+}
+
 function EnvSourceCell({ row }: { row: EnvRow }) {
   const { t } = useTranslation();
   const label =
     row.source === "tool" && row.sourceDetail
       ? `${t(I18N_KEYS.env.source.tool)} · ${row.sourceDetail}`
       : t(I18N_KEYS.env.source[row.source]);
+  // Tool-injected and host-inherited rows cannot be set via `mise set`;
+  // the badge carries a CLI-terms tooltip explaining why (issue #58).
+  const tooltip = !isConfigSource(row.source)
+    ? row.source === "tool" && row.sourceDetail
+      ? t(I18N_KEYS.env.tooltip.tool, { tool: row.sourceDetail })
+      : t(I18N_KEYS.env.tooltip.default)
+    : undefined;
   return (
     <div className={styles.sourceCell}>
-      <Badge variant={envSourceVariant(row.source)}>{label}</Badge>
+      <Badge variant={envSourceVariant(row.source)} title={tooltip}>
+        {label}
+      </Badge>
       {row.sourcePath && (
         <span className={styles.sourcePath} title={row.sourcePath}>
           {row.sourcePath}
@@ -311,9 +330,9 @@ function EnvSourceCell({ row }: { row: EnvRow }) {
   );
 }
 
-// ---------- Row editor ----------
+// ---------- Row actions ----------
 
-function EnvRowEditor({
+function EnvRowActions({
   row,
   onWrite,
   disabled,
@@ -323,51 +342,100 @@ function EnvRowEditor({
   disabled: boolean;
 }) {
   const { t } = useTranslation();
+  const [editing, setEditing] = useState(false);
   const [name, setName] = useState(row.name);
   const [value, setValue] = useState(row.value);
+  // Reset the draft only while not actively editing, so an open editor
+  // keeps its own edits across refetches (issue #58).
   useEffect(() => {
+    if (!editing) {
+      setName(row.name);
+      setValue(row.value);
+    }
+  }, [row.name, row.value, editing]);
+
+  // Tool- and host-sourced rows are read-only: `mise set` / `mise unset`
+  // can only target config-file-sourced rows, so expose no actions.
+  if (!isConfigSource(row.source)) {
+    return null;
+  }
+
+  const dirty = name !== row.name || value !== row.value;
+  const startEdit = () => {
     setName(row.name);
     setValue(row.value);
-  }, [row.name, row.value]);
-  const dirty = name !== row.name || value !== row.value;
+    setEditing(true);
+  };
+  const cancelEdit = () => {
+    setName(row.name);
+    setValue(row.value);
+    setEditing(false);
+  };
   const onSave = () => {
     if (name !== row.name) {
       void onWrite((cwd) => miseEnvUnsetArgs(row.name, cwd));
     }
     void onWrite((cwd) => miseEnvSetArgs(name, value, cwd));
+    setEditing(false);
   };
+
+  if (editing) {
+    return (
+      <span className={styles.rowEditor}>
+        <input
+          type="text"
+          className={styles.inputName}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t(I18N_KEYS.env.namePlaceholder)}
+          disabled={disabled}
+          data-testid={`env-name-${row.name}`}
+          spellCheck={false}
+          autoComplete="off"
+        />
+        <input
+          type="text"
+          className={styles.inputValue}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={t(I18N_KEYS.env.valuePlaceholder)}
+          disabled={disabled}
+          data-testid={`env-value-${row.name}`}
+          spellCheck={false}
+          autoComplete="off"
+        />
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={onSave}
+          disabled={disabled || !dirty || name.length === 0 || value.length === 0}
+          data-testid={`env-save-${row.name}`}
+        >
+          {t(I18N_KEYS.common.save)}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={cancelEdit}
+          disabled={disabled}
+          data-testid={`env-cancel-${row.name}`}
+        >
+          {t(I18N_KEYS.common.cancel)}
+        </Button>
+      </span>
+    );
+  }
+
   return (
-    <span className={styles.rowEditor}>
-      <input
-        type="text"
-        className={styles.inputName}
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder={t(I18N_KEYS.env.namePlaceholder)}
-        disabled={disabled}
-        data-testid={`env-name-${row.name}`}
-        spellCheck={false}
-        autoComplete="off"
-      />
-      <input
-        type="text"
-        className={styles.inputValue}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder={t(I18N_KEYS.env.valuePlaceholder)}
-        disabled={disabled}
-        data-testid={`env-value-${row.name}`}
-        spellCheck={false}
-        autoComplete="off"
-      />
+    <span className={styles.rowActions}>
       <Button
-        variant="primary"
+        variant="ghost"
         size="sm"
-        onClick={onSave}
-        disabled={disabled || !dirty || name.length === 0 || value.length === 0}
-        data-testid={`env-save-${row.name}`}
+        onClick={startEdit}
+        disabled={disabled}
+        data-testid={`env-edit-${row.name}`}
       >
-        {t(I18N_KEYS.common.save)}
+        {t(I18N_KEYS.env.editButton)}
       </Button>
       <Button
         variant="ghost"
