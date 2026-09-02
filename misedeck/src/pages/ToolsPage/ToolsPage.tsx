@@ -354,7 +354,7 @@ export function ToolsPage() {
     header: t(I18N_KEYS.tools.columns.backend),
     cell: (r) =>
       r.backend !== undefined ? (
-        <Badge variant="info">{r.backend}</Badge>
+        <Badge variant="info" data>{r.backend}</Badge>
       ) : (
         <span className={styles.dim}>—</span>
       ),
@@ -500,7 +500,6 @@ export function ToolsPage() {
             rowKey={(r) => r.id}
             empty={
               <EmptyState
-                eyebrow={t(I18N_KEYS.tools.eyebrow)}
                 title={t(I18N_KEYS.tools.empty.title)}
                 body={t(I18N_KEYS.tools.empty.body)}
               />

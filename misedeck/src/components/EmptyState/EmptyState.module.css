@@ -6,7 +6,7 @@
   align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-6) var(--space-5);
-  border: 1px dashed var(--line);
+  border: 1px solid var(--line);
   border-radius: var(--radius-panel);
   background: color-mix(in srgb, var(--hull) 35%, transparent);
   color: var(--text);

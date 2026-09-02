@@ -60,10 +60,10 @@
 }
 
 .toolbarHint {
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  letter-spacing: normal;
+  text-transform: none;
   color: var(--dim);
 }
 
@@ -236,7 +236,7 @@
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--dim);
-  border: 1px dashed var(--line);
+  border: 1px solid var(--line);
   border-radius: var(--radius-panel);
   padding: var(--space-4);
 }

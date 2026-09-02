@@ -17,6 +17,9 @@ export type BadgeVariant =
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant;
+  /** Render as a data badge: keep the identifier's original case and drop
+   *  the label tracking (per docs/design/ui-ux-rules.md data honesty). */
+  data?: boolean;
   /** Leading glyph slot (e.g. a tiny dot). Optional. */
   leading?: ReactNode;
   children: ReactNode;
@@ -24,12 +27,18 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 
 export function Badge({
   variant = "default",
+  data = false,
   leading,
   className,
   children,
   ...rest
 }: BadgeProps) {
-  const classes = [styles.badge, styles[`variant-${variant}`], className ?? ""]
+  const classes = [
+    styles.badge,
+    styles[`variant-${variant}`],
+    data ? styles.data : "",
+    className ?? "",
+  ]
     .filter(Boolean)
     .join(" ");
   return (

@@ -96,7 +96,7 @@ export function PluginsPage() {
       cell: (r) => (
         <span className={styles.cellBackends}>
           {r.backends.map((b, i) => (
-            <Badge key={`${b}-${i}`} variant="info">
+            <Badge key={`${b}-${i}`} variant="info" data>
               {b}
             </Badge>
           ))}
@@ -190,9 +190,7 @@ export function PluginsPage() {
               rows={plugins.data ?? []}
               rowKey={(p) => p.name}
               empty={
-                <EmptyState
-                  eyebrow={t(I18N_KEYS.plugins.eyebrow)}
-                  title={t(I18N_KEYS.plugins.installedEmpty.title)}
+                <EmptyState                  title={t(I18N_KEYS.plugins.installedEmpty.title)}
                   body={t(I18N_KEYS.plugins.installedEmpty.body)}
                 />
               }
@@ -243,7 +241,6 @@ export function PluginsPage() {
               rowKey={(r) => r.short}
               empty={
                 <EmptyState
-                  eyebrow={t(I18N_KEYS.plugins.eyebrow)}
                   title={query.trim().length > 0 ? t(I18N_KEYS.plugins.empty.searchTitle) : t(I18N_KEYS.plugins.empty.title)}
                   body={query.trim().length > 0 ? t(I18N_KEYS.plugins.empty.searchBody) : t(I18N_KEYS.plugins.empty.body)}
                 />

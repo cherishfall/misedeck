@@ -14,7 +14,7 @@
     "next": "Next"
   },
   "directory": {
-    "eyebrow": "▸ DIRECTORY",
+    "eyebrow": "DIRECTORY",
     "regionLabel": "Directory",
     "globalButton": "Global",
     "recentsButton": "Recent",
@@ -29,8 +29,8 @@
     "expandLabel": "Expand sidebar"
   },
   "miseManagement": {
-    "guidedInstallButton": "▸ Guided install",
-    "selfUpdateButton": "▸ Run mise self-update",
+    "guidedInstallButton": "Guided install",
+    "selfUpdateButton": "Run mise self-update",
     "releaseNotesLink": "View release notes",
     "selfUpdateSuccessBody": "mise updated to {{version}}. Reload MiseDeck to pick up the new binary.",
     "selfUpdateNoProbeBody": "mise self-update completed. The post-update version probe failed — restart MiseDeck to confirm."
@@ -59,13 +59,13 @@
     "error": "Could not trust the directory. Check the execution panel for details."
   },
   "home": {
-    "eyebrow": "▸ MISE / STATUS",
+    "eyebrow": "MISE / STATUS",
     "title": "Home",
     "hint": "Is mise installed and new enough for MiseDeck? Guided install and self-update live here; every action streams through the execution panel.",
     "commandHint": "mise version · mise self-update"
   },
   "tools": {
-    "eyebrow": "▸ MISE / TOOLS",
+    "eyebrow": "MISE / TOOLS",
     "title": "Tools",
     "hint": "Tools installed and active for the current directory. Switch versions, install, uninstall, or upgrade from the table; every mutation streams through the execution panel.",
     "commandHint": "mise ls · mise use · mise install · mise uninstall · mise upgrade · mise outdated",
@@ -140,7 +140,7 @@
     }
   },
   "preview": {
-    "eyebrow": "▸ MISE / PREVIEW",
+    "eyebrow": "MISE / PREVIEW",
     "title": "Directory preview",
     "hint": "Resolved tools, env, config files, and lockfile for the current directory.",
     "commandHint": "mise -C <dir> ls · mise env · mise config · mise.lock",
@@ -193,7 +193,7 @@
       "body": "`mise -C <dir> ls --json` did not return. Stderr is preserved in the execution panel."
     },
     "lockfile": {
-      "eyebrow": "▸ MISE.LOCK",
+      "eyebrow": "MISE.LOCK",
       "title": "mise.lock",
       "missing": "No mise.lock found.",
       "empty": "(empty file)",
@@ -203,7 +203,7 @@
     "refresh": "Refresh"
   },
   "env": {
-    "eyebrow": "▸ MISE / ENV",
+    "eyebrow": "MISE / ENV",
     "title": "Env",
     "hint": "Resolved environment variables for the current directory. Add, edit, or remove vars; every write goes through `mise set` / `mise unset` and streams into the panel.",
     "commandHint": "mise env --json-extended · mise set · mise unset",
@@ -248,7 +248,7 @@
     }
   },
   "tasks": {
-    "eyebrow": "▸ MISE / TASKS",
+    "eyebrow": "MISE / TASKS",
     "title": "Tasks",
     "subtitle": "List, run, and edit the mise tasks for the active directory. Writes go through `mise tasks add` and stream into the panel.",
     "commandHint": "mise tasks ls · mise run · mise tasks add",
@@ -290,7 +290,7 @@
     }
   },
   "settings": {
-    "eyebrow": "▸ MISE / SETTINGS",
+    "eyebrow": "MISE / SETTINGS",
     "title": "Settings",
     "hint": "View and edit mise settings for the current directory. Writes go through `mise settings set` / `mise settings unset` and stream into the panel.",
     "commandHint": "mise settings ls · mise settings set · mise settings unset",
@@ -321,7 +321,7 @@
     }
   },
   "doctor": {
-    "eyebrow": "▸ MISE / DOCTOR",
+    "eyebrow": "MISE / DOCTOR",
     "title": "Doctor",
     "hint": "A health check for the current directory's mise setup. When `--json` is unavailable, the raw doctor output is rendered with row tinting.",
     "commandHint": "mise doctor",
@@ -371,7 +371,7 @@
     }
   },
   "plugins": {
-    "eyebrow": "▸ MISE / PLUGINS",
+    "eyebrow": "MISE / PLUGINS",
     "title": "Plugins",
     "hint": "Installed plugins and the built-in registry of tool shorthands, backends, and aliases.",
     "commandHint": "mise plugins ls · mise registry",
@@ -461,7 +461,7 @@
     "dark": "Dark"
   },
   "styleguide": {
-    "eyebrow": "▸ MISE / STYLEGUIDE",
+    "eyebrow": "MISE / STYLEGUIDE",
     "title": "Visual system",
     "backToHome": "← back to Home",
     "sections": {
@@ -489,7 +489,7 @@
       "banner": "Full-width notice with leading dot, label, body, optional trailing action. Tones inherit the system's signal colors.",
       "table": "Semantic <table> for the tools list and other data grids. Mono cells, tracked column headers, right-align numeric columns.",
       "dataRow": "Definition-list row (dt + dd) with mono values. Used on the Home page and reused on settings, env, and plugin detail pages.",
-      "emptyState": "Page-level 'nothing to show' panel. The eyebrow follows the ▸ GROUP / SECTION convention so the empty state's page is clear.",
+      "emptyState": "Page-level 'nothing to show' panel. The eyebrow follows the MISE / SECTION convention so the empty state's page is clear.",
       "progressDot": "Status dot (beam / flare / breach / dim) with the attention-pulse animation when the tone is flare/breach — the only ambient motion attached to a state component."
     },
     "samples": {

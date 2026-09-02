@@ -260,7 +260,6 @@ function DoctorContent({
           rowKey={(r) => r.id}
           empty={
             <EmptyState
-              eyebrow={t(I18N_KEYS.doctor.eyebrow)}
               title={t(I18N_KEYS.doctor.toolset.emptyTitle)}
               body={t(I18N_KEYS.doctor.toolset.emptyBody)}
             />

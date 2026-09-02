@@ -14,7 +14,7 @@
     "next": "下一步"
   },
   "directory": {
-    "eyebrow": "▸ 目录",
+    "eyebrow": "目录",
     "regionLabel": "目录",
     "globalButton": "全局",
     "recentsButton": "最近",
@@ -29,8 +29,8 @@
     "expandLabel": "展开侧边栏"
   },
   "miseManagement": {
-    "guidedInstallButton": "▸ 引导式安装",
-    "selfUpdateButton": "▸ 运行 mise self-update",
+    "guidedInstallButton": "引导式安装",
+    "selfUpdateButton": "运行 mise self-update",
     "releaseNotesLink": "查看发布说明",
     "selfUpdateSuccessBody": "mise 已更新到 {{version}}。请重启 MiseDeck 以加载新二进制。",
     "selfUpdateNoProbeBody": "mise self-update 已完成。更新后版本探测失败 —— 请重启 MiseDeck 确认。"
@@ -59,13 +59,13 @@
     "error": "无法信任该目录。请查看执行面板了解详情。"
   },
   "home": {
-    "eyebrow": "▸ MISE / 状态",
+    "eyebrow": "MISE / 状态",
     "title": "首页",
     "hint": "检测 mise 是否已安装且版本满足 MiseDeck 的要求；引导安装与自更新都在这里进行，所有操作都通过执行面板实时显示。",
     "commandHint": "mise version · mise self-update"
   },
   "tools": {
-    "eyebrow": "▸ MISE / 工具",
+    "eyebrow": "MISE / 工具",
     "title": "工具",
     "hint": "当前目录中已安装并处于活动状态的工具。在表格中切换版本、安装、卸载或升级；所有变更都通过执行面板实时显示。",
     "commandHint": "mise ls · mise use · mise install · mise uninstall · mise upgrade · mise outdated",
@@ -140,7 +140,7 @@
     }
   },
   "preview": {
-    "eyebrow": "▸ MISE / 预览",
+    "eyebrow": "MISE / 预览",
     "title": "目录预览",
     "hint": "当前目录解析出的工具、环境变量、配置文件与 lockfile。",
     "commandHint": "mise -C <dir> ls · mise env · mise config · mise.lock",
@@ -193,7 +193,7 @@
       "body": "`mise -C <dir> ls --json` 未返回结果。stderr 已在执行面板中保留。"
     },
     "lockfile": {
-      "eyebrow": "▸ MISE.LOCK",
+      "eyebrow": "MISE.LOCK",
       "title": "mise.lock",
       "missing": "未找到 mise.lock。",
       "empty": "（空文件）",
@@ -203,7 +203,7 @@
     "refresh": "刷新"
   },
   "env": {
-    "eyebrow": "▸ MISE / 环境变量",
+    "eyebrow": "MISE / 环境变量",
     "title": "环境变量",
     "hint": "当前目录已解析的环境变量。添加、编辑或移除变量；所有写入都通过 `mise set` / `mise unset` 并在执行面板中实时显示。",
     "commandHint": "mise env --json-extended · mise set · mise unset",
@@ -248,7 +248,7 @@
     }
   },
   "tasks": {
-    "eyebrow": "▸ MISE / 任务",
+    "eyebrow": "MISE / 任务",
     "title": "任务",
     "subtitle": "列出、运行并编辑当前目录的 mise 任务。写入通过 `mise tasks add`，并在执行面板中实时显示。",
     "commandHint": "mise tasks ls · mise run · mise tasks add",
@@ -290,7 +290,7 @@
     }
   },
   "settings": {
-    "eyebrow": "▸ MISE / 设置",
+    "eyebrow": "MISE / 设置",
     "title": "设置",
     "hint": "查看并编辑当前目录的 mise 设置。写入通过 `mise settings set` / `mise settings unset` 并在执行面板中实时显示。",
     "commandHint": "mise settings ls · mise settings set · mise settings unset",
@@ -321,7 +321,7 @@
     }
   },
   "doctor": {
-    "eyebrow": "▸ MISE / 诊断",
+    "eyebrow": "MISE / 诊断",
     "title": "诊断",
     "hint": "当前目录的 mise 健康检查。当 `--json` 不可用时，原始 doctor 输出会以行级色调渲染。",
     "commandHint": "mise doctor",
@@ -371,7 +371,7 @@
     }
   },
   "plugins": {
-    "eyebrow": "▸ MISE / PLUGINS",
+    "eyebrow": "MISE / PLUGINS",
     "title": "插件",
     "hint": "已安装插件，以及内置 registry 中的工具别名、后端与别名信息。",
     "commandHint": "mise plugins ls · mise registry",
@@ -461,7 +461,7 @@
     "dark": "深色"
   },
   "styleguide": {
-    "eyebrow": "▸ MISE / 视觉系统",
+    "eyebrow": "MISE / 视觉系统",
     "title": "视觉系统",
     "backToHome": "← 返回首页",
     "sections": {
@@ -489,7 +489,7 @@
       "banner": "通栏提示，含前导点、标签、正文与可选尾部动作。色调继承系统信号色。",
       "table": "用于工具列表等数据网格的语义化 <table>。等宽单元格，间距化的列标题，数值列右对齐。",
       "dataRow": "dt + dd 形式的数据行，等宽值。在首页使用，并在设置、env、插件详情页复用。",
-      "emptyState": "页面级“无内容”面板。眉签遵循 ▸ GROUP / SECTION 约定,便于说明空状态所属的页面。",
+      "emptyState": "页面级“无内容”面板。眉签遵循 MISE / SECTION 约定,便于说明空状态所属的页面。",
       "progressDot": "状态点(beam / flare / breach / dim),在 flare/breach 色调下自动播放注意力脉冲 —— 唯一与状态组件绑定的环境动效。"
     },
     "samples": {

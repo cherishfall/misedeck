@@ -230,8 +230,7 @@ export function EnvPage() {
               className={styles.tableFixed}
               empty={
                 <EmptyState
-                  eyebrow={t(I18N_KEYS.env.eyebrow)}
-                  title={t(I18N_KEYS.env.empty.title)}
+                    title={t(I18N_KEYS.env.empty.title)}
                   body={t(I18N_KEYS.env.empty.body)}
                 />
               }

@@ -22,7 +22,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
-  /** Glyph rendered before the label, e.g. "▸". Optional. */
+  /** Optional glyph rendered before the label. */
   leading?: ReactNode;
   /** Glyph rendered after the label, e.g. "▾". Optional. */
   trailing?: ReactNode;

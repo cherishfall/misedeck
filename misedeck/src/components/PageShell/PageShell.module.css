@@ -75,10 +75,11 @@
   padding: var(--space-2);
   border-radius: var(--radius-panel);
   text-decoration: none;
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
   color: var(--dim);
   border: 1px solid transparent;
   transition:
@@ -107,8 +108,8 @@
   justify-content: center;
   width: 20px;
   height: 20px;
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
+  font-family: var(--font-ui);
+  font-size: 13px;
   font-weight: 600;
   color: inherit;
 }

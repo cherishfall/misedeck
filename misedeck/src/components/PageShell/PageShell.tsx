@@ -163,7 +163,7 @@ function NavItem({ path, label, glyph, active, collapsed }: NavItemProps) {
       to={path}
       className={active ? styles.navItemActive : styles.navItem}
       aria-current={active ? "page" : undefined}
-      title={collapsed ? label : undefined}
+      title={label}
     >
       <span className={styles.navGlyph} aria-hidden="true">
         {glyph}
@@ -173,6 +173,11 @@ function NavItem({ path, label, glyph, active, collapsed }: NavItemProps) {
   );
 }
 
+// Nav icon decision (#60, per beta4-audit-visual V16): keep the single-letter
+// glyphs as nav icons (replace-with-geometric-icons deferred to avoid adding
+// new glyph vocabulary beyond the visual language's sole decorative glyph ▹).
+// Every item carries a tooltip naming its destination in BOTH expanded and
+// collapsed states, so the icon's meaning is always discoverable.
 const NAV_ITEMS = [
   { path: "/preview", labelKey: I18N_KEYS.preview.nav, glyph: "P" },
   { path: "/tools", labelKey: I18N_KEYS.nav.tools, glyph: "T" },

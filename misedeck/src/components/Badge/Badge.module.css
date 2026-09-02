@@ -34,6 +34,14 @@
   border-color: var(--line-strong);
 }
 
+/* Data badge: identifiers (backend names, setting types) keep their
+ * original case and lose the label tracking — uppercase + wide tracking
+ * belongs to section labels only (ui-ux-rules.md data honesty). */
+.data {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 .variant-info {
   color: var(--ice);
   border-color: var(--tint-info);

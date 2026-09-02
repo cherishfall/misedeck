@@ -154,7 +154,7 @@ export function SettingsPage() {
     {
       key: "type",
       header: t(I18N_KEYS.settings.columns.type),
-      cell: (r) => (r.type ? <Badge variant="info">{r.type}</Badge> : <span className={styles.dim}>—</span>),
+      cell: (r) => (r.type ? <Badge variant="info" data>{r.type}</Badge> : <span className={styles.dim}>—</span>),
     },
     {
       key: "source",
@@ -236,7 +236,6 @@ export function SettingsPage() {
               rowKey={(r) => r.key}
               empty={
                 <EmptyState
-                  eyebrow={t(I18N_KEYS.settings.eyebrow)}
                   title={t(I18N_KEYS.settings.empty.title)}
                   body={t(I18N_KEYS.settings.empty.body)}
                 />

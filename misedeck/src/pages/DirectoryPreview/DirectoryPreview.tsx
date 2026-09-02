@@ -365,7 +365,6 @@ export function DirectoryPreview() {
           </header>
           {cwd === null && (
             <EmptyState
-              eyebrow={t(I18N_KEYS.preview.eyebrow)}
               title={t(I18N_KEYS.preview.empty.title)}
               body={t(I18N_KEYS.preview.empty.body)}
               action={
@@ -396,7 +395,6 @@ export function DirectoryPreview() {
               rowKey={(r) => r.id}
               empty={
                 <EmptyState
-                  eyebrow={t(I18N_KEYS.preview.eyebrow)}
                   title={t(I18N_KEYS.tools.empty.title)}
                   body={t(I18N_KEYS.tools.empty.body)}
                 />
@@ -427,7 +425,6 @@ export function DirectoryPreview() {
               rowKey={(r) => r.id}
               empty={
                 <EmptyState
-                  eyebrow={t(I18N_KEYS.preview.eyebrow)}
                   title={t(I18N_KEYS.preview.env.emptyTitle)}
                   body={t(I18N_KEYS.preview.env.emptyBody)}
                 />

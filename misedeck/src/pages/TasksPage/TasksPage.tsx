@@ -469,8 +469,7 @@ export function TasksPage() {
               rowKey={(r) => r.id}
               empty={
                 <EmptyState
-                  eyebrow={t(I18N_KEYS.tasks.eyebrow)}
-                  title={t(I18N_KEYS.tasks.empty.title)}
+                    title={t(I18N_KEYS.tasks.empty.title)}
                   body={t(I18N_KEYS.tasks.empty.body)}
                 />
               }

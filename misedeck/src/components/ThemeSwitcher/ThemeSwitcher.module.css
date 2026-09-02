@@ -13,10 +13,11 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
   background: var(--panel);
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .label {

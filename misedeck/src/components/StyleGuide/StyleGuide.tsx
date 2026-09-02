@@ -74,7 +74,7 @@ export function StyleGuide() {
     {
       key: "backend",
       header: t(I18N_KEYS.styleguide.samples.tableBackend),
-      cell: (r) => <Badge variant="info">{r.backend}</Badge>,
+      cell: (r) => <Badge variant="info" data>{r.backend}</Badge>,
     },
     {
       key: "current",
@@ -181,7 +181,7 @@ export function StyleGuide() {
           </div>
           <div className={styles.typeRow}>
             <span className={styles.typeLabel}>LABEL / 10</span>
-            <span className={styles.typeLabelSample}>▸ MANAGE / TOOLS</span>
+            <span className={styles.typeLabelSample}>MISE / TOOLS</span>
           </div>
         </div>
       </Section>
@@ -303,7 +303,7 @@ export function StyleGuide() {
       >
         <div className={styles.demoRow}>
           <Badge>{t(I18N_KEYS.styleguide.samples.badgeDefault)}</Badge>
-          <Badge variant="info">{t(I18N_KEYS.styleguide.samples.badgeInfo)}</Badge>
+          <Badge variant="info" data>{t(I18N_KEYS.styleguide.samples.badgeInfo)}</Badge>
           <Badge variant="success">{t(I18N_KEYS.styleguide.samples.badgeSuccess)}</Badge>
           <Badge variant="warning">{t(I18N_KEYS.styleguide.samples.badgeWarning)}</Badge>
           <Badge variant="danger">{t(I18N_KEYS.styleguide.samples.badgeDanger)}</Badge>
