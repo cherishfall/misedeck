@@ -9,11 +9,11 @@ MiseDeck 界面的设计系统基础。在 issue #37 中重写：首个设计冲
 1. **品牌继承。** 两个主题都遵循 mise.jdx.dev 的观感：浅色为暖羊皮纸，深色为暖炭黑，品牌色为酒红/玫瑰。从 mise 官网过来的用户应感到这是同一个产品，而不是别的东西的换皮。
 2. **等宽字体是数据的声音。** 版本号、路径、命令、日志、徽章使用 JetBrains Mono —— 与 mise 官网代码所用字体相同。展示（Display）字体承载编辑式衬线签名；UI 字体保持安静。
 3. **扁平、安静。** 实心表面、1px 暖中性边框、8px 圆角。无辉光、无半透明堆叠、无动画装饰。让颜色自己说话。
-4. **从第一天起就有双主题。** 深色与浅色是同一组 token 槽位上设计出的对位——绝不是简单反色。两者默认都跟随系统偏好。
+4. **从第一天起就有双主题。** 深色与浅色是同一组 token 槽位上设计出的对位——绝不是简单反色。切换为浅色/深色两态开关（默认浅色），完全手动。
 
 ## 主题
 
-主题*设置*为 `system` / `light` / `dark`（默认 `system`），由 `ThemeProvider`（`src/state/themeContext.tsx`）持久化在 `localStorage("misedeck.theme")`。*解析后*的主题（`light` | `dark`）驱动 `html[data-theme]`；`index.html` 中的内联引导脚本在首次绘制前完成设置，两个主题都不会闪变。Token 取值：深色为 `:root` 默认值；浅色覆盖位于 `[data-theme="light"]`。`color-scheme` 随主题设置，使原生组件（滚动条、表单控件）保持一致。
+主题*设置*为 `light` / `dark` 两态（默认 `light`，完全手动，无跟随系统），由 `ThemeProvider`（`src/state/themeContext.tsx`）持久化在 `localStorage("misedeck.theme")`。*解析后*的主题（`light` | `dark`）驱动 `html[data-theme]`；`index.html` 中的内联引导脚本在首次绘制前完成设置，两个主题都不会闪变。Token 取值：深色为 `:root` 默认值；浅色覆盖位于 `[data-theme="light"]`。`color-scheme` 随主题设置，使原生组件（滚动条、表单控件）保持一致。
 
 ## 色彩
 
@@ -58,7 +58,7 @@ MiseDeck 界面的设计系统基础。在 issue #37 中重写：首个设计冲
 - 衬线 display 字体是 mise.jdx.dev 的编辑式签名 —— 只花在标题与 wordmark 上，绝不用于数据或控件。
 - zh-CN：display 文本回退到 `Songti SC` / `SimSun`（中文衬线），UI 文本回退到 `PingFang SC` / `system-ui`；Latin 数据保持 JetBrains Mono。
 - 基准字号 14px，数据 11–13px，小节标签 10px，display 26px。无流式字号；桌面应用密度。
-- 小节眉签写作 `▸ MISE / TOOLS` —— 等宽、大写、带字距、`--ice`。
+- 小节眉签写作 `MISE / TOOLS` —— 等宽、大写、带字距、`--ice`，不带 prompt 符号。
 
 ## 布局
 
@@ -82,5 +82,5 @@ MiseDeck 界面的设计系统基础。在 issue #37 中重写：首个设计冲
 - 无辉光效果（text-shadow / box-shadow 发光）、无玻璃拟态、无动画渐变线、无角标 —— HUD 词汇已全部退役。
 - 无冷蓝灰调色板；两个主题的表面都是暖色（羊皮纸 / 炭黑）。
 - 无科幻或噱头展示字体；性格来自衬线 display 字体 + 等宽数据。
-- 产品 UI 中无装饰性编号（01/02/03），无 emoji 图标；符号为几何字形（▸ ▹）。
+- 产品 UI 中无装饰性编号（01/02/03），无 emoji 图标；唯一的装饰字形是 ▹（用于升级路径）。
 - 浅色主题是羊皮纸，不是白色企业换皮：暖色表面、酒红强调色、灰褐次级文本。

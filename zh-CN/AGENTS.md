@@ -13,6 +13,7 @@
 - 阅读 `CONTEXT.md`（领域术语表）和 `docs/adr/` 中与你要动的区域相关的 ADR。代码、issue 和 UI 文案统一使用术语表词汇。
 - v1 spec 和实现 tickets 在 GitHub Issues（`ready-for-agent` 标签）；见 `docs/agents/issue-tracker.md`。
 - UI 工作的色彩、字体、布局、动效一律取自 `docs/design/visual-language.md`（issue #33）；禁止临时发明新 token 或动效。
+- UI 工作（任何页面、组件、样式或文案）还须遵守 `docs/design/ui-ux-rules.md`——从 beta 反馈周期沉淀的硬性交互与呈现规则。违反即为 bug。
 
 ## 工作约定（每个 session 一个 ticket）
 
@@ -23,7 +24,7 @@
 
 ## 不可妥协项
 
-- 维护者是产品角色，不是代码审查者。每个改动都要自验证：构建、运行，并在声称完成之前查看运行中的应用——使用你的运行环境提供的任何 UI 自动化或截图能力为它截图。不留红的测试，不留坏的构建。
+- 维护者是产品角色，不是代码审查者。每个改动都要自验证：构建、运行，并在声称完成之前查看运行中的应用。不留红的测试，不留坏的构建。UI 改动按 `docs/design/ui-ux-rules.md` 的分级视觉验收执行——harness 能截图就覆盖两主题/侧栏两态；不能就跑静态自查并在 issue 上标注「未经视觉验证」。绝不允许虚报没做过的视觉验证。
 - 每个变更操作都走执行面板：展示真实的 mise 命令和实时日志。
 - 所有 UI 文案走 i18n（en + zh-CN）；禁止硬编码文案。
 - 从第一天起跨平台：路径与进程创建只走 Tauri/Rust 的 API。

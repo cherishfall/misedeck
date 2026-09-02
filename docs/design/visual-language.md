@@ -9,11 +9,11 @@ The design system foundation for MiseDeck's UI. Rewritten in issue #37: the hack
 1. **Brand inheritance.** Both themes follow mise.jdx.dev's look: warm parchment light, warm charcoal dark, the wine/rose brand accent. A user coming from the mise site should feel the app is the same product, not a reskin of something else.
 2. **Mono is the voice of data.** Versions, paths, commands, logs, and badges are set in JetBrains Mono — the same face the mise site uses for code. Display type carries the editorial serif signature; UI type stays quiet.
 3. **Flat and quiet.** Solid surfaces, 1px warm-neutral borders, 8px radius. No glow, no translucency stacking, no animated decoration. Color does the talking.
-4. **Two themes from day one.** Dark and light are designed counterparts from the same token slots — never an inversion. Both follow the system preference by default.
+4. **Two themes from day one.** Dark and light are designed counterparts from the same token slots — never an inversion. The toggle is a two-state light/dark switch (default light), fully manual.
 
 ## Themes
 
-The theme *setting* is `system` / `light` / `dark` (default `system`), persisted in `localStorage("misedeck.theme")` by the `ThemeProvider` (`src/state/themeContext.tsx`). The *resolved* theme (`light` | `dark`) drives `html[data-theme]`; an inline bootstrap script in `index.html` applies it before first paint so neither theme ever flashes. Token values: dark is the default in `:root`; light overrides live under `[data-theme="light"]`. `color-scheme` is set per theme so native affordances (scrollbars, form controls) match.
+The theme *setting* is `light` / `dark` (default `light`, fully manual — no system mode), persisted in `localStorage("misedeck.theme")` by the `ThemeProvider` (`src/state/themeContext.tsx`). The *resolved* theme (`light` | `dark`) drives `html[data-theme]`; an inline bootstrap script in `index.html` applies it before first paint so neither theme ever flashes. Token values: dark is the default in `:root`; light overrides live under `[data-theme="light"]`. `color-scheme` is set per theme so native affordances (scrollbars, form controls) match.
 
 ## Color
 
@@ -58,7 +58,7 @@ Semantic discipline:
 - The serif display face is the editorial signature of mise.jdx.dev — it is spent on titles and the wordmark only, never on data or controls.
 - zh-CN: display text falls back to `Songti SC` / `SimSun` (Chinese serifs), UI text to `PingFang SC` / `system-ui`; Latin data keeps JetBrains Mono.
 - Base size 14px, data 11–13px, section labels 10px, display 26px. No fluid type; desktop-app density.
-- Section eyebrows read `▸ MISE / TOOLS` — mono, uppercase, tracked, `--ice`.
+- Section eyebrows read `MISE / TOOLS` — mono, uppercase, tracked, `--ice`, no prompt glyph.
 
 ## Layout
 
@@ -82,5 +82,5 @@ Everything else is a ≤120ms ease-out state change (hover, focus, panel slide).
 - No glow effects (text-shadow / box-shadow luminescence), no glassmorphism, no animated gradient lines, no corner brackets — the HUD vocabulary is retired.
 - No cool blue-gray palettes; surfaces are warm (parchment / charcoal) in both themes.
 - No sci-fi or display gimmick fonts; character comes from the serif display face + mono data.
-- No decorative numbering (01/02/03) in product UI, no emoji icons; glyphs are geometric (▸ ▹).
+- No decorative numbering (01/02/03) in product UI, no emoji icons; the only decorative glyph is ▹ (used in upgrade paths).
 - Light theme is parchment, not a white corporate reskin: warm surfaces, wine accent, taupe secondary text.

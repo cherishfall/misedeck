@@ -13,6 +13,7 @@ An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + Re
 - Read `CONTEXT.md` (domain glossary) and any ADR in `docs/adr/` touching your area. Use glossary vocabulary in code, issues, and UI copy.
 - The v1 spec and implementation tickets live in GitHub Issues (`ready-for-agent` label); see `docs/agents/issue-tracker.md`.
 - UI work derives color, type, layout, and motion from `docs/design/visual-language.md` (issue #33); never invent new tokens or effects.
+- UI work (any page, component, style, or copy) also follows `docs/design/ui-ux-rules.md` — hard interaction and presentation rules distilled from beta review cycles. Violating them is a bug.
 
 ## Working agreement (one ticket per session)
 
@@ -23,7 +24,7 @@ An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + Re
 
 ## Non-negotiables
 
-- The maintainer is a product owner, not a code reviewer. Self-verify every change: build, run, and look at the running app before claiming done — screenshot it using whatever UI-automation or screenshot capability your harness provides. Leave no red tests and no broken build.
+- The maintainer is a product owner, not a code reviewer. Self-verify every change: build, run, and look at the running app before claiming done. Leave no red tests and no broken build. UI changes follow the tiered visual verification in `docs/design/ui-ux-rules.md` — screenshot both themes/sidebar states when your harness can; when it cannot, run the static self-audit and mark the issue "not visually verified". Never claim visual verification you did not perform.
 - Every mutating action goes through the execution panel: show the exact mise command and its live logs.
 - All UI strings go through i18n (en + zh-CN); no hardcoded copy.
 - Cross-platform from day one: paths and process spawning via Tauri/Rust APIs only.
