@@ -11,7 +11,7 @@ Last updated: 2026-09-02 — beta4 round in progress; #49 (sidebar chrome), #50 
 
 - 8 user feedback items + a two-track full-app audit (visual + product/UX) were aligned with the owner and published:
   - **SPEC parent: #45**. **Tickets: #46–#60**, labels `v1` + `ready-for-agent`, native blocking + sub-issue links set.
-  - Startable now (no blockers): **#56** uninstall confirmation, **#58/#59** (unblocked by #57, now closed). (#47 done, 366c079. #48 done, aa857fb. #51 done, b765193. #52 done, 30c6afb. #46 done, 73eb690. #53 done, b09708b. #55 done, 18556c9.)
+  - Startable now (no blockers): **#58/#59** (unblocked by #57, now closed). (#47 done, 366c079. #48 done, aa857fb. #51 done, b765193. #52 done, 30c6afb. #46 done, 73eb690. #53 done, b09708b. #55 done, 18556c9. #56 done, f138901.)
   - Blocked: #60 (visual sweep, last) ←#59.
 - Sources of truth for the round (all committed):
   - `beta4-feedback-scratch.md` — verbatim feedback + alignment + issue mapping.
