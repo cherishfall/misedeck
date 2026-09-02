@@ -1,7 +1,7 @@
 # MiseDeck handoff
 
 This document is a continuation marker between autonomous driver sessions.
-Last updated: 2026-09-02 — beta4 round in progress; #49 (sidebar chrome), #50 (Tools data honesty), #57 (table layout discipline), #54 (footer controls), #48 (Preview/Global/vocab, aa857fb), and #46 (async Tauri commands, 73eb690) done; #53 (macOS a11y, b09708b) done; #55 (Tools version queries, 18556c9) done; #56 unblocked; #58/#59 now unblocked by #57.
+Last updated: 2026-09-02 — beta4 round in progress; #49 (sidebar chrome), #50 (Tools data honesty), #57 (table layout discipline), #54 (footer controls), #48 (Preview/Global/vocab, aa857fb), and #46 (async Tauri commands, 73eb690) done; #53 (macOS a11y, b09708b) done; #55 (Tools version queries, 18556c9) done; #56 (uninstall confirmation, f138901) done; #58 (Env read-only/edit-on-demand, d8ede91) done; #59 startable (unblocked by #57).
 
 **Status:** v1 implementation (11 tickets, #34–#44) is complete and shipped as beta.4. The beta4 UI/UX feedback round is fully recorded, audited, and published to GitHub — the next work is driving those tickets.
 
@@ -11,7 +11,7 @@ Last updated: 2026-09-02 — beta4 round in progress; #49 (sidebar chrome), #50 
 
 - 8 user feedback items + a two-track full-app audit (visual + product/UX) were aligned with the owner and published:
   - **SPEC parent: #45**. **Tickets: #46–#60**, labels `v1` + `ready-for-agent`, native blocking + sub-issue links set.
-  - Startable now (no blockers): **#58/#59** (unblocked by #57, now closed). (#47 done, 366c079. #48 done, aa857fb. #51 done, b765193. #52 done, 30c6afb. #46 done, 73eb690. #53 done, b09708b. #55 done, 18556c9. #56 done, f138901.)
+  - Startable now (no blockers): **#59** (unblocked by #57, now closed). (#47 done, 366c079. #48 done, aa857fb. #51 done, b765193. #52 done, 30c6afb. #46 done, 73eb690. #53 done, b09708b. #55 done, 18556c9. #56 done, f138901. #58 done, d8ede91.)
   - Blocked: #60 (visual sweep, last) ←#59.
 - Sources of truth for the round (all committed):
   - `beta4-feedback-scratch.md` — verbatim feedback + alignment + issue mapping.
