@@ -4,7 +4,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useMemo } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
@@ -131,6 +131,20 @@ function DoctorContent({
   }
 
   const warnings = data.warnings ?? [];
+  // Pull the mise-self-update notice out of the raw warnings and re-render
+  // it as a localized upgrade path. The remaining warnings (if any) keep
+  // their own list below. This keeps English CLI prose out of a zh-CN UI.
+  let updateWarningText: string | null = null;
+  for (const w of warnings) {
+    if (parseUpgradePath([w])) {
+      updateWarningText = w;
+      break;
+    }
+  }
+  const upgrade = updateWarningText ? parseUpgradePath([updateWarningText]) ?? null : null;
+  const otherWarnings = updateWarningText
+    ? warnings.filter((w) => w !== updateWarningText)
+    : warnings;
   const status = doctorStatus(data);
 
   const toolsetRows: ToolsetRow[] = useMemo(() => {
@@ -163,74 +177,61 @@ function DoctorContent({
   return (
     <>
       <section className={styles.summary}>
-        <div className={styles.summaryRow}>
-          <span className={styles.summaryLabel}>{t(I18N_KEYS.doctor.summary.status)}</span>
+        <StatusRow label={t(I18N_KEYS.doctor.summary.status)}>
           <Badge
             variant={status.variant}
             leading={<span className={styles.statusDot} data-tone={status.dotTone} />}
           >
             {t(status.labelKey)}
           </Badge>
-        </div>
+        </StatusRow>
         {data.version && (
-          <div className={styles.summaryRow}>
-            <span className={styles.summaryLabel}>{t(I18N_KEYS.labels.version)}</span>
-            <span className={styles.summaryValue} title={data.version}>{data.version}</span>
-          </div>
+          <StatusRow label={t(I18N_KEYS.labels.version)}>
+            <span className={styles.statusValueText} title={data.version}>{data.version}</span>
+          </StatusRow>
         )}
         {data.shell?.name && (
-          <div className={styles.summaryRow}>
-            <span className={styles.summaryLabel}>{t(I18N_KEYS.doctor.summary.shell)}</span>
+          <StatusRow label={t(I18N_KEYS.doctor.summary.shell)}>
             <span
-              className={styles.summaryValue}
+              className={styles.statusValueText}
               title={`${data.shell.name} ${data.shell.version ?? ""}`.trim()}
             >
               {data.shell.name} {data.shell.version}
             </span>
-          </div>
+          </StatusRow>
         )}
-        <div className={styles.summaryRow}>
-          <span className={styles.summaryLabel}>{t(I18N_KEYS.doctor.summary.activated)}</span>
+        <StatusRow label={t(I18N_KEYS.doctor.summary.activated)}>
           <Badge variant={data.activated ? "success" : "warning"}>
             {data.activated ? t(I18N_KEYS.common.ok) : t(I18N_KEYS.doctor.summary.notActivated)}
           </Badge>
-        </div>
-        <div className={styles.summaryRow}>
-          <span className={styles.summaryLabel}>{t(I18N_KEYS.doctor.summary.shims)}</span>
+        </StatusRow>
+        <StatusRow label={t(I18N_KEYS.doctor.summary.shims)}>
           <Badge variant={data.shimsOnPath ? "success" : "warning"}>
             {data.shimsOnPath ? t(I18N_KEYS.common.ok) : t(I18N_KEYS.doctor.summary.notActivated)}
           </Badge>
-        </div>
-        {data.selfUpdateAvailable !== undefined && (
-          <div className={styles.summaryRow}>
-            <span className={styles.summaryLabel}>{t(I18N_KEYS.doctor.summary.update)}</span>
-            <Badge variant={data.selfUpdateAvailable ? "warning" : "success"}>
-              {data.selfUpdateAvailable
-                ? t(I18N_KEYS.doctor.summary.updateAvailable)
-                : t(I18N_KEYS.doctor.summary.upToDate)}
-            </Badge>
-          </div>
-        )}
+        </StatusRow>
       </section>
 
-      <section className={styles.section}>
-        <header className={styles.sectionHead}>
-          <span className={styles.sectionEyebrow}>{t(I18N_KEYS.doctor.eyebrow)}</span>
-          <h2 className={styles.sectionTitle}>{t(I18N_KEYS.doctor.warnings.title)}</h2>
-        </header>
-        {warnings.length === 0 ? (
-          <div className={styles.muted}>{t(I18N_KEYS.doctor.warnings.none)}</div>
-        ) : (
+      {upgrade && (
+        <UpgradeNotice current={upgrade.current} latest={upgrade.latest} t={t} />
+      )}
+
+      {otherWarnings.length > 0 && (
+        <section className={styles.section}>
+          <header className={styles.sectionHead}>
+            <span className={styles.sectionEyebrow}>{t(I18N_KEYS.doctor.eyebrow)}</span>
+            <h2 className={styles.sectionTitle}>{t(I18N_KEYS.doctor.warnings.title)}</h2>
+          </header>
           <ul className={styles.warningList}>
-            {warnings.map((w, i) => (
+            {otherWarnings.map((w, i) => (
               <li key={i} className={styles.warningItem}>
                 <span className={styles.warningDot} aria-hidden="true" />
                 <span className={styles.warningText}>{w}</span>
               </li>
             ))}
           </ul>
-        )}
-      </section>
+        </section>
+      )}
 
       <section className={styles.section}>
         <header className={styles.sectionHead}>
@@ -295,6 +296,99 @@ function doctorStatus(data: DoctorPayload): {
     return { variant: "warning", dotTone: "flare", labelKey: I18N_KEYS.doctor.status.warn };
   }
   return { variant: "success", dotTone: "beam", labelKey: I18N_KEYS.doctor.status.ok };
+}
+
+type TFn = (key: string, options?: Record<string, unknown>) => string;
+
+/** A single `label: value` health row. The badge (or value) sits
+ *  immediately after the label so its ownership is never ambiguous. */
+function StatusRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={styles.statusRow}>
+      <span className={styles.statusLabel}>{label}</span>
+      <span className={styles.statusSep}>:</span>
+      <span className={styles.statusValue}>{children}</span>
+    </div>
+  );
+}
+
+/** Extract the `current ▹ latest` pair from a mise self-update warning.
+ *  Matches `… version <latest> available … currently on <current> …`. */
+function parseUpgradePath(warnings: string[]): { current: string; latest: string } | null {
+  for (const w of warnings) {
+    const exact = w.match(/version\s+(\d[\w.]*)\s+available[^\n,]*?currently on\s+(\d[\w.]*)/i);
+    if (exact && exact[1] && exact[2]) return { latest: exact[1], current: exact[2] };
+    const alt = w.match(/currently on\s+(\d[\w.]*)[^\n,]*?version\s+(\d[\w.]*)\s+available/i);
+    if (alt && alt[1] && alt[2]) return { current: alt[1], latest: alt[2] };
+  }
+  return null;
+}
+
+/** The self-update notice: a localized upgrade path with a copy
+ *  action outlet for `mise self-update` (issue #59). */
+function UpgradeNotice({
+  current,
+  latest,
+  t,
+}: {
+  current: string;
+  latest: string;
+  t: TFn;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const onCopy = async () => {
+    const command = "mise self-update";
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(command);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = command;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable — leave the affordance inert */
+    }
+  };
+
+  return (
+    <section className={styles.upgrade} aria-label={t(I18N_KEYS.doctor.updateNotice.title)}>
+      <header className={styles.sectionHead}>
+        <span className={styles.sectionEyebrow}>{t(I18N_KEYS.doctor.eyebrow)}</span>
+        <h2 className={styles.upgradeTitle}>{t(I18N_KEYS.doctor.updateNotice.title)}</h2>
+      </header>
+      <p className={styles.upgradeFraming}>{t(I18N_KEYS.doctor.updateNotice.framing)}</p>
+      <div className={styles.upgradePath}>
+        <span className={styles.upgradeCurrent} title={current}>{current}</span>
+        <span className={styles.upgradeArrow} aria-hidden="true">▹</span>
+        <span className={styles.upgradeLatest} title={latest}>{latest}</span>
+      </div>
+      <button
+        type="button"
+        className={styles.upgradeAction}
+        onClick={() => void onCopy()}
+        data-testid="doctor-self-update-copy"
+      >
+        {copied
+          ? t(I18N_KEYS.doctor.updateNotice.copied)
+          : t(I18N_KEYS.doctor.updateNotice.copy)}
+      </button>
+    </section>
+  );
 }
 
 function DoctorLoading() {

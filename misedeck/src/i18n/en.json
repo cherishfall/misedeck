@@ -334,7 +334,7 @@
     "summary": {
       "status": "Status",
       "shell": "Shell",
-      "activated": "Activated",
+      "activated": "Shell activation",
       "notActivated": "Not activated",
       "shims": "Shims on PATH",
       "update": "Update",
@@ -362,6 +362,12 @@
     "columns": {
       "tool": "Tool",
       "version": "Version"
+    },
+    "updateNotice": {
+      "title": "Update available",
+      "framing": "A new mise release is available.",
+      "copy": "Copy mise self-update",
+      "copied": "Copied"
     }
   },
   "plugins": {

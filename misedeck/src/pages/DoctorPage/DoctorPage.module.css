@@ -94,26 +94,29 @@
 
 /* ---------- Summary panel ---------- */
 
+/* Single-column health rows: each is `label: value badge` on one line
+ * with the badge adjacent to its label (issue #59) — no loose
+ * two-column grid where ownership is ambiguous. */
+
 .summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   padding: var(--space-4);
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
   background: var(--panel);
 }
 
-.summaryRow {
+.statusRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2);
   font-family: var(--font-mono);
   font-size: var(--size-data);
 }
 
-.summaryLabel {
+.statusLabel {
   color: var(--dim);
   text-transform: uppercase;
   letter-spacing: var(--tracking-label);
@@ -123,12 +126,23 @@
   flex: none;
 }
 
-.summaryValue {
+.statusSep {
+  color: var(--dim);
+  flex: none;
+}
+
+.statusValue {
   color: var(--text);
-  text-align: right;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   /* Long values truncate with ellipsis + title tooltip instead of
    * breaking mid-token; min-width: 0 lets the flex child shrink
    * (issue #57). */
+  min-width: 0;
+}
+
+.statusValueText {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -224,6 +238,83 @@
   background: var(--flare);
   margin-top: 7px;
   flex: none;
+}
+
+/* ---------- Self-update / upgrade path (issue #59) ---------- */
+
+.upgrade {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--tint-warning);
+  border-radius: var(--radius-panel);
+  background: var(--tint-warning-bg);
+}
+
+.upgradeTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 0;
+}
+
+.upgradeFraming {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--text);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 70ch;
+}
+
+.upgradePath {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  white-space: nowrap;
+}
+
+.upgradeCurrent {
+  color: var(--text);
+}
+
+.upgradeArrow {
+  color: var(--flare);
+}
+
+.upgradeLatest {
+  color: var(--flare);
+  font-weight: 600;
+}
+
+.upgradeAction {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ice);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease;
+}
+
+.upgradeAction:hover:not(:disabled),
+.upgradeAction:focus-visible {
+  color: var(--beam);
+  border-color: var(--line-strong);
+  outline: none;
 }
 
 /* ---------- Config files ---------- */

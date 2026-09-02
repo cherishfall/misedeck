@@ -334,7 +334,7 @@
     "summary": {
       "status": "状态",
       "shell": "Shell",
-      "activated": "已激活",
+      "activated": "Shell 激活",
       "notActivated": "未激活",
       "shims": "Shims 在 PATH",
       "update": "更新",
@@ -362,6 +362,12 @@
     "columns": {
       "tool": "工具",
       "version": "版本"
+    },
+    "updateNotice": {
+      "title": "有可用更新",
+      "framing": "mise 有新版本可用。",
+      "copy": "复制 mise self-update",
+      "copied": "已复制"
     }
   },
   "plugins": {

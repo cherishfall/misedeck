@@ -392,6 +392,12 @@ export const I18N_KEYS = {
       updateAvailable: "doctor.summary.updateAvailable",
       upToDate: "doctor.summary.upToDate",
     },
+    updateNotice: {
+      title: "doctor.updateNotice.title",
+      framing: "doctor.updateNotice.framing",
+      copy: "doctor.updateNotice.copy",
+      copied: "doctor.updateNotice.copied",
+    },
     warnings: {
       title: "doctor.warnings.title",
       none: "doctor.warnings.none",
