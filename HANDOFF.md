@@ -1,7 +1,7 @@
 # MiseDeck handoff
 
 This document is a continuation marker between autonomous driver sessions.
-Last updated: 2026-09-03 — **beta4 round COMPLETE**: all tickets #46–#60 done and merged to master (#46 73eb690, #47 366c079, #48 aa857fb, #49–#50/#54/#57 earlier, #51 b765193, #52 30c6afb, #53 b09708b, #55 18556c9, #56 f138901, #58 d8ede91, #59 0c7b3d8, #60 b9b1bc1). SPEC parent #45 left open intentionally — close it after the owner's in-person visual verification.
+Last updated: 2026-09-03 — **beta4 round COMPLETE and shipped as v1.0.0-beta.5** (tag pushed, release workflow building installers). All tickets #46–#60 done and merged to master (#46 73eb690, #47 366c079, #48 aa857fb, #49–#50/#54/#57 earlier, #51 b765193, #52 30c6afb, #53 b09708b, #55 18556c9, #56 f138901, #58 d8ede91, #59 0c7b3d8, #60 b9b1bc1). SPEC parent #45 left open intentionally — close it after the owner's in-person visual verification.
 
 **Status:** v1 implementation (11 tickets, #34–#44) is complete and shipped as beta.4. The beta4 UI/UX feedback round (#46–#60) is now fully implemented. **Next step: owner does in-person visual verification (none of #46–#60 was visually verified, per driver instruction), then closes SPEC parent #45.** Note for verification: #56 changed the uninstall command to target `<tool>@<version>` (was `<tool>`) so the confirmation dialog's command is honest.
 
