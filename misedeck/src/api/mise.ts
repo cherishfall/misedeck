@@ -74,12 +74,26 @@ export async function envLs(cwd: string | null): Promise<JsonResult> {
   return (await invoke("env_ls", { cwd })) as JsonResult;
 }
 
-/** Calls the `read_lockfile` Tauri command. Returns the file's text
- *  or `null` when the directory has no `mise.lock`. */
+/** Calls the `read_lockfile` Tauri command and normalizes the wire
+ *  shape into the `LockfileResult` union the page pattern-matches
+ *  on. The Rust command returns a bare `Result<Option<String>,
+ *  AppError>`: `invoke` resolves with the file text (or `null` when
+ *  the directory has no `mise.lock`) and rejects with the
+ *  structured `AppError` on a hard I/O failure. */
 export async function readMiseLockfile(
   cwd: string | null,
 ): Promise<LockfileResult> {
-  return (await invoke("read_lockfile", { cwd })) as LockfileResult;
+  try {
+    const content = (await invoke("read_lockfile", { cwd })) as string | null;
+    return { kind: "ok", content };
+  } catch (e) {
+    return {
+      kind: "err",
+      err: isAppError(e)
+        ? e
+        : { code: "COMMAND_FAILED", message: String(e), stderr: "" },
+    };
+  }
 }
 
 /** Calls the `config_files` Tauri command (`mise config ls --json`).

@@ -168,6 +168,7 @@ export const I18N_KEYS = {
     empty: {
       title: "preview.empty.title",
       body: "preview.empty.body",
+      action: "preview.empty.action",
     },
     sections: {
       tools: "preview.sections.tools",
@@ -277,10 +278,6 @@ export const I18N_KEYS = {
     empty: {
       title: "tasks.empty.title",
       body: "tasks.empty.body",
-    },
-    globalEmpty: {
-      title: "tasks.globalEmpty.title",
-      body: "tasks.globalEmpty.body",
     },
     runButton: "tasks.runButton",
     editButton: "tasks.editButton",

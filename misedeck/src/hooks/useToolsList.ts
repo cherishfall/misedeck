@@ -155,10 +155,9 @@ export function useParsedLsRemote(
 /**
  * `mise env --json` for the current directory context. Cache key is
  * `["tools", "env", cwd]`. Enabled in both global and directory
- * contexts so the env page (#41) can show the resolved env
- * the user is editing. (The preview page guards against an empty
- * cwd separately; the env page consumes this hook in both
- * contexts and shows an empty list when no vars are returned.)
+ * contexts: the env page (#41) shows the resolved env the user is
+ * editing, and the preview page (#48) renders the globally resolved
+ * env in the Global context.
  */
 export function useEnv(): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
@@ -213,16 +212,17 @@ export function useParsedGlobalEnv(): EnvEntry[] | null {
 }
 
 /**
- * Read the project's `mise.lock` file (or `null` when absent). The
- * cache key is `["tools", "lockfile", cwd]`. Disabled when no
- * directory is picked.
+ * Read the current directory's `mise.lock` file (or `null` when
+ * absent). The cache key is `["tools", "lockfile", cwd]`. Enabled in
+ * both directory and Global contexts (issue #48): the runner reports
+ * `null` for the Global context (the lockfile is a per-directory
+ * artifact), so the section renders its muted "missing" line.
  */
 export function useLockfile(): UseQueryResult<LockfileResult> {
   const { cwd } = useDirectory();
   return useQuery({
     queryKey: ["tools", "lockfile", cwd],
     queryFn: () => readMiseLockfile(cwd),
-    enabled: cwd !== null,
     refetchOnWindowFocus: false,
     retry: false,
   });

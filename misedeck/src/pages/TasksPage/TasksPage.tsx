@@ -1,4 +1,6 @@
-// TasksPage — the per-directory tasks table (issue #27).
+// TasksPage — the tasks table for the current directory (issue #27);
+// in the Global context it lists the globally resolved tasks
+// (issue #48), matching `mise tasks ls` in the home directory.
 //
 //   * `mise tasks ls --json`   → table rows (name, run, description,
 //                                depends, actions)
@@ -223,7 +225,6 @@ export function TasksPage() {
         focusTrustBanner();
         return;
       }
-      if (cwd === null) return;
       const res = await tasksEditPath(cwd, name);
       if (res.kind === "err") {
         // Surface the failure as a transient page-level message
@@ -297,27 +298,9 @@ export function TasksPage() {
     }
   }
 
-  // No directory picked — the task list is per-directory, not
-  // global. Render the global empty state.
-  if (cwd === null) {
-    return (
-      <PageShell>
-        <div className={styles.page}>
-          <header className={styles.head}>
-            <div className={styles.eyebrow}>{t(I18N_KEYS.tasks.eyebrow)}</div>
-            <h1 className={styles.title}>{t(I18N_KEYS.tasks.title)}</h1>
-            <p className={styles.commandHint}>{t(I18N_KEYS.tasks.commandHint)}</p>
-            <p className={styles.hint}>{t(I18N_KEYS.tasks.subtitle)}</p>
-          </header>
-          <EmptyState
-            eyebrow={t(I18N_KEYS.tasks.eyebrow)}
-            title={t(I18N_KEYS.tasks.globalEmpty.title)}
-            body={t(I18N_KEYS.tasks.globalEmpty.body)}
-          />
-        </div>
-      </PageShell>
-    );
-  }
+  // No separate Global empty state: issue #48 renders the globally
+  // resolved task list instead, matching `mise tasks ls` in the
+  // home directory.
 
   const tasksError = tasks.error?.kind === "err" ? tasks.error.err : null;
 

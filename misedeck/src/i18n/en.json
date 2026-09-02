@@ -67,7 +67,7 @@
   "tools": {
     "eyebrow": "▸ MISE / TOOLS",
     "title": "Tools",
-    "hint": "Tools installed and active for the current context. Switch versions, install, uninstall, or upgrade from the table; every mutation streams through the execution panel.",
+    "hint": "Tools installed and active for the current directory. Switch versions, install, uninstall, or upgrade from the table; every mutation streams through the execution panel.",
     "commandHint": "mise ls · mise use · mise install · mise uninstall · mise upgrade · mise outdated",
     "columns": {
       "tool": "Tool",
@@ -111,12 +111,13 @@
   "preview": {
     "eyebrow": "▸ MISE / PREVIEW",
     "title": "Directory preview",
-    "hint": "Resolved tools, env, config files, and lockfile for the active directory context. Switch directories from the bar above.",
+    "hint": "Resolved tools, env, config files, and lockfile for the current directory.",
     "commandHint": "mise -C <dir> ls · mise env · mise config · mise.lock",
     "nav": "Preview",
     "empty": {
       "title": "Pick a directory to preview",
-      "body": "Directory preview shows what `mise -C <dir> ls`, `mise env`, and `mise config` resolve for a project. Use the bar above to point at one."
+      "body": "The env, config, and lockfile sections already show the global resolution; the resolved-tools list is directory-scoped. Choose a directory to see what `mise -C <dir> ls` reports there.",
+      "action": "Choose directory…"
     },
     "sections": {
       "tools": "Resolved tools",
@@ -126,7 +127,7 @@
     },
     "config": {
       "orderNote": "In precedence order, highest first — the same order `mise config ls --json` reports.",
-      "empty": "`mise config ls` found no config files in scope for this context.",
+      "empty": "`mise config ls` found no config files in scope for the current directory.",
       "view": "View content",
       "hide": "Hide content",
       "unreadable": "(could not read this file)",
@@ -142,17 +143,17 @@
     },
     "source": {
       "global": "GLOBAL",
-      "project": "PROJECT",
+      "project": "DIRECTORY",
       "tool": "TOOL",
       "default": "DEFAULT"
     },
     "toolSource": {
       "global": "GLOBAL",
-      "project": "THIS PROJECT"
+      "project": "THIS DIRECTORY"
     },
     "env": {
       "emptyTitle": "No env vars",
-      "emptyBody": "`mise env --json` returned an empty map. Add a [env] table to your project mise.toml to surface values here.",
+      "emptyBody": "`mise env --json` returned an empty map. Add an [env] table to a mise config file in scope to surface values here.",
       "errorTitle": "Failed to load env",
       "errorBody": "`mise env --json` did not return. Stderr is preserved in the execution panel."
     },
@@ -163,23 +164,23 @@
     "lockfile": {
       "eyebrow": "▸ MISE.LOCK",
       "title": "mise.lock",
-      "missing": "No mise.lock in this directory.",
+      "missing": "No mise.lock found.",
       "empty": "(empty file)",
       "errorTitle": "Failed to read lockfile",
-      "errorBody": "MiseDeck could not read the project's mise.lock. Stderr is preserved in the execution panel."
+      "errorBody": "MiseDeck could not read the current directory's mise.lock. Stderr is preserved in the execution panel."
     },
     "refresh": "Refresh"
   },
   "env": {
     "eyebrow": "▸ MISE / ENV",
     "title": "Env",
-    "hint": "Resolved environment variables for the active context. Add, edit, or remove vars; every write goes through `mise set` / `mise unset` and streams into the panel.",
+    "hint": "Resolved environment variables for the current directory. Add, edit, or remove vars; every write goes through `mise set` / `mise unset` and streams into the panel.",
     "commandHint": "mise env --json-extended · mise set · mise unset",
     "nav": "Env",
     "listTitle": "Resolved env vars",
     "scope": {
       "global": "GLOBAL",
-      "project": "THIS PROJECT"
+      "project": "THIS DIRECTORY"
     },
     "columns": {
       "name": "Name",
@@ -189,13 +190,13 @@
     },
     "source": {
       "global": "GLOBAL",
-      "project": "PROJECT",
+      "project": "DIRECTORY",
       "tool": "TOOL",
       "default": "DEFAULT"
     },
     "empty": {
       "title": "No env vars",
-      "body": "`mise env --json-extended` returned an empty map. Use the form below to add your first env var; writes go to mise's config file for the active context."
+      "body": "`mise env --json-extended` returned an empty map. Use the form below to add your first env var; writes go to mise's config file for the current directory."
     },
     "error": {
       "title": "Failed to load env vars",
@@ -224,12 +225,8 @@
       "actions": "Actions"
     },
     "empty": {
-      "title": "No tasks in this directory",
-      "body": "`mise tasks ls --json` populates this list. Add a task to `<cwd>/mise.toml` to see it here, or use the Edit button on any existing global task to bind it to this directory."
-    },
-    "globalEmpty": {
-      "title": "Pick a directory to see its tasks",
-      "body": "Tasks are scoped to a directory's `mise.toml`. Use the bar above to point at a project, or look at the global task list with `mise tasks ls`."
+      "title": "No tasks",
+      "body": "`mise tasks ls` returned no tasks here. Tasks come from the `[tasks]` table of a mise.toml in scope, or from executable files under `mise-tasks/`."
     },
     "runButton": "Run",
     "editButton": "Edit",
@@ -259,7 +256,7 @@
   "settings": {
     "eyebrow": "▸ MISE / SETTINGS",
     "title": "Settings",
-    "hint": "View and edit mise settings for the active context. Writes go through `mise settings set` / `mise settings unset` and stream into the panel.",
+    "hint": "View and edit mise settings for the current directory. Writes go through `mise settings set` / `mise settings unset` and stream into the panel.",
     "commandHint": "mise settings ls · mise settings set · mise settings unset",
     "columns": {
       "key": "Key",
@@ -289,7 +286,7 @@
   "doctor": {
     "eyebrow": "▸ MISE / DOCTOR",
     "title": "Doctor",
-    "hint": "A health check for the active mise context. When `--json` is unavailable, the raw doctor output is rendered with row tinting.",
+    "hint": "A health check for the current directory's mise setup. When `--json` is unavailable, the raw doctor output is rendered with row tinting.",
     "commandHint": "mise doctor",
     "statusLabel": "Health check",
     "status": {
@@ -318,7 +315,7 @@
     "toolset": {
       "title": "Resolved toolset",
       "emptyTitle": "No resolved tools",
-      "emptyBody": "`mise doctor --json` reported an empty toolset for this context."
+      "emptyBody": "`mise doctor --json` reported an empty toolset for the current directory."
     },
     "rawTitle": "Raw doctor output",
     "error": {
@@ -431,7 +428,7 @@
       "banner": "Full-width notice with leading dot, label, body, optional trailing action. Tones inherit the system's signal colors.",
       "table": "Semantic <table> for the tools list and other data grids. Mono cells, tracked column headers, right-align numeric columns.",
       "dataRow": "Definition-list row (dt + dd) with mono values. Used on the Home page and reused on settings, env, and plugin detail pages.",
-      "emptyState": "Page-level 'nothing to show' panel. The eyebrow follows the ▸ GROUP / SECTION convention so the empty context is clear.",
+      "emptyState": "Page-level 'nothing to show' panel. The eyebrow follows the ▸ GROUP / SECTION convention so the empty state's page is clear.",
       "progressDot": "Status dot (beam / flare / breach / dim) with the attention-pulse animation when the tone is flare/breach — the only ambient motion attached to a state component."
     },
     "samples": {
@@ -452,7 +449,7 @@
       "badgeDanger": "error",
       "bannerInfo": "Untrusted config",
       "bannerWarning": "mise 2024.12.1 is older than 2025.1.0 — update to continue.",
-      "bannerDanger": "Config file not found at the selected directory context.",
+      "bannerDanger": "Config file not found in the current directory.",
       "bannerSuccess": "Lockfile is up to date.",
       "tableTool": "Tool",
       "tableBackend": "Backend",

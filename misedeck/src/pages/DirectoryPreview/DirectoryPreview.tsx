@@ -3,13 +3,16 @@
 //   * mise -C <dir> ls --json   → resolved tools (reuses #21's runner
 //                                 hook; the `cwd` arg drives `-C`)
 //   * mise -C <dir> env --json  → resolved env vars, each row badged
-//                                 with GLOBAL / PROJECT / TOOL / DEFAULT
+//                                 with GLOBAL / DIRECTORY / TOOL / DEFAULT
 //   * mise config ls --json     → loaded config files in precedence
 //                                 order (highest first), each with a
 //                                 read-only content view (issue #42);
-//                                 rendered in Global context too
+//                                 rendered in the Global directory
+//                                 context too
 //   * <dir>/mise.lock           → read-only pre block when present;
 //                                 a muted "missing" line when not
+//                                 (the runner reports `null` for the
+//                                 Global context)
 //
 // The page also surfaces the trust UX (issue #25): when the cwd's
 // `mise.toml` is not yet trusted, a `Banner tone="warning"` is
@@ -20,16 +23,17 @@
 //
 // The page consumes the same Table / Badge / EmptyState / PageShell
 // primitives the tools page (#21) uses. The directory context comes
-// from `useDirectory()`; when no directory is picked, the page
-// renders the Config files section (the global config files) plus a
-// "Pick a directory" empty state for the directory-scoped sections.
-// Switching back to Global re-uses the global tools page at /tools —
-// the resolved-tools/env/lockfile sections are meaningful only when
-// a project is selected.
+// from `useDirectory()`. Issue #48 made the page truthful in the
+// Global context: the env / config / lockfile sections render the
+// globally resolved data (matching `mise env` / `mise config` in the
+// home directory), and only the resolved-tools section falls back to
+// an EmptyState — which carries the "Choose directory…" entry point
+// (the same Tauri dialog picker the directory indicator uses).
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { forwardRef, useMemo, useRef, useState } from "react";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
@@ -63,7 +67,7 @@ interface ToolRow {
   id: string;
   tool: string;
   version: string;
-  /** "GLOBAL" or "THIS PROJECT" — derived from `source.path`. */
+  /** "GLOBAL" or "THIS DIRECTORY" — derived from `source.path`. */
   source: "global" | "project";
   /** True when this row appears in the outdated map. */
   outdated: boolean;
@@ -124,7 +128,7 @@ function envSourceVariant(source: EnvSource): "default" | "info" | "warning" {
 
 export function DirectoryPreview() {
   const { t } = useTranslation();
-  const { cwd } = useDirectory();
+  const { cwd, setDirectory } = useDirectory();
   const queryClient = useQueryClient();
   // Trust UX (issue #25): when the cwd's `mise.toml` is not
   // trusted, render a Banner at the top with a one-click Trust
@@ -153,7 +157,8 @@ export function DirectoryPreview() {
   const lockfile = useLockfile();
 
   // Reconcile env sources against the global context so a var that
-  // is unique to the project is correctly marked as `project`.
+  // is unique to the current directory is correctly marked as
+  // `project` (the directory-scoped source).
   const envEntries = useMemo(() => {
     if (!env.data) return null;
     if (!globalEnv) return env.data;
@@ -169,53 +174,27 @@ export function DirectoryPreview() {
     void queryClient.invalidateQueries({ queryKey: ["tools", "env", null] });
   };
 
-  // Mise-missing state.
-  if (detect.isPending) {
-    return <PreviewLoading />;
-  }
-  const detectValue = detect.data;
-  if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
-    if (detectValue.err.code === "MISE_NOT_FOUND" || detectValue.err.code === "MISE_TOO_OLD") {
-      return (
-        <PageShell>
-          <div className={styles.page}>
-            <EmptyState
-              eyebrow={t(I18N_KEYS.states.notInstalled.title)}
-              title={t(I18N_KEYS.tools.missing.title)}
-              body={t(I18N_KEYS.tools.missing.body)}
-            />
-          </div>
-        </PageShell>
-      );
+  // The "Choose directory…" action (issue #48): the same Tauri
+  // dialog picker the directory indicator uses. A successful pick
+  // switches the app-level directory context, which re-keys every
+  // query on the page.
+  const onPickDirectory = async () => {
+    try {
+      const picked = await openDialog({
+        directory: true,
+        multiple: false,
+        title: t(I18N_KEYS.directory.pickerTitle),
+      });
+      if (typeof picked === "string" && picked.length > 0) {
+        setDirectory(picked);
+      }
+    } catch {
+      // User cancelled or the dialog failed.
     }
-  }
+  };
 
-  // No directory picked — the Config files section still works in
-  // the Global context (issue #42: it lists the global config
-  // files), so render it beside the "Pick a directory" empty state
-  // that covers the directory-scoped sections.
-  if (cwd === null) {
-    return (
-      <PageShell>
-        <div className={styles.page}>
-          <header className={styles.head}>
-            <div className={styles.eyebrow}>{t(I18N_KEYS.preview.eyebrow)}</div>
-            <h1 className={styles.title}>{t(I18N_KEYS.preview.title)}</h1>
-            <p className={styles.commandHint}>{t(I18N_KEYS.preview.commandHint)}</p>
-            <p className={styles.hint}>{t(I18N_KEYS.preview.hint)}</p>
-          </header>
-          <ConfigFilesSection />
-          <EmptyState
-            eyebrow={t(I18N_KEYS.preview.eyebrow)}
-            title={t(I18N_KEYS.preview.empty.title)}
-            body={t(I18N_KEYS.preview.empty.body)}
-          />
-        </div>
-      </PageShell>
-    );
-  }
-
-  // The page is meaningful only when a directory is picked.
+  // Every hook stays above the early returns below so the hook
+  // order is stable across the detect / Global / directory states.
   const toolsError = tools.error?.kind === "err" ? tools.error.err : null;
   const envError = env.error?.kind === "err" ? env.error.err : null;
   const lockfileError =
@@ -224,8 +203,11 @@ export function DirectoryPreview() {
     lockfile.data && lockfile.data.kind === "ok" ? lockfile.data.content : undefined;
 
   // Tool rows: pick the active version per tool, badge by source.
+  // Directory-scoped only — the Global context renders the
+  // "Choose directory…" empty state instead (the global tools list
+  // already lives at /tools).
   const toolRows: ToolRow[] = useMemo(() => {
-    if (!tools.data) return [];
+    if (!tools.data || cwd === null) return [];
     const outdatedByTool = new Map<string, { latest: string }>();
     for (const item of outdated.data ?? []) {
       if (item.latest) outdatedByTool.set(item.name, { latest: item.latest });
@@ -258,6 +240,27 @@ export function DirectoryPreview() {
       sourceDetail: e.sourceDetail,
     }));
   }, [envEntries]);
+
+  // Mise-missing state.
+  if (detect.isPending) {
+    return <PreviewLoading />;
+  }
+  const detectValue = detect.data;
+  if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
+    if (detectValue.err.code === "MISE_NOT_FOUND" || detectValue.err.code === "MISE_TOO_OLD") {
+      return (
+        <PageShell>
+          <div className={styles.page}>
+            <EmptyState
+              eyebrow={t(I18N_KEYS.states.notInstalled.title)}
+              title={t(I18N_KEYS.tools.missing.title)}
+              body={t(I18N_KEYS.tools.missing.body)}
+            />
+          </div>
+        </PageShell>
+      );
+    }
+  }
 
   const toolColumns: TableColumn<ToolRow>[] = [
     {
@@ -360,7 +363,24 @@ export function DirectoryPreview() {
             <span className={styles.sectionEyebrow}>{t(I18N_KEYS.preview.eyebrow)}</span>
             <h2 className={styles.sectionTitle}>{t(I18N_KEYS.preview.sections.tools)}</h2>
           </header>
-          {toolsError && (
+          {cwd === null && (
+            <EmptyState
+              eyebrow={t(I18N_KEYS.preview.eyebrow)}
+              title={t(I18N_KEYS.preview.empty.title)}
+              body={t(I18N_KEYS.preview.empty.body)}
+              action={
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => void onPickDirectory()}
+                  data-testid="preview-choose-directory"
+                >
+                  {t(I18N_KEYS.preview.empty.action)}
+                </Button>
+              }
+            />
+          )}
+          {cwd !== null && toolsError && (
             <div className={styles.errorState}>
               <div className={styles.errorLabel}>{t(I18N_KEYS.preview.toolsError.title)}</div>
               <p className={styles.errorBody}>{t(I18N_KEYS.preview.toolsError.body)}</p>
@@ -369,7 +389,7 @@ export function DirectoryPreview() {
               )}
             </div>
           )}
-          {!toolsError && (
+          {cwd !== null && !toolsError && (
             <Table<ToolRow>
               columns={toolColumns}
               rows={toolRows}
