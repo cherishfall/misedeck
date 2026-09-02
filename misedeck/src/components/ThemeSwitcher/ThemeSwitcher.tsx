@@ -1,39 +1,25 @@
-// Theme switcher — cycles the theme setting between system / light / dark
-// (default system, persisted via the ThemeProvider). Its home is the
-// sidebar footer (#38); in the collapsed rail (#49) it renders as a single
-// icon button that cycles the settings, with a tooltip naming the current
-// one, so the capability stays reachable.
+// Theme switcher — two-state light / dark pill styled after the
+// mise.jdx.dev sun/moon sliding knob (default light, fully manual,
+// persisted via the ThemeProvider; #54). Its home is the sidebar footer
+// (#38); in the collapsed rail (#49) it renders as a single icon button
+// that toggles the theme, with a tooltip naming the current one, so the
+// capability stays reachable.
 
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
-import {
-  THEME_SETTINGS,
-  useTheme,
-  type ThemeSetting,
-} from "../../state/themeContext";
+import { useTheme, type ThemeSetting } from "../../state/themeContext";
 
 import styles from "./ThemeSwitcher.module.css";
 
-/** Stable display order: system first (the default), then the overrides. */
-const ORDERED: readonly ThemeSetting[] = THEME_SETTINGS;
-
 const THEME_LABELS = {
-  system: I18N_KEYS.theme.system,
   light: I18N_KEYS.theme.light,
   dark: I18N_KEYS.theme.dark,
 } as const;
 
-/** Text glyphs for the collapsed-rail icon form (no emoji variants). */
-const THEME_GLYPHS: Record<ThemeSetting, string> = {
-  system: "◑",
-  light: "☼",
-  dark: "☾",
-};
-
 interface ThemeSwitcherProps {
-  /** Icon-only form for the collapsed sidebar rail: one button that cycles
-   *  the settings, tooltip naming the current one. */
+  /** Icon-only form for the collapsed sidebar rail: one button that
+   *  toggles the theme, tooltip naming the current one. */
   iconOnly?: boolean;
 }
 
@@ -41,19 +27,20 @@ export function ThemeSwitcher({ iconOnly = false }: ThemeSwitcherProps) {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
 
+  const toggle = () => setTheme(theme === "dark" ? "light" : "dark");
+  const label = `${t(I18N_KEYS.theme.switcherLabel)}: ${t(THEME_LABELS[theme])}`;
+
   if (iconOnly) {
-    const next = ORDERED[(ORDERED.indexOf(theme) + 1) % ORDERED.length];
-    const label = `${t(I18N_KEYS.theme.switcherLabel)}: ${t(THEME_LABELS[theme])}`;
     return (
       <button
         type="button"
         className={styles.iconTrigger}
-        onClick={() => setTheme(next)}
+        onClick={toggle}
         aria-label={label}
         title={label}
       >
         <span className={styles.iconGlyph} aria-hidden="true">
-          {THEME_GLYPHS[theme]}
+          <ThemeIcon theme={theme} />
         </span>
       </button>
     );
@@ -66,28 +53,45 @@ export function ThemeSwitcher({ iconOnly = false }: ThemeSwitcherProps) {
       aria-label={t(I18N_KEYS.theme.switcherLabel)}
     >
       <span className={styles.label}>{t(I18N_KEYS.theme.switcherLabel)}</span>
-      <div className={styles.options}>
-        {ORDERED.map((setting, index) => {
-          const isActive = setting === theme;
-          return (
-            <span key={setting} className={styles.options}>
-              <button
-                type="button"
-                className={styles.option}
-                aria-current={isActive ? "true" : undefined}
-                onClick={() => {
-                  if (!isActive) setTheme(setting);
-                }}
-              >
-                {t(THEME_LABELS[setting])}
-              </button>
-              {index < ORDERED.length - 1 && (
-                <span className={styles.divider} aria-hidden="true" />
-              )}
-            </span>
-          );
-        })}
-      </div>
+      <button
+        type="button"
+        className={styles.pill}
+        role="switch"
+        aria-checked={theme === "dark"}
+        aria-label={label}
+        title={label}
+        onClick={toggle}
+      >
+        <span className={theme === "dark" ? styles.knobDark : styles.knob} aria-hidden="true">
+          <ThemeIcon theme={theme} />
+        </span>
+      </button>
     </div>
+  );
+}
+
+/** Sun for light, crescent moon for dark — SVG so both themes inherit
+ *  `currentColor` (no emoji variants). */
+function ThemeIcon({ theme }: { theme: ThemeSetting }) {
+  if (theme === "dark") {
+    return (
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path
+          d="M14 9.6A6.2 6.2 0 1 1 6.4 2 4.8 4.8 0 0 0 14 9.6Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M12.8 3.2l-1.1 1.1M4.3 11.7l-1.1 1.1"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }

@@ -450,7 +450,6 @@ export const I18N_KEYS = {
   },
   theme: {
     switcherLabel: "theme.switcherLabel",
-    system: "theme.system",
     light: "theme.light",
     dark: "theme.dark",
   },

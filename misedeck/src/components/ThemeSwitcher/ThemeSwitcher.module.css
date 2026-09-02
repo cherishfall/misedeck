@@ -1,6 +1,7 @@
-/* Theme switcher — system / light / dark toggle (#37), permanent home in
- * the sidebar footer (#38). Compact enough to sit next to the language
- * dropdown inside the narrow sidebar footer; every color comes from
+/* Theme switcher — two-state light / dark pill styled after the
+ * mise.jdx.dev sun/moon sliding knob (#54), permanent home in the
+ * sidebar footer (#38). The knob carries the sun (light) or moon
+ * (dark) icon and slides across the track; every color comes from
  * tokens.css. */
 
 .switcher {
@@ -22,52 +23,50 @@
   color: var(--dim);
 }
 
-.options {
+/* The pill: a 40×22 track with a 16px knob that slides 18px to the
+ * right in dark mode — the mise.jdx.dev appearance switch geometry. */
+.pill {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-}
-
-.option {
-  position: relative;
-  padding: 2px 4px;
-  color: var(--dim);
+  width: 40px;
+  height: 22px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
   background: transparent;
-  border: 0;
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
+  color: var(--dim);
   cursor: pointer;
-  transition: color var(--motion-state-change) ease;
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease;
 }
 
-.option:hover,
-.option:focus-visible {
+.pill:hover,
+.pill:focus-visible {
   color: var(--text);
+  border-color: var(--line-strong);
   outline: none;
 }
 
-.option[aria-current="true"] {
+.knob,
+.knobDark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--beam) 14%, transparent);
   color: var(--beam);
+  transition: transform var(--motion-state-change) ease;
 }
 
-.option[aria-current="true"]::after {
-  content: "";
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  bottom: -3px;
-  height: 1px;
-  background: var(--beam);
+.knobDark {
+  transform: translateX(18px);
 }
 
-.divider {
-  width: 1px;
-  height: 12px;
-  background: var(--line);
-}
-
-/* Icon-only cycle button for the collapsed sidebar rail (#49): same hit
+/* Icon-only toggle for the collapsed sidebar rail (#49): same hit
  * area as a rail nav item, tooltip carries the full label. */
 .iconTrigger {
   display: flex;
@@ -97,11 +96,17 @@
   justify-content: center;
   width: 20px;
   height: 20px;
-  font-size: 13px;
+}
+
+.iconGlyph svg {
+  width: 14px;
+  height: 14px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .option,
+  .pill,
+  .knob,
+  .knobDark,
   .iconTrigger {
     transition: none;
   }

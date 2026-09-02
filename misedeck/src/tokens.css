@@ -11,8 +11,8 @@
  * Rules of engagement (mirrored from the visual language):
  *   - Dark values are the default; light overrides live under
  *     `[data-theme="light"]`. `html[data-theme]` is always set to the
- *     *resolved* theme by the ThemeProvider (system/light/dark →
- *     light/dark) before first paint.
+ *     theme (`light` | `dark`, default `light` — fully manual, no
+ *     system mode) by the ThemeProvider before first paint.
  *   - Derived colors (line, tints, beam-soft) are computed via
  *     `color-mix` from the base palette — never hardcoded.
  *   - The only ambient motions are the attention pulse and the log

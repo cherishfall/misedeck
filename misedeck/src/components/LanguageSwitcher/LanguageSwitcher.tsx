@@ -1,10 +1,14 @@
-// Language switcher — compact dropdown for the sidebar footer (#38).
+// Language switcher — in-window popover for the sidebar footer
+// (#38, #54).
 //
-// Shows a globe icon + current locale. Clicking opens a popover menu of
-// supported languages so the control scales beyond the two shipped locales.
-// The chosen language persists via the LanguageProvider.
-// In the collapsed sidebar rail (#49) it renders icon-only with a tooltip,
-// so the capability stays reachable; the popover opens upward unchanged.
+// Shows a globe icon + current locale + a slim chevron signaling the
+// expandable list. Clicking opens a popover menu of supported languages
+// rendered inside the app window (never an overlay window) so the
+// control scales beyond the two shipped locales and is captured by
+// window-level screenshots. The chosen language persists via the
+// LanguageProvider. In the collapsed sidebar rail (#49) it renders
+// icon-only with a tooltip, so the capability stays reachable; the
+// popover opens upward unchanged.
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -62,11 +66,18 @@ export function LanguageSwitcher({ iconOnly = false }: LanguageSwitcherProps) {
         aria-label={t(I18N_KEYS.languages.switcherLabel)}
         title={iconOnly ? t(I18N_KEYS.languages.switcherLabel) : undefined}
       >
-        <span className={styles.glyph} aria-hidden="true">◐</span>
+        <span className={styles.glyph} aria-hidden="true">
+          <GlobeIcon />
+        </span>
         {!iconOnly && (
           <>
             <span className={styles.current}>{t(LANGUAGE_LABELS[language])}</span>
-            <span aria-hidden="true">▾</span>
+            <span
+              className={open ? styles.chevronOpen : styles.chevron}
+              aria-hidden="true"
+            >
+              <ChevronIcon />
+            </span>
           </>
         )}
       </button>
@@ -90,5 +101,32 @@ export function LanguageSwitcher({ iconOnly = false }: LanguageSwitcherProps) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Geometric globe — circle + meridians, drawn as SVG so both themes
+ *  inherit `currentColor`. */
+function GlobeIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.3" />
+      <ellipse cx="8" cy="8" rx="2.8" ry="6.2" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M1.8 8h12.4" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  );
+}
+
+/** Slim chevron pointing at the popover direction; rotates when open. */
+function ChevronIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+      <path
+        d="M2 3.5 5 6.5 8 3.5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

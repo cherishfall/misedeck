@@ -12,26 +12,24 @@
     />
     <title>MiseDeck</title>
     <script>
-      // Theme bootstrap (#37): resolve the persisted setting
-      // (system / light / dark, default system) against the OS
-      // preference and set `html[data-theme]` before first paint, so
-      // tokens.css never flashes the wrong theme. The ThemeProvider
-      // (`src/state/themeContext.tsx`) takes over after React mounts.
+      // Theme bootstrap (#37, #54): read the persisted theme
+      // (light / dark, default light — fully manual, no system mode)
+      // and set `html[data-theme]` before first paint, so tokens.css
+      // never flashes the wrong theme. Values persisted by older builds
+      // (`system`, or anything unknown) migrate to light. The
+      // ThemeProvider (`src/state/themeContext.tsx`) takes over after
+      // React mounts.
       (function () {
-        var setting = "system";
+        var theme = "light";
         try {
           var stored = window.localStorage.getItem("misedeck.theme");
-          if (stored === "system" || stored === "light" || stored === "dark") {
-            setting = stored;
+          if (stored === "light" || stored === "dark") {
+            theme = stored;
           }
         } catch (e) {
-          /* storage unavailable — fall back to system */
+          /* storage unavailable — fall back to light */
         }
-        var dark =
-          setting === "dark" ||
-          (setting === "system" &&
-            window.matchMedia("(prefers-color-scheme: dark)").matches);
-        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        document.documentElement.dataset.theme = theme;
       })();
     </script>
   </head>
