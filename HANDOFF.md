@@ -1,9 +1,9 @@
 # MiseDeck handoff
 
 This document is a continuation marker between autonomous driver sessions.
-Last updated: 2026-09-02 — beta4 round in progress; #49 (sidebar chrome), #50 (Tools data honesty), #57 (table layout discipline), #54 (footer controls), #48 (Preview/Global/vocab, aa857fb), and #46 (async Tauri commands, 73eb690) done; #53 (macOS a11y, b09708b) done; #55 (Tools version queries, 18556c9) done; #56 (uninstall confirmation, f138901) done; #58 (Env read-only/edit-on-demand, d8ede91) done; #59 (Doctor status rows, 0c7b3d8) done; #60 now unblocked (last ticket of the round).
+Last updated: 2026-09-03 — **beta4 round COMPLETE**: all tickets #46–#60 done and merged to master (#46 73eb690, #47 366c079, #48 aa857fb, #49–#50/#54/#57 earlier, #51 b765193, #52 30c6afb, #53 b09708b, #55 18556c9, #56 f138901, #58 d8ede91, #59 0c7b3d8, #60 b9b1bc1). SPEC parent #45 left open intentionally — close it after the owner's in-person visual verification.
 
-**Status:** v1 implementation (11 tickets, #34–#44) is complete and shipped as beta.4. The beta4 UI/UX feedback round is fully recorded, audited, and published to GitHub — the next work is driving those tickets.
+**Status:** v1 implementation (11 tickets, #34–#44) is complete and shipped as beta.4. The beta4 UI/UX feedback round (#46–#60) is now fully implemented. **Next step: owner does in-person visual verification (none of #46–#60 was visually verified, per driver instruction), then closes SPEC parent #45.** Note for verification: #56 changed the uninstall command to target `<tool>@<version>` (was `<tool>`) so the confirmation dialog's command is honest.
 
 ---
 
@@ -22,7 +22,7 @@ Last updated: 2026-09-02 — beta4 round in progress; #49 (sidebar chrome), #50 
 
 ## Remaining open issues
 
-- The beta4 round above (#45–#60) is the active queue.
+- The beta4 round (#46–#60) is **done**; only SPEC parent **#45** remains open, awaiting owner visual verification before closing.
 - Older, not in scope: #11–#15 (chore/roadmap, no `ready-for-agent` label).
 
 ---
