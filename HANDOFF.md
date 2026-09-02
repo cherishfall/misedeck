@@ -1,7 +1,7 @@
 # MiseDeck handoff
 
 This document is a continuation marker between autonomous driver sessions.
-Last updated: 2026-09-02 — beta4 round in progress; #49 (sidebar chrome), #50 (Tools data honesty), #57 (table layout discipline), #54 (footer controls), #48 (Preview/Global/vocab, aa857fb), and #46 (async Tauri commands, 73eb690) done; #55/#56 unblocked; #58/#59 now unblocked by #57.
+Last updated: 2026-09-02 — beta4 round in progress; #49 (sidebar chrome), #50 (Tools data honesty), #57 (table layout discipline), #54 (footer controls), #48 (Preview/Global/vocab, aa857fb), and #46 (async Tauri commands, 73eb690) done; #53 (macOS a11y, b09708b) done; #55/#56 unblocked; #58/#59 now unblocked by #57.
 
 **Status:** v1 implementation (11 tickets, #34–#44) is complete and shipped as beta.4. The beta4 UI/UX feedback round is fully recorded, audited, and published to GitHub — the next work is driving those tickets.
 
