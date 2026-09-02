@@ -2082,7 +2082,7 @@ dependencies = [
 
 [[package]]
 name = "misedeck"
-version = "1.0.0-beta.3"
+version = "1.0.0-beta.4"
 dependencies = [
  "once_cell",
  "serde",
