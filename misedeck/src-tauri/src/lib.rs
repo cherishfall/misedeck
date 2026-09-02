@@ -11,6 +11,7 @@ use std::sync::Mutex;
 
 use once_cell::sync::Lazy;
 use serde::Serialize;
+use tauri::Manager;
 
 pub mod install;
 pub mod mise;
@@ -852,8 +853,33 @@ pub fn run() {
             }
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        // Accessibility (issue #53): bridge the WKWebView into the macOS
+        // accessibility tree. By default Tauri's content view is not an
+        // accessibility element, so VoiceOver / the Accessibility Inspector
+        // cannot traverse into the webview's DOM. Marking the NSWindow's
+        // content view as an accessibility element inserts it into the AX
+        // hierarchy (NSWindow → contentView → WKWebView → DOM), letting
+        // assistive tech reach the UI. macOS-only; `RunEvent::Ready` fires
+        // once the app and its config windows exist.
+        .run(|app, event| {
+            #[cfg(target_os = "macos")]
+            if matches!(event, tauri::RunEvent::Ready | tauri::RunEvent::Resumed) {
+                use objc::{msg_send, sel, sel_impl};
+
+                if let Some(window) = app.get_webview_window("main") {
+                    if let Ok(ns_window) = window.ns_window() {
+                        let ns_window = ns_window as *mut objc::runtime::Object;
+                        unsafe {
+                            let content_view: *mut objc::runtime::Object =
+                                msg_send![ns_window, contentView];
+                            let _: () = msg_send![content_view, setAccessibilityElement: true];
+                        }
+                    }
+                }
+            }
+        });
 }
 
 #[cfg(test)]
