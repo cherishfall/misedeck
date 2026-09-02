@@ -642,6 +642,54 @@ fn open_in_terminal(path: Option<String>) -> TerminalOpenResult {
     }
 }
 
+/// Apply the app theme to the native window chrome (issue #47).
+///
+/// Sets the window appearance (`light` | `dark`) so the macOS title
+/// bar text and controls — and the Windows dark title bar — follow the
+/// in-app theme instead of the system appearance. On macOS the title
+/// bar is configured transparent (`titleBarStyle: "Transparent"` in
+/// tauri.conf.json), so the window background color shows through it;
+/// the color is tinted to the theme's surface token (`--void` in
+/// tokens.css) — parchment in light, warm charcoal in dark.
+///
+/// Window-chrome only; never spawns mise.
+#[tauri::command]
+fn set_window_theme(window: tauri::Window, theme: String) -> Result<(), AppError> {
+    let resolved = match theme.as_str() {
+        "light" => tauri::Theme::Light,
+        "dark" => tauri::Theme::Dark,
+        other => {
+            return Err(AppError::command_failed(
+                format!("set_window_theme: unknown theme {other:?}"),
+                String::new(),
+            ));
+        }
+    };
+    window.set_theme(Some(resolved)).map_err(|e| {
+        AppError::command_failed(
+            format!("set_window_theme: set_theme failed: {e}"),
+            String::new(),
+        )
+    })?;
+    #[cfg(target_os = "macos")]
+    {
+        // `--void` from tokens.css: parchment light / warm charcoal dark.
+        let (r, g, b) = match theme.as_str() {
+            "light" => (0xfd, 0xf8, 0xf3),
+            _ => (0x14, 0x10, 0x10),
+        };
+        window
+            .set_background_color(Some(tauri::window::Color(r, g, b, 0xff)))
+            .map_err(|e| {
+                AppError::command_failed(
+                    format!("set_window_theme: set_background_color failed: {e}"),
+                    String::new(),
+                )
+            })?;
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -668,7 +716,8 @@ pub fn run() {
             doctor,
             registry,
             shell_activation_check,
-            open_in_terminal
+            open_in_terminal,
+            set_window_theme
         ])
         .setup(|_app| {
             let mut guard = MISE_BINARY.lock().expect("mise path mutex poisoned");

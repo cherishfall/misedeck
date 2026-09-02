@@ -13,6 +13,7 @@
     "windows": [
       {
         "title": "MiseDeck",
+        "titleBarStyle": "Transparent",
         "width": 1200,
         "height": 720,
         "minWidth": 900,

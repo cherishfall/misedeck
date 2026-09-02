@@ -21,6 +21,8 @@ import {
   type ReactNode,
 } from "react";
 
+import { setWindowTheme } from "../api/window";
+
 /** The two choices the pill offers. Default is `light`. */
 export const THEME_SETTINGS = ["light", "dark"] as const;
 export type ThemeSetting = (typeof THEME_SETTINGS)[number];
@@ -58,9 +60,14 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     return isThemeSetting(stored) ? stored : "light";
   });
 
-  // Apply the theme to the document whenever it changes.
+  // Apply the theme to the document whenever it changes, and follow
+  // through to the native window chrome (issue #47) so the title bar
+  // tracks the theme without restart. Best-effort: a webview without
+  // the Tauri bridge (plain-browser dev) rejects the invoke; the DOM
+  // theme stays the source of truth either way.
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
+    void setWindowTheme(theme).catch(() => {});
   }, [theme]);
 
   const setTheme = useCallback((next: ThemeSetting) => {
