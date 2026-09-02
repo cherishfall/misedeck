@@ -25,24 +25,25 @@ import type {
 } from "../types/tauri";
 
 /** Read-only mise settings list (`mise settings ls --json-extended`).
- *  Cache key is `["settings", "ls", cwd]`. */
-export function useSettingsList(): UseQueryResult<JsonResult> {
+ *  Cache key is `["settings", "ls", cwd, all]`; `all: true` adds
+ *  `--all` so unset keys are listed with their defaults (issue #52). */
+export function useSettingsList(all: boolean): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
   return useQuery({
-    queryKey: ["settings", "ls", cwd],
-    queryFn: () => settingsLs(cwd),
+    queryKey: ["settings", "ls", cwd, all],
+    queryFn: () => settingsLs(cwd, all),
     refetchOnWindowFocus: false,
     retry: false,
   });
 }
 
 /** Parse a `JsonResult` from `useSettingsList` into typed rows. */
-export function useParsedSettingsList(): {
+export function useParsedSettingsList(all: boolean): {
   isPending: boolean;
   data: SettingsItem[] | null;
   error: JsonResult | null;
 } {
-  const q = useSettingsList();
+  const q = useSettingsList(all);
   if (q.isPending) return { isPending: true, data: null, error: null };
   if (q.error) return { isPending: false, data: null, error: toErr(q.error) };
   if (!q.data || q.data.kind === "err") {

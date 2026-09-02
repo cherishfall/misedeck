@@ -562,15 +562,16 @@ fn tasks_edit_path(cwd: Option<String>, name: String) -> TasksEditPathResult {
 /// context. Returns the raw JSON object mise emits; the JS side
 /// parses it into a table of settings with source badges. When
 /// `cwd` is `Some`, `--local` is added so project-level settings
-/// are listed.
+/// are listed. When `all` is true, `--all` is added so unset keys
+/// are listed with their defaults (issue #52).
 #[tauri::command]
-fn settings_ls(cwd: Option<String>) -> JsonResult {
+fn settings_ls(cwd: Option<String>, all: Option<bool>) -> JsonResult {
     let path = match resolve_mise_binary(|e| e) {
         Ok(p) => p,
         Err(e) => return JsonResult::Err { err: e },
     };
     let cwd_path = cwd.as_deref().map(std::path::Path::new);
-    match mise_settings_ls(&path, cwd_path) {
+    match mise_settings_ls(&path, cwd_path, all.unwrap_or(false)) {
         Ok(value) => JsonResult::Ok { value },
         Err(e) => JsonResult::Err { err: e },
     }

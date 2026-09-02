@@ -943,16 +943,23 @@ where
 
 /// `mise settings ls --json-extended` for the active context. When
 /// `cwd` is `Some`, `--local` is added so the list reflects the
-/// project `mise.toml`; otherwise the global config is queried.
+/// project `mise.toml`; otherwise the global config is queried. When
+/// `all` is true, `--all` is added so unset keys (with their default
+/// values) are listed too — the Settings page's opt-in "--all" view
+/// and its key-name completion both read from this (issue #52).
 pub fn mise_settings_ls(
     mise_path: &Path,
     cwd: Option<&Path>,
+    all: bool,
 ) -> Result<serde_json::Value, AppError> {
     let mut args = vec![
         "settings".to_string(),
         "ls".to_string(),
         "--json-extended".to_string(),
     ];
+    if all {
+        args.push("--all".to_string());
+    }
     if cwd.is_some() {
         args.push("--local".to_string());
     }

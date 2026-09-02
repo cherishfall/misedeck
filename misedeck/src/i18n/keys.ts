@@ -330,6 +330,7 @@ export const I18N_KEYS = {
     addSettingLabel: "settings.addSettingLabel",
     keyPlaceholder: "settings.keyPlaceholder",
     valuePlaceholder: "settings.valuePlaceholder",
+    showAll: "settings.showAll",
     guard: {
       untrustedBody: "settings.guard.untrustedBody",
     },

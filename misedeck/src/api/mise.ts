@@ -158,9 +158,11 @@ export async function openInTerminal(
 
 /** Calls the `settings_ls` Tauri command (`mise settings ls --json-extended`).
  *  Returns the raw JSON object mise emits; the JS side parses it into
- *  a table of settings with source badges (issue #29). */
-export async function settingsLs(cwd: string | null): Promise<JsonResult> {
-  return (await invoke("settings_ls", { cwd })) as JsonResult;
+ *  a table of settings with source badges (issue #29). When `all` is
+ *  true, `--all` is passed so unset keys are listed with their
+ *  defaults (issue #52). */
+export async function settingsLs(cwd: string | null, all: boolean): Promise<JsonResult> {
+  return (await invoke("settings_ls", { cwd, all })) as JsonResult;
 }
 
 /** Calls the `doctor` Tauri command (`mise doctor --json`). Returns the

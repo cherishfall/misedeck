@@ -279,6 +279,7 @@
     "addSettingLabel": "Add a setting",
     "keyPlaceholder": "setting name",
     "valuePlaceholder": "value",
+    "showAll": "Show all (`--all`)",
     "guard": {
       "untrustedBody": "Trust this directory before mutating its settings."
     }

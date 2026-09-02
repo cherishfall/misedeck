@@ -84,6 +84,30 @@
   color: var(--dim);
 }
 
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.showAll {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+  cursor: pointer;
+}
+
+.showAllCheckbox {
+  accent-color: var(--beam);
+  margin: 0;
+}
+
 .refresh {
   font-family: var(--font-mono);
   font-size: var(--size-label);
@@ -146,6 +170,19 @@
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
+}
+
+.boolToggle {
+  accent-color: var(--beam);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.boolToggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .input,

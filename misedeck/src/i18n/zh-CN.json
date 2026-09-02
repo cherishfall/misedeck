@@ -274,11 +274,12 @@
       "body": "`mise settings ls --json-extended` 未返回结果。stderr 已在执行面板中保留。"
     },
     "saveButton": "保存",
-    "unsetButton": "取消设置",
+    "unsetButton": "移除",
     "addButton": "添加",
     "addSettingLabel": "添加设置",
     "keyPlaceholder": "设置名",
     "valuePlaceholder": "值",
+    "showAll": "显示全部（`--all`）",
     "guard": {
       "untrustedBody": "在修改此目录的设置之前，请先信任它。"
     }

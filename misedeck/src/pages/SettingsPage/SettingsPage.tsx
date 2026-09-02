@@ -1,6 +1,9 @@
 // SettingsPage — `mise settings ls --json-extended` rendered with
 // sources; changes go through `mise settings set` / `mise settings
-// unset` and the execution panel (issue #29).
+// unset` and the execution panel (issue #29). Editing matches the
+// setting's data type (booleans get a two-state control), the add
+// form completes key names from `mise settings ls --all`, and an
+// opt-in "--all" toggle reveals unset keys (issue #52).
 //
 // The page follows the same trust-guarded mutation pattern as the
 // config editor (#26): every mutating button checks `useTrustGuard()`
@@ -83,7 +86,13 @@ export function SettingsPage() {
     retry: false,
   });
 
-  const settings = useParsedSettingsList();
+  const [showAll, setShowAll] = useState(false);
+  // The explicit (CLI-faithful) list is the default view; the `--all`
+  // list backs both the opt-in "show all" view and the add form's
+  // key-name completion, so it is always fetched.
+  const explicitSettings = useParsedSettingsList(false);
+  const allSettings = useParsedSettingsList(true);
+  const settings = showAll ? allSettings : explicitSettings;
 
   const lastWriteStatusRef = useRef<ExecutionStatus>("idle");
   useEffect(() => {
@@ -176,15 +185,27 @@ export function SettingsPage() {
               ? `${settings.data.length} ${t(I18N_KEYS.settings.columns.key).toLowerCase()}`
               : t(I18N_KEYS.common.loading)}
           </span>
-          <button
-            type="button"
-            className={styles.refresh}
-            onClick={() => void queryClient.invalidateQueries({ queryKey: ["settings", "ls", cwd] })}
-            disabled={settings.isPending}
-            data-testid="settings-refresh"
-          >
-            {t(I18N_KEYS.common.refresh)}
-          </button>
+          <div className={styles.toolbarActions}>
+            <label className={styles.showAll}>
+              <input
+                type="checkbox"
+                className={styles.showAllCheckbox}
+                checked={showAll}
+                onChange={(e) => setShowAll(e.target.checked)}
+                data-testid="settings-show-all"
+              />
+              <span>{t(I18N_KEYS.settings.showAll)}</span>
+            </label>
+            <button
+              type="button"
+              className={styles.refresh}
+              onClick={() => void queryClient.invalidateQueries({ queryKey: ["settings", "ls", cwd] })}
+              disabled={settings.isPending}
+              data-testid="settings-refresh"
+            >
+              {t(I18N_KEYS.common.refresh)}
+            </button>
+          </div>
         </div>
 
 
@@ -221,7 +242,11 @@ export function SettingsPage() {
                 />
               }
             />
-            <AddSettingForm onWrite={runWrite} disabled={isRunning} />
+            <AddSettingForm
+              onWrite={runWrite}
+              disabled={isRunning}
+              keySuggestions={allSettings.data?.map((r) => r.key) ?? []}
+            />
           </>
         )}
       </div>
@@ -282,28 +307,50 @@ function RowEditor({
   disabled: boolean;
 }) {
   const { t } = useTranslation();
+  // Boolean-typed settings edit through a two-state control, not a
+  // free text field (issue #52).
+  const isBool = row.type === "boolean" || typeof row.value === "boolean";
   const [value, setValue] = useState(formatValue(row.value));
+  const [checked, setChecked] = useState(row.value === true);
   useEffect(() => {
     setValue(formatValue(row.value));
+    setChecked(row.value === true);
   }, [row.value]);
-  const dirty = value !== formatValue(row.value);
+  const dirty = isBool
+    ? checked !== (row.value === true)
+    : value !== formatValue(row.value);
   return (
     <span className={styles.rowEditor}>
-      <input
-        type="text"
-        className={styles.input}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder={t(I18N_KEYS.settings.valuePlaceholder)}
-        disabled={disabled}
-        spellCheck={false}
-        autoComplete="off"
-      />
+      {isBool ? (
+        <input
+          type="checkbox"
+          className={styles.boolToggle}
+          checked={checked}
+          onChange={(e) => setChecked(e.target.checked)}
+          disabled={disabled}
+          aria-label={`${row.key}: ${formatValue(row.value)}`}
+        />
+      ) : (
+        <input
+          type="text"
+          className={styles.input}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={t(I18N_KEYS.settings.valuePlaceholder)}
+          disabled={disabled}
+          spellCheck={false}
+          autoComplete="off"
+        />
+      )}
       <Button
         variant="primary"
         size="sm"
-        onClick={() => onWrite((cwd) => miseSettingsSetArgs(row.key, value, cwd))}
-        disabled={disabled || !dirty || value.length === 0}
+        onClick={() =>
+          onWrite((cwd) =>
+            miseSettingsSetArgs(row.key, isBool ? String(checked) : value, cwd),
+          )
+        }
+        disabled={disabled || !dirty || (!isBool && value.length === 0)}
       >
         {t(I18N_KEYS.settings.saveButton)}
       </Button>
@@ -322,9 +369,13 @@ function RowEditor({
 function AddSettingForm({
   onWrite,
   disabled,
+  keySuggestions,
 }: {
   onWrite: (builder: (cwd: string | null) => string[]) => void | Promise<void>;
   disabled: boolean;
+  /** Known setting keys from `mise settings ls --all`, offered as
+   *  completion on the key field (issue #52). */
+  keySuggestions: string[];
 }) {
   const { t } = useTranslation();
   const [key, setKey] = useState("");
@@ -344,7 +395,13 @@ function AddSettingForm({
         disabled={disabled}
         spellCheck={false}
         autoComplete="off"
+        list="settings-key-suggestions"
       />
+      <datalist id="settings-key-suggestions">
+        {keySuggestions.map((k) => (
+          <option key={k} value={k} />
+        ))}
+      </datalist>
       <input
         type="text"
         className={styles.input}

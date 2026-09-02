@@ -88,7 +88,7 @@ fn mise_settings_unset_argv_builds_command() {
 fn settings_ls_returns_extended_json() {
     let script = fixture_script();
     with_slug("settings---ls---json-extended", || {
-        let v = mise_settings_ls(&script, None).expect("settings ls should yield Ok");
+        let v = mise_settings_ls(&script, None, false).expect("settings ls should yield Ok");
         let obj = v.as_object().expect("settings payload must be an object");
         assert!(obj.contains_key("always_keep_download"));
         assert!(obj.contains_key("jobs"));
@@ -100,12 +100,27 @@ fn settings_ls_returns_extended_json() {
 
 #[test]
 #[serial]
+fn settings_ls_all_lists_unset_keys_with_defaults() {
+    let script = fixture_script();
+    with_slug("settings---ls---json-extended---all", || {
+        // The fixture slug proves `--all` reached the CLI; the payload
+        // includes an unset key (no `source`) carrying its default.
+        let v = mise_settings_ls(&script, None, true).expect("settings ls --all should yield Ok");
+        let obj = v.as_object().expect("settings --all payload must be an object");
+        let legacy = &obj["legacy_version_file"];
+        assert_eq!(legacy["value"], true);
+        assert!(legacy.get("source").is_none());
+    });
+}
+
+#[test]
+#[serial]
 fn settings_ls_adds_local_flag_for_project_context() {
     let script = fixture_script();
     with_slug("settings---ls---json-extended", || {
         // The fixture is the same; the test only verifies the call
         // completes when a cwd is supplied (the runner prepends `-C`).
-        let v = mise_settings_ls(&script, Some(std::path::Path::new("/Users/example/project")))
+        let v = mise_settings_ls(&script, Some(std::path::Path::new("/Users/example/project")), false)
             .expect("project settings ls should yield Ok");
         assert!(v.as_object().unwrap().contains_key("jobs"));
     });
@@ -116,7 +131,7 @@ fn settings_ls_adds_local_flag_for_project_context() {
 fn settings_ls_command_failed_keeps_stderr() {
     let script = fixture_script();
     with_slug("settings---ls---json-extended-command-failed", || {
-        let err = mise_settings_ls(&script, None).expect_err("non-zero exit should yield Err");
+        let err = mise_settings_ls(&script, None, false).expect_err("non-zero exit should yield Err");
         assert_eq!(err.code, code::COMMAND_FAILED);
         assert!(err.stderr.contains("ERROR"));
     });
@@ -127,7 +142,7 @@ fn settings_ls_command_failed_keeps_stderr() {
 fn settings_ls_garbage_stdout_returns_parse_failed() {
     let script = fixture_script();
     with_slug("settings---ls---json-extended-parse-failed", || {
-        let err = mise_settings_ls(&script, None).expect_err("non-JSON should yield Err");
+        let err = mise_settings_ls(&script, None, false).expect_err("non-JSON should yield Err");
         assert_eq!(err.code, code::PARSE_FAILED);
     });
 }
