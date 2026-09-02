@@ -51,7 +51,14 @@ interface ToolRow {
   tool: string;
   version: string;
   requested: string;
-  backend: string;
+  /**
+   * Backend prefix derived from the tool's full `backend:name` form
+   * (`npm:prettier` → `npm`), in original case. `undefined` when the
+   * name carries no prefix — a bare name may be a core tool or an
+   * installed plugin's shorthand, and mise does not say which, so no
+   * honest value exists (issue #50).
+   */
+  backend?: string;
   source: string;
   /** True when this row appears in the outdated map. */
   outdated: boolean;
@@ -90,6 +97,19 @@ function miseUseArgs(tool: string, version: string, cwd: string | null): string[
 
 function miseUpgradeArgs(tool: string | undefined): string[] {
   return tool ? ["upgrade", "--bump", tool] : ["upgrade", "--bump"];
+}
+
+/**
+ * Derive the backend badge from the tool's full `backend:name` form
+ * (`npm:prettier` → `npm`, `vfox:mise-plugins/vfox-1password` →
+ * `vfox`). Returns `undefined` for bare names: those may be core
+ * tools or an installed plugin's shorthand, and `mise ls --json`
+ * does not say which — a fabricated `core` would be worse than no
+ * value (issue #50).
+ */
+function toolBackend(tool: string): string | undefined {
+  const sep = tool.indexOf(":");
+  return sep > 0 ? tool.slice(0, sep) : undefined;
 }
 
 // ---------- Page ----------
@@ -173,7 +193,7 @@ export function ToolsPage() {
         tool,
         version: active.version,
         requested: active.requestedVersion ?? "—",
-        backend: "core",
+        backend: toolBackend(tool),
         source: active.source?.path ?? (active.source?.type ?? "—"),
         outdated: outdatedEntry !== undefined,
         latest: outdatedEntry?.latest ?? "",
@@ -202,6 +222,22 @@ export function ToolsPage() {
   // Tools-error state (mise is up but the read failed).
   const toolsError = tools.error?.kind === "err" ? tools.error.err : null;
 
+  // The backend column exists only when at least one row carries a
+  // derivable backend (`backend:name` form). Rows without a derivable
+  // backend render `—` (missing data), and when no row has one the
+  // column is dropped entirely (issue #50).
+  const backendColumn: TableColumn<ToolRow> = {
+    key: "backend",
+    header: t(I18N_KEYS.tools.columns.backend),
+    cell: (r) =>
+      r.backend !== undefined ? (
+        <Badge variant="info">{r.backend}</Badge>
+      ) : (
+        <span className={styles.dim}>—</span>
+      ),
+  };
+  const showBackend = rows.some((r) => r.backend !== undefined);
+
   const columns: TableColumn<ToolRow>[] = [
     {
       key: "tool",
@@ -228,11 +264,7 @@ export function ToolsPage() {
       header: t(I18N_KEYS.tools.columns.requested),
       cell: (r) => <span className={styles.cellRequested}>{r.requested}</span>,
     },
-    {
-      key: "backend",
-      header: t(I18N_KEYS.tools.columns.backend),
-      cell: (r) => <Badge variant="info">{r.backend}</Badge>,
-    },
+    ...(showBackend ? [backendColumn] : []),
     {
       key: "source",
       header: t(I18N_KEYS.tools.columns.source),
@@ -285,16 +317,24 @@ export function ToolsPage() {
 
         <div className={styles.toolbar}>
           <span className={styles.toolbarHint}>
-            {outdated.data && outdated.data.length > 0
-              ? t(I18N_KEYS.tools.outdatedBadge) + ` (${outdated.data.length})`
-              : t(I18N_KEYS.tools.noOutdated)}
+            {outdated.data != null &&
+              (outdated.data.length > 0
+                ? t(I18N_KEYS.tools.outdatedBadge) + ` (${outdated.data.length})`
+                : t(I18N_KEYS.tools.noOutdated))}
           </span>
           <span className={styles.toolbarActions}>
+            {/* Disabled when nothing is outdated; the reason sits next
+                to the button (`tools.noOutdated`) and on its title. */}
             <Button
               variant="primary"
               size="sm"
               onClick={onUpgradeAll}
               disabled={isRunning || (outdated.data?.length ?? 0) === 0}
+              title={
+                outdated.data != null && outdated.data.length === 0
+                  ? t(I18N_KEYS.tools.noOutdated)
+                  : undefined
+              }
               data-testid="tools-upgrade-all"
             >
               {t(I18N_KEYS.tools.actions.upgradeAll)}

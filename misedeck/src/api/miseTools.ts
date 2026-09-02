@@ -48,7 +48,9 @@ function asSource(v: unknown): MiseSource | undefined {
   };
 }
 
-/** Parse one row of `mise ls --json`. */
+/** Parse one row of `mise ls --json`. mise emits snake_case keys
+ *  (`requested_version`, `install_path`, `symlinked_to`); reading them
+ *  as camelCase silently dropped the real requested versions (issue #50). */
 export function parseLsItem(value: unknown): MiseLsItem | null {
   if (value === null || typeof value !== "object") return null;
   const o = value as Record<string, unknown>;
@@ -57,9 +59,9 @@ export function parseLsItem(value: unknown): MiseLsItem | null {
   if (version === "") return null;
   return {
     version,
-    requestedVersion: asOptionalString(o.requestedVersion),
-    installPath: asOptionalString(o.installPath),
-    symlinkedTo: asOptionalString(o.symlinkedTo),
+    requestedVersion: asOptionalString(o.requested_version),
+    installPath: asOptionalString(o.install_path),
+    symlinkedTo: asOptionalString(o.symlinked_to),
     source: asSource(o.source),
     installed: asBoolean(o.installed, false),
     active: asBoolean(o.active, false),
