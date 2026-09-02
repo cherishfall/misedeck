@@ -1,7 +1,7 @@
 # MiseDeck handoff
 
 This document is a continuation marker between autonomous driver sessions.
-Last updated: 2026-09-02 — beta4 round in progress; #49 (sidebar chrome) done, #54 unblocked.
+Last updated: 2026-09-02 — beta4 round in progress; #49 (sidebar chrome) and #50 (Tools data honesty) done; #54, #55/#56/#57 unblocked.
 
 **Status:** v1 implementation (11 tickets, #34–#44) is complete and shipped as beta.4. The beta4 UI/UX feedback round is fully recorded, audited, and published to GitHub — the next work is driving those tickets.
 
@@ -11,8 +11,8 @@ Last updated: 2026-09-02 — beta4 round in progress; #49 (sidebar chrome) done,
 
 - 8 user feedback items + a two-track full-app audit (visual + product/UX) were aligned with the owner and published:
   - **SPEC parent: #45**. **Tickets: #46–#60**, labels `v1` + `ready-for-agent`, native blocking + sub-issue links set.
-  - Startable now (no blockers): **#46** async Tauri commands, **#47** title bar follows theme, **#48** Preview/Global/vocab, **#50** Tools data honesty, **#51** Plugins page, **#52** Settings editing, **#53** a11y, **#54** footer controls (unblocked by #49, now closed).
-  - Blocked: #55/#56/#57←#50; #58/#59←#57; #60 (visual sweep, last) ←#54,#57,#59.
+  - Startable now (no blockers): **#46** async Tauri commands, **#47** title bar follows theme, **#48** Preview/Global/vocab, **#51** Plugins page, **#52** Settings editing, **#53** a11y, **#54** footer controls (unblocked by #49, now closed), **#55/#56/#57** (unblocked by #50, now closed).
+  - Blocked: #58/#59←#57; #60 (visual sweep, last) ←#54,#57,#59.
 - Sources of truth for the round (all committed):
   - `beta4-feedback-scratch.md` — verbatim feedback + alignment + issue mapping.
   - `beta4-audit-visual.md` / `beta4-audit-product.md` — full audit reports; screenshots in `docs/screenshots/beta4-audit/`.
