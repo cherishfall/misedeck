@@ -1238,7 +1238,7 @@ pub fn mise_plugins_ls(
 // `mise upgrade --help`:
 //
 //   * `mise install <tool>@<version>`  → install a tool/version
-//   * `mise uninstall <tool>`           → remove an installed tool
+//   * `mise uninstall <tool>@<version>`→ remove an installed version
 //   * `mise upgrade`                    → upgrade all outdated tools
 //   * `mise upgrade <tool>`             → upgrade a single tool
 //
@@ -1254,9 +1254,11 @@ pub fn mise_install_argv(tool: &str, version: &str) -> Vec<String> {
     ]
 }
 
-/// Build the argv for `mise uninstall <tool>`.
-pub fn mise_uninstall_argv(tool: &str) -> Vec<String> {
-    vec!["uninstall".to_string(), tool.to_string()]
+/// Build the argv for `mise uninstall <tool>@<version>`. Targeting the
+/// exact version keeps the dispatched command identical to the
+/// confirmation (issue #56).
+pub fn mise_uninstall_argv(tool: &str, version: &str) -> Vec<String> {
+    vec!["uninstall".to_string(), format!("{tool}@{version}")]
 }
 
 /// Build the argv for `mise upgrade --bump [<tool>]`. The `--bump`

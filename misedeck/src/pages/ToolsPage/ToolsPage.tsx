@@ -41,13 +41,17 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Badge,
   Button,
+  ConfirmDialog,
   EmptyState,
   MiseMissingState,
   PageShell,
   Table,
   type TableColumn,
 } from "../../components";
-import { useExecutionContext } from "../../components/ExecutionPanel";
+import {
+  commandEcho,
+  useExecutionContext,
+} from "../../components/ExecutionPanel";
 import type { ExecutionStatus } from "../../components/ExecutionPanel";
 
 import styles from "./ToolsPage.module.css";
@@ -90,8 +94,11 @@ function miseInstallArgs(tool: string, version: string): string[] {
   return ["install", `${tool}@${version}`];
 }
 
-function miseUninstallArgs(tool: string): string[] {
-  return ["uninstall", tool];
+function miseUninstallArgs(tool: string, version: string): string[] {
+  // Target the exact row's version (issue #56): the confirmation teaches
+  // the command `mise uninstall <tool>@<version>`, so the dispatched
+  // command must match what is shown.
+  return ["uninstall", `${tool}@${version}`];
 }
 
 function miseUseArgs(tool: string, version: string, cwd: string | null): string[] {
@@ -129,6 +136,12 @@ export function ToolsPage() {
   // `?install=<tool>` (issue #51); the install form pre-fills it.
   const [searchParams] = useSearchParams();
   const prefillTool = searchParams.get("install") ?? "";
+
+  // The uninstall confirmation (issue #56): clicking "Uninstall" opens a
+  // dialog showing the exact `mise uninstall <tool>@<version>` command;
+  // the mutation only dispatches after the user confirms. No uninstall
+  // runs without this confirmation.
+  const [pendingUninstall, setPendingUninstall] = useState<ToolRow | null>(null);
 
   // First check: is mise even available? If not, render the missing
   // state and don't even try the tools queries.
@@ -414,9 +427,7 @@ export function ToolsPage() {
         <RowActions
           row={r}
           disabled={isRunning}
-          onUninstall={() =>
-            void runMutation(() => miseUninstallArgs(r.tool))
-          }
+          onUninstall={() => setPendingUninstall(r)}
           onUpgrade={() =>
             void runMutation(() => miseUpgradeArgs(r.tool))
           }
@@ -549,6 +560,35 @@ export function ToolsPage() {
           showLessLabel={t(I18N_KEYS.tools.queries.remote.showLess)}
           emptyTitle={t(I18N_KEYS.tools.queries.remote.emptyTitle)}
           emptyBody={t(I18N_KEYS.tools.queries.remote.emptyBody)}
+        />
+
+        <ConfirmDialog
+          open={pendingUninstall !== null}
+          title={
+            pendingUninstall
+              ? t(I18N_KEYS.tools.confirm.uninstall.title, { tool: pendingUninstall.tool })
+              : ""
+          }
+          body={t(I18N_KEYS.tools.confirm.uninstall.body)}
+          command={
+            pendingUninstall
+              ? commandEcho(
+                  "mise",
+                  cwd,
+                  miseUninstallArgs(pendingUninstall.tool, pendingUninstall.version),
+                )
+              : ""
+          }
+          confirmLabel={t(I18N_KEYS.tools.actions.uninstall)}
+          cancelLabel={t(I18N_KEYS.common.cancel)}
+          onConfirm={() => {
+            const row = pendingUninstall;
+            setPendingUninstall(null);
+            if (row) {
+              void runMutation(() => miseUninstallArgs(row.tool, row.version));
+            }
+          }}
+          onCancel={() => setPendingUninstall(null)}
         />
       </div>
     </PageShell>

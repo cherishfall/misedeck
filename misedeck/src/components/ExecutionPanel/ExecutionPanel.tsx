@@ -20,8 +20,12 @@ import styles from "./ExecutionPanel.module.css";
  * command; `install` runs the official install script (the actual
  * platform-specific command is built in Rust); `selfUpdate` runs
  * `mise self-update`.
+ *
+ * Exported so confirmations (e.g. the uninstall dialog, issue #56) can
+ * show the exact command that will run — identical to what the deck
+ * echoes once the mutation dispatches.
  */
-function commandEcho(
+export function commandEcho(
   kind: "mise" | "install" | "selfUpdate",
   cwd: string | null,
   args: string[],

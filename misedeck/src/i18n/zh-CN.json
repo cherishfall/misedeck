@@ -131,6 +131,12 @@
         "emptyBody": "`mise ls-remote <tool>` 会列出上游可用的版本。在上方运行即可查询某个工具。",
         "created": "发布时间"
       }
+    },
+    "confirm": {
+      "uninstall": {
+        "title": "卸载 {tool}？",
+        "body": "将运行以下确切命令。所选版本会被移除，此操作无法撤销。"
+      }
     }
   },
   "preview": {

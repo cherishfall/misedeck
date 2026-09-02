@@ -131,6 +131,12 @@
         "emptyBody": "`mise ls-remote <tool>` lists versions available upstream. Run it above to query a tool.",
         "created": "Created"
       }
+    },
+    "confirm": {
+      "uninstall": {
+        "title": "Uninstall {tool}?",
+        "body": "This will run the exact command below. The selected version will be removed and this cannot be undone."
+      }
     }
   },
   "preview": {

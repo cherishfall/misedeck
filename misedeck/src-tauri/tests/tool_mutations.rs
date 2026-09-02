@@ -5,7 +5,7 @@
 // What is new is a small set of pure helpers on the Rust side:
 //
 //   * `mise_install_argv(tool, version)`  → argv for `mise install <tool>@<version>`
-//   * `mise_uninstall_argv(tool)`          → argv for `mise uninstall <tool>`
+//   * `mise_uninstall_argv(tool, version)` → argv for `mise uninstall <tool>@<version>`
 //   * `mise_upgrade_argv(tool)`            → argv for `mise upgrade [<tool>]`
 //
 // These helpers exist so the JS side has a typed builder for the
@@ -14,7 +14,7 @@
 // / `mise upgrade --help` output:
 //
 //   `mise install <tool>@<version>`      → ["install", "<tool>@<version>"]
-//   `mise uninstall <tool>`               → ["uninstall", "<tool>"]
+//   `mise uninstall <tool>@<version>`     → ["uninstall", "<tool>@<version>"]
 //   `mise upgrade --bump`                 → ["upgrade", "--bump"]
 //   `mise upgrade --bump <tool>`          → ["upgrade", "--bump", "<tool>"]
 //
@@ -69,10 +69,10 @@ fn mise_install_argv_preserves_backend_prefix() {
 
 #[test]
 fn mise_uninstall_argv_builds_uninstall_command() {
-    let argv = mise_uninstall_argv("node");
+    let argv = mise_uninstall_argv("node", "22.11.0");
     assert_eq!(
         argv,
-        vec!["uninstall".to_string(), "node".to_string()]
+        vec!["uninstall".to_string(), "node@22.11.0".to_string()]
     );
 }
 
@@ -124,11 +124,11 @@ fn run_mise_with_install_argv_streams_to_exit() {
 #[serial]
 fn run_mise_with_uninstall_argv_streams_to_exit() {
     let script = fixture_script();
-    with_slug("uninstall---node", || {
+    with_slug("uninstall---node@22.11.0", || {
         let events: std::sync::Arc<std::sync::Mutex<Vec<RunEvent>>> =
             std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
         let events2 = std::sync::Arc::clone(&events);
-        let req = RunRequest::new(mise_uninstall_argv("node"));
+        let req = RunRequest::new(mise_uninstall_argv("node", "22.11.0"));
         let outcome = run_mise(&script, &req, move |e| {
             events2.lock().unwrap().push(e);
         })

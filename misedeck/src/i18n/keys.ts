@@ -153,6 +153,12 @@ export const I18N_KEYS = {
       upgradeAll: "tools.actions.upgradeAll",
       switch: "tools.actions.switch",
     },
+    confirm: {
+      uninstall: {
+        title: "tools.confirm.uninstall.title",
+        body: "tools.confirm.uninstall.body",
+      },
+    },
     installForm: {
       title: "tools.installForm.title",
       toolPlaceholder: "tools.installForm.toolPlaceholder",

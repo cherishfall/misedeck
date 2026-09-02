@@ -1,6 +1,6 @@
 // Re-exports for the execution panel surface.
 
-export { ExecutionPanel } from "./ExecutionPanel";
+export { ExecutionPanel, commandEcho } from "./ExecutionPanel";
 export { ExecutionPanelAffordance } from "./ExecutionPanelAffordance";
 export {
   ExecutionProvider,
