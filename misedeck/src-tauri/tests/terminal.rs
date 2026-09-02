@@ -61,13 +61,16 @@ fn open_in_terminal_rejects_empty_path() {
             );
         }
         Err(e) => {
-            // A COMMAND_FAILED from the spawn is acceptable
-            // (e.g. on a CI runner with no terminal at all);
-            // anything else is a real bug.
-            assert_eq!(
-                e.code,
-                code::COMMAND_FAILED,
-                "err.code should be COMMAND_FAILED, got {:?}",
+            // Two error codes are legitimate here: COMMAND_FAILED
+            // when the spawn itself fails (e.g. no display on CI),
+            // and TERMINAL_NOT_FOUND on Linux runners whose probe
+            // finds no terminal binary — the documented code for
+            // "nothing to launch with", asserted separately by
+            // `open_in_terminal_returns_terminal_not_found_...`.
+            // Neither is a bug; anything else is.
+            assert!(
+                e.code == code::COMMAND_FAILED || e.code == code::TERMINAL_NOT_FOUND,
+                "err.code should be COMMAND_FAILED or TERMINAL_NOT_FOUND, got {:?}",
                 e.code
             );
         }
