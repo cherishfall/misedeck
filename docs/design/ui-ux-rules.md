@@ -46,15 +46,9 @@ Before shipping any screen, ask: **could a mise CLI user predict what this scree
 - Outdated versions render as the upgrade path: `2026.8.14 ▹ 2026.9.0`, never as raw CLI prose, never as color alone.
 - Popovers and menus render inside the app window; never as separate overlay windows.
 
-## Verify with the cheapest tool that can see
+## Verify economically
 
-Visual verification is tiered; use the highest tier your harness actually has:
-
-1. **Screenshot tier** (preferred): the harness can screenshot or drive the UI. Verify every page you touched, in both themes, sidebar expanded and collapsed, and both languages when copy changed. Check: truncation, header/column alignment, text contrast (≥ 4.5:1), orphaned controls, dead ends.
-2. **Live tier**: the harness can run the app but not capture it. Click through the same matrix yourself and judge against this document.
-3. **Static tier**: no visual capability at all. Run the app to prove it works, then self-audit the diff mechanically: data cells carry `nowrap`/`min-width: 0`, colors come from tokens, contrast is sound by token values, strings are i18n keys, retired vocabulary is absent. Then write **"not visually verified"** on the issue so a human or a screenshot-capable agent does the seeing.
-
-Never claim visual verification you did not perform. A change reported as "seen" that nobody saw is how the violations above shipped.
+Default verification for a UI change is cheap: build, run the page you touched once, and self-audit the diff mechanically — data cells carry `nowrap`/`min-width: 0`, colors come from tokens, strings are i18n keys, retired vocabulary is absent, contrast is sound by token values. Reach for screenshots or a manual click-through only when the change restructures layout, or a human asks. If nobody saw the rendered result, mark the issue "not visually verified" and move on. Never claim visual verification you did not perform.
 
 ## Retired vocabulary (hard guardrails)
 
