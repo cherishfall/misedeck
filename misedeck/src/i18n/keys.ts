@@ -127,6 +127,7 @@ export const I18N_KEYS = {
       backend: "tools.columns.backend",
       source: "tools.columns.source",
       latest: "tools.columns.latest",
+      switchToVersion: "tools.columns.switchToVersion",
       actions: "tools.columns.actions",
     },
     empty: {

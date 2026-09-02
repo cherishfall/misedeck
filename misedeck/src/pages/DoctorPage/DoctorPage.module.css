@@ -117,11 +117,22 @@
   color: var(--dim);
   text-transform: uppercase;
   letter-spacing: var(--tracking-label);
+  /* Labels never wrap vertically (「版 本」), even on narrow layouts
+   * (issue #57). */
+  white-space: nowrap;
+  flex: none;
 }
 
 .summaryValue {
   color: var(--text);
   text-align: right;
+  /* Long values truncate with ellipsis + title tooltip instead of
+   * breaking mid-token; min-width: 0 lets the flex child shrink
+   * (issue #57). */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .statusDot {
@@ -230,7 +241,11 @@
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
-  word-break: break-all;
+  /* Paths never break mid-token: ellipsis + title tooltip
+   * (issue #57). */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ---------- Toolset table ---------- */
@@ -240,6 +255,7 @@
   font-weight: 600;
   font-size: 13px;
   color: var(--text);
+  white-space: nowrap;
 }
 
 .cellVersion {
@@ -247,6 +263,7 @@
   font-size: var(--size-data);
   color: var(--beam);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 /* ---------- Raw text fallback ---------- */

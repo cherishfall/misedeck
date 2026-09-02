@@ -76,6 +76,7 @@
       "backend": "后端",
       "source": "来源",
       "latest": "最新",
+      "switchToVersion": "切换到版本",
       "actions": "操作"
     },
     "empty": {

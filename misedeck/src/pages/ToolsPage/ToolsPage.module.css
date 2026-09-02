@@ -105,6 +105,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  white-space: nowrap;
 }
 
 .toolName {
@@ -112,6 +113,7 @@
   font-weight: 600;
   font-size: 13px;
   color: var(--text);
+  white-space: nowrap;
 }
 
 .cellVersion {
@@ -119,25 +121,30 @@
   font-size: var(--size-data);
   color: var(--beam);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .cellVersionOutdated {
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
+  white-space: nowrap;
 }
 
 .cellRequested {
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
+  white-space: nowrap;
 }
 
+/* Long paths never break mid-token: the row scrolls inside the table
+ * scroller instead, and the cell carries a title tooltip (issue #57). */
 .cellSource {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--dim);
-  word-break: break-all;
+  white-space: nowrap;
 }
 
 .cellLatest {
@@ -147,6 +154,7 @@
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
+  white-space: nowrap;
 }
 
 .arrow {
@@ -162,10 +170,26 @@
   color: var(--dim);
 }
 
+.cellSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+/* The per-row version input stays narrow and reads as editable:
+ * a fixed ch width instead of a stretched field, and a hover border
+ * that signals interactivity (issue #57). */
+.cellSwitch .input {
+  width: 12ch;
+  min-width: 0;
+}
+
 .cellActions {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  white-space: nowrap;
 }
 
 /* ---------- Loading / error states ---------- */
@@ -256,6 +280,10 @@
   outline: none;
   border-color: var(--beam);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--beam) 25%, transparent);
+}
+
+.input:hover:not(:disabled) {
+  border-color: var(--line-strong);
 }
 
 .input:disabled {

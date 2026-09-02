@@ -76,6 +76,7 @@
       "backend": "Backend",
       "source": "Source",
       "latest": "Latest",
+      "switchToVersion": "Switch to version",
       "actions": "Actions"
     },
     "empty": {

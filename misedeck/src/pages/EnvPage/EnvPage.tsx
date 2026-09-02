@@ -162,13 +162,17 @@ export function EnvPage() {
     {
       key: "name",
       header: t(I18N_KEYS.env.columns.name),
-      cell: (r) => <span className={styles.cellName}>{r.name}</span>,
+      cell: (r) => <span className={styles.cellName} title={r.name}>{r.name}</span>,
       width: "220px",
     },
     {
       key: "value",
       header: t(I18N_KEYS.env.columns.value),
-      cell: (r) => <span className={styles.cellValue}>{r.value || "—"}</span>,
+      cell: (r) => (
+        <span className={styles.cellValue} title={r.value || undefined}>
+          {r.value || "—"}
+        </span>
+      ),
     },
     {
       key: "source",
@@ -223,6 +227,7 @@ export function EnvPage() {
               columns={columns}
               rows={envRows}
               rowKey={(r) => r.id}
+              className={styles.tableFixed}
               empty={
                 <EmptyState
                   eyebrow={t(I18N_KEYS.env.eyebrow)}
@@ -265,7 +270,7 @@ function ScopeBadge({ cwd }: { cwd: string | null }) {
         {isGlobal ? t(I18N_KEYS.env.scope.global) : t(I18N_KEYS.env.scope.project)}
       </Badge>
       {!isGlobal && (
-        <span className={styles.scopePath} data-testid="env-cwd">
+        <span className={styles.scopePath} data-testid="env-cwd" title={cwd}>
           {cwd}
         </span>
       )}
@@ -297,7 +302,11 @@ function EnvSourceCell({ row }: { row: EnvRow }) {
   return (
     <div className={styles.sourceCell}>
       <Badge variant={envSourceVariant(row.source)}>{label}</Badge>
-      {row.sourcePath && <span className={styles.sourcePath}>{row.sourcePath}</span>}
+      {row.sourcePath && (
+        <span className={styles.sourcePath} title={row.sourcePath}>
+          {row.sourcePath}
+        </span>
+      )}
     </div>
   );
 }

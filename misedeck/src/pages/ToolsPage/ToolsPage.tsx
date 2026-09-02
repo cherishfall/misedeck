@@ -244,7 +244,7 @@ export function ToolsPage() {
       header: t(I18N_KEYS.tools.columns.tool),
       cell: (r) => (
         <span className={styles.cellTool}>
-          <span className={styles.toolName}>{r.tool}</span>
+          <span className={styles.toolName} title={r.tool}>{r.tool}</span>
         </span>
       ),
     },
@@ -268,7 +268,7 @@ export function ToolsPage() {
     {
       key: "source",
       header: t(I18N_KEYS.tools.columns.source),
-      cell: (r) => <span className={styles.cellSource}>{r.source}</span>,
+      cell: (r) => <span className={styles.cellSource} title={r.source}>{r.source}</span>,
     },
     {
       key: "latest",
@@ -285,15 +285,25 @@ export function ToolsPage() {
         ),
     },
     {
+      key: "switchToVersion",
+      header: t(I18N_KEYS.tools.columns.switchToVersion),
+      cell: (r) => (
+        <SwitchVersionCell
+          row={r}
+          disabled={isRunning}
+          onSwitch={(version) =>
+            void runMutation((cwd) => miseUseArgs(r.tool, version, cwd))
+          }
+        />
+      ),
+    },
+    {
       key: "actions",
       header: t(I18N_KEYS.tools.columns.actions),
       cell: (r) => (
         <RowActions
           row={r}
           disabled={isRunning}
-          onSwitch={(version) =>
-            void runMutation((cwd) => miseUseArgs(r.tool, version, cwd))
-          }
           onUninstall={() =>
             void runMutation(() => miseUninstallArgs(r.tool))
           }
@@ -404,27 +414,19 @@ function ToolsLoading() {
 
 // ---------- Row actions ----------
 
-interface RowActionsProps {
+interface SwitchVersionCellProps {
   row: ToolRow;
   disabled: boolean;
   onSwitch: (version: string) => void;
-  onUninstall: () => void;
-  onUpgrade: () => void;
 }
 
 /**
- * The inline action set for one tool row. A version input + Save
- * dispatches `mise use -g <tool>@<version>` (switch version). An
- * outdated row also gets an Upgrade button (`mise upgrade -g <tool>`).
- * The Uninstall button dispatches `mise uninstall -g <tool>`.
+ * The per-row "switch to version" editor: a narrow version input +
+ * Save-style Switch button dispatching `mise use [-g] <tool>@<version>`.
+ * Lives in its own labeled column so the header sits exactly over the
+ * input (issue #57).
  */
-function RowActions({
-  row,
-  disabled,
-  onSwitch,
-  onUninstall,
-  onUpgrade,
-}: RowActionsProps) {
+function SwitchVersionCell({ row, disabled, onSwitch }: SwitchVersionCellProps) {
   const { t } = useTranslation();
   const [version, setVersion] = useState(row.version);
   // Reset local state when the row's underlying version changes
@@ -435,7 +437,7 @@ function RowActions({
   const dirty = version !== row.version;
 
   return (
-    <span className={styles.cellActions}>
+    <span className={styles.cellSwitch}>
       <input
         type="text"
         className={styles.input}
@@ -456,6 +458,32 @@ function RowActions({
       >
         {t(I18N_KEYS.tools.actions.switch)}
       </Button>
+    </span>
+  );
+}
+
+interface RowActionsProps {
+  row: ToolRow;
+  disabled: boolean;
+  onUninstall: () => void;
+  onUpgrade: () => void;
+}
+
+/**
+ * The mutation buttons for one tool row. An outdated row gets an
+ * Upgrade button (`mise upgrade --bump <tool>`); Uninstall dispatches
+ * `mise uninstall <tool>`. Version switching lives in its own column
+ * (SwitchVersionCell, issue #57).
+ */
+function RowActions({
+  row,
+  disabled,
+  onUninstall,
+  onUpgrade,
+}: RowActionsProps) {
+  const { t } = useTranslation();
+  return (
+    <span className={styles.cellActions}>
       {row.outdated && (
         <Button
           variant="secondary"

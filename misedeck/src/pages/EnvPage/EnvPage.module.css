@@ -61,7 +61,11 @@
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: var(--space-1) var(--space-3);
-  word-break: break-all;
+  /* Long paths never break mid-token: ellipsis + title tooltip
+   * (issue #57). */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   max-width: 100%;
 }
 
@@ -136,20 +140,32 @@
 
 /* ---------- Cells ---------- */
 
+/* Fixed layout lets the declared column widths hold, so long values
+ * truncate with ellipsis (+ title tooltip) instead of breaking
+ * mid-token and ballooning the row height (issue #57). */
+.tableFixed {
+  table-layout: fixed;
+}
+
 .cellName {
+  display: block;
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
   font-weight: 600;
-  word-break: break-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cellValue {
+  display: block;
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
-  word-break: break-all;
-  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   max-width: 100%;
 }
 
@@ -157,13 +173,17 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
 }
 
 .sourcePath {
+  display: block;
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--dim);
-  word-break: break-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ---------- Per-row editor ---------- */

@@ -151,12 +151,12 @@ function DoctorContent({
     {
       key: "tool",
       header: t(I18N_KEYS.doctor.columns.tool),
-      cell: (r) => <span className={styles.cellTool}>{r.tool}</span>,
+      cell: (r) => <span className={styles.cellTool} title={r.tool}>{r.tool}</span>,
     },
     {
       key: "version",
       header: t(I18N_KEYS.doctor.columns.version),
-      cell: (r) => <span className={styles.cellVersion}>{r.version}</span>,
+      cell: (r) => <span className={styles.cellVersion} title={r.version}>{r.version}</span>,
     },
   ];
 
@@ -175,13 +175,16 @@ function DoctorContent({
         {data.version && (
           <div className={styles.summaryRow}>
             <span className={styles.summaryLabel}>{t(I18N_KEYS.labels.version)}</span>
-            <span className={styles.summaryValue}>{data.version}</span>
+            <span className={styles.summaryValue} title={data.version}>{data.version}</span>
           </div>
         )}
         {data.shell?.name && (
           <div className={styles.summaryRow}>
             <span className={styles.summaryLabel}>{t(I18N_KEYS.doctor.summary.shell)}</span>
-            <span className={styles.summaryValue}>
+            <span
+              className={styles.summaryValue}
+              title={`${data.shell.name} ${data.shell.version ?? ""}`.trim()}
+            >
               {data.shell.name} {data.shell.version}
             </span>
           </div>
@@ -239,7 +242,7 @@ function DoctorContent({
         ) : (
           <ul className={styles.fileList}>
             {(data.configFiles ?? []).map((path, i) => (
-              <li key={i} className={styles.fileItem}>{path}</li>
+              <li key={i} className={styles.fileItem} title={path}>{path}</li>
             ))}
           </ul>
         )}
