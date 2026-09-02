@@ -25,6 +25,13 @@ Last updated: 2026-09-03 — **beta4 round COMPLETE and shipped as v1.0.0-beta.5
 - The beta4 round (#46–#60) is **done**; only SPEC parent **#45** remains open, awaiting owner visual verification before closing.
 - Older, not in scope: #11–#15 (chore/roadmap, no `ready-for-agent` label).
 
+### CI fix shipped after the tag (2026-09-03)
+
+- CI was red on `ubuntu-latest` only: `tests/terminal.rs::open_in_terminal_rejects_empty_path` demanded `COMMAND_FAILED` but got the documented `TERMINAL_NOT_FOUND`. It had been red since #54 (`5c3ee3f`) — **pre-existing, unrelated to the beta.5 code**. macOS/Windows were green and `release.yml` built/installed fine.
+- Root cause was the assertion, not the runner: an empty path falls back to `$HOME` by design (`shell.rs:410-429`), so on a Linux runner with no terminal emulator `TERMINAL_NOT_FOUND` is a valid, documented outcome.
+- Fixed in `2463528` (test-only; accepts both codes). Local `cargo test --test terminal` 5/5; CI green on master.
+- **Decision pending with the owner**: the fix is test-only and does not affect the built artifacts, so `v1.0.0-beta.5` was left as-is and the fix rides to beta.6. Re-tagging a published release would require deleting the remote tag + release.
+
 ---
 
 ## Recommended next-session startup
