@@ -1,8 +1,8 @@
-// Theme switcher — the minimal working toggle for issue #37: cycles the
-// theme setting between system / light / dark (default system, persisted
-// via the ThemeProvider). Its final home is the sidebar footer, which
-// lands with the app-shell ticket (#38); until then it floats next to
-// the language switcher, mirroring that control's shape.
+// Theme switcher — cycles the theme setting between system / light / dark
+// (default system, persisted via the ThemeProvider). Its home is the
+// sidebar footer (#38); in the collapsed rail (#49) it renders as a single
+// icon button that cycles the settings, with a tooltip naming the current
+// one, so the capability stays reachable.
 
 import { useTranslation } from "react-i18next";
 
@@ -24,9 +24,40 @@ const THEME_LABELS = {
   dark: I18N_KEYS.theme.dark,
 } as const;
 
-export function ThemeSwitcher() {
+/** Text glyphs for the collapsed-rail icon form (no emoji variants). */
+const THEME_GLYPHS: Record<ThemeSetting, string> = {
+  system: "◑",
+  light: "☼",
+  dark: "☾",
+};
+
+interface ThemeSwitcherProps {
+  /** Icon-only form for the collapsed sidebar rail: one button that cycles
+   *  the settings, tooltip naming the current one. */
+  iconOnly?: boolean;
+}
+
+export function ThemeSwitcher({ iconOnly = false }: ThemeSwitcherProps) {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
+
+  if (iconOnly) {
+    const next = ORDERED[(ORDERED.indexOf(theme) + 1) % ORDERED.length];
+    const label = `${t(I18N_KEYS.theme.switcherLabel)}: ${t(THEME_LABELS[theme])}`;
+    return (
+      <button
+        type="button"
+        className={styles.iconTrigger}
+        onClick={() => setTheme(next)}
+        aria-label={label}
+        title={label}
+      >
+        <span className={styles.iconGlyph} aria-hidden="true">
+          {THEME_GLYPHS[theme]}
+        </span>
+      </button>
+    );
+  }
 
   return (
     <div

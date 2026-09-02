@@ -41,9 +41,9 @@ North-star feeling: *"I always know which mise command this screen is showing me
 ```
 
 - **Sidebar** is collapsible to an icon rail; state persists across launches.
-- **Brand lockup** (proper-case `MiseDeck` + smaller tagline, one unit) sits at the sidebar top; clicking it goes Home (mise status / guided install / self-update). Home is not a nav item.
+- **Sidebar toggle**: a standard sidebar glyph with a tooltip ("Collapse sidebar" / "Expand sidebar") sits on the sidebar's top row; in the collapsed rail it stays at the top. No brand lockup — the window title carries the name (#49 supersedes the beta3 brand lockup).
 - **Main group**: Preview → Tools → Env → Tasks → Plugins (order = priority).
-- **Bottom group**: Doctor, Settings — the app's own machinery.
+- **Bottom group**: Home (mise status / guided install / self-update), Doctor, Settings — the app's own machinery.
 - **Footer**: language menu (compact dropdown: globe + current locale, scalable to more locales) and theme toggle (system / light / dark, default system).
 - **Directory indicator**: a slim strip at the top of the content area, rendered **only when a directory context is active** (hidden in Global). Shows `当前目录 / Directory` + the real-case path, with Open-in-Terminal, Copy-Command, pick/recent actions. The word "Context/上下文" is retired from UI copy (the domain term *Directory context* stays in the glossary).
 - **Styleguide** leaves the product navigation; its route survives in dev mode only.
@@ -52,7 +52,7 @@ North-star feeling: *"I always know which mise command this screen is showing me
 
 | Page | Backs onto | Sells the workflow |
 |---|---|---|
-| Home (brand click) | `mise version`, `mise self-update`, install script | mise detected? install/update it |
+| Home | `mise version`, `mise self-update`, install script | mise detected? install/update it |
 | Preview | `mise -C <dir> ls` + `mise env` + `mise config` (file precedence) + `mise.lock` | "what mise resolves in this directory" — resolved tools, resolved env, loaded config files in precedence order, lockfile; trust state surfaced |
 | Tools | `mise ls`, `mise ls-remote`, `mise use`, `mise install`, `mise uninstall`, `mise upgrade`, `mise outdated` | installed ≠ active; switch/install/upgrade/uninstall |
 | Env | `mise env`, `mise set`, `mise unset` | env vars are first-class, per directory or global |

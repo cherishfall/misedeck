@@ -19,10 +19,6 @@
 //   3. Use `t(I18N_KEYS.foo.bar)` at the call site.
 
 export const I18N_KEYS = {
-  app: {
-    wordmark: "app.wordmark",
-    tagline: "app.tagline",
-  },
   common: {
     ok: "common.ok",
     cancel: "common.cancel",
@@ -91,6 +87,7 @@ export const I18N_KEYS = {
     errorBody: "activation.errorBody",
   },
   nav: {
+    home: "nav.home",
     tools: "nav.tools",
     tasks: "nav.tasks",
     env: "nav.env",

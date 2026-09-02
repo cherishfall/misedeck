@@ -3,6 +3,8 @@
 // Shows a globe icon + current locale. Clicking opens a popover menu of
 // supported languages so the control scales beyond the two shipped locales.
 // The chosen language persists via the LanguageProvider.
+// In the collapsed sidebar rail (#49) it renders icon-only with a tooltip,
+// so the capability stays reachable; the popover opens upward unchanged.
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -19,7 +21,12 @@ import styles from "./LanguageSwitcher.module.css";
 
 const ORDERED: readonly SupportedLanguage[] = SUPPORTED_LANGUAGES;
 
-export function LanguageSwitcher() {
+interface LanguageSwitcherProps {
+  /** Icon-only form for the collapsed sidebar rail. */
+  iconOnly?: boolean;
+}
+
+export function LanguageSwitcher({ iconOnly = false }: LanguageSwitcherProps) {
   const { t } = useTranslation();
   const { language, setLanguage } = useLanguage();
   const [open, setOpen] = useState(false);
@@ -48,15 +55,20 @@ export function LanguageSwitcher() {
     <div className={styles.root} ref={rootRef}>
       <button
         type="button"
-        className={styles.trigger}
+        className={iconOnly ? styles.triggerIcon : styles.trigger}
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t(I18N_KEYS.languages.switcherLabel)}
+        title={iconOnly ? t(I18N_KEYS.languages.switcherLabel) : undefined}
       >
-        <span aria-hidden="true">◐</span>
-        <span className={styles.current}>{t(LANGUAGE_LABELS[language])}</span>
-        <span aria-hidden="true">▾</span>
+        <span className={styles.glyph} aria-hidden="true">◐</span>
+        {!iconOnly && (
+          <>
+            <span className={styles.current}>{t(LANGUAGE_LABELS[language])}</span>
+            <span aria-hidden="true">▾</span>
+          </>
+        )}
       </button>
       {open && (
         <div className={styles.popover} role="menu">

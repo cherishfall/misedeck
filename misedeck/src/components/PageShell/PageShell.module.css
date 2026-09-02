@@ -1,9 +1,12 @@
-/* PageShell — app chrome with collapsible sidebar (issue #38).
+/* PageShell — app chrome with collapsible sidebar (issues #38, #49).
  *
- * Layout: fixed-width sidebar + fluid content area. The sidebar collapses
- * to an icon rail; state persists across launches. Directory indicator,
- * activation banner, page main, and execution panel live in the content
- * area. All colors/type/motion come from tokens.css. */
+ * Layout: fixed-width sidebar + fluid content area. The sidebar carries
+ * no brand lockup (the window title carries the name); a sidebar-glyph
+ * toggle on the top row collapses it to an icon rail where every entry
+ * keeps a tooltip, and the rail clips nothing. Collapse state persists
+ * across launches. Directory indicator, activation banner, page main,
+ * and execution panel live in the content area. All colors/type/motion
+ * come from tokens.css. */
 
 .shell {
   display: flex;
@@ -39,7 +42,7 @@
 }
 
 .sidebarTop {
-  gap: var(--space-5);
+  gap: var(--space-3);
   padding: var(--space-4) var(--space-3) 0;
 }
 
@@ -48,42 +51,14 @@
   gap: var(--space-2);
 }
 
-.brand {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  text-decoration: none;
-  color: var(--text);
-  padding: var(--space-2);
-  border-radius: var(--radius-panel);
-  transition:
-    color var(--motion-state-change) ease,
-    background var(--motion-state-change) ease;
+/* Collapsed rail: tighter side padding so the 20px glyph boxes fit inside
+ * the 56px rail with room to spare — nothing is clipped. */
+.sidebarCollapsed .sidebarTop {
+  padding: var(--space-4) var(--space-2) 0;
 }
 
-.brand:hover,
-.brand:focus-visible {
-  color: var(--beam);
-  background: color-mix(in srgb, var(--beam) 6%, transparent);
-  outline: none;
-}
-
-.brandName {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 600;
-  font-size: 19px;
-  letter-spacing: var(--tracking-wordmark);
-  white-space: nowrap;
-}
-
-.brandTagline {
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--dim);
-  white-space: nowrap;
+.sidebarCollapsed .sidebarBottom {
+  padding: 0 var(--space-2) var(--space-2);
 }
 
 .navGroup {
@@ -138,13 +113,15 @@
   color: inherit;
 }
 
+/* Sidebar-glyph toggle on the top row; same hit area and hover language
+ * as a nav item, so the chrome reads as one control family. */
 .collapseToggle {
-  align-self: stretch;
+  align-self: flex-start;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-2);
-  border: 1px solid var(--line);
+  border: 1px solid transparent;
   border-radius: var(--radius-panel);
   background: transparent;
   color: var(--dim);
@@ -163,7 +140,8 @@
   outline: none;
 }
 
-.footer {
+.footer,
+.footerCollapsed {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -190,7 +168,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brand,
   .navItem,
   .navItemActive,
   .collapseToggle {

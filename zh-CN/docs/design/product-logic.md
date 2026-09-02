@@ -41,9 +41,9 @@ MiseDeck 是 **mise CLI 的 GUI 版**。它的目的不是取代终端，而是*
 ```
 
 - **侧边栏**可折叠为图标栏；折叠状态跨启动持久化。
-- **品牌区**（区分大小写的 `MiseDeck` + 更小字号的 tagline，一体排版）位于侧边栏顶部；点击回首页（mise 状态 / 引导安装 / 自我更新）。首页不占导航项。
+- **侧边栏开关**：顶行是标准 sidebar 字形按钮，带 tooltip（「折叠侧边栏 / 展开侧边栏」）；折叠后仍在图标栏顶部。不再放品牌区——名称由窗口标题栏承担（#49 取代 beta3 的品牌区设计）。
 - **主组**：预览 → 工具 → 环境变量 → 任务 → 插件（顺序即优先级）。
-- **底部组**：诊断、设置——应用自身的机制。
+- **底部组**：首页（mise 状态 / 引导安装 / 自我更新）、诊断、设置——应用自身的机制。
 - **底脚**：语言菜单（紧凑下拉：地球图标 + 当前语言，可扩展更多语言）和主题切换（跟随系统 / 浅色 / 深色，默认跟随系统）。
 - **目录指示条**：内容区顶部的一条细条，**仅在选中目录上下文时**渲染（Global 时隐藏）。显示「当前目录 / Directory」+ 原始大小写路径，附 Open in Terminal、Copy Command、选择/最近目录操作。UI 文案退役「上下文 / Context」一词（领域术语 *Directory context* 保留在词汇表中）。
 - **Styleguide** 从产品导航移除；路由仅在开发模式下保留。
@@ -52,7 +52,7 @@ MiseDeck 是 **mise CLI 的 GUI 版**。它的目的不是取代终端，而是*
 
 | 页面 | 背书的 mise 命令 | 承载的工作流 |
 |---|---|---|
-| 首页（点品牌区） | `mise version`、`mise self-update`、安装脚本 | mise 在不在？装它/更新它 |
+| 首页 | `mise version`、`mise self-update`、安装脚本 | mise 在不在？装它/更新它 |
 | 预览 | `mise -C <dir> ls` + `mise env` + `mise config`（文件优先级）+ `mise.lock` | 「mise 在这个目录解析出了什么」——解析后的工具、环境变量、按优先级加载的配置文件、lockfile；信任状态浮出 |
 | 工具 | `mise ls`、`mise ls-remote`、`mise use`、`mise install`、`mise uninstall`、`mise upgrade`、`mise outdated` | 已安装 ≠ 已激活；切换/安装/升级/卸载 |
 | 环境变量 | `mise env`、`mise set`、`mise unset` | 环境变量是一等公民，按目录或全局 |

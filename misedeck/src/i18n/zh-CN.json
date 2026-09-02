@@ -1,8 +1,4 @@
 {
-  "app": {
-    "wordmark": "MiseDeck",
-    "tagline": "mise 的忠实 GUI"
-  },
   "common": {
     "ok": "确定",
     "cancel": "取消",
@@ -40,6 +36,7 @@
     "selfUpdateNoProbeBody": "mise self-update 已完成。更新后版本探测失败 —— 请重启 MiseDeck 确认。"
   },
   "nav": {
+    "home": "首页",
     "tools": "工具",
     "tasks": "任务",
     "env": "环境变量",

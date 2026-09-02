@@ -1,6 +1,8 @@
 // PageShell — app chrome: collapsible sidebar, directory indicator,
-// activation banner, execution panel. Replaces the top wordmark nav from
-// issue #38, per docs/design/product-logic.md.
+// activation banner, execution panel. Sidebar chrome per issue #49:
+// no brand lockup (the window title carries the name), a sidebar-glyph
+// collapse toggle on the top row, and a collapsed rail where every
+// capability keeps a tooltip-labeled icon entry.
 
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -97,12 +99,16 @@ export function PageShell({ children }: PageShellProps) {
         aria-label={t(I18N_KEYS.nav.regionLabel)}
       >
         <div className={styles.sidebarTop}>
-          <Link to="/" className={styles.brand} aria-label={t(I18N_KEYS.app.wordmark)}>
-            <span className={styles.brandName}>{t(I18N_KEYS.app.wordmark)}</span>
-            {!collapsed && (
-              <span className={styles.brandTagline}>{t(I18N_KEYS.app.tagline)}</span>
-            )}
-          </Link>
+          <button
+            type="button"
+            className={styles.collapseToggle}
+            onClick={() => setCollapsed((v) => !v)}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? t(I18N_KEYS.sidebar.expandLabel) : t(I18N_KEYS.sidebar.collapseLabel)}
+            title={collapsed ? t(I18N_KEYS.sidebar.expandLabel) : t(I18N_KEYS.sidebar.collapseLabel)}
+          >
+            <SidebarGlyph />
+          </button>
 
           <nav className={styles.navGroup} aria-label={t(I18N_KEYS.nav.mainGroupLabel)}>
             {nav}
@@ -114,23 +120,10 @@ export function PageShell({ children }: PageShellProps) {
             {bottomNav}
           </nav>
 
-          <button
-            type="button"
-            className={styles.collapseToggle}
-            onClick={() => setCollapsed((v) => !v)}
-            aria-expanded={!collapsed}
-            aria-label={collapsed ? t(I18N_KEYS.sidebar.expandLabel) : t(I18N_KEYS.sidebar.collapseLabel)}
-            title={collapsed ? t(I18N_KEYS.sidebar.expandLabel) : t(I18N_KEYS.sidebar.collapseLabel)}
-          >
-            <span aria-hidden="true">{collapsed ? "▸" : "◂"}</span>
-          </button>
-
-          {!collapsed && (
-            <div className={styles.footer}>
-              <LanguageSwitcher />
-              <ThemeSwitcher />
-            </div>
-          )}
+          <div className={collapsed ? styles.footerCollapsed : styles.footer}>
+            <LanguageSwitcher iconOnly={collapsed} />
+            <ThemeSwitcher iconOnly={collapsed} />
+          </div>
         </div>
       </aside>
 
@@ -142,6 +135,17 @@ export function PageShell({ children }: PageShellProps) {
         <ExecutionPanel />
       </div>
     </div>
+  );
+}
+
+/** Standard "sidebar" glyph (rectangle with a left panel), drawn as SVG
+ *  so both themes inherit `currentColor`. */
+function SidebarGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="1.75" y="2.75" width="12.5" height="10.5" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M6 2.75v10.5" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
   );
 }
 
@@ -178,6 +182,7 @@ const NAV_ITEMS = [
 ];
 
 const BOTTOM_ITEMS = [
+  { path: "/", labelKey: I18N_KEYS.nav.home, glyph: "H" },
   { path: "/doctor", labelKey: I18N_KEYS.nav.doctor, glyph: "D" },
   { path: "/settings", labelKey: I18N_KEYS.nav.settings, glyph: "S" },
 ];

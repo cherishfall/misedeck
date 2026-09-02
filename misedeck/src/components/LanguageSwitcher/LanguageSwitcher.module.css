@@ -29,10 +29,37 @@
 }
 
 .trigger:hover,
-.trigger:focus-visible {
+.trigger:focus-visible,
+.triggerIcon:hover,
+.triggerIcon:focus-visible {
   color: var(--text);
   border-color: var(--line-strong);
   outline: none;
+}
+
+/* Icon-only trigger for the collapsed sidebar rail (#49): same hit area
+ * as a rail nav item, tooltip carries the full name. */
+.triggerIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease;
+}
+
+.glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
 }
 
 .current {
@@ -87,6 +114,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .trigger,
+  .triggerIcon,
   .option,
   .optionActive {
     transition: none;
