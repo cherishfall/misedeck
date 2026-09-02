@@ -177,3 +177,11 @@ export async function doctor(cwd: string | null): Promise<JsonResult> {
 export async function registry(cwd: string | null): Promise<JsonResult> {
   return (await invoke("registry", { cwd })) as JsonResult;
 }
+
+/** Calls the `plugins_ls` Tauri command (`mise plugins ls --urls`).
+ *  `plugins ls` has no `--json` flag, so the runner parses the
+ *  plain-text table behind the boundary and returns a JSON array of
+ *  `{name, source}` rows (issue #51). */
+export async function pluginsLs(cwd: string | null): Promise<JsonResult> {
+  return (await invoke("plugins_ls", { cwd })) as JsonResult;
+}

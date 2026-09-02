@@ -9,6 +9,7 @@
 import type {
   DoctorLine,
   DoctorPayload,
+  InstalledPlugin,
   MiseLsItem,
   MiseLsRemoteItem,
   MiseOutdatedItem,
@@ -518,5 +519,31 @@ export function parseRegistryPayload(value: unknown): RegistryItem[] {
     if (parsed) out.push(parsed);
   }
   out.sort((a, b) => a.short.localeCompare(b.short));
+  return out;
+}
+
+/** Parse one `mise plugins ls --urls` row (issue #51). The runner
+ *  ships `{name, source}` parsed from the plain-text table. */
+export function parseInstalledPlugin(value: unknown): InstalledPlugin | null {
+  if (value === null || typeof value !== "object") return null;
+  const o = value as Record<string, unknown>;
+  const name = asString(o.name);
+  if (name === "") return null;
+  const source = asString(o.source);
+  return {
+    name,
+    source: source === "" ? undefined : source,
+  };
+}
+
+/** Parse the `mise plugins ls --urls` payload (`[InstalledPlugin]`). */
+export function parsePluginsLsPayload(value: unknown): InstalledPlugin[] {
+  if (!Array.isArray(value)) return [];
+  const out: InstalledPlugin[] = [];
+  for (const row of value) {
+    const parsed = parseInstalledPlugin(row);
+    if (parsed) out.push(parsed);
+  }
+  out.sort((a, b) => a.name.localeCompare(b.name));
   return out;
 }

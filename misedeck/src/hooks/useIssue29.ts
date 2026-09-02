@@ -1,4 +1,5 @@
-// Hooks for the settings, doctor, and registry pages (issue #29).
+// Hooks for the settings, doctor, registry, and plugins pages
+// (issues #29 + #51).
 //
 // Each hook is keyed by the directory context so switching Global ↔ a
 // directory refetches the data. The result is the typed JSON Result
@@ -7,15 +8,17 @@
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
-import { doctor, registry, settingsLs } from "../api/mise";
+import { doctor, pluginsLs, registry, settingsLs } from "../api/mise";
 import {
   parseDoctorPayload,
+  parsePluginsLsPayload,
   parseRegistryPayload,
   parseSettingsPayload,
 } from "../api/miseTools";
 import { useDirectory } from "../state/directoryContext";
 import type {
   DoctorPayload,
+  InstalledPlugin,
   JsonResult,
   RegistryItem,
   SettingsItem,
@@ -100,6 +103,33 @@ export function useParsedRegistry(): {
     return { isPending: false, data: null, error: q.data ?? null };
   }
   return { isPending: false, data: parseRegistryPayload(q.data.value), error: null };
+}
+
+/** Read-only installed plugins list (`mise plugins ls --urls`,
+ *  issue #51). Cache key is `["plugins", "ls", cwd]`. */
+export function usePluginsList(): UseQueryResult<JsonResult> {
+  const { cwd } = useDirectory();
+  return useQuery({
+    queryKey: ["plugins", "ls", cwd],
+    queryFn: () => pluginsLs(cwd),
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+}
+
+/** Parse a `JsonResult` from `usePluginsList` into typed rows. */
+export function useParsedPluginsList(): {
+  isPending: boolean;
+  data: InstalledPlugin[] | null;
+  error: JsonResult | null;
+} {
+  const q = usePluginsList();
+  if (q.isPending) return { isPending: true, data: null, error: null };
+  if (q.error) return { isPending: false, data: null, error: toErr(q.error) };
+  if (!q.data || q.data.kind === "err") {
+    return { isPending: false, data: null, error: q.data ?? null };
+  }
+  return { isPending: false, data: parsePluginsLsPayload(q.data.value), error: null };
 }
 
 /** Wrap a thrown IPC error as the structured `{kind: "err"}` shape

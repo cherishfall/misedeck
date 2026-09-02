@@ -16,6 +16,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router";
 import {
   useCallback,
   useEffect,
@@ -120,6 +121,10 @@ export function ToolsPage() {
   const queryClient = useQueryClient();
   const { state: execState, run } = useExecutionContext();
   const guard = useTrustGuard();
+  // The Plugins page registry rows hand a tool name over via
+  // `?install=<tool>` (issue #51); the install form pre-fills it.
+  const [searchParams] = useSearchParams();
+  const prefillTool = searchParams.get("install") ?? "";
 
   // First check: is mise even available? If not, render the missing
   // state and don't even try the tools queries.
@@ -388,6 +393,7 @@ export function ToolsPage() {
         )}
 
         <InstallToolForm
+          prefillTool={prefillTool}
           onInstall={(tool, version) =>
             void runMutation(() => miseInstallArgs(tool, version))
           }
@@ -511,6 +517,9 @@ function RowActions({
 // ---------- Install form ----------
 
 interface InstallToolFormProps {
+  /** Tool name handed over by another page (the Plugins page registry
+   *  "Install…" action, issue #51). Pre-fills the tool input. */
+  prefillTool: string;
   onInstall: (tool: string, version: string) => void;
   disabled: boolean;
 }
@@ -520,10 +529,15 @@ interface InstallToolFormProps {
  * types a tool name and version; Install dispatches
  * `mise install -g <tool>@<version>` through the execution panel.
  */
-function InstallToolForm({ onInstall, disabled }: InstallToolFormProps) {
+function InstallToolForm({ prefillTool, onInstall, disabled }: InstallToolFormProps) {
   const { t } = useTranslation();
-  const [tool, setTool] = useState("");
+  const [tool, setTool] = useState(prefillTool);
   const [version, setVersion] = useState("");
+  // Sync the pre-fill when a new `?install=` handover arrives (the
+  // Tools page stays mounted, so initial state alone is not enough).
+  useEffect(() => {
+    if (prefillTool.length > 0) setTool(prefillTool);
+  }, [prefillTool]);
   const onSubmit = () => {
     onInstall(tool, version);
   };

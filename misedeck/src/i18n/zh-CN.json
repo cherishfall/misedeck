@@ -328,16 +328,34 @@
     }
   },
   "plugins": {
-    "eyebrow": "▸ MISE / REGISTRY",
-    "title": "Registry",
-    "hint": "浏览 mise 内置的工具别名 registry，包括后端与别名。",
-    "commandHint": "mise registry · mise plugins ls",
+    "eyebrow": "▸ MISE / PLUGINS",
+    "title": "插件",
+    "hint": "已安装插件，以及内置 registry 中的工具别名、后端与别名信息。",
+    "commandHint": "mise plugins ls · mise registry",
     "searchPlaceholder": "搜索工具、后端、别名…",
+    "sections": {
+      "installed": "已安装插件",
+      "registry": "Registry"
+    },
     "columns": {
       "tool": "工具",
       "backends": "后端",
       "description": "说明",
-      "aliases": "别名"
+      "aliases": "别名",
+      "name": "名称",
+      "source": "来源",
+      "actions": "操作"
+    },
+    "actions": {
+      "install": "安装…"
+    },
+    "installedEmpty": {
+      "title": "未安装插件",
+      "body": "`mise plugins ls` 返回了空列表。"
+    },
+    "installedError": {
+      "title": "加载插件失败",
+      "body": "`mise plugins ls` 未返回结果。stderr 已在执行面板中保留。"
     },
     "empty": {
       "title": "没有 registry 条目",

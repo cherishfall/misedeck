@@ -384,11 +384,29 @@ export const I18N_KEYS = {
     hint: "plugins.hint",
     commandHint: "plugins.commandHint",
     searchPlaceholder: "plugins.searchPlaceholder",
+    sections: {
+      installed: "plugins.sections.installed",
+      registry: "plugins.sections.registry",
+    },
     columns: {
       tool: "plugins.columns.tool",
       backends: "plugins.columns.backends",
       description: "plugins.columns.description",
       aliases: "plugins.columns.aliases",
+      name: "plugins.columns.name",
+      source: "plugins.columns.source",
+      actions: "plugins.columns.actions",
+    },
+    actions: {
+      install: "plugins.actions.install",
+    },
+    installedEmpty: {
+      title: "plugins.installedEmpty.title",
+      body: "plugins.installedEmpty.body",
+    },
+    installedError: {
+      title: "plugins.installedError.title",
+      body: "plugins.installedError.body",
     },
     empty: {
       title: "plugins.empty.title",

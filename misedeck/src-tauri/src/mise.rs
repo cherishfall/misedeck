@@ -1116,6 +1116,54 @@ pub fn mise_registry(
     }
 }
 
+/// `mise plugins ls --urls` — the installed plugins list (issue #51).
+/// `mise plugins ls` has no `--json` flag (a known JSON gap, see
+/// docs/agents/architecture.md), so the runner parses the plain-text
+/// table behind the boundary: each non-empty line is
+/// `<name><padding><url>` — the name is the first
+/// whitespace-delimited token, the source URL the rest of the line
+/// (absent when a plugin reports no URL). Names and URLs are shipped
+/// verbatim; original case is preserved (ui-ux-rules: data honesty).
+pub fn mise_plugins_ls(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+) -> Result<serde_json::Value, AppError> {
+    let args = vec![
+        "plugins".to_string(),
+        "ls".to_string(),
+        "--urls".to_string(),
+    ];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    let outcome = run_mise(mise_path, &req, |_| {})?;
+    if outcome.timed_out {
+        return Err(AppError::timeout());
+    }
+    if outcome.exit_code != 0 {
+        return Err(AppError::command_failed(
+            format!("mise plugins ls exited with status {}", outcome.exit_code),
+            outcome.stderr,
+        ));
+    }
+    let rows: Vec<serde_json::Value> = outcome
+        .stdout
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .filter_map(|line| {
+            let mut parts = line.split_whitespace();
+            let name = parts.next().unwrap_or("").to_string();
+            if name.is_empty() {
+                return None;
+            }
+            let source = parts.next().unwrap_or("").to_string();
+            Some(serde_json::json!({ "name": name, "source": source }))
+        })
+        .collect();
+    Ok(serde_json::Value::Array(rows))
+}
+
 // ---------- Global tool mutations (issue #22) ----------
 //
 // The tools page routes every global tool mutation through the

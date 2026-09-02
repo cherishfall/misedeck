@@ -1,9 +1,11 @@
-// Integration tests for the settings, doctor, and registry surface
-// (issue #29).
+// Integration tests for the settings, doctor, registry, and plugins
+// surface (issues #29 + #51).
 //
 //   * `settings_ls`  → `mise settings ls --json-extended`
 //   * `doctor`       → `mise doctor --json` (with raw-text fallback)
 //   * `registry`     → `mise registry --json` (with table fallback)
+//   * `plugins_ls`   → `mise plugins ls --urls` (table parsing; no
+//                      `--json` exists for this command)
 //
 // The fixture-mise script serves recorded stdout/stderr/exit_code per
 // argv joined by `-`. These tests assert the boundary contract: the
@@ -13,7 +15,7 @@
 use std::path::PathBuf;
 
 use misedeck_lib::mise::{
-    code, mise_doctor, mise_registry, mise_settings_ls, mise_settings_set_argv,
+    code, mise_doctor, mise_plugins_ls, mise_registry, mise_settings_ls, mise_settings_set_argv,
     mise_settings_unset_argv,
 };
 use serial_test::serial;
@@ -185,5 +187,36 @@ fn registry_falls_back_to_table_parsing() {
         assert_eq!(arr[0]["short"], "node");
         let backends = arr[0]["backends"].as_array().unwrap();
         assert!(backends.contains(&serde_json::json!("core:node")));
+    });
+}
+
+// ---------- plugins ls (issue #51) ----------
+
+#[test]
+#[serial]
+fn plugins_ls_parses_table_into_name_and_source() {
+    let script = fixture_script();
+    with_slug("plugins---ls---urls", || {
+        let v = mise_plugins_ls(&script, None).expect("plugins ls should yield Ok");
+        let arr = v.as_array().expect("plugins payload must be an array");
+        assert_eq!(arr.len(), 3);
+        assert_eq!(arr[0]["name"], "1password");
+        assert_eq!(
+            arr[0]["source"],
+            "https://github.com/mise-plugins/1password.git"
+        );
+        // Original case is preserved verbatim (ui-ux-rules: data honesty).
+        assert_eq!(arr[2]["name"], "vfox-Zig");
+    });
+}
+
+#[test]
+#[serial]
+fn plugins_ls_command_failed_keeps_stderr() {
+    let script = fixture_script();
+    with_slug("plugins---ls---urls-command-failed", || {
+        let err = mise_plugins_ls(&script, None).expect_err("non-zero exit should yield Err");
+        assert_eq!(err.code, code::COMMAND_FAILED);
+        assert!(err.stderr.contains("plugin manager exploded"));
     });
 }

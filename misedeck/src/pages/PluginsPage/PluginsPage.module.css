@@ -106,6 +106,36 @@
   cursor: not-allowed;
 }
 
+/* ---------- Sections ---------- */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 0;
+}
+
+.muted {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--dim);
+}
+
 /* ---------- Table cells ---------- */
 
 .cellTool {
@@ -126,6 +156,19 @@
   font-family: var(--font-ui);
   font-size: var(--size-base);
   color: var(--dim);
+}
+
+.cellSource {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--dim);
+  display: inline-block;
+  max-width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
 }
 
 .cellAliases {

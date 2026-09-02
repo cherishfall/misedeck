@@ -1,0 +1,3 @@
+1password     https://github.com/mise-plugins/1password.git
+trivy         https://github.com/aquasecurity/trivy-plugin.git
+vfox-Zig      https://github.com/mise-plugins/vfox-zig.git

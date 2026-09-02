@@ -19,8 +19,9 @@ pub mod shell;
 use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
 use mise::{
     check_trust, detect_mise as run_mise_probe, locate_mise, mise_config_files, mise_doctor,
-    mise_env, mise_env_extended, mise_ls, mise_ls_remote, mise_outdated, mise_registry,
-    mise_settings_ls, mise_tasks_edit_path, mise_tasks_ls, read_mise_lockfile, run_mise, run_trust,
+    mise_env, mise_env_extended, mise_ls, mise_ls_remote, mise_outdated, mise_plugins_ls,
+    mise_registry, mise_settings_ls, mise_tasks_edit_path, mise_tasks_ls, read_mise_lockfile,
+    run_mise, run_trust,
     AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
 };
 use shell::{check_shell_activation, open_in_terminal as open_in_terminal_inner};
@@ -609,6 +610,24 @@ fn registry(cwd: Option<String>) -> JsonResult {
     }
 }
 
+/// `mise plugins ls --urls` for the active directory context.
+/// Read-only; `plugins ls` has no `--json` flag, so the runner parses
+/// the plain-text table behind the boundary and returns a JSON array
+/// of `{name, source}` rows (issue #51). Used by the plugins page's
+/// installed-plugins section.
+#[tauri::command]
+fn plugins_ls(cwd: Option<String>) -> JsonResult {
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return JsonResult::Err { err: e },
+    };
+    let cwd_path = cwd.as_deref().map(std::path::Path::new);
+    match mise_plugins_ls(&path, cwd_path) {
+        Ok(value) => JsonResult::Ok { value },
+        Err(e) => JsonResult::Err { err: e },
+    }
+}
+
 /// Detect the user's shell and decide whether the rc file contains
 /// a `mise activate` line (issue #28). Read-only; never spawns mise.
 /// On a hard I/O error (e.g. permission denied on a sandboxed
@@ -715,6 +734,7 @@ pub fn run() {
             settings_ls,
             doctor,
             registry,
+            plugins_ls,
             shell_activation_check,
             open_in_terminal,
             set_window_theme

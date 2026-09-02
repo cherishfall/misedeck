@@ -328,16 +328,34 @@
     }
   },
   "plugins": {
-    "eyebrow": "▸ MISE / REGISTRY",
-    "title": "Registry",
-    "hint": "Browse the built-in mise registry of tool shorthands, backends, and aliases.",
-    "commandHint": "mise registry · mise plugins ls",
+    "eyebrow": "▸ MISE / PLUGINS",
+    "title": "Plugins",
+    "hint": "Installed plugins and the built-in registry of tool shorthands, backends, and aliases.",
+    "commandHint": "mise plugins ls · mise registry",
     "searchPlaceholder": "Search tools, backends, aliases…",
+    "sections": {
+      "installed": "Installed plugins",
+      "registry": "Registry"
+    },
     "columns": {
       "tool": "Tool",
       "backends": "Backends",
       "description": "Description",
-      "aliases": "Aliases"
+      "aliases": "Aliases",
+      "name": "Name",
+      "source": "Source",
+      "actions": "Actions"
+    },
+    "actions": {
+      "install": "Install…"
+    },
+    "installedEmpty": {
+      "title": "No plugins installed",
+      "body": "`mise plugins ls` returned an empty list."
+    },
+    "installedError": {
+      "title": "Failed to load plugins",
+      "body": "`mise plugins ls` did not return. Stderr is preserved in the execution panel."
     },
     "empty": {
       "title": "No registry entries",

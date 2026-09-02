@@ -328,3 +328,14 @@ export interface RegistryItem {
   description?: string;
   aliases?: string[];
 }
+
+/**
+ * One row of `mise plugins ls --urls` (issue #51). The runner parses
+ * the plain-text table behind the boundary (the command has no
+ * `--json`); `source` is the plugin's repository URL and is absent
+ * when mise reports none. Names keep their original case.
+ */
+export interface InstalledPlugin {
+  name: string;
+  source?: string;
+}
