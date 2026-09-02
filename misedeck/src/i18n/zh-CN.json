@@ -106,6 +106,31 @@
       "title": "安装工具",
       "toolPlaceholder": "工具名（如 node）",
       "versionPlaceholder": "版本（如 22.11.0）"
+    },
+    "queries": {
+      "installed": {
+        "title": "已安装版本",
+        "toolPlaceholder": "工具名（如 node）",
+        "run": "运行",
+        "clear": "清除",
+        "showAll": "显示全部 {{count}} 项",
+        "showLess": "收起",
+        "emptyTitle": "没有已安装版本",
+        "emptyBody": "`mise ls <tool>` 会列出每个已安装版本——无论是否处于活动状态。在上方运行即可查询某个工具。",
+        "active": "活动",
+        "activeColumn": "活动"
+      },
+      "remote": {
+        "title": "远程版本",
+        "toolPlaceholder": "工具名（如 node）",
+        "run": "运行",
+        "clear": "清除",
+        "showAll": "显示全部 {{count}} 项",
+        "showLess": "收起",
+        "emptyTitle": "没有远程版本",
+        "emptyBody": "`mise ls-remote <tool>` 会列出上游可用的版本。在上方运行即可查询某个工具。",
+        "created": "发布时间"
+      }
     }
   },
   "preview": {

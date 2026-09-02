@@ -11,7 +11,7 @@
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
-import { readMiseLockfile, configFiles, toolsEnv, toolsLs, toolsLsRemote, toolsOutdated } from "../api/mise";
+import { readMiseLockfile, configFiles, toolsEnv, toolsLs, toolsLsRemote, toolsLsTool, toolsOutdated } from "../api/mise";
 import {
   parseEnvPayload,
   parseLsPayload,
@@ -150,6 +150,50 @@ export function useParsedLsRemote(
     return { isPending: false, data: null, error: q.data ?? null };
   }
   return { isPending: false, data: parseLsRemotePayload(q.data.value), error: null };
+}
+
+/**
+ * Installed versions for a single tool (`mise ls --json <tool>`). Cache
+ * key is `["tools", "ls-tool", cwd, tool]`. The hook is disabled when
+ * `tool` is empty so the runner never runs a half-formed argv. The
+ * result carries every installed version, active or not (issue #55).
+ */
+export function useLsTool(
+  tool: string,
+): UseQueryResult<JsonResult> {
+  const { cwd } = useDirectory();
+  return useQuery({
+    queryKey: ["tools", "ls-tool", cwd, tool],
+    queryFn: () => toolsLsTool(cwd, tool),
+    enabled: tool.length > 0,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+}
+
+/** Same convenience for `useLsTool`. Flattens the single-tool JSON
+ *  payload (`{tool: [items...]}`) into a flat `MiseLsItem[]` list. */
+export function useParsedLsTool(
+  tool: string,
+): {
+  isPending: boolean;
+  data: MiseLsItem[] | null;
+  error: JsonResult | null;
+} {
+  const q = useLsTool(tool);
+  if (q.isPending) {
+    return { isPending: true, data: null, error: null };
+  }
+  if (q.error) {
+    return { isPending: false, data: null, error: toErr(q.error) };
+  }
+  if (!q.data || q.data.kind === "err") {
+    return { isPending: false, data: null, error: q.data ?? null };
+  }
+  const groups = parseLsPayload(q.data.value);
+  const items: MiseLsItem[] = [];
+  for (const group of groups) items.push(...group.items);
+  return { isPending: false, data: items, error: null };
 }
 
 /**

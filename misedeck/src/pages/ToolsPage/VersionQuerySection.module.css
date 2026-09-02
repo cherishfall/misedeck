@@ -1,0 +1,187 @@
+/* VersionQuerySection — query blocks for installed/remote tool
+ * versions (issue #55). Consumes design tokens only; no new values,
+ * no new animations. */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--panel) 50%, transparent);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sectionTitle {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--size-base);
+  color: var(--text);
+  margin: 0;
+}
+
+.command {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--ice);
+  margin: 0;
+}
+
+.queryRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.input {
+  font-family: var(--font-mono);
+  font-size: var(--size-base);
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 8px;
+  min-width: 200px;
+  transition:
+    border-color var(--motion-state-change) ease,
+    box-shadow var(--motion-state-change) ease;
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--beam);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--beam) 25%, transparent);
+}
+
+.input:hover:not(:disabled) {
+  border-color: var(--line-strong);
+}
+
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.clear {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ice);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease;
+}
+
+.clear:hover:not(:disabled),
+.clear:focus-visible {
+  color: var(--beam);
+  border-color: var(--line-strong);
+  outline: none;
+}
+
+.clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dim);
+}
+
+.loadingLabel {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.errorBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--tint-danger);
+  border-radius: var(--radius-panel);
+  background: var(--tint-danger-bg);
+}
+
+.errorLabel {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--breach);
+}
+
+.errorBody {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--text);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.errorStderr {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--breach);
+  background: color-mix(in srgb, var(--breach) 8%, transparent);
+  border: 1px solid var(--tint-danger);
+  border-radius: 4px;
+  padding: var(--space-3);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.collapseToggle {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--beam);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease;
+}
+
+.collapseToggle:hover:not(:disabled),
+.collapseToggle:focus-visible {
+  border-color: var(--line-strong);
+  outline: none;
+}

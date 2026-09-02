@@ -498,6 +498,34 @@ pub fn mise_ls(
     run_mise_json(mise_path, &req)
 }
 
+/// `mise ls --json <tool>` — the installed versions for a single
+/// tool, including non-active ones (faithful to `mise ls <tool>`).
+/// Returns the raw JSON object mise emits (`{tool: [items...]}`); the
+/// typed `MiseLsItem` shape above documents the per-item fields. The
+/// JS side flattens the single-tool payload into a row list.
+pub fn mise_ls_tool(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+    tool: &str,
+) -> Result<serde_json::Value, AppError> {
+    if tool.is_empty() {
+        return Err(AppError::command_failed(
+            "mise_ls_tool: tool name is empty",
+            String::new(),
+        ));
+    }
+    let args = vec![
+        "ls".to_string(),
+        "--json".to_string(),
+        tool.to_string(),
+    ];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    run_mise_json(mise_path, &req)
+}
+
 /// `mise outdated --json` — the outdated-tools map. Returns the raw
 /// JSON object mise emits (`{tool: MiseOutdatedItem}` or `{}` when
 /// no tools are outdated). The `--bump` flag is added to the

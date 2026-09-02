@@ -20,7 +20,7 @@ pub mod shell;
 use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
 use mise::{
     check_trust, detect_mise as run_mise_probe, locate_mise, mise_config_files, mise_doctor,
-    mise_env, mise_env_extended, mise_ls, mise_ls_remote, mise_outdated, mise_plugins_ls,
+    mise_env, mise_env_extended, mise_ls, mise_ls_remote, mise_ls_tool, mise_outdated, mise_plugins_ls,
     mise_registry, mise_settings_ls, mise_tasks_edit_path, mise_tasks_ls, read_mise_lockfile,
     run_mise, run_trust,
     AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
@@ -469,6 +469,32 @@ async fn tools_ls_remote(cwd: Option<String>, tool: String) -> JsonResult {
     }
 }
 
+/// `mise ls --json <tool>` for the installed-versions query section
+/// (issue #55). Read-only; returns the raw JSON object mise emits
+/// (`{tool: [items...]}`) so the JS side can flatten and render every
+/// installed version, active or not. `tool` is rejected when empty so
+/// the runner never sees a half-formed argv.
+#[tauri::command]
+async fn tools_ls_tool(cwd: Option<String>, tool: String) -> JsonResult {
+    if tool.is_empty() {
+        return JsonResult::Err {
+            err: AppError::command_failed("tools_ls_tool: tool is empty", String::new()),
+        };
+    }
+    let path = match resolve_mise_binary(|e| e) {
+        Ok(p) => p,
+        Err(e) => return JsonResult::Err { err: e },
+    };
+    let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    match spawn_run(move || {
+        let cwd = cwd_owned.as_deref();
+        mise_ls_tool(&path, cwd, &tool)
+    }).await {
+        Ok(value) => JsonResult::Ok { value },
+        Err(err) => JsonResult::Err { err },
+    }
+}
+
 /// `mise env --json` for the current directory context. Read-only;
 /// returns the raw JSON object mise emits (a flat
 /// `Map<String, String>` of var name → value). Used by the
@@ -828,6 +854,7 @@ pub fn run() {
             tools_ls,
             tools_outdated,
             tools_ls_remote,
+            tools_ls_tool,
             tools_env,
             env_ls,
             read_lockfile,

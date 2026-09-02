@@ -60,6 +60,16 @@ export async function toolsLsRemote(
   return (await invoke("tools_ls_remote", { cwd, tool })) as JsonResult;
 }
 
+/** Calls the `tools_ls_tool` Tauri command (`mise ls --json <tool>`)
+ *  and returns the typed union. Surfaces every installed version of a
+ *  single tool, active or not (issue #55). */
+export async function toolsLsTool(
+  cwd: string | null,
+  tool: string,
+): Promise<JsonResult> {
+  return (await invoke("tools_ls_tool", { cwd, tool })) as JsonResult;
+}
+
 /** Calls the `tools_env` Tauri command (`mise env --json`). The
  *  payload is the flat `Map<String, String>` mise emits. */
 export async function toolsEnv(cwd: string | null): Promise<JsonResult> {

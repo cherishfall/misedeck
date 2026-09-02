@@ -106,6 +106,31 @@
       "title": "Install a tool",
       "toolPlaceholder": "tool (e.g. node)",
       "versionPlaceholder": "version (e.g. 22.11.0)"
+    },
+    "queries": {
+      "installed": {
+        "title": "Installed versions",
+        "toolPlaceholder": "tool (e.g. node)",
+        "run": "Run",
+        "clear": "Clear",
+        "showAll": "Show all {{count}}",
+        "showLess": "Show fewer",
+        "emptyTitle": "No installed versions",
+        "emptyBody": "`mise ls <tool>` lists every installed version — active and inactive. Run it above to query a tool.",
+        "active": "active",
+        "activeColumn": "Active"
+      },
+      "remote": {
+        "title": "Remote versions",
+        "toolPlaceholder": "tool (e.g. node)",
+        "run": "Run",
+        "clear": "Clear",
+        "showAll": "Show all {{count}}",
+        "showLess": "Show fewer",
+        "emptyTitle": "No remote versions",
+        "emptyBody": "`mise ls-remote <tool>` lists versions available upstream. Run it above to query a tool.",
+        "created": "Created"
+      }
     }
   },
   "preview": {

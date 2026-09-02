@@ -26,13 +26,17 @@ import {
 } from "react";
 
 import { I18N_KEYS } from "../../i18n/keys";
+import type { MiseLsItem, MiseLsRemoteItem } from "../../types/tauri";
 import { useDirectory } from "../../state/directoryContext";
 import { useTrustGuard } from "../../state/trustContext";
 import { detectMise, isAppError } from "../../api/mise";
 import {
+  useParsedLsRemote,
+  useParsedLsTool,
   useParsedOutdatedTools,
   useParsedToolsList,
 } from "../../hooks/useToolsList";
+import { VersionQuerySection } from "./VersionQuerySection";
 import { useQuery } from "@tanstack/react-query";
 import {
   Badge,
@@ -137,6 +141,107 @@ export function ToolsPage() {
 
   const tools = useParsedToolsList();
   const outdated = useParsedOutdatedTools();
+
+  // Query sections (issue #55): installed + remote versions for a named
+  // tool. The committed tool (`*Query`) gates the read query; the input
+  // (`*Input`) is the live text field. Clear resets both.
+  const [installedInput, setInstalledInput] = useState("");
+  const [installedQuery, setInstalledQuery] = useState("");
+  const installed = useParsedLsTool(installedQuery);
+
+  const [remoteInput, setRemoteInput] = useState("");
+  const [remoteQuery, setRemoteQuery] = useState("");
+  const remote = useParsedLsRemote(remoteQuery);
+
+  const onInstalledRun = () => {
+    const tool = installedInput.trim();
+    if (tool.length > 0) setInstalledQuery(tool);
+  };
+  const onInstalledClear = () => {
+    setInstalledInput("");
+    setInstalledQuery("");
+  };
+
+  const onRemoteInstall = (version: string) => {
+    if (remoteQuery.length === 0) return;
+    void runMutation(() => miseInstallArgs(remoteQuery, version));
+  };
+  const onRemoteRun = () => {
+    const tool = remoteInput.trim();
+    if (tool.length > 0) setRemoteQuery(tool);
+  };
+  const onRemoteClear = () => {
+    setRemoteInput("");
+    setRemoteQuery("");
+  };
+
+  const installedColumns: TableColumn<MiseLsItem>[] = [
+    {
+      key: "version",
+      header: t(I18N_KEYS.tools.columns.version),
+      cell: (r) => (
+        <span className={r.active ? styles.cellVersion : styles.cellVersionOutdated}>
+          {r.version}
+        </span>
+      ),
+    },
+    {
+      key: "requested",
+      header: t(I18N_KEYS.tools.columns.requested),
+      cell: (r) => <span className={styles.cellRequested}>{r.requestedVersion ?? "—"}</span>,
+    },
+    {
+      key: "active",
+      header: t(I18N_KEYS.tools.queries.installed.activeColumn),
+      cell: (r) =>
+        r.active ? (
+          <Badge variant="success">{t(I18N_KEYS.tools.queries.installed.active)}</Badge>
+        ) : (
+          <span className={styles.dim}>—</span>
+        ),
+    },
+    {
+      key: "source",
+      header: t(I18N_KEYS.tools.columns.source),
+      cell: (r) => (
+        <span className={styles.cellSource} title={r.source?.path ?? r.source?.type ?? ""}>
+          {r.source?.path ?? r.source?.type ?? "—"}
+        </span>
+      ),
+    },
+  ];
+
+  const remoteColumns: TableColumn<MiseLsRemoteItem>[] = [
+    {
+      key: "version",
+      header: t(I18N_KEYS.tools.columns.version),
+      cell: (r) => <span className={styles.cellVersion}>{r.version}</span>,
+    },
+    {
+      key: "created",
+      header: t(I18N_KEYS.tools.queries.remote.created),
+      cell: (r) => (
+        <span className={styles.cellSource} title={r.createdAt ?? ""}>
+          {r.createdAt ?? "—"}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: t(I18N_KEYS.tools.columns.actions),
+      cell: (r) => (
+        <Button
+          variant="primary"
+          size="sm"
+          disabled={isRunning}
+          onClick={() => onRemoteInstall(r.version)}
+          data-testid={`versions-remote-install-${r.version}`}
+        >
+          {t(I18N_KEYS.tools.actions.install)}
+        </Button>
+      ),
+    },
+  ];
 
   // After a successful mutation, the read queries become stale.
   // Observe the running → ok transition (the same transition the
@@ -398,6 +503,52 @@ export function ToolsPage() {
             void runMutation(() => miseInstallArgs(tool, version))
           }
           disabled={isRunning}
+        />
+
+        <VersionQuerySection<MiseLsItem>
+          title={t(I18N_KEYS.tools.queries.installed.title)}
+          command={`mise ls ${installedInput.trim() || "<tool>"}`}
+          hasQuery={installedQuery.length > 0}
+          inputValue={installedInput}
+          onInputChange={setInstalledInput}
+          onRun={onInstalledRun}
+          onClear={onInstalledClear}
+          canRun={installedInput.trim().length > 0}
+          isPending={installed.isPending}
+          error={installed.error}
+          columns={installedColumns}
+          rows={installed.data ?? []}
+          rowKey={(r) => `${installedQuery}@${r.version}`}
+          toolPlaceholder={t(I18N_KEYS.tools.queries.installed.toolPlaceholder)}
+          runLabel={t(I18N_KEYS.tools.queries.installed.run)}
+          clearLabel={t(I18N_KEYS.tools.queries.installed.clear)}
+          showAllLabel={(n) => t(I18N_KEYS.tools.queries.installed.showAll, { count: n })}
+          showLessLabel={t(I18N_KEYS.tools.queries.installed.showLess)}
+          emptyTitle={t(I18N_KEYS.tools.queries.installed.emptyTitle)}
+          emptyBody={t(I18N_KEYS.tools.queries.installed.emptyBody)}
+        />
+
+        <VersionQuerySection<MiseLsRemoteItem>
+          title={t(I18N_KEYS.tools.queries.remote.title)}
+          command={`mise ls-remote ${remoteInput.trim() || "<tool>"}`}
+          hasQuery={remoteQuery.length > 0}
+          inputValue={remoteInput}
+          onInputChange={setRemoteInput}
+          onRun={onRemoteRun}
+          onClear={onRemoteClear}
+          canRun={remoteInput.trim().length > 0}
+          isPending={remote.isPending}
+          error={remote.error}
+          columns={remoteColumns}
+          rows={remote.data ?? []}
+          rowKey={(r) => `${remoteQuery}@${r.version}`}
+          toolPlaceholder={t(I18N_KEYS.tools.queries.remote.toolPlaceholder)}
+          runLabel={t(I18N_KEYS.tools.queries.remote.run)}
+          clearLabel={t(I18N_KEYS.tools.queries.remote.clear)}
+          showAllLabel={(n) => t(I18N_KEYS.tools.queries.remote.showAll, { count: n })}
+          showLessLabel={t(I18N_KEYS.tools.queries.remote.showLess)}
+          emptyTitle={t(I18N_KEYS.tools.queries.remote.emptyTitle)}
+          emptyBody={t(I18N_KEYS.tools.queries.remote.emptyBody)}
         />
       </div>
     </PageShell>
