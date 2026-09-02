@@ -11,7 +11,7 @@ Last updated: 2026-09-02 — beta4 round in progress; #49 (sidebar chrome), #50 
 
 - 8 user feedback items + a two-track full-app audit (visual + product/UX) were aligned with the owner and published:
   - **SPEC parent: #45**. **Tickets: #46–#60**, labels `v1` + `ready-for-agent`, native blocking + sub-issue links set.
-  - Startable now (no blockers): **#46** async Tauri commands, **#47** title bar follows theme, **#48** Preview/Global/vocab, **#51** Plugins page, **#52** Settings editing, **#53** a11y, **#55/#56** (unblocked by #50, now closed), **#58/#59** (unblocked by #57, now closed).
+  - Startable now (no blockers): **#46** async Tauri commands, **#48** Preview/Global/vocab, **#51** Plugins page, **#52** Settings editing, **#53** a11y, **#55/#56** (unblocked by #50, now closed), **#58/#59** (unblocked by #57, now closed). (#47 title bar follows theme: done, 366c079.)
   - Blocked: #60 (visual sweep, last) ←#59.
 - Sources of truth for the round (all committed):
   - `beta4-feedback-scratch.md` — verbatim feedback + alignment + issue mapping.
