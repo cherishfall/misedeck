@@ -1,37 +1,19 @@
 /* Theme switcher — two-state light / dark pill styled after the
  * mise.jdx.dev sun/moon sliding knob (#54), permanent home in the
- * sidebar footer (#38). The knob carries the sun (light) or moon
+ * sidebar footer (#38). The pill dropped its outer box and text label
+ * (issue #62) and now IS the whole control; it shares a 30px row height
+ * with the language trigger. The knob carries the sun (light) or moon
  * (dark) icon and slides across the track; every color comes from
  * tokens.css. */
 
-.switcher {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-panel);
-  background: var(--panel);
-  font-family: var(--font-ui);
-  font-size: var(--size-data);
-  font-weight: 400;
-  letter-spacing: normal;
-  text-transform: none;
-}
-
-.label {
-  color: var(--dim);
-}
-
-/* The pill: a 40×22 track with a 16px knob that slides 18px to the
+/* The pill: a 40×30 track with a 16px knob that slides 18px to the
  * right in dark mode — the mise.jdx.dev appearance switch geometry. */
 .pill {
   position: relative;
   display: inline-flex;
   align-items: center;
   width: 40px;
-  height: 22px;
+  height: 30px;
   padding: 2px;
   border: 1px solid var(--line);
   border-radius: 999px;

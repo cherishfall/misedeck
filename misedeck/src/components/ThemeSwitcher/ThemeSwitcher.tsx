@@ -47,26 +47,19 @@ export function ThemeSwitcher({ iconOnly = false }: ThemeSwitcherProps) {
   }
 
   return (
-    <div
-      className={styles.switcher}
-      role="group"
-      aria-label={t(I18N_KEYS.theme.switcherLabel)}
+    <button
+      type="button"
+      className={styles.pill}
+      role="switch"
+      aria-checked={theme === "dark"}
+      aria-label={label}
+      title={label}
+      onClick={toggle}
     >
-      <span className={styles.label}>{t(I18N_KEYS.theme.switcherLabel)}</span>
-      <button
-        type="button"
-        className={styles.pill}
-        role="switch"
-        aria-checked={theme === "dark"}
-        aria-label={label}
-        title={label}
-        onClick={toggle}
-      >
-        <span className={theme === "dark" ? styles.knobDark : styles.knob} aria-hidden="true">
-          <ThemeIcon theme={theme} />
-        </span>
-      </button>
-    </div>
+      <span className={theme === "dark" ? styles.knobDark : styles.knob} aria-hidden="true">
+        <ThemeIcon theme={theme} />
+      </span>
+    </button>
   );
 }
 

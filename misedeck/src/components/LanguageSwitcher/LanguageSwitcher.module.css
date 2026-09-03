@@ -64,7 +64,7 @@
 }
 
 .current {
-  max-width: 84px;
+  max-width: 67px;
   overflow: hidden;
   text-overflow: ellipsis;
 }

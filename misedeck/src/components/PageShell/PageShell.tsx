@@ -179,6 +179,7 @@ function NavItem({ path, label, glyph, active, collapsed }: NavItemProps) {
 // Every item carries a tooltip naming its destination in BOTH expanded and
 // collapsed states, so the icon's meaning is always discoverable.
 const NAV_ITEMS = [
+  { path: "/", labelKey: I18N_KEYS.nav.home, glyph: "H" },
   { path: "/preview", labelKey: I18N_KEYS.preview.nav, glyph: "P" },
   { path: "/tools", labelKey: I18N_KEYS.nav.tools, glyph: "T" },
   { path: "/env", labelKey: I18N_KEYS.nav.env, glyph: "E" },
@@ -187,7 +188,6 @@ const NAV_ITEMS = [
 ];
 
 const BOTTOM_ITEMS = [
-  { path: "/", labelKey: I18N_KEYS.nav.home, glyph: "H" },
   { path: "/doctor", labelKey: I18N_KEYS.nav.doctor, glyph: "D" },
   { path: "/settings", labelKey: I18N_KEYS.nav.settings, glyph: "S" },
 ];
