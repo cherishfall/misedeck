@@ -46,6 +46,17 @@ MiseDeck 每个页面、组件、样式和文案都必须遵守的交互与呈�
 - 过期版本一律渲染为升级路径：`2026.8.14 ▹ 2026.9.0`，绝不直接贴 CLI 原始输出，绝不只靠颜色表达。
 - 弹层和菜单渲染在应用窗口内；绝不用独立 overlay 窗口。
 
+## 浮层
+
+弹层和菜单——语言切换、目录最近目录菜单，以及今后任何浮层——共用同一个 primitive：`FloatingMenu`。这些规则保证它们行为一致；再手写第二个弹层就是 bug。
+
+- 通过 `createPortal` 渲染到 `document.body`——绝不用独立 overlay 窗口（见上文「文案」）。自定义属性声明在 `:root`，所以 body 层级仍能继承主题 token。正是 portal 化，让折叠后的 55px 栏不再裁掉 120px 的语言菜单。
+- 位置靠手写：从触发器的 `getBoundingClientRect` 计算；接受 `placement`（`up`/`down`）和对齐参数。不引入定位库——本项目零 UI 库、零定位库。不做超出所请求方向的自动翻转。
+- 点击外部以**触发器 ref 与 portal 容器 ref 联合判断**。portal 化后菜单渲染到旧 root 之外；只测旧 root 会把菜单内部的点击误判为「点在外面」而立即关闭。
+- z-index 取自 `var(--z-popover)`（60）——高于 `--z-deck`（40），低于 `--z-modal`（100）。绝不在弹层上硬编码 `z-index`；token 是唯一真相来源。
+- 遵循 WAI-ARIA 菜单按钮模式：方向键上下在选项间移动，Home/End 跳到首项/末项，Enter/Space 选择（原生按钮激活），Esc 关闭，Tab 关闭并移出焦点。打开时焦点进入首项，关闭时焦点回到触发器（Tab 关闭时除外）。用 `aria-controls` 把触发器和菜单关联；保留 `role="menu"`/`role="menuitem"`、`aria-haspopup="menu"`、`aria-expanded`，并在当前项上保留 `aria-current`。
+- 无入场动画。`visual-language.md` 只允许两种环境动效；弹层淡入或滑入是 bug。
+
 ## 经济地验收
 
 UI 改动的默认验收零截图：构建、把动过的页面跑一遍、对 diff 做机械自查——数据单元格带 `nowrap`/`min-width: 0`、颜色来自 token、文案是 i18n key、无已退休词汇、对比度按 token 取值推算成立。只有改动涉及布局结构、或人类要求时，才动用截图或手动点验。如果没人看过渲染结果，在 issue 上标注「未经视觉验证」然后继续。绝不允许虚报没做过的视觉验证。

@@ -110,6 +110,7 @@
   /* ---------- 6. Z-index ---------- */
 
   --z-deck: 40; /* execution deck (above main, below modal) */
+  --z-popover: 60; /* portaled menus / popovers (above deck, below modal) */
   --z-modal: 100; /* future modal layer */
 }
 

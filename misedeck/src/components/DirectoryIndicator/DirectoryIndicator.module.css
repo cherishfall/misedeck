@@ -100,7 +100,7 @@
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-panel);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--void) 60%, transparent);
-  z-index: 20;
+  z-index: var(--z-popover);
   overflow: hidden;
 }
 

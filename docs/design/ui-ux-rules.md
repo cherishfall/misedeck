@@ -46,6 +46,37 @@ Before shipping any screen, ask: **could a mise CLI user predict what this scree
 - Outdated versions render as the upgrade path: `2026.8.14 ▹ 2026.9.0`, never as raw CLI prose, never as color alone.
 - Popovers and menus render inside the app window; never as separate overlay windows.
 
+## Floating layers
+
+Popovers and menus — the language switcher, the directory recents menu, and
+any future floating surface — share one primitive, `FloatingMenu`. These
+rules keep them consistent; hand-rolling a second popover is a bug.
+
+- Render through `createPortal` into `document.body` — never a separate
+  overlay window (see `Copy` above). Custom properties live on `:root`, so
+  themed tokens still inherit at body level. Portaling is exactly what lets
+  the collapsed 55px rail stop clipping the 120px language menu.
+- Position by hand from the trigger's `getBoundingClientRect`; accept a
+  `placement` prop (`up` / `down`) and an alignment. No positioning library —
+  the project is zero-UI / zero-positioning-library. No auto-flip beyond the
+  requested placement.
+- Click-outside is judged against the **trigger ref and the portal container
+  ref together**. Once portaled, the menu renders outside its old root;
+  testing only the old root misreads an in-menu click as "outside" and closes
+  it instantly.
+- z-index comes from `var(--z-popover)` (60) — above `--z-deck` (40), below
+  `--z-modal` (100). Never hardcode a `z-index` on a popover; the token is the
+  single source of truth.
+- Follow the WAI-ARIA Menu Button Pattern: Arrow Up/Down move between items,
+  Home/End jump to first/last, Enter/Space select (native button activation),
+  Escape closes, Tab closes and moves focus out. On open, focus enters the
+  first item; on close, focus returns to the trigger (except when Tab closed
+  it). Link trigger to menu with `aria-controls`; keep `role="menu"` /
+  `role="menuitem"`, `aria-haspopup="menu"`, `aria-expanded`, and
+  `aria-current` on the active item.
+- No entrance animation. `visual-language.md` permits only two ambient
+  motions; a popover fading or sliding in is a bug.
+
 ## Verify economically
 
 Default verification for a UI change is cheap: build, run the page you touched once, and self-audit the diff mechanically — data cells carry `nowrap`/`min-width: 0`, colors come from tokens, strings are i18n keys, retired vocabulary is absent, contrast is sound by token values. Reach for screenshots or a manual click-through only when the change restructures layout, or a human asks. If nobody saw the rendered result, mark the issue "not visually verified" and move on. Never claim visual verification you did not perform.

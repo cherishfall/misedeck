@@ -1,0 +1,22 @@
+/* FloatingMenu — the portal layer shared by every popover/menu in
+ * MiseDeck (issue #63). Rendered into `document.body` via createPortal,
+ * so it escapes the sidebar's `overflow: hidden` and paints above the
+ * execution deck. Carries the panel surface + z-index; callers provide
+ * the inner layout and items (role="menuitem"). No entrance animation —
+ * visual-language.md permits only the two ambient motions.
+ *
+ * Layout: fixed positioning, top/left supplied inline by the component
+ * from the trigger's getBoundingClientRect (viewport coordinates — body
+ * has no transform, so fixed == viewport). */
+
+.layer {
+  position: fixed;
+  z-index: var(--z-popover);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-panel);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--void) 60%, transparent);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
