@@ -86,22 +86,9 @@
   cursor: not-allowed;
 }
 
-.recentsRoot {
-  position: relative;
-}
-
 .popover {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
   min-width: 280px;
   max-width: 480px;
-  background: var(--panel);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-panel);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--void) 60%, transparent);
-  z-index: var(--z-popover);
-  overflow: hidden;
 }
 
 .popoverHeader {

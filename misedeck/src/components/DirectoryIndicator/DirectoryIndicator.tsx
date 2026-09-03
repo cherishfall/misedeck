@@ -18,6 +18,7 @@ import {
 import { useExecutionContext } from "../ExecutionPanel";
 
 import { IconButton } from "../IconButton/IconButton";
+import { FloatingMenu } from "../FloatingMenu";
 
 import styles from "./DirectoryIndicator.module.css";
 
@@ -27,29 +28,9 @@ export function DirectoryIndicator() {
   const { openInTerminal, openOutcome, consumeOpenOutcome } = useActivation();
   const { state: execState } = useExecutionContext();
   const [recentsOpen, setRecentsOpen] = useState(false);
-  const recentsRef = useRef<HTMLDivElement | null>(null);
   const [copyHint, setCopyHint] = useState(false);
   const [openHint, setOpenHint] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const openHintTimer = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!recentsOpen) return;
-    const onPointer = (e: PointerEvent) => {
-      const root = recentsRef.current;
-      if (root && e.target instanceof Node && !root.contains(e.target)) {
-        setRecentsOpen(false);
-      }
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setRecentsOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointer);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onPointer);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [recentsOpen]);
 
   const lastOutcomeRef = useRef<OpenTerminalOutcome | null>(null);
   useEffect(() => {
@@ -169,50 +150,62 @@ export function DirectoryIndicator() {
             {copyHint ? t(I18N_KEYS.activation.copiedHint) : t(I18N_KEYS.activation.copyCommandLabel)}
           </button>
 
-          <div className={styles.recentsRoot} ref={recentsRef}>
-            <button
-              type="button"
-              className={recentsOpen || recents.length > 0 ? styles.action : styles.actionDisabled}
-              onClick={() => setRecentsOpen((v) => !v)}
-              aria-haspopup="menu"
-              aria-expanded={recentsOpen}
-              disabled={recents.length === 0 && !recentsOpen}
-              data-testid="directory-indicator-recents"
-            >
-              {t(I18N_KEYS.directory.recentsButton)} ▾
-            </button>
-            {recentsOpen && recents.length > 0 && (
-              <div className={styles.popover} role="menu">
-                <div className={styles.popoverHeader}>{t(I18N_KEYS.directory.recentsHeader)}</div>
-                <ul className={styles.recentsList}>
-                  {recents.map((recent) => (
-                    <li key={recent} className={styles.recentItem}>
-                      <button
-                        type="button"
-                        className={styles.recentPick}
-                        onClick={() => {
-                          setDirectory(recent);
-                          setRecentsOpen(false);
-                        }}
-                        role="menuitem"
-                        title={recent}
-                      >
-                        <span className={styles.recentPath}>{recent}</span>
-                      </button>
-                      <IconButton
-                        aria-label={t(I18N_KEYS.directory.removeRecentLabel)}
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeRecent(recent)}
-                      >
-                        ×
-                      </IconButton>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+          <FloatingMenu
+            open={recentsOpen && recents.length > 0}
+            onOpenChange={setRecentsOpen}
+            placement="down"
+            align="end"
+            gap={6}
+            aria-label={t(I18N_KEYS.directory.recentsHeader)}
+            trigger={(tp) => (
+              <button
+                type="button"
+                className={recentsOpen || recents.length > 0 ? styles.action : styles.actionDisabled}
+                onClick={tp.onClick}
+                aria-haspopup={tp["aria-haspopup"]}
+                aria-expanded={tp["aria-expanded"]}
+                aria-controls={tp["aria-controls"]}
+                ref={tp.ref}
+                disabled={recents.length === 0 && !recentsOpen}
+                data-testid="directory-indicator-recents"
+              >
+                {t(I18N_KEYS.directory.recentsButton)} ▾
+              </button>
             )}
-          </div>
+          >
+            <div className={styles.popover}>
+              <div className={styles.popoverHeader}>{t(I18N_KEYS.directory.recentsHeader)}</div>
+              <ul className={styles.recentsList}>
+                {recents.map((recent) => (
+                  <li key={recent} className={styles.recentItem}>
+                    <button
+                      type="button"
+                      className={styles.recentPick}
+                      onClick={() => {
+                        setDirectory(recent);
+                        setRecentsOpen(false);
+                      }}
+                      role="menuitem"
+                      tabIndex={-1}
+                      title={recent}
+                    >
+                      <span className={styles.recentPath}>{recent}</span>
+                    </button>
+                    <IconButton
+                      aria-label={t(I18N_KEYS.directory.removeRecentLabel)}
+                      variant="ghost"
+                      size="sm"
+                      role="menuitem"
+                      tabIndex={-1}
+                      onClick={() => removeRecent(recent)}
+                    >
+                      ×
+                    </IconButton>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </FloatingMenu>
 
           <IconButton
             aria-label={t(I18N_KEYS.directory.pickerLabel)}
