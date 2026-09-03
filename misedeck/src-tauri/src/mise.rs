@@ -500,9 +500,10 @@ pub fn mise_ls(
 
 /// `mise ls --json <tool>` — the installed versions for a single
 /// tool, including non-active ones (faithful to `mise ls <tool>`).
-/// Returns the raw JSON object mise emits (`{tool: [items...]}`); the
-/// typed `MiseLsItem` shape above documents the per-item fields. The
-/// JS side flattens the single-tool payload into a row list.
+/// Unlike the whole-list `mise ls --json`, mise emits a bare JSON
+/// array here (`[items...]`, no tool key); the typed `MiseLsItem`
+/// shape above documents the per-item fields. The JS side normalises
+/// the array into a row list.
 pub fn mise_ls_tool(
     mise_path: &Path,
     cwd: Option<&Path>,

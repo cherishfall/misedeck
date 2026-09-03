@@ -1,6 +1,7 @@
 // Integration tests for the read-only tools commands (issue #21).
 //
 //   * tools_ls        → mise ls --json
+//   * tools_ls_tool   → mise ls --json <tool>
 //   * tools_outdated  → mise outdated --json --bump
 //   * tools_ls_remote → mise ls-remote --json <tool>
 //
@@ -14,7 +15,7 @@
 
 use std::path::PathBuf;
 
-use misedeck_lib::mise::{code, mise_ls, mise_ls_remote, mise_outdated};
+use misedeck_lib::mise::{code, mise_ls, mise_ls_remote, mise_ls_tool, mise_outdated};
 use misedeck_lib::JsonResult;
 use serial_test::serial;
 
@@ -77,6 +78,43 @@ fn tools_ls_garbage_stdout_returns_parse_failed() {
         let err = mise_ls(&script, None).expect_err("non-JSON stdout should yield Err");
         assert_eq!(err.code, code::PARSE_FAILED);
     });
+}
+
+#[test]
+#[serial]
+fn tools_ls_tool_returns_array_of_installed_versions() {
+    // Unlike the whole-list `mise ls --json` (an object keyed by tool),
+    // the single-tool query returns a bare array. The JS parser used to
+    // reject that shape, so the page showed an empty state despite
+    // installed versions (issue #69) — pin the array contract here.
+    let script = fixture_script();
+    with_slug("ls---json-java", || {
+        let v = mise_ls_tool(&script, None, "java").expect("ls --json java should yield Ok");
+        let arr = v.as_array().expect("single-tool ls payload must be a JSON array");
+        assert_eq!(arr.len(), 11, "expected every installed version, got {v:?}");
+        assert_eq!(arr[0]["version"], "oracle-8");
+        assert_eq!(arr[0]["active"], false);
+        // Non-active versions are part of the payload, and exactly one
+        // version is active — the row list is not filtered down to it.
+        let active = arr.iter().filter(|i| i["active"] == true).count();
+        assert_eq!(active, 1, "expected one active version, got {active}");
+    });
+}
+
+#[test]
+fn tools_ls_tool_rejects_empty_tool() {
+    // Same boundary guard as `mise ls-remote`: an empty tool is
+    // rejected before invoking mise so the runner never sees a
+    // half-formed argv.
+    let script = fixture_script();
+    let err = mise_ls_tool(&script, None, "")
+        .expect_err("empty tool should yield Err before spawning");
+    assert_eq!(err.code, code::COMMAND_FAILED);
+    assert!(
+        err.message.contains("tool"),
+        "message should mention the tool arg, got {:?}",
+        err.message
+    );
 }
 
 #[test]

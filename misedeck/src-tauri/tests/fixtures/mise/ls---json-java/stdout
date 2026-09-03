@@ -1,0 +1,80 @@
+[
+  {
+    "version": "oracle-8",
+    "install_path": "/Users/example/.local/share/mise/installs/java/oracle-8",
+    "symlinked_to": "/Users/example/.local/share/mise/installs/java/oracle-8",
+    "installed": true,
+    "active": false
+  },
+  {
+    "version": "oracle-8.0",
+    "install_path": "/Users/example/.local/share/mise/installs/java/oracle-8.0",
+    "symlinked_to": "/Users/example/.local/share/mise/installs/java/oracle-8.0",
+    "installed": true,
+    "active": false
+  },
+  {
+    "version": "oracle-8.0.503",
+    "install_path": "/Users/example/.local/share/mise/installs/java/oracle-8.0.503",
+    "installed": true,
+    "active": false
+  },
+  {
+    "version": "oracle-17",
+    "install_path": "/Users/example/.local/share/mise/installs/java/oracle-17",
+    "symlinked_to": "/Users/example/.local/share/mise/installs/java/oracle-17",
+    "installed": true,
+    "active": false
+  },
+  {
+    "version": "oracle-17.0",
+    "install_path": "/Users/example/.local/share/mise/installs/java/oracle-17.0",
+    "symlinked_to": "/Users/example/.local/share/mise/installs/java/oracle-17.0",
+    "installed": true,
+    "active": false
+  },
+  {
+    "version": "oracle-17.0.20.1",
+    "install_path": "/Users/example/.local/share/mise/installs/java/oracle-17.0.20.1",
+    "installed": true,
+    "active": false
+  },
+  {
+    "version": "oracle-21",
+    "install_path": "/Users/example/.local/share/mise/installs/java/oracle-21",
+    "symlinked_to": "/Users/example/.local/share/mise/installs/java/oracle-21",
+    "installed": true,
+    "active": false
+  },
+  {
+    "version": "oracle-21.0",
+    "install_path": "/Users/example/.local/share/mise/installs/java/oracle-21.0",
+    "symlinked_to": "/Users/example/.local/share/mise/installs/java/oracle-21.0",
+    "installed": true,
+    "active": false
+  },
+  {
+    "version": "oracle-21.0.9",
+    "install_path": "/Users/example/.local/share/mise/installs/java/oracle-21.0.9",
+    "installed": true,
+    "active": false
+  },
+  {
+    "version": "oracle-24",
+    "install_path": "/Users/example/.local/share/mise/installs/java/oracle-24",
+    "symlinked_to": "/Users/example/.local/share/mise/installs/java/oracle-24",
+    "installed": true,
+    "active": false
+  },
+  {
+    "version": "oracle-24.0.3",
+    "requested_version": "oracle-24.0.3",
+    "install_path": "/Users/example/.local/share/mise/installs/java/oracle-24.0.3",
+    "source": {
+      "type": "mise.toml",
+      "path": "/Users/example/.config/mise/config.toml"
+    },
+    "installed": true,
+    "active": true
+  }
+]

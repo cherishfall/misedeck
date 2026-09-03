@@ -171,8 +171,9 @@ export function useLsTool(
   });
 }
 
-/** Same convenience for `useLsTool`. Flattens the single-tool JSON
- *  payload (`{tool: [items...]}`) into a flat `MiseLsItem[]` list. */
+/** Same convenience for `useLsTool`. The single-tool payload is a bare
+ *  array of items (`[items...]`), which `parseLsPayload` normalises
+ *  into one group; the groups are flattened into a `MiseLsItem[]`. */
 export function useParsedLsTool(
   tool: string,
 ): {

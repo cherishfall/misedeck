@@ -69,21 +69,33 @@ export function parseLsItem(value: unknown): MiseLsItem | null {
   };
 }
 
-/** Parse the `mise ls --json` payload (`{tool: [items...]}`). */
+function parseLsItems(rows: unknown[]): MiseLsItem[] {
+  const items: MiseLsItem[] = [];
+  for (const row of rows) {
+    const parsed = parseLsItem(row);
+    if (parsed) items.push(parsed);
+  }
+  return items;
+}
+
+/** Parse the `mise ls --json` payload. mise emits two shapes for the
+ *  same command: the whole-list query (`mise ls --json`) returns an
+ *  object keyed by tool (`{tool: [items...]}`), while a single-tool
+ *  query (`mise ls --json <tool>`) returns a bare array of items.
+ *  Both are accepted — an array is normalised into one group so
+ *  callers stay unchanged. The array shape carries no tool name, so
+ *  the group's `tool` is empty; the single-tool caller flattens the
+ *  groups and never reads it (issue #69). */
 export function parseLsPayload(
   value: unknown,
 ): Array<{ tool: string; items: MiseLsItem[] }> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) return [];
+  if (value === null || typeof value !== "object") return [];
+  if (Array.isArray(value)) return [{ tool: "", items: parseLsItems(value) }];
   const obj = value as Record<string, unknown>;
   const out: Array<{ tool: string; items: MiseLsItem[] }> = [];
   for (const [tool, raw] of Object.entries(obj)) {
     if (!Array.isArray(raw)) continue;
-    const items: MiseLsItem[] = [];
-    for (const row of raw) {
-      const parsed = parseLsItem(row);
-      if (parsed) items.push(parsed);
-    }
-    out.push({ tool, items });
+    out.push({ tool, items: parseLsItems(raw) });
   }
   // Stable order: alphabetic by tool name so the table doesn't shuffle
   // between refetches.
