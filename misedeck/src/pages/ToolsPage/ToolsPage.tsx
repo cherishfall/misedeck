@@ -77,6 +77,14 @@ interface ToolRow {
   id: string;
 }
 
+/** A tool + version pair to be uninstalled (issues #56 + #70). The
+ *  installed-versions section supplies its own tool name; the top table
+ *  supplies the row's tool. Both resolve to `mise uninstall <tool>@<version>`. */
+interface UninstallTarget {
+  tool: string;
+  version: string;
+}
+
 // ---------- Args builders (mirror the Rust helpers) ----------
 //
 // The Rust side defines `mise_install_argv`, `mise_uninstall_argv`,
@@ -140,8 +148,9 @@ export function ToolsPage() {
   // The uninstall confirmation (issue #56): clicking "Uninstall" opens a
   // dialog showing the exact `mise uninstall <tool>@<version>` command;
   // the mutation only dispatches after the user confirms. No uninstall
-  // runs without this confirmation.
-  const [pendingUninstall, setPendingUninstall] = useState<ToolRow | null>(null);
+  // runs without this confirmation. The installed-versions section
+  // (issue #70) feeds the same dialog with its own tool name.
+  const [pendingUninstall, setPendingUninstall] = useState<UninstallTarget | null>(null);
 
   // First check: is mise even available? If not, render the missing
   // state and don't even try the tools queries.
@@ -222,6 +231,24 @@ export function ToolsPage() {
         </span>
       ),
     },
+    {
+      // Uninstall this exact installed version (issue #70). Reuses the
+      // top table's confirm + runMutation flow so the trust gate and
+      // single-flight guard apply unchanged.
+      key: "actions",
+      header: t(I18N_KEYS.tools.columns.actions),
+      cell: (r) => (
+        <Button
+          variant="danger"
+          size="sm"
+          disabled={isRunning}
+          onClick={() => setPendingUninstall({ tool: installedQuery, version: r.version })}
+          data-testid={`versions-installed-uninstall-${r.version}`}
+        >
+          {t(I18N_KEYS.tools.actions.uninstall)}
+        </Button>
+      ),
+    },
   ];
 
   const remoteColumns: TableColumn<MiseLsRemoteItem>[] = [
@@ -267,8 +294,15 @@ export function ToolsPage() {
     if (prev === "running" && execState.status === "ok") {
       void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
       void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
+      // The installed-versions section (issue #70) reads its own query;
+      // an uninstall must drop the row so the pager can step back.
+      if (installedQuery.length > 0) {
+        void queryClient.invalidateQueries({
+          queryKey: ["tools", "ls-tool", cwd, installedQuery],
+        });
+      }
     }
-  }, [execState.status, cwd, queryClient]);
+  }, [execState.status, cwd, queryClient, installedQuery]);
 
   // The execution panel reducer is the single source of truth for
   // "is a mutation in flight". A single `running` flag feeds every
@@ -427,7 +461,7 @@ export function ToolsPage() {
         <RowActions
           row={r}
           disabled={isRunning}
-          onUninstall={() => setPendingUninstall(r)}
+          onUninstall={() => setPendingUninstall({ tool: r.tool, version: r.version })}
           onUpgrade={() =>
             void runMutation(() => miseUpgradeArgs(r.tool))
           }
@@ -532,8 +566,6 @@ export function ToolsPage() {
           toolPlaceholder={t(I18N_KEYS.tools.queries.installed.toolPlaceholder)}
           runLabel={t(I18N_KEYS.tools.queries.installed.run)}
           clearLabel={t(I18N_KEYS.tools.queries.installed.clear)}
-          showAllLabel={(n) => t(I18N_KEYS.tools.queries.installed.showAll, { count: n })}
-          showLessLabel={t(I18N_KEYS.tools.queries.installed.showLess)}
           emptyTitle={t(I18N_KEYS.tools.queries.installed.emptyTitle)}
           emptyBody={t(I18N_KEYS.tools.queries.installed.emptyBody)}
         />
@@ -555,8 +587,6 @@ export function ToolsPage() {
           toolPlaceholder={t(I18N_KEYS.tools.queries.remote.toolPlaceholder)}
           runLabel={t(I18N_KEYS.tools.queries.remote.run)}
           clearLabel={t(I18N_KEYS.tools.queries.remote.clear)}
-          showAllLabel={(n) => t(I18N_KEYS.tools.queries.remote.showAll, { count: n })}
-          showLessLabel={t(I18N_KEYS.tools.queries.remote.showLess)}
           emptyTitle={t(I18N_KEYS.tools.queries.remote.emptyTitle)}
           emptyBody={t(I18N_KEYS.tools.queries.remote.emptyBody)}
         />

@@ -1,0 +1,62 @@
+/* Pagination — client-side pager (issue #70). Consumes design tokens
+ * only; no new values, no new animations. */
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+}
+
+.status {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.sep {
+  color: var(--dim);
+  margin: 0 var(--space-2);
+}
+
+.sizeControl,
+.jumpControl {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--ice);
+}
+
+.sizeInput,
+.jumpInput {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 6px;
+  width: 64px;
+  transition:
+    border-color var(--motion-state-change) ease,
+    box-shadow var(--motion-state-change) ease;
+}
+
+.sizeInput:focus-visible,
+.jumpInput:focus-visible {
+  outline: none;
+  border-color: var(--beam);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--beam) 25%, transparent);
+}
+
+.help {
+  color: var(--dim);
+  font-size: var(--size-label);
+}

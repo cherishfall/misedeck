@@ -18,7 +18,7 @@ Before shipping any screen, ask: **could a mise CLI user predict what this scree
 
 - Every mutating action shows the exact mise command — including confirmations. A confirmation is a teaching moment: "This will run `mise uninstall go@1.27.0`."
 - Empty states guide inside the GUI: show the button or the resolved global data. An empty state that tells the user to go run a CLI command has failed its job.
-- Long result lists (queries, logs, versions) are collapsible and clearable; past ~10 rows, fold behind an "show all N" affordance.
+- Long result lists (queries, logs, versions) are clearable and paginate past ~10 rows: render the first page of 10 and show a pager (prev / page X of Y · N total / next / jump-to-page) instead of folding behind a "show all N" button. Page size is a free numeric input floored at 10.
 
 ## Interaction integrity
 

@@ -15,6 +15,7 @@ export { IconButton } from "./IconButton/IconButton";
 export { LanguageSwitcher } from "./LanguageSwitcher/LanguageSwitcher";
 export { MiseMissingState } from "./MiseMissingState/MiseMissingState";
 export { PageShell } from "./PageShell/PageShell";
+export { Pagination } from "./Pagination/Pagination";
 export { Panel } from "./Panel/Panel";
 export { ProgressDot } from "./ProgressDot/ProgressDot";
 export { Table, type TableColumn } from "./Table/Table";

@@ -108,30 +108,36 @@
       "versionPlaceholder": "version (e.g. 22.11.0)"
     },
     "queries": {
-      "installed": {
-        "title": "Installed versions",
-        "toolPlaceholder": "tool (e.g. node)",
-        "run": "Run",
-        "clear": "Clear",
-        "showAll": "Show all {{count}}",
-        "showLess": "Show fewer",
-        "emptyTitle": "No installed versions",
-        "emptyBody": "`mise ls <tool>` lists every installed version — active and inactive. Run it above to query a tool.",
-        "active": "active",
-        "activeColumn": "Active"
-      },
-      "remote": {
-        "title": "Remote versions",
-        "toolPlaceholder": "tool (e.g. node)",
-        "run": "Run",
-        "clear": "Clear",
-        "showAll": "Show all {{count}}",
-        "showLess": "Show fewer",
-        "emptyTitle": "No remote versions",
-        "emptyBody": "`mise ls-remote <tool>` lists versions available upstream. Run it above to query a tool.",
-        "created": "Created"
-      }
+    "installed": {
+      "title": "Installed versions",
+      "toolPlaceholder": "tool (e.g. node)",
+      "run": "Run",
+      "clear": "Clear",
+      "emptyTitle": "No installed versions",
+      "emptyBody": "`mise ls <tool>` lists every installed version — active and inactive. Run it above to query a tool.",
+      "active": "active",
+      "activeColumn": "Active"
     },
+    "remote": {
+      "title": "Remote versions",
+      "toolPlaceholder": "tool (e.g. node)",
+      "run": "Run",
+      "clear": "Clear",
+      "emptyTitle": "No remote versions",
+      "emptyBody": "`mise ls-remote <tool>` lists versions available upstream. Run it above to query a tool.",
+      "created": "Created"
+    },
+    "pagination": {
+      "total": "{{count}} total",
+      "pageOf": "Page {{current}} of {{total}}",
+      "pageSize": "Per page",
+      "pageSizeHelp": "Min {{min}}",
+      "prev": "Previous",
+      "next": "Next",
+      "jumpTo": "Jump to",
+      "jump": "Go"
+    }
+  },
     "confirm": {
       "uninstall": {
         "title": "Uninstall {tool}?",

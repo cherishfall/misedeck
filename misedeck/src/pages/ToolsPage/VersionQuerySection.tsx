@@ -1,26 +1,32 @@
 // VersionQuerySection — a reusable query block for the Tools page's
-// installed/remote version sections (issue #55).
+// installed/remote version sections (issue #55, pagination added in #70).
 //
 //   * installed → mise ls --json <tool>   (every version, active or not)
 //   * remote    → mise ls-remote --json <tool>  (upstream versions)
 //
-// Both require a non-empty tool name before running. Results fold past
-// ~10 rows behind a "Show all N" affordance and are clearable (clears
-// the input and the results). The exact mise command is shown as the
-// section's command hint so the GUI keeps teaching the CLI. Read-only
-// queries skip the execution panel (architecture.md); only the remote
-// rows' install hand-off routes through it.
+// Both require a non-empty tool name before running. Results paginate
+// client-side once they exceed 10 rows (mise offers no --limit /
+// --offset, so the full set is fetched and sliced here). The exact mise
+// command is shown as the section's command hint so the GUI keeps
+// teaching the CLI. Read-only queries skip the execution panel
+// (architecture.md); only the remote rows' install hand-off routes
+// through it.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { isAppError } from "../../api/mise";
 import type { JsonResult } from "../../types/tauri";
-import { Button, EmptyState, Table, type TableColumn } from "../../components";
+import { Button, EmptyState, Pagination, Table, type TableColumn } from "../../components";
 import { useExecutionContext } from "../../components/ExecutionPanel";
 
 import styles from "./VersionQuerySection.module.css";
+
+/** Below this row count the whole result renders with no pager. */
+const PAGER_THRESHOLD = 10;
+/** Page-size floor; values below reset to this on commit. */
+const MIN_PAGE_SIZE = 10;
 
 interface VersionQuerySectionProps<TRow> {
   /** Section heading (e.g. "Installed versions"). */
@@ -47,12 +53,8 @@ interface VersionQuerySectionProps<TRow> {
   toolPlaceholder: string;
   runLabel: string;
   clearLabel: string;
-  showAllLabel: (count: number) => string;
-  showLessLabel: string;
   emptyTitle: string;
   emptyBody: string;
-  /** Rows kept visible before folding; defaults to 10. */
-  foldLimit?: number;
 }
 
 export function VersionQuerySection<TRow>({
@@ -72,11 +74,8 @@ export function VersionQuerySection<TRow>({
   toolPlaceholder,
   runLabel,
   clearLabel,
-  showAllLabel,
-  showLessLabel,
   emptyTitle,
   emptyBody,
-  foldLimit = 10,
 }: VersionQuerySectionProps<TRow>) {
   const { t } = useTranslation();
   // Only one in-flight execution panel mutation at a time; surface the
@@ -84,9 +83,40 @@ export function VersionQuerySection<TRow>({
   const { state: execState } = useExecutionContext();
   const isMutationRunning = execState.status === "running";
 
-  const [expanded, setExpanded] = useState(false);
-  const folded = rows.length > foldLimit && !expanded;
-  const visibleRows = folded ? rows.slice(0, foldLimit) : rows;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(MIN_PAGE_SIZE);
+
+  const total = rows.length;
+  const showPager = total > PAGER_THRESHOLD;
+  const totalPages = showPager ? Math.max(1, Math.ceil(total / pageSize)) : 1;
+  // Clamp at render time so a page never points past the (possibly
+  // shrunken) result set — e.g. right after an uninstall empties the
+  // last page.
+  const page = showPager ? Math.min(Math.max(1, currentPage), totalPages) : 1;
+  const visibleRows = showPager
+    ? rows.slice((page - 1) * pageSize, page * pageSize)
+    : rows;
+
+  // Keep the controlled currentPage in bounds when the result set
+  // shrinks: if the last page just emptied, step back automatically so
+  // the user never lands on a blank page.
+  useEffect(() => {
+    setCurrentPage((p) => {
+      const tp = totalPages;
+      return p > tp ? tp : p;
+    });
+  }, [totalPages]);
+
+  const handleRun = () => {
+    setCurrentPage(1);
+    onRun();
+  };
+
+  const handleClear = () => {
+    setCurrentPage(1);
+    setPageSize(MIN_PAGE_SIZE);
+    onClear();
+  };
 
   return (
     <section className={styles.section} data-testid={`versions-${title}`}>
@@ -114,7 +144,7 @@ export function VersionQuerySection<TRow>({
         <Button
           variant="primary"
           size="sm"
-          onClick={onRun}
+          onClick={handleRun}
           disabled={!canRun || isMutationRunning}
           data-testid="versions-run"
         >
@@ -124,7 +154,7 @@ export function VersionQuerySection<TRow>({
           <button
             type="button"
             className={styles.clear}
-            onClick={onClear}
+            onClick={handleClear}
             disabled={isMutationRunning}
             data-testid="versions-clear"
           >
@@ -172,25 +202,15 @@ export function VersionQuerySection<TRow>({
                 rowKey={(r) => rowKey(r)}
                 empty={<EmptyState eyebrow={title} title={emptyTitle} body={emptyBody} />}
               />
-              {folded && (
-                <button
-                  type="button"
-                  className={styles.collapseToggle}
-                  onClick={() => setExpanded(true)}
-                  data-testid="versions-show-all"
-                >
-                  {showAllLabel(rows.length)}
-                </button>
-              )}
-              {expanded && rows.length > foldLimit && (
-                <button
-                  type="button"
-                  className={styles.collapseToggle}
-                  onClick={() => setExpanded(false)}
-                  data-testid="versions-show-less"
-                >
-                  {showLessLabel}
-                </button>
+              {showPager && (
+                <Pagination
+                  total={total}
+                  pageSize={pageSize}
+                  currentPage={page}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                  minPageSize={MIN_PAGE_SIZE}
+                />
               )}
             </>
           )}
