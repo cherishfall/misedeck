@@ -1,7 +1,7 @@
 # MiseDeck handoff
 
 This document is a continuation marker between autonomous driver sessions.
-Last updated: 2026-09-03 — **beta4 round COMPLETE and shipped as v1.0.0-beta.5** (tag pushed, release workflow building installers). All tickets #46–#60 done and merged to master (#46 73eb690, #47 366c079, #48 aa857fb, #49–#50/#54/#57 earlier, #51 b765193, #52 30c6afb, #53 b09708b, #55 18556c9, #56 f138901, #58 d8ede91, #59 0c7b3d8, #60 b9b1bc1). SPEC parent #45 left open intentionally — close it after the owner's in-person visual verification.
+Last updated: 2026-09-03 (session close) — **beta4 round COMPLETE and shipped as v1.0.0-beta.5**; **beta5 feedback batch 1 is the active queue: SPEC #61 + tickets #62–#64** (startable now: **#62**; #63 ← #62; #64 ← #63). (tag pushed, release workflow building installers). All tickets #46–#60 done and merged to master (#46 73eb690, #47 366c079, #48 aa857fb, #49–#50/#54/#57 earlier, #51 b765193, #52 30c6afb, #53 b09708b, #55 18556c9, #56 f138901, #58 d8ede91, #59 0c7b3d8, #60 b9b1bc1). SPEC parent #45 left open intentionally — close it after the owner's in-person visual verification.
 
 **Status:** v1 implementation (11 tickets, #34–#44) is complete and shipped as beta.4. The beta4 UI/UX feedback round (#46–#60) is now fully implemented. **Next step: owner does in-person visual verification (none of #46–#60 was visually verified, per driver instruction), then closes SPEC parent #45.** Note for verification: #56 changed the uninstall command to target `<tool>@<version>` (was `<tool>`) so the confirmation dialog's command is honest.
 
@@ -22,7 +22,12 @@ Last updated: 2026-09-03 — **beta4 round COMPLETE and shipped as v1.0.0-beta.5
 
 ## Remaining open issues
 
-- The beta4 round (#46–#60) is **done**; only SPEC parent **#45** remains open, awaiting owner visual verification before closing.
+- **Active queue — beta5 feedback batch 1** (source: `beta5-feedback-scratch.md`):
+  - **#62** Sidebar: Home moves to the top of the nav; theme switcher drops its label + box and joins the language switcher on one row (language left, theme right, equal height, no overflow in either locale). **Startable now.**
+  - **#63** Floating layer: portal-based popover primitive; migrate the language menu and close the a11y gaps. Blocked by #62.
+  - **#64** Directory switcher: migrate its popover onto the new primitive. Blocked by #63.
+  - SPEC parent **#61** — close it once #62–#64 are verified.
+- The beta4 round (#46–#60) is **done**; its SPEC parent **#45** is still open, awaiting the owner's in-person visual verification of beta.5 (none of #46–#60 was visually verified).
 - Older, not in scope: #11–#15 (chore/roadmap, no `ready-for-agent` label).
 
 ### CI fix shipped after the tag (2026-09-03)
