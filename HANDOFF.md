@@ -1,7 +1,7 @@
 # MiseDeck handoff
 
 This document is a continuation marker between autonomous driver sessions.
-Last updated: 2026-09-03 (session close) — **v1.0.0-beta.6 TAGGED AND RELEASING** (`aeef8b5` + tag `v1.0.0-beta.6`; release.yml building installers). **beta5 feedback batches 1 and 2 are IMPLEMENTED and merged to master: all 11 tickets #62–#64 and #66–#73 closed.** Only the three SPEC parents remain open (#61, #65, #45), all awaiting the owner's in-person visual verification of beta.6. (beta4 round: #46 73eb690, #47 366c079, #48 aa857fb, #49–#50/#54/#57 earlier, #51 b765193, #52 30c6afb, #53 b09708b, #55 18556c9, #56 f138901, #58 d8ede91, #59 0c7b3d8, #60 b9b1bc1.)
+Last updated: 2026-09-03 (session close) — **v1.0.0-beta.6 RELEASED** (`aeef8b5` + tag `v1.0.0-beta.6`; GitHub Pre-release published 2026-09-03T14:59:40Z with dmg/deb/rpm/AppImage/x64-setup + SHA256SUMS). **beta5 feedback batches 1 and 2 are IMPLEMENTED and merged to master: all 11 tickets #62–#64 and #66–#73 closed.** Only the three SPEC parents remain open (#61, #65, #45), all awaiting the owner's in-person visual verification of beta.6. (beta4 round: #46 73eb690, #47 366c079, #48 aa857fb, #49–#50/#54/#57 earlier, #51 b765193, #52 30c6afb, #53 b09708b, #55 18556c9, #56 f138901, #58 d8ede91, #59 0c7b3d8, #60 b9b1bc1.)
 
 **Status:** v1 implementation (11 tickets, #34–#44) is complete and shipped as beta.4. The beta4 UI/UX feedback round (#46–#60) and both beta5 batches are now fully implemented. **Next step: owner does in-person visual verification (NONE of #46–#73 was visually verified — every ticket was closed with an explicit "not visually verified" note), then closes SPEC parents #45, #61, #65.** Note for verification: #56 changed the uninstall command to target `<tool>@<version>` (was `<tool>`) so the confirmation dialog's command is honest.
 
@@ -27,6 +27,8 @@ Last updated: 2026-09-03 (session close) — **v1.0.0-beta.6 TAGGED AND RELEASIN
 - `cargo check` and `npm run ci` were both green before tagging.
 - **Push note (third time this happened):** `git push origin <tag>` failed with `CONNECT tunnel failed, response 502`; the proxy form worked: `git -c http.proxy=http://127.0.0.1:7890 push origin v1.0.0-beta.6`. `git push origin master` succeeded without the proxy in the same session — the failure is intermittent, not deterministic.
 - This release also carries the **beta.5 post-tag CI fix** (`2463528`, test-only, Linux `TERMINAL_NOT_FOUND` assertion), which was deliberately held back from beta.5 rather than re-tagging a published release.
+- **Published assets** (all six built and uploaded): `misedeck_1.0.0-beta.6_aarch64.dmg` (4.1 MB), `misedeck_1.0.0-beta.6_x64-setup.exe` (2.8 MB), `misedeck_1.0.0-beta.6_amd64.deb` (5.3 MB), `misedeck-1.0.0-beta.6-1.x86_64.rpm` (5.3 MB), `misedeck_1.0.0-beta.6_amd64.AppImage` (76.5 MB), `SHA256SUMS`.
+- The only CI annotation is the pre-existing "Node.js 20 is deprecated" notice from `actions/checkout@v4` / `setup-node@v4` / `upload-artifact@v4` — harmless, but worth upgrading those actions eventually.
 
 ## Remaining open issues
 
