@@ -1,9 +1,9 @@
 # MiseDeck handoff
 
 This document is a continuation marker between autonomous driver sessions.
-Last updated: 2026-09-03 (session close) — **beta4 round COMPLETE and shipped as v1.0.0-beta.5**; **beta5 feedback batch 1 is the active queue: SPEC #61 + tickets #62–#64** (startable now: **#62**; #63 ← #62; #64 ← #63). (tag pushed, release workflow building installers). All tickets #46–#60 done and merged to master (#46 73eb690, #47 366c079, #48 aa857fb, #49–#50/#54/#57 earlier, #51 b765193, #52 30c6afb, #53 b09708b, #55 18556c9, #56 f138901, #58 d8ede91, #59 0c7b3d8, #60 b9b1bc1). SPEC parent #45 left open intentionally — close it after the owner's in-person visual verification.
+Last updated: 2026-09-03 (session close) — **beta5 feedback batches 1 and 2 are IMPLEMENTED and merged to master: all 11 tickets #62–#64 and #66–#73 closed.** Only the three SPEC parents remain open (#61, #65, #45), all awaiting the owner's in-person visual verification. (beta4 round: #46 73eb690, #47 366c079, #48 aa857fb, #49–#50/#54/#57 earlier, #51 b765193, #52 30c6afb, #53 b09708b, #55 18556c9, #56 f138901, #58 d8ede91, #59 0c7b3d8, #60 b9b1bc1.)
 
-**Status:** v1 implementation (11 tickets, #34–#44) is complete and shipped as beta.4. The beta4 UI/UX feedback round (#46–#60) is now fully implemented. **Next step: owner does in-person visual verification (none of #46–#60 was visually verified, per driver instruction), then closes SPEC parent #45.** Note for verification: #56 changed the uninstall command to target `<tool>@<version>` (was `<tool>`) so the confirmation dialog's command is honest.
+**Status:** v1 implementation (11 tickets, #34–#44) is complete and shipped as beta.4. The beta4 UI/UX feedback round (#46–#60) and both beta5 batches are now fully implemented. **Next step: owner does in-person visual verification (NONE of #46–#73 was visually verified — every ticket was closed with an explicit "not visually verified" note), then closes SPEC parents #45, #61, #65.** Note for verification: #56 changed the uninstall command to target `<tool>@<version>` (was `<tool>`) so the confirmation dialog's command is honest.
 
 ---
 
@@ -22,13 +22,37 @@ Last updated: 2026-09-03 (session close) — **beta4 round COMPLETE and shipped 
 
 ## Remaining open issues
 
-- **Active queue — beta5 feedback batch 1** (source: `beta5-feedback-scratch.md`):
-  - **#62** Sidebar: Home moves to the top of the nav; theme switcher drops its label + box and joins the language switcher on one row (language left, theme right, equal height, no overflow in either locale). **Startable now.**
-  - **#63** Floating layer: portal-based popover primitive; migrate the language menu and close the a11y gaps. Blocked by #62.
-  - **#64** Directory switcher: migrate its popover onto the new primitive. Blocked by #63.
-  - SPEC parent **#61** — close it once #62–#64 are verified.
-- The beta4 round (#46–#60) is **done**; its SPEC parent **#45** is still open, awaiting the owner's in-person visual verification of beta.5 (none of #46–#60 was visually verified).
+- **Nothing left to implement.** All 11 tickets from both beta5 batches are closed and merged:
+
+| Ticket | What | Commit |
+| --- | --- | --- |
+| #62 | Sidebar: Home to nav head; theme pill inline with the language switcher (drops label + box), 30px to match height | `91cc9c5` |
+| #63 | `FloatingMenu` portal primitive + language menu migration; new `--z-popover: 60`; WAI-ARIA Menu Button Pattern | `89783a4` |
+| #64 | Directory switcher popover migrated onto `FloatingMenu` | `9da476b` |
+| #69 | `parseLsPayload` accepts the array payload of `mise ls --json <tool>` + new Rust test | `0c573e0` |
+| #70 | `Pagination` component (client-side) + per-row uninstall on installed versions | `b48acac` |
+| #71 | "Link a tool" section wrapping `mise link <tool>@<version> <path>` | `2faf5ca` |
+| #72 | All mise reads routed through the execution panel (`run()` now returns a result) + command copy moved into the panel; **ADR-0005** | `79a99a1` |
+| #73 | Preview page renamed to 概览/Overview; `DirectoryIndicator` persistent across global/directory modes via an explicit `mode` prop | `4378104` |
+| #67 | TasksPage hardcoded values → design tokens (24 visual + 11 cosmetic + `max-width` 1280→1200) | `be198f1` |
+| #68 | TasksPage five token-to-token mismatches (semantic colors, `.loading` missing uppercase/tracking) | `09d9ceb` |
+| #66 | Sidebar collapse toggle drops its button padding, reuses `.navItem`'s hover-only affordance | `0ed1129` |
+
+- **Open by design — three SPEC parents, all blocked on the owner's in-person visual verification:**
+  - **#61** — beta5 batch 1 SPEC (`#62–#64` closed, unverified).
+  - **#65** — beta5 batch 2 SPEC (`#66–#73` closed, unverified).
+  - **#45** — beta4 round SPEC (`#46–#60` closed, unverified).
 - Older, not in scope: #11–#15 (chore/roadmap, no `ready-for-agent` label).
+
+---
+
+## What to know before the next implementation session
+
+- **`FloatingMenu`** (`misedeck/src/components/FloatingMenu/`) is now the only floating-layer implementation. Any new popover must use it — never hand-roll markup, and never use a separate overlay window (`ui-ux-rules.md:47`).
+- **`useExecutionContext().run()` now returns a result** and every mise invocation (reads included) goes through the execution panel — see **ADR-0005**. Read hooks (`useLsTool` / `useLsRemote` / `useToolsList`) have no `queryFn`; the panel run *is* the fetch, written into the cache via `setQueryData`. `RunOptions.background` keeps app-initiated refreshes off the panel transcript. Do not reintroduce direct `invoke()` calls.
+- **Copy-command lives in the execution panel**; `DirectoryIndicator`'s copy button was deleted (#72) and `activation.copyCommand*` is retired.
+- **Naming:** the preview page is now 概览 / Overview; `directory.eyebrow` is 当前目录 / CURRENT DIRECTORY. The comment in `DirectoryIndicator.tsx` was corrected too — the terminology ban (`ui-ux-rules.md:45`) also covers 上下文 / 项目.
+- No frontend component test harness exists (no vitest/jest). Rust tests live in `misedeck/src-tauri/tests/`.
 
 ### CI fix shipped after the tag (2026-09-03)
 
