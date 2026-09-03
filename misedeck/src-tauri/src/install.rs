@@ -126,6 +126,12 @@ where
     loop {
         match child.try_wait() {
             Ok(Some(status)) => {
+                // Join readers BEFORE draining: once the child has exited the
+                // pipes are at EOF, so join() always returns. Draining first
+                // races with the reader threads and can permanently drop their
+                // last lines (truncated tail / missing error output).
+                let _ = out_thread.join();
+                let _ = err_thread.join();
                 while let Ok(line) = out_rx.try_recv() {
                     on_event(RunEvent::Stdout { line: line.clone() });
                     stdout_buf.push_str(&line);
@@ -136,8 +142,6 @@ where
                     stderr_buf.push_str(&line);
                     stderr_buf.push('\n');
                 }
-                let _ = out_thread.join();
-                let _ = err_thread.join();
                 let duration_ms = started.elapsed().as_millis() as u64;
                 let exit_code = status.code().unwrap_or(-1);
                 on_event(RunEvent::Exit {
@@ -167,8 +171,21 @@ where
                 if started.elapsed() > deadline {
                     let _ = child.kill();
                     let _ = child.wait();
+                    // Join readers BEFORE the final drain for the same reason as
+                    // the exit branch: lines the reader threads hadn't sent yet
+                    // would otherwise be lost.
                     let _ = out_thread.join();
                     let _ = err_thread.join();
+                    while let Ok(line) = out_rx.try_recv() {
+                        on_event(RunEvent::Stdout { line: line.clone() });
+                        stdout_buf.push_str(&line);
+                        stdout_buf.push('\n');
+                    }
+                    while let Ok(line) = err_rx.try_recv() {
+                        on_event(RunEvent::Stderr { line: line.clone() });
+                        stderr_buf.push_str(&line);
+                        stderr_buf.push('\n');
+                    }
                     let duration_ms = started.elapsed().as_millis() as u64;
                     on_event(RunEvent::Exit {
                         exit_code: -1,
@@ -316,6 +333,11 @@ mod tests {
         loop {
             match child.try_wait().unwrap() {
                 Some(status) => {
+                    // Join readers BEFORE draining (mirrors the production
+                    // runner): draining first races with the reader threads and
+                    // can drop their last lines.
+                    let _ = ot.join();
+                    let _ = et.join();
                     while let Ok(line) = orx.try_recv() {
                         events_for_cb
                             .lock()
@@ -328,8 +350,6 @@ mod tests {
                             .unwrap()
                             .push(RunEvent::Stderr { line });
                     }
-                    let _ = ot.join();
-                    let _ = et.join();
                     events_for_cb.lock().unwrap().push(RunEvent::Exit {
                         exit_code: status.code().unwrap_or(-1),
                         duration_ms: started.elapsed().as_millis() as u64,

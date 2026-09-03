@@ -289,6 +289,13 @@ where
     loop {
         match child.try_wait() {
             Ok(Some(status)) => {
+                // Join readers BEFORE draining: once the child has exited the
+                // pipes are at EOF, so join() is guaranteed to return. If we
+                // drained first the reader threads might not have sent their
+                // last lines yet, and we'd never see them again (race -> dropped
+                // output, e.g. truncated tail / missing error lines).
+                let _ = out_thread.join();
+                let _ = err_thread.join();
                 // Drain remaining lines.
                 while let Ok(line) = out_rx.try_recv() {
                     on_event(RunEvent::Stdout { line: line.clone() });
@@ -300,8 +307,6 @@ where
                     stderr_buf.push_str(&line);
                     stderr_buf.push('\n');
                 }
-                let _ = out_thread.join();
-                let _ = err_thread.join();
 
                 let duration_ms = started.elapsed().as_millis() as u64;
                 let exit_code = status.code().unwrap_or(-1);
@@ -335,8 +340,21 @@ where
                 if started.elapsed() > deadline {
                     let _ = child.kill();
                     let _ = child.wait();
+                    // Join readers BEFORE the final drain for the same reason as
+                    // the exit branch: lines the reader threads hadn't sent yet
+                    // would otherwise be lost.
                     let _ = out_thread.join();
                     let _ = err_thread.join();
+                    while let Ok(line) = out_rx.try_recv() {
+                        on_event(RunEvent::Stdout { line: line.clone() });
+                        stdout_buf.push_str(&line);
+                        stdout_buf.push('\n');
+                    }
+                    while let Ok(line) = err_rx.try_recv() {
+                        on_event(RunEvent::Stderr { line: line.clone() });
+                        stderr_buf.push_str(&line);
+                        stderr_buf.push('\n');
+                    }
                     on_event(RunEvent::Exit {
                         exit_code: -1,
                         duration_ms: started.elapsed().as_millis() as u64,
