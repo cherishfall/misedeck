@@ -39,7 +39,7 @@
   font-size: var(--size-label);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
-  color: var(--dim);
+  color: var(--ice);
 }
 
 .title {
@@ -93,7 +93,7 @@
   font-size: var(--size-label);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
-  color: var(--text);
+  color: var(--ice);
   background: transparent;
   border: 1px solid var(--line);
   border-radius: 4px;
@@ -113,9 +113,9 @@
 }
 
 .errorState {
-  border: 1px solid var(--breach);
+  border: 1px solid var(--tint-danger);
   border-radius: var(--radius-panel);
-  background: var(--panel);
+  background: var(--tint-danger-bg);
   padding: var(--space-4);
   display: flex;
   flex-direction: column;
@@ -140,9 +140,9 @@
 .errorStderr {
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  color: var(--dim);
-  background: var(--void);
-  border: 1px solid var(--line);
+  color: var(--breach);
+  background: color-mix(in srgb, var(--breach) 8%, transparent);
+  border: 1px solid var(--tint-danger);
   border-radius: 4px;
   padding: var(--space-3);
   overflow-x: auto;
@@ -326,7 +326,9 @@
   padding: var(--space-6);
   color: var(--dim);
   font-family: var(--font-mono);
-  font-size: var(--size-data);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
 }
 
 .dot {
