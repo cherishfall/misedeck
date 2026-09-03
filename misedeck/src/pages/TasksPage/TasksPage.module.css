@@ -9,14 +9,22 @@
  * non-existent custom properties (--color-fg-*, --color-line-*,
  * --radius-sm/md, --space-7, …) so whole declarations dropped silently.
  * Every reference now resolves to tokens.css; small-element radii use
- * the 4px literal, matching the other pages. */
+ * the 4px literal, matching the other pages.
+ *
+ * Issue #67 token-alignment sweep: every hardcoded value that differed
+ * from its token (or from the same element on sibling pages) is now
+ * resolved through a token; values that already equaled a token are
+ * referenced through it so future token changes don't silently skip
+ * this page. The five 4px small-element radii intentionally stay
+ * literal (project-wide convention, no --radius-sm token). The five
+ * token-to-token mismatches are handled separately in #68. */
 
 .page {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
   padding: var(--space-6) var(--space-6);
-  max-width: 1280px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -28,31 +36,31 @@
 
 .eyebrow {
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--dim);
 }
 
 .title {
   font-family: var(--font-display);
-  font-size: 32px;
+  font-size: var(--size-display);
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--tracking-display);
   color: var(--text);
   margin: 0;
 }
 
 .commandHint {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--size-data);
   color: var(--ice);
   margin: 0;
 }
 
 .hint {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--size-base);
   color: var(--dim);
   margin: 0;
   max-width: 70ch;
@@ -60,7 +68,7 @@
 
 .contextPath {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--size-data);
   color: var(--dim);
   word-break: break-all;
 }
@@ -74,24 +82,24 @@
 
 .toolbarHint {
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--dim);
 }
 
 .refresh {
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--text);
   background: transparent;
   border: 1px solid var(--line);
   border-radius: 4px;
-  padding: 6px 10px;
+  padding: var(--space-1) 10px;
   cursor: pointer;
-  transition: border-color 120ms ease-out, color 120ms ease-out;
+  transition: border-color var(--motion-state-change) ease-out, color var(--motion-state-change) ease-out;
 }
 
 .refresh:hover:not(:disabled) {
@@ -116,22 +124,22 @@
 
 .errorLabel {
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--breach);
 }
 
 .errorBody {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: var(--size-base);
   color: var(--dim);
   margin: 0;
 }
 
 .errorStderr {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--size-label);
   color: var(--dim);
   background: var(--void);
   border: 1px solid var(--line);
@@ -151,7 +159,7 @@
   color: var(--text);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .taskName {
@@ -162,15 +170,15 @@
   color: var(--dim);
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: var(--tracking-label);
   border: 1px solid var(--line);
   border-radius: 4px;
-  padding: 1px 6px;
+  padding: 2px 6px;
 }
 
 .cellRun {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--size-data);
   color: var(--text);
   word-break: break-word;
   display: block;
@@ -183,7 +191,7 @@
 
 .cellDescription {
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: var(--size-data);
   color: var(--dim);
   display: block;
   max-width: 280px;
@@ -195,11 +203,11 @@
 
 .cellDepends {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--size-label);
   color: var(--text);
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--space-1);
   max-width: 220px;
 }
 
@@ -218,7 +226,7 @@
 .cellActions {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   white-space: nowrap;
 }
 
@@ -238,7 +246,7 @@
 
 .editFormTitle {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: var(--size-base);
   font-weight: 600;
   color: var(--text);
   margin: 0;
@@ -246,7 +254,7 @@
 
 .editFormSub {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--size-label);
   color: var(--dim);
   margin: 0;
 }
@@ -254,13 +262,13 @@
 .editFormField {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .editFormLabel {
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--dim);
 }
@@ -274,7 +282,7 @@
   border-radius: 4px;
   padding: 6px 10px;
   outline: none;
-  transition: border-color 120ms ease-out;
+  transition: border-color var(--motion-state-change) ease-out;
 }
 
 .editFormInput:focus {
@@ -293,7 +301,7 @@
 
 .editFormHelp {
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: var(--size-label);
   color: var(--dim);
   margin: 0;
 }
@@ -306,7 +314,7 @@
 
 .editFormError {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--size-label);
   color: var(--breach);
   margin: 0;
 }
@@ -314,16 +322,16 @@
 .loading {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   padding: var(--space-6);
   color: var(--dim);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--size-data);
 }
 
 .dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--dim);
   display: inline-block;
