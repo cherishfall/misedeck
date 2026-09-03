@@ -30,6 +30,7 @@ import type { MiseLsItem, MiseLsRemoteItem } from "../../types/tauri";
 import { useDirectory } from "../../state/directoryContext";
 import { useTrustGuard } from "../../state/trustContext";
 import { detectMise, isAppError } from "../../api/mise";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
   useParsedLsRemote,
   useParsedLsTool,
@@ -109,6 +110,18 @@ function miseUninstallArgs(tool: string, version: string): string[] {
   return ["uninstall", `${tool}@${version}`];
 }
 
+/**
+ * Build the argv for `mise link <tool>@<version> <path>` (issue #71).
+ * Mirrors `mise_link_argv` on the Rust side; the two must stay in
+ * lockstep with the `tests/tool_mutations.rs` assertions. The argument
+ * order is `<tool>@<version>` first, then the local `<path>` — not
+ * path-first. `--force` is never sent; on a conflict the panel's stderr
+ * drives a friendly hint instead of force-overwriting.
+ */
+function miseLinkArgs(tool: string, version: string, path: string): string[] {
+  return ["link", `${tool}@${version}`, path];
+}
+
 function miseUseArgs(tool: string, version: string, cwd: string | null): string[] {
   return cwd === null
     ? ["use", "-g", `${tool}@${version}`]
@@ -151,6 +164,10 @@ export function ToolsPage() {
   // runs without this confirmation. The installed-versions section
   // (issue #70) feeds the same dialog with its own tool name.
   const [pendingUninstall, setPendingUninstall] = useState<UninstallTarget | null>(null);
+
+  // Friendly message from the most recent link run (issue #71). Null
+  // unless the last `mise link` failed with a recognized conflict.
+  const [linkConflict, setLinkConflict] = useState<string | null>(null);
 
   // First check: is mise even available? If not, render the missing
   // state and don't even try the tools queries.
@@ -304,6 +321,43 @@ export function ToolsPage() {
     }
   }, [execState.status, cwd, queryClient, installedQuery]);
 
+  // Link-conflict detection (issue #71). The frontend cannot pre-check
+  // installed versions — that list is only loaded when the user runs a
+  // query — so we submit and then match mise's stderr. `already exists`
+  // / `already installed` → friendly duplicate message; `does not exist`
+  // → directory-not-found message. Any other stderr falls through with no
+  // friendly message, and the raw stderr always stays visible in the
+  // execution panel (data-honesty rule — never swallow the real error).
+  const prevLinkStatusRef = useRef<ExecutionStatus>("idle");
+  useEffect(() => {
+    const prev = prevLinkStatusRef.current;
+    prevLinkStatusRef.current = execState.status;
+    if (prev !== "running" || execState.status !== "failed") return;
+    const req = execState.request;
+    if (!req || req.args[0] !== "link") {
+      // A non-link mutation failed; don't let a stale link hint linger.
+      setLinkConflict(null);
+      return;
+    }
+    const target = req.args[1] ?? "";
+    const at = target.indexOf("@");
+    const tool = at > 0 ? target.slice(0, at) : target;
+    const version = at > 0 ? target.slice(at + 1) : "";
+    const path = req.args[2] ?? "";
+    const stderr = execState.error?.stderr ?? "";
+    if (/already exists|already installed/i.test(stderr)) {
+      setLinkConflict(
+        t(I18N_KEYS.tools.linkForm.duplicateVersion, { tool, version }),
+      );
+    } else if (/does not exist/i.test(stderr)) {
+      setLinkConflict(
+        t(I18N_KEYS.tools.confirm.link.directoryNotFound, { path }),
+      );
+    } else {
+      setLinkConflict(null);
+    }
+  }, [execState.status, execState.request, execState.error, t]);
+
   // The execution panel reducer is the single source of truth for
   // "is a mutation in flight". A single `running` flag feeds every
   // action button so the user can't fire two mutations at once.
@@ -330,6 +384,19 @@ export function ToolsPage() {
   const onUpgradeAll = () => {
     void runMutation(() => miseUpgradeArgs(undefined));
   };
+
+  // Link a local directory as a tool version (issue #71). Routes through
+  // the shared mutation runner so the trust gate and single-flight guard
+  // apply unchanged. The conflict message, if any, is derived from the
+  // panel's stderr by the effect above — we just clear it here before the
+  // next run so a stale hint can't linger.
+  const onLink = useCallback(
+    (tool: string, version: string, path: string) => {
+      setLinkConflict(null);
+      void runMutation(() => miseLinkArgs(tool, version, path));
+    },
+    [runMutation],
+  );
 
   const rows = useMemo<ToolRow[]>(() => {
     if (!tools.data) return [];
@@ -547,6 +614,12 @@ export function ToolsPage() {
             void runMutation(() => miseInstallArgs(tool, version))
           }
           disabled={isRunning}
+        />
+
+        <LinkToolForm
+          onLink={onLink}
+          disabled={isRunning}
+          conflict={linkConflict}
         />
 
         <VersionQuerySection<MiseLsItem>
@@ -799,6 +872,125 @@ function InstallToolForm({ prefillTool, onInstall, disabled }: InstallToolFormPr
           {t(I18N_KEYS.tools.actions.install)}
         </Button>
       </span>
+    </div>
+  );
+}
+
+// ---------- Link form (issue #71) ----------
+
+interface LinkToolFormProps {
+  /** Dispatch `mise link <tool>@<version> <path>` through the panel. */
+  onLink: (tool: string, version: string, path: string) => void;
+  disabled: boolean;
+  /** Friendly conflict message from the last link run, or null. The raw
+   *  stderr always remains in the execution panel; this is only the hint. */
+  conflict: string | null;
+}
+
+/**
+ * The "Link a tool" form, placed between install and installed versions.
+ * Linking and installing are parallel ways to acquire a tool — one
+ * downloads from remote, the other adopts a local directory. Three inputs:
+ * tool, version, and a directory path. The path comes from the native
+ * directory picker and lives in LOCAL state only — it must NOT write the
+ * global directory context that drives the rest of the app.
+ */
+function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
+  const { t } = useTranslation();
+  const [tool, setTool] = useState("");
+  const [version, setVersion] = useState("");
+  const [path, setPath] = useState("");
+
+  // Pick the local directory with the native dialog. The result stays in
+  // local form state — we deliberately do NOT call `setDirectory`, which
+  // would move the whole app's directory context (DirectoryIndicator's
+  // `onPick` does that; this is a command argument, not the cwd).
+  const pickDirectory = async () => {
+    try {
+      const picked = await openDialog({
+        directory: true,
+        multiple: false,
+        title: t(I18N_KEYS.directory.pickerTitle),
+      });
+      if (typeof picked === "string" && picked.length > 0) {
+        setPath(picked);
+      }
+    } catch {
+      // User cancelled or the dialog failed; leave the field as-is.
+    }
+  };
+
+  const canSubmit =
+    tool.length > 0 && version.length > 0 && path.length > 0 && !disabled;
+
+  const onSubmit = () => {
+    if (!canSubmit) return;
+    onLink(tool, version, path);
+  };
+
+  return (
+    <div className={styles.installForm} data-testid="tools-link-form">
+      <h2 className={styles.installFormTitle}>
+        {t(I18N_KEYS.tools.linkForm.title)}
+      </h2>
+      <span className={styles.installFormRow}>
+        <input
+          type="text"
+          className={styles.input}
+          value={tool}
+          onChange={(e) => setTool(e.target.value)}
+          placeholder={t(I18N_KEYS.tools.linkForm.toolPlaceholder)}
+          disabled={disabled}
+          data-testid="tools-link-tool"
+          spellCheck={false}
+          autoComplete="off"
+        />
+        <input
+          type="text"
+          className={styles.input}
+          value={version}
+          onChange={(e) => setVersion(e.target.value)}
+          placeholder={t(I18N_KEYS.tools.linkForm.versionPlaceholder)}
+          disabled={disabled}
+          data-testid="tools-link-version"
+          spellCheck={false}
+          autoComplete="off"
+        />
+        <input
+          type="text"
+          className={styles.linkFormPath}
+          value={path}
+          onChange={(e) => setPath(e.target.value)}
+          placeholder={t(I18N_KEYS.tools.linkForm.pathLabel)}
+          disabled={disabled}
+          data-testid="tools-link-path"
+          spellCheck={false}
+          autoComplete="off"
+        />
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={pickDirectory}
+          disabled={disabled}
+          data-testid="tools-link-pick"
+        >
+          {t(I18N_KEYS.directory.pickerLabel)}
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={onSubmit}
+          disabled={!canSubmit}
+          data-testid="tools-link-button"
+        >
+          {t(I18N_KEYS.tools.actions.link)}
+        </Button>
+      </span>
+      {conflict && (
+        <p className={styles.linkConflict} role="alert" data-testid="tools-link-conflict">
+          {conflict}
+        </p>
+      )}
     </div>
   );
 }

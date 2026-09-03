@@ -100,12 +100,21 @@
       "uninstall": "Uninstall",
       "upgrade": "Upgrade",
       "upgradeAll": "Upgrade all",
-      "switch": "Switch"
+      "switch": "Switch",
+      "link": "Link"
     },
     "installForm": {
       "title": "Install a tool",
       "toolPlaceholder": "tool (e.g. node)",
       "versionPlaceholder": "version (e.g. 22.11.0)"
+    },
+    "linkForm": {
+      "title": "Link a tool",
+      "toolPlaceholder": "tool (e.g. node)",
+      "versionPlaceholder": "version (e.g. 22.11.0)",
+      "pathLabel": "Directory",
+      "run": "Link",
+      "duplicateVersion": "{{tool}}@{{version}} already exists. Uninstall it first, then link again."
     },
     "queries": {
     "installed": {
@@ -142,6 +151,9 @@
       "uninstall": {
         "title": "Uninstall {tool}?",
         "body": "This will run the exact command below. The selected version will be removed and this cannot be undone."
+      },
+      "link": {
+        "directoryNotFound": "Directory not found: {{path}}. Pick again."
       }
     }
   },

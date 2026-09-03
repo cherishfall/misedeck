@@ -26,7 +26,8 @@
 use std::path::PathBuf;
 
 use misedeck_lib::mise::{
-    mise_install_argv, mise_uninstall_argv, mise_upgrade_argv, run_mise, RunEvent, RunRequest,
+    mise_install_argv, mise_link_argv, mise_uninstall_argv, mise_upgrade_argv, run_mise, RunEvent,
+    RunRequest,
 };
 use serial_test::serial;
 
@@ -77,6 +78,38 @@ fn mise_uninstall_argv_builds_uninstall_command() {
 }
 
 #[test]
+fn mise_link_argv_builds_link_command() {
+    let argv = mise_link_argv("node", "22.11.0", "/usr/local/nvm/versions/node/v20.0.0");
+    assert_eq!(
+        argv,
+        vec![
+            "link".to_string(),
+            "node@22.11.0".to_string(),
+            "/usr/local/nvm/versions/node/v20.0.0".to_string(),
+        ]
+    );
+}
+
+#[test]
+fn mise_link_argv_puts_tool_version_before_path() {
+    // `mise link <TOOL@VERSION> <PATH>` — the tool@version comes first,
+    // the local path second (issue #71). A reversed order would point
+    // mise at the wrong argument and fail the link.
+    let argv = mise_link_argv("cargo:ripgrep", "14", "/opt/ripgrep/14");
+    assert_eq!(argv[0], "link");
+    assert_eq!(argv[1], "cargo:ripgrep@14");
+    assert_eq!(argv[2], "/opt/ripgrep/14");
+}
+
+#[test]
+fn mise_link_argv_omits_force_flag() {
+    // `--force` is deliberately NOT emitted: on a conflict the frontend
+    // shows a hint instead of force-overwriting (issue #71).
+    let argv = mise_link_argv("node", "22.11.0", "/opt/node/22");
+    assert!(!argv.contains(&"--force".to_string()));
+}
+
+#[test]
 fn mise_upgrade_argv_builds_upgrade_all_command() {
     let argv = mise_upgrade_argv(None);
     assert_eq!(
@@ -123,21 +156,44 @@ fn run_mise_with_install_argv_streams_to_exit() {
 #[test]
 #[serial]
 fn run_mise_with_uninstall_argv_streams_to_exit() {
-    let script = fixture_script();
-    with_slug("uninstall---node@22.11.0", || {
-        let events: std::sync::Arc<std::sync::Mutex<Vec<RunEvent>>> =
-            std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
-        let events2 = std::sync::Arc::clone(&events);
-        let req = RunRequest::new(mise_uninstall_argv("node", "22.11.0"));
-        let outcome = run_mise(&script, &req, move |e| {
-            events2.lock().unwrap().push(e);
-        })
-        .expect("uninstall fixture should yield Ok");
-        assert_eq!(outcome.exit_code, 0, "outcome = {outcome:?}");
-        let evs = events.lock().unwrap();
-        assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));
-        assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
-    });
+  let script = fixture_script();
+  with_slug("uninstall---node@22.11.0", || {
+    let events: std::sync::Arc<std::sync::Mutex<Vec<RunEvent>>> =
+      std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    let events2 = std::sync::Arc::clone(&events);
+    let req = RunRequest::new(mise_uninstall_argv("node", "22.11.0"));
+    let outcome = run_mise(&script, &req, move |e| {
+      events2.lock().unwrap().push(e);
+    })
+    .expect("uninstall fixture should yield Ok");
+    assert_eq!(outcome.exit_code, 0, "outcome = {outcome:?}");
+    let evs = events.lock().unwrap();
+    assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));
+    assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
+  });
+}
+
+#[test]
+#[serial]
+fn run_mise_with_link_argv_streams_to_exit() {
+  let script = fixture_script();
+  // The path is a fixture slug token (`localdir`); the fixture script
+  // echoes recorded output regardless of whether the path exists — the
+  // streaming surface is what this test exercises, not real linking.
+  with_slug("link---node@22.11.0---localdir", || {
+    let events: std::sync::Arc<std::sync::Mutex<Vec<RunEvent>>> =
+      std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    let events2 = std::sync::Arc::clone(&events);
+    let req = RunRequest::new(mise_link_argv("node", "22.11.0", "localdir"));
+    let outcome = run_mise(&script, &req, move |e| {
+      events2.lock().unwrap().push(e);
+    })
+    .expect("link fixture should yield Ok");
+    assert_eq!(outcome.exit_code, 0, "outcome = {outcome:?}");
+    let evs = events.lock().unwrap();
+    assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));
+    assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
+  });
 }
 
 #[test]

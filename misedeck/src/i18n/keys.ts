@@ -152,17 +152,29 @@ export const I18N_KEYS = {
       upgrade: "tools.actions.upgrade",
       upgradeAll: "tools.actions.upgradeAll",
       switch: "tools.actions.switch",
+      link: "tools.actions.link",
     },
     confirm: {
       uninstall: {
         title: "tools.confirm.uninstall.title",
         body: "tools.confirm.uninstall.body",
       },
+      link: {
+        directoryNotFound: "tools.confirm.link.directoryNotFound",
+      },
     },
     installForm: {
       title: "tools.installForm.title",
       toolPlaceholder: "tools.installForm.toolPlaceholder",
       versionPlaceholder: "tools.installForm.versionPlaceholder",
+    },
+    linkForm: {
+      title: "tools.linkForm.title",
+      toolPlaceholder: "tools.linkForm.toolPlaceholder",
+      versionPlaceholder: "tools.linkForm.versionPlaceholder",
+      pathLabel: "tools.linkForm.pathLabel",
+      run: "tools.linkForm.run",
+      duplicateVersion: "tools.linkForm.duplicateVersion",
     },
     queries: {
       installed: {

@@ -1240,6 +1240,7 @@ pub fn mise_plugins_ls(
 //
 //   * `mise install <tool>@<version>`  → install a tool/version
 //   * `mise uninstall <tool>@<version>`→ remove an installed version
+//   * `mise link <tool>@<version> <path>` → symlink a local dir as a version
 //   * `mise upgrade`                    → upgrade all outdated tools
 //   * `mise upgrade <tool>`             → upgrade a single tool
 //
@@ -1260,6 +1261,28 @@ pub fn mise_install_argv(tool: &str, version: &str) -> Vec<String> {
 /// confirmation (issue #56).
 pub fn mise_uninstall_argv(tool: &str, version: &str) -> Vec<String> {
     vec!["uninstall".to_string(), format!("{tool}@{version}")]
+}
+
+/// Build the argv for `mise link <tool>@<version> <path>` (issue #71).
+///
+/// Documented against `mise link --help` (verified on mise 2026.8.14):
+///
+/// ```text
+/// Usage: mise link [-f --force] <TOOL@VERSION> <PATH>
+/// ```
+///
+/// The argument order is `<TOOL@VERSION>` first, then the local `<PATH>`
+/// (not path-first). `--force` is intentionally NOT emitted here: on a
+/// conflict the frontend surfaces a friendly hint instead of force-
+/// overwriting, matching the agreed design. The runner still adds `-C
+/// <dir>` when a directory context is active, so the builder emits the
+/// pure argv and leaves the directory flag to the caller.
+pub fn mise_link_argv(tool: &str, version: &str, path: &str) -> Vec<String> {
+    vec![
+        "link".to_string(),
+        format!("{tool}@{version}"),
+        path.to_string(),
+    ]
 }
 
 /// Build the argv for `mise upgrade --bump [<tool>]`. The `--bump`

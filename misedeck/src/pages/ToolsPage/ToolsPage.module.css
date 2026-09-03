@@ -315,3 +315,25 @@
   gap: var(--space-3);
   flex-wrap: wrap;
 }
+
+/* The link form's directory path can be long; let it grow beyond the
+ * fixed-width tool/version fields so the path stays readable (issue #71). */
+.linkFormPath {
+  flex: 1 1 220px;
+  min-width: 200px;
+}
+
+/* Friendly link-conflict hint (issue #71). The raw mise stderr always
+ * remains in the execution panel; this is the human-readable summary.
+ * Uses the danger tint to read as an error, never as decoration. */
+.linkConflict {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--breach);
+  background: var(--tint-danger-bg);
+  border: 1px solid var(--tint-danger);
+  border-radius: 4px;
+  padding: var(--space-2) var(--space-3);
+  margin: 0;
+  line-height: 1.5;
+}

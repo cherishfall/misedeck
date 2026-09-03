@@ -100,12 +100,21 @@
       "uninstall": "卸载",
       "upgrade": "升级",
       "upgradeAll": "全部升级",
-      "switch": "切换"
+      "switch": "切换",
+      "link": "链接"
     },
     "installForm": {
       "title": "安装工具",
       "toolPlaceholder": "工具名（如 node）",
       "versionPlaceholder": "版本（如 22.11.0）"
+    },
+    "linkForm": {
+      "title": "链接工具",
+      "toolPlaceholder": "工具名（如 node）",
+      "versionPlaceholder": "版本（如 22.11.0）",
+      "pathLabel": "目录",
+      "run": "链接",
+      "duplicateVersion": "{{tool}}@{{version}} 已存在，无法重复链接。请先卸载该版本，再重新链接。"
     },
     "queries": {
     "installed": {
@@ -142,6 +151,9 @@
       "uninstall": {
         "title": "卸载 {tool}？",
         "body": "将运行以下确切命令。所选版本会被移除，此操作无法撤销。"
+      },
+      "link": {
+        "directoryNotFound": "目录路径不存在：{{path}}。请检查后重新选择。"
       }
     }
   },
