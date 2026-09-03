@@ -8,9 +8,9 @@
 // client-side once they exceed 10 rows (mise offers no --limit /
 // --offset, so the full set is fetched and sliced here). The exact mise
 // command is shown as the section's command hint so the GUI keeps
-// teaching the CLI. Read-only queries skip the execution panel
-// (architecture.md); only the remote rows' install hand-off routes
-// through it.
+// teaching the CLI. Run dispatches through the execution panel like
+// every other invocation (ADR-0005), so the command echo and live output
+// are visible; the panel run's result is what fills the table.
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -78,8 +78,8 @@ export function VersionQuerySection<TRow>({
   emptyBody,
 }: VersionQuerySectionProps<TRow>) {
   const { t } = useTranslation();
-  // Only one in-flight execution panel mutation at a time; surface the
-  // running state so a remote row's install hand-off disables Run.
+  // The panel runs one foreground command at a time; surface that state
+  // so Run (and a remote row's install hand-off) can't queue a second.
   const { state: execState } = useExecutionContext();
   const isMutationRunning = execState.status === "running";
 

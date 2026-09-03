@@ -9,10 +9,10 @@
 //   * mise uninstall -g      → remove an installed tool
 //   * mise upgrade --bump    → upgrade all or one outdated tool
 //
-// Every mutation routes through the execution panel so the exact
-// command and live logs are visible. The list refreshes when a run
-// exits successfully; failures surface stderr and leave state
-// unchanged.
+// Every invocation — mutations and the version queries alike — routes
+// through the execution panel so the exact command and live logs are
+// visible (ADR-0005). The list refreshes when a run exits successfully;
+// failures surface stderr and leave state unchanged.
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -36,6 +36,7 @@ import {
   useParsedLsTool,
   useParsedOutdatedTools,
   useParsedToolsList,
+  useReadIntoCache,
 } from "../../hooks/useToolsList";
 import { VersionQuerySection } from "./VersionQuerySection";
 import { useQuery } from "@tanstack/react-query";
@@ -192,9 +193,27 @@ export function ToolsPage() {
   const [remoteQuery, setRemoteQuery] = useState("");
   const remote = useParsedLsRemote(remoteQuery);
 
+  // Both query sections dispatch their read through the execution panel
+  // (ADR-0005): clicking Run echoes the exact `mise ls --json <tool>` /
+  // `mise ls-remote --json <tool>` and streams its output, and the same
+  // run's result is what fills the section's table.
+  const readIntoCache = useReadIntoCache();
+
+  // Both sections are directory-scoped reads with no fetcher of their own
+  // (ADR-0005), so switching the directory context cannot silently
+  // refetch them. Drop the committed query instead of leaving a spinner
+  // that would never resolve; the typed tool name stays, so re-running
+  // the query against the new directory is one click.
+  useEffect(() => {
+    setInstalledQuery("");
+    setRemoteQuery("");
+  }, [cwd]);
+
   const onInstalledRun = () => {
     const tool = installedInput.trim();
-    if (tool.length > 0) setInstalledQuery(tool);
+    if (tool.length === 0) return;
+    setInstalledQuery(tool);
+    void readIntoCache(["tools", "ls-tool", cwd, tool], cwd, ["ls", "--json", tool]);
   };
   const onInstalledClear = () => {
     setInstalledInput("");
@@ -207,7 +226,9 @@ export function ToolsPage() {
   };
   const onRemoteRun = () => {
     const tool = remoteInput.trim();
-    if (tool.length > 0) setRemoteQuery(tool);
+    if (tool.length === 0) return;
+    setRemoteQuery(tool);
+    void readIntoCache(["tools", "ls-remote", cwd, tool], cwd, ["ls-remote", "--json", tool]);
   };
   const onRemoteClear = () => {
     setRemoteInput("");
@@ -312,14 +333,20 @@ export function ToolsPage() {
       void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
       void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
       // The installed-versions section (issue #70) reads its own query;
-      // an uninstall must drop the row so the pager can step back.
+      // an uninstall must drop the row so the pager can step back. That
+      // query has no fetcher of its own (ADR-0005: the panel run *is*
+      // the fetch), so re-dispatch it — in the background, so the
+      // mutation the user just ran keeps the panel's transcript.
       if (installedQuery.length > 0) {
-        void queryClient.invalidateQueries({
-          queryKey: ["tools", "ls-tool", cwd, installedQuery],
-        });
+        void readIntoCache(
+          ["tools", "ls-tool", cwd, installedQuery],
+          cwd,
+          ["ls", "--json", installedQuery],
+          { background: true },
+        );
       }
     }
-  }, [execState.status, cwd, queryClient, installedQuery]);
+  }, [execState.status, cwd, queryClient, installedQuery, readIntoCache]);
 
   // Link-conflict detection (issue #71). The frontend cannot pre-check
   // installed versions — that list is only loaded when the user runs a

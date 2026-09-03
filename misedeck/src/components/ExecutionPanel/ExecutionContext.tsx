@@ -10,12 +10,21 @@ import {
 } from "react";
 
 import { useExecution } from "./useExecution";
-import type { ExecutionState, LogLine, RunRequest, ExecutionKind } from "./useExecution";
+import type {
+  ExecutionState,
+  LogLine,
+  RunRequest,
+  ExecutionKind,
+  RunCommandResult,
+  RunOptions,
+} from "./useExecution";
 
 interface ExecutionContextValue {
   state: ExecutionState;
-  /** Run an arbitrary `mise <args>` command. */
-  run: (request: RunRequest) => Promise<void>;
+  /** Run an arbitrary `mise <args>` command and return its structured
+   *  result, so read queries can cache what the panel already ran
+   *  instead of invoking mise again (ADR-0005). */
+  run: (request: RunRequest, options?: RunOptions) => Promise<RunCommandResult>;
   /** Run the official install script. Streams into the panel. */
   runInstall: () => Promise<void>;
   /** Run `mise self-update`. Streams into the panel. */
@@ -49,4 +58,11 @@ export function useExecutionContext(): ExecutionContextValue {
 }
 
 // Re-export types for consumers that imported them from the panel index.
-export type { ExecutionState, LogLine, RunRequest, ExecutionKind };
+export type {
+  ExecutionState,
+  LogLine,
+  RunRequest,
+  ExecutionKind,
+  RunCommandResult,
+  RunOptions,
+};

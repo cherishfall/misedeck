@@ -42,32 +42,16 @@ export async function detectMise(): Promise<DetectMiseResult> {
   return (await invoke("detect_mise")) as DetectMiseResult;
 }
 
-/** Calls the `tools_ls` Tauri command and returns the typed union. */
-export async function toolsLs(cwd: string | null): Promise<JsonResult> {
-  return (await invoke("tools_ls", { cwd })) as JsonResult;
-}
+// The `ls` family (`tools_ls`, `tools_ls_tool`, `tools_ls_remote`) has no
+// wrapper here on purpose: those reads are dispatched through the
+// execution panel's runner so the exact command is visible and runs once
+// (ADR-0005, issue #72). See `useToolsList.ts`. The Tauri commands and
+// their runner functions remain, typed contract intact, for callers
+// outside the UI.
 
 /** Calls the `tools_outdated` Tauri command and returns the typed union. */
 export async function toolsOutdated(cwd: string | null): Promise<JsonResult> {
   return (await invoke("tools_outdated", { cwd })) as JsonResult;
-}
-
-/** Calls the `tools_ls_remote` Tauri command and returns the typed union. */
-export async function toolsLsRemote(
-  cwd: string | null,
-  tool: string,
-): Promise<JsonResult> {
-  return (await invoke("tools_ls_remote", { cwd, tool })) as JsonResult;
-}
-
-/** Calls the `tools_ls_tool` Tauri command (`mise ls --json <tool>`)
- *  and returns the typed union. Surfaces every installed version of a
- *  single tool, active or not (issue #55). */
-export async function toolsLsTool(
-  cwd: string | null,
-  tool: string,
-): Promise<JsonResult> {
-  return (await invoke("tools_ls_tool", { cwd, tool })) as JsonResult;
 }
 
 /** Calls the `tools_env` Tauri command (`mise env --json`). The

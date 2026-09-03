@@ -1,13 +1,18 @@
 // ExecutionPanel — the docked panel that shows the exact mise command
 // being run, streams stdout/stderr lines, and reports exit status.
 // Per docs/design/visual-language.md the deck is the product's signature
-// behavior: every mutation echoes the command + live logs.
+// behavior: every invocation echoes the command + live logs (ADR-0005 —
+// reads included, not just mutations).
+//
+// Because the panel *is* the command history, it also owns the
+// copy-command affordance (issue #72): one click puts the echoed command
+// line on the clipboard.
 //
 // The state machine is lifted to `useExecutionContext` so any page can
 // trigger an install, self-update, or arbitrary mise command. The
 // panel itself is presentational.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
@@ -56,12 +61,24 @@ export function ExecutionPanel() {
   const { state, cancel, dismiss } = useExecutionContext();
   const logRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
+  // Transient "Copied" acknowledgement for the copy affordance.
+  const [copied, setCopied] = useState(false);
+  const copiedTimerRef = useRef<number | null>(null);
 
   // Auto-scroll to bottom unless the user has scrolled up.
   useEffect(() => {
     if (!logRef.current || !stickToBottomRef.current) return;
     logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [state.lines.length]);
+
+  useEffect(
+    () => () => {
+      if (copiedTimerRef.current !== null) {
+        window.clearTimeout(copiedTimerRef.current);
+      }
+    },
+    [],
+  );
 
   const handleScroll = () => {
     if (!logRef.current) return;
@@ -74,6 +91,23 @@ export function ExecutionPanel() {
     ? commandEcho(state.kind, state.request.cwd, state.request.args)
     : null;
 
+  // Copy the current/most recent command (issue #72). The panel is the
+  // command history, so this is where copy lives; what lands on the
+  // clipboard is the same echo shown above — a dispatchable command
+  // line, never a paraphrase.
+  const onCopy = async () => {
+    if (!echo) return;
+    if (!(await writeClipboard(echo))) return;
+    setCopied(true);
+    if (copiedTimerRef.current !== null) {
+      window.clearTimeout(copiedTimerRef.current);
+    }
+    copiedTimerRef.current = window.setTimeout(() => {
+      setCopied(false);
+      copiedTimerRef.current = null;
+    }, 1500);
+  };
+
   if (!state.isOpen) return null;
 
   return (
@@ -85,6 +119,17 @@ export function ExecutionPanel() {
             {echo && <span className={styles.command}>{echo}</span>}
           </div>
           <div className={styles.headerRight}>
+            {echo && (
+              <button
+                type="button"
+                className={styles.actionBtn}
+                onClick={() => void onCopy()}
+                title={t(I18N_KEYS.execution.copyHint)}
+                data-testid="execution-copy-command"
+              >
+                {copied ? t(I18N_KEYS.execution.copied) : t(I18N_KEYS.execution.copy)}
+              </button>
+            )}
             {state.status === "running" && (
               <>
                 <span className={styles.statusDot} data-tone="beam" />
@@ -175,4 +220,32 @@ export function ExecutionPanel() {
       </div>
     </div>
   );
+}
+
+/** Write text to the clipboard, falling back to a hidden textarea when
+ *  the async Clipboard API is unavailable or refused. Returns whether
+ *  the copy landed, so the caller only acknowledges real copies. */
+async function writeClipboard(text: string): Promise<boolean> {
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // fall through
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
 }

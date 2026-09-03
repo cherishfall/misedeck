@@ -8,10 +8,26 @@
 // directory refetches the data. The result is the typed JSON Result
 // union (`{kind: "ok", ...} | {kind: "err", ...}`) so the consumer
 // pattern-matches the same way it does for `useDetectMise` in App.tsx.
+//
+// The three `ls` family reads route through the execution panel's runner
+// (ADR-0005) rather than their own Tauri commands, so every mise
+// invocation the app makes is visible in one place and runs once.
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useCallback } from "react";
+import {
+  skipToken,
+  useQuery,
+  useQueryClient,
+  type QueryKey,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 
-import { readMiseLockfile, configFiles, toolsEnv, toolsLs, toolsLsRemote, toolsLsTool, toolsOutdated } from "../api/mise";
+import { readMiseLockfile, configFiles, toolsEnv, toolsOutdated } from "../api/mise";
+import {
+  toJsonResult,
+  useExecutionContext,
+  type RunOptions,
+} from "../components/ExecutionPanel";
 import {
   parseEnvPayload,
   parseLsPayload,
@@ -30,15 +46,63 @@ import type {
 } from "../types/tauri";
 
 /**
+ * Dispatch a read command through the execution panel's runner and parse
+ * the captured stdout into the `JsonResult` union (ADR-0005). This is
+ * the only way the tool-list reads reach mise — there is no second
+ * invocation behind the panel.
+ */
+function usePanelRead(): (
+  cwd: string | null,
+  args: string[],
+  options?: RunOptions,
+) => Promise<JsonResult> {
+  const { run } = useExecutionContext();
+  return useCallback(
+    async (cwd, args, options) => toJsonResult(await run({ cwd, args }, options)),
+    [run],
+  );
+}
+
+/**
+ * Same as `usePanelRead`, plus writing the result into a query cache
+ * entry. Used by the queries whose fetch *is* the panel run (the two
+ * version-query sections): their `useQuery` has no query function, so
+ * the command's result is what populates the cache.
+ */
+export function useReadIntoCache(): (
+  queryKey: QueryKey,
+  cwd: string | null,
+  args: string[],
+  options?: RunOptions,
+) => Promise<JsonResult> {
+  const read = usePanelRead();
+  const queryClient = useQueryClient();
+  return useCallback(
+    async (queryKey, cwd, args, options) => {
+      const json = await read(cwd, args, options);
+      queryClient.setQueryData(queryKey, json);
+      return json;
+    },
+    [read, queryClient],
+  );
+}
+
+/**
  * Read-only mise tool list (`mise ls --json`). Cache key is
  * `["tools", "ls", cwd]` so the per-context cache survives
  * component remounts.
+ *
+ * The table loads itself, so this read is dispatched in the background:
+ * the same runner, but it must not replace the transcript the user is
+ * reading (a mutation's log, typically, since a successful mutation
+ * invalidates this very query).
  */
 export function useToolsList(): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
+  const read = usePanelRead();
   return useQuery({
     queryKey: ["tools", "ls", cwd],
-    queryFn: () => toolsLs(cwd),
+    queryFn: () => read(cwd, ["ls", "--json"], { background: true }),
     refetchOnWindowFocus: false,
     retry: false,
   });
@@ -60,19 +124,21 @@ export function useOutdatedTools(): UseQueryResult<JsonResult> {
 
 /**
  * Upstream versions for a single tool (`mise ls-remote --json <tool>`).
- * Cache key is `["tools", "ls-remote", cwd, tool]`. The hook is
- * disabled when `tool` is empty.
+ * Cache key is `["tools", "ls-remote", cwd, tool]`.
+ *
+ * The query has no fetcher of its own: the user's Run button dispatches
+ * `mise ls-remote --json <tool>` through the execution panel and writes
+ * the result here via `useReadIntoCache` (ADR-0005). Until then the
+ * query reports `isPending`, which is what drives the section's loading
+ * row.
  */
 export function useLsRemote(
   tool: string,
 ): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
-  return useQuery({
+  return useQuery<JsonResult>({
     queryKey: ["tools", "ls-remote", cwd, tool],
-    queryFn: () => toolsLsRemote(cwd, tool),
-    enabled: tool.length > 0,
-    refetchOnWindowFocus: false,
-    retry: false,
+    queryFn: skipToken,
   });
 }
 
@@ -154,20 +220,20 @@ export function useParsedLsRemote(
 
 /**
  * Installed versions for a single tool (`mise ls --json <tool>`). Cache
- * key is `["tools", "ls-tool", cwd, tool]`. The hook is disabled when
- * `tool` is empty so the runner never runs a half-formed argv. The
- * result carries every installed version, active or not (issue #55).
+ * key is `["tools", "ls-tool", cwd, tool]`. The result carries every
+ * installed version, active or not (issue #55).
+ *
+ * Like `useLsRemote`, the fetch is the panel run the user triggers — see
+ * `useReadIntoCache` (ADR-0005). Nothing here ever runs a half-formed
+ * argv, because no command runs until the caller dispatches one.
  */
 export function useLsTool(
   tool: string,
 ): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
-  return useQuery({
+  return useQuery<JsonResult>({
     queryKey: ["tools", "ls-tool", cwd, tool],
-    queryFn: () => toolsLsTool(cwd, tool),
-    enabled: tool.length > 0,
-    refetchOnWindowFocus: false,
-    retry: false,
+    queryFn: skipToken,
   });
 }
 

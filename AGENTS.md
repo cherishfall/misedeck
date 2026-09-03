@@ -25,7 +25,7 @@ An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + Re
 ## Non-negotiables
 
 - The maintainer is a product owner, not a code reviewer. Self-verify every change: build, run, and look at the running app before claiming done. Leave no red tests and no broken build. UI changes default to the economical verification in `docs/design/ui-ux-rules.md` (build + run + static self-audit; screenshots only for layout restructures or on request); if nothing visual was checked, mark the issue "not visually verified". Never claim visual verification you did not perform.
-- Every mutating action goes through the execution panel: show the exact mise command and its live logs.
+- Every mise invocation goes through the execution panel — mutations and read queries alike (ADR-0005): show the exact mise command and its live logs. Only the reads a page issues for itself run in the background, off the transcript.
 - All UI strings go through i18n (en + zh-CN); no hardcoded copy.
 - Cross-platform from day one: paths and process spawning via Tauri/Rust APIs only.
 - Read `docs/agents/architecture.md` before creating or modifying any Tauri command, and `docs/agents/conventions.md` before invoking mise, handling errors, or writing tests.

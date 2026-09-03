@@ -14,8 +14,8 @@ North-star feeling: *"I always know which mise command this screen is showing me
 
 1. **Navigation mirrors mise's pillars.** mise is "dev tools, env vars, and tasks per project". The sidebar's main group is exactly those, plus the directory lens (Preview) and the extension surface (Plugins). Nothing else earns a top-level slot.
 2. **No invented concepts.** A page exists only if a mise command (or command family) backs it. Page nouns and verbs come from `CONTEXT.md` / mise's own CLI vocabulary (`use`, `install`, `set`, `run`, `trust`, `doctor`…).
-3. **The command is always visible.** Every page header names the CLI equivalent of what the page does (e.g. Tools → `mise ls` / `mise use`). Every mutation still streams through the execution panel showing the exact argv (AGENTS.md non-negotiable).
-4. **Chrome gets out of the way.** Navigation is a collapsible sidebar; the directory indicator appears only when relevant; the execution panel appears only when something runs; read-only pages carry no execution chrome.
+3. **The command is always visible.** Every page header names the CLI equivalent of what the page does (e.g. Tools → `mise ls` / `mise use`). Every invocation the user asks for — mutations and read queries alike — streams through the execution panel showing the exact argv (AGENTS.md non-negotiable; ADR-0005).
+4. **Chrome gets out of the way.** Navigation is a collapsible sidebar; the directory indicator appears only when relevant; the execution panel appears when the user runs something, not when a table refreshes itself in the background.
 5. **Data is data, labels are labels.** Typography styling (uppercase, tracking) may apply to labels, never to data — paths, versions, commands, values render exactly as mise reports them.
 6. **Visual inheritance.** Light and dark themes both follow mise.jdx.dev's look, so the app reads as part of the mise family, not a generic hacker skin.
 
@@ -71,7 +71,7 @@ The `/config` route redirects to `/preview` for one release, then is removed.
 
 ## Interaction rules
 
-1. **Execution panel on demand.** Hidden by default. Slides up when a command runs (exact argv + live log), dismissible when idle, re-openable from anywhere. Pages with no mutating action (Doctor, Preview-aside-from-trust, Plugins) never show it. All mutations still go through it — visibility changed, the contract did not.
+1. **Execution panel on demand.** Hidden by default. Slides up when the user runs a command (exact argv + live log), dismissible when idle, re-openable from anywhere. Pages that dispatch nothing (Doctor, Preview-aside-from-trust, Plugins) never show it. Every invocation goes through it — mutations and read queries both (ADR-0005); only the reads a page issues for itself stay off the transcript, so a background refresh cannot erase the run the user is reading. It is also where copy-command lives, because the panel is the command history.
 2. **Trust and activation banners stay in-page.** `mise trust` and `mise activate` are mise's own gates; banners surface them where they bite (Preview/Tools/Env/Tasks/Settings; activation banner global but dismissible).
 3. **Window discipline.** Body never scrolls horizontally; naturally wide content (JSON, tables, logs) scrolls inside its own container. A minimum window size applies; default and minimum sizes are content-aware — the exact mechanism (runtime measurement vs design-time constants) is an open question deferred to the implementing ticket.
 4. **Directory context is one thing.** The strip is the only place the directory is chosen or shown; every page consumes it (`mise -C <dir>`), no page hardcodes a directory (architecture.md).

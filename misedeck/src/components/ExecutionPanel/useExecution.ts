@@ -1,15 +1,36 @@
 // useExecution — a small reducer that drives the execution panel.
 // Holds the current request, streamed lines, status, and a cancel handle.
+//
+// It is also the app's *only* mise runner (ADR-0005): reads route
+// through `run()` exactly like mutations do, and `run()` returns the
+// structured result so a read's caller can feed the query cache without
+// invoking mise a second time.
 
 import { useCallback, useReducer, useRef } from "react";
 import { Channel, invoke } from "@tauri-apps/api/core";
 
-import type { AppError } from "../../types/tauri";
+import type { AppError, JsonResult } from "../../types/tauri";
 import { isAppError } from "../../api/mise";
 
 export interface RunRequest {
   cwd: string | null;
   args: string[];
+}
+
+/** Per-call modifiers for the runner (ADR-0005). */
+export interface RunOptions {
+  /**
+   * Use the panel's runner without claiming its transcript: no echo
+   * swap, no streamed lines, no auto-open, and no single-flight
+   * rejection.
+   *
+   * Reads the app issues on its own behalf (the tools table's initial
+   * load, its post-mutation refresh) pass this so an automatic refresh
+   * can never yank the transcript the user is reading. Everything the
+   * user asked for — mutations and the query sections' Run buttons —
+   * runs in the foreground and is transcribed.
+   */
+  background?: boolean;
 }
 
 export type LogLine = {
@@ -97,20 +118,29 @@ function reducer(state: ExecutionState, action: Action): ExecutionState {
   }
 }
 
+/** The captured result of a run, mirroring Rust's `RunOutcome`. */
+export interface RunOutcome {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  durationMs: number;
+  timedOut: boolean;
+}
+
 /** Shape that the Rust `run_mise_command` / `install_mise` /
  *  `mise_self_update` IPC handlers return. Same shape on the wire
  *  for all three (success → `{kind:"ok", outcome, newVersion?}`,
  *  error → `{kind:"err", err}`). */
-interface RunCommandOk {
+export interface RunCommandOk {
   kind: "ok";
-  outcome: { stdout: string; stderr: string; exitCode: number; durationMs: number; timedOut: boolean };
+  outcome: RunOutcome;
   newVersion?: string | null;
 }
-interface RunCommandErr {
+export interface RunCommandErr {
   kind: "err";
   err: AppError;
 }
-type RunCommandResult = RunCommandOk | RunCommandErr;
+export type RunCommandResult = RunCommandOk | RunCommandErr;
 
 function isRunCommandResult(v: unknown): v is RunCommandResult {
   if (v === null || typeof v !== "object") return false;
@@ -118,6 +148,48 @@ function isRunCommandResult(v: unknown): v is RunCommandResult {
   if (o.kind === "ok") return typeof o.outcome === "object" && o.outcome !== null;
   if (o.kind === "err") return isAppError(o.err);
   return false;
+}
+
+/**
+ * Reduce a completed run to the `JsonResult` union the read hooks cache
+ * (ADR-0005). `mise <cmd> --json` writes its payload to stdout, so a
+ * clean exit parses stdout; a timeout, a non-zero exit, or unparsable
+ * output all become the structured `{kind:"err"}` branch with mise's
+ * stderr preserved verbatim — the runner never invents a payload.
+ */
+export function toJsonResult(result: RunCommandResult): JsonResult {
+  if (result.kind === "err") {
+    return { kind: "err", err: result.err };
+  }
+  const { outcome } = result;
+  if (outcome.timedOut) {
+    return {
+      kind: "err",
+      err: { code: "TIMEOUT", message: "mise timed out", stderr: outcome.stderr },
+    };
+  }
+  if (outcome.exitCode !== 0) {
+    return {
+      kind: "err",
+      err: {
+        code: "COMMAND_FAILED",
+        message: `mise exited with code ${outcome.exitCode}`,
+        stderr: outcome.stderr,
+      },
+    };
+  }
+  try {
+    return { kind: "ok", value: JSON.parse(outcome.stdout) as Record<string, unknown> };
+  } catch (e) {
+    return {
+      kind: "err",
+      err: {
+        code: "PARSE_FAILED",
+        message: e instanceof Error ? e.message : String(e),
+        stderr: outcome.stderr,
+      },
+    };
+  }
 }
 
 function makeChannel(
@@ -149,11 +221,31 @@ function unexpectedIpcResponse(): AppError {
   };
 }
 
+function panelBusy(): AppError {
+  return {
+    code: "COMMAND_FAILED",
+    message: "another mise command is already running",
+    stderr: "",
+  };
+}
+
+/** A background run still has to hand the IPC boundary a channel (the
+ *  Rust signature requires one); this one drops every event. */
+function discardingChannel(): Channel<unknown> {
+  return new Channel<unknown>(() => {});
+}
+
 export function useExecution() {
   const [state, dispatch] = useReducer(reducer, initial);
   // We keep the most recent cancel handle on a ref so the cancel button
   // can find it without re-rendering.
   const cancelRef = useRef<(() => void) | null>(null);
+  // Single-flight for foreground runs, tracked on a ref rather than
+  // `state.status` so every `run*` callback stays referentially stable:
+  // the read hooks close over `run` inside React Query query functions
+  // and must not be re-created on every panel state change.
+  const foregroundBusyRef = useRef(false);
+  const foregroundSeqRef = useRef(0);
 
   const runMiseInternal = useCallback(
     async (
@@ -161,65 +253,88 @@ export function useExecution() {
       kind: ExecutionKind,
       payload: Record<string, unknown>,
       request: RunRequest,
-    ) => {
-      if (state.status === "running") return;
-      dispatch({ type: "start", kind, request });
-      const channel = makeChannel(dispatch);
+      options?: RunOptions,
+    ): Promise<RunCommandResult> => {
+      const background = options?.background === true;
+      let seq = 0;
+      if (!background) {
+        if (foregroundBusyRef.current) {
+          return { kind: "err", err: panelBusy() };
+        }
+        foregroundBusyRef.current = true;
+        seq = ++foregroundSeqRef.current;
+        dispatch({ type: "start", kind, request });
+      }
+      const channel = background ? discardingChannel() : makeChannel(dispatch);
       let cancelled = false;
-      cancelRef.current = () => {
-        cancelled = true;
-        // The Rust runner doesn't expose a kill handle from the JS side yet;
-        // for now `cancel` just marks the panel as cancelled. The next
-        // ticket that needs it (e.g. #22 mutations) will thread a kill
-        // handle through. For the demo (`mise doctor` finishes in <1s)
-        // this is fine.
-        dispatch({ type: "cancel" });
+      if (!background) {
+        cancelRef.current = () => {
+          cancelled = true;
+          // The Rust runner doesn't expose a kill handle from the JS side yet;
+          // for now `cancel` just marks the panel as cancelled and frees the
+          // single-flight slot so the user can dispatch again immediately.
+          foregroundBusyRef.current = false;
+          dispatch({ type: "cancel" });
+        };
+      }
+      /** Report a failure: the panel only hears about foreground runs it
+       *  still owns; the caller always gets the structured error. */
+      const fail = (err: AppError): RunCommandResult => {
+        if (!background && !cancelled) dispatch({ type: "fail", error: err });
+        return { kind: "err", err };
       };
       try {
         const result = (await invoke(ipcCommand, {
           ...payload,
           onEvent: channel,
         })) as unknown;
-        if (cancelled) return;
-        if (isRunCommandResult(result)) {
-          if (result.kind === "ok") {
-            // The Exit event from the channel already updated state.
-            // For self-update, surface the post-update version.
-            if (typeof result.newVersion === "string") {
-              dispatch({ type: "complete", newVersion: result.newVersion });
-            } else {
-              dispatch({ type: "complete", newVersion: null });
-            }
-          } else {
-            dispatch({ type: "fail", error: result.err });
-          }
-        } else {
-          dispatch({ type: "fail", error: unexpectedIpcResponse() });
+        if (!isRunCommandResult(result)) {
+          return fail(unexpectedIpcResponse());
         }
+        if (background || cancelled) return result;
+        if (result.kind === "ok") {
+          // The Exit event from the channel already updated state.
+          // For self-update, surface the post-update version.
+          dispatch({
+            type: "complete",
+            newVersion: typeof result.newVersion === "string" ? result.newVersion : null,
+          });
+        } else {
+          dispatch({ type: "fail", error: result.err });
+        }
+        return result;
       } catch (e) {
-        if (cancelled) return;
-        const message = e instanceof Error ? e.message : String(e);
-        dispatch({
-          type: "fail",
-          error: { code: "COMMAND_FAILED", message, stderr: "" },
+        return fail({
+          code: "COMMAND_FAILED",
+          message: e instanceof Error ? e.message : String(e),
+          stderr: "",
         });
       } finally {
-        cancelRef.current = null;
+        // Only release the slot if a later foreground run has not already
+        // claimed it (possible after a cancel, which frees it early).
+        if (!background && foregroundSeqRef.current === seq) {
+          cancelRef.current = null;
+          foregroundBusyRef.current = false;
+        }
       }
     },
-    [state.status],
+    [],
   );
 
-  /** Run an arbitrary `mise ...` command. */
+  /**
+   * Run an arbitrary `mise ...` command and return its structured
+   * result. Reads use the return value to feed the React Query cache so
+   * no command is ever executed twice (ADR-0005).
+   */
   const run = useCallback(
-    async (request: RunRequest) => {
-      await runMiseInternal(
+    (request: RunRequest, options?: RunOptions): Promise<RunCommandResult> =>
+      runMiseInternal(
         "run_mise_command",
         "mise",
         { cwd: request.cwd, args: request.args },
         request,
-      );
-    },
+        options,
+      ),
     [runMiseInternal],
   );
 

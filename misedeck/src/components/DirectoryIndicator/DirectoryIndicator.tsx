@@ -1,9 +1,12 @@
 // DirectoryIndicator — the slim directory strip from issue #38.
 //
 // Rendered only when a directory context is active (hidden in Global).
-// Shows the real-case path with Open-in-Terminal, Copy-Command, and
-// directory pick / recent-directory actions. The word "Context/上下文"
-// is retired from UI copy in favor of "Directory / 目录".
+// Shows the real-case path with Open-in-Terminal and directory pick /
+// recent-directory actions. The word "Context/上下文" is retired from UI
+// copy in favor of "Directory / 目录".
+//
+// Copy-command used to live here; it moved to the execution panel, which
+// is the actual command history (issue #72 / ADR-0005).
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,7 +18,6 @@ import {
   useActivation,
   type OpenTerminalOutcome,
 } from "../../state/activationContext";
-import { useExecutionContext } from "../ExecutionPanel";
 
 import { IconButton } from "../IconButton/IconButton";
 import { FloatingMenu } from "../FloatingMenu";
@@ -26,9 +28,7 @@ export function DirectoryIndicator() {
   const { t } = useTranslation();
   const { context, recents, setDirectory, setGlobal, removeRecent } = useDirectory();
   const { openInTerminal, openOutcome, consumeOpenOutcome } = useActivation();
-  const { state: execState } = useExecutionContext();
   const [recentsOpen, setRecentsOpen] = useState(false);
-  const [copyHint, setCopyHint] = useState(false);
   const [openHint, setOpenHint] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const openHintTimer = useRef<number | null>(null);
 
@@ -78,35 +78,6 @@ export function DirectoryIndicator() {
     }
   };
 
-  const buildCommand = (): string => {
-    const fromPanel = execState.request;
-    if (fromPanel) {
-      const parts = ["mise"];
-      if (fromPanel.cwd) parts.push("-C", fromPanel.cwd);
-      for (const a of fromPanel.args) {
-        if (a.includes(" ") || a.includes("\t")) {
-          parts.push(JSON.stringify(a));
-        } else {
-          parts.push(a);
-        }
-      }
-      return parts.join(" ");
-    }
-    const parts = ["mise"];
-    if (context.kind === "dir") parts.push("-C", context.path);
-    parts.push("ls");
-    return parts.join(" ");
-  };
-
-  const onCopyCommand = async () => {
-    const text = buildCommand();
-    const ok = await writeClipboard(text);
-    if (ok) {
-      setCopyHint(true);
-      window.setTimeout(() => setCopyHint(false), 1500);
-    }
-  };
-
   const onOpenInTerminal = () => {
     const path = context.kind === "dir" ? context.path : null;
     void openInTerminal(path);
@@ -140,16 +111,6 @@ export function DirectoryIndicator() {
           >
             {t(I18N_KEYS.activation.openInTerminalLabel)}
           </button>
-          <button
-            type="button"
-            className={styles.action}
-            onClick={onCopyCommand}
-            data-testid="directory-indicator-copy-command"
-            title={t(I18N_KEYS.activation.copyCommandHint)}
-          >
-            {copyHint ? t(I18N_KEYS.activation.copiedHint) : t(I18N_KEYS.activation.copyCommandLabel)}
-          </button>
-
           <FloatingMenu
             open={recentsOpen && recents.length > 0}
             onOpenChange={setRecentsOpen}
@@ -231,29 +192,4 @@ export function DirectoryIndicator() {
       )}
     </div>
   );
-}
-
-async function writeClipboard(text: string): Promise<boolean> {
-  try {
-    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // fall through
-  }
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    const ok = document.execCommand("copy");
-    document.body.removeChild(ta);
-    return ok;
-  } catch {
-    return false;
-  }
 }

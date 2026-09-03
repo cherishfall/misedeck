@@ -566,8 +566,6 @@
     "openInTerminalLabel": "Open in terminal",
     "openInTerminalError": "Could not open a terminal at {{path}}. Copy the command and run it yourself.",
     "openInTerminalSuccess": "Opened {{terminal}} at {{path}}.",
-    "copyCommandLabel": "Copy command",
-    "copyCommandHint": "Copy the equivalent mise command to your clipboard.",
     "copiedHint": "Copied",
     "bannerLabel": "SHELL ACTIVATION MISSING",
     "bannerBody": "Your {{shell}} config at {{rcPath}} does not have `mise activate`. Add the line below so mise can manage your shell's tools.",

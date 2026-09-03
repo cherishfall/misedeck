@@ -566,8 +566,6 @@
     "openInTerminalLabel": "在终端中打开",
     "openInTerminalError": "无法在 {{path}} 打开终端。请复制命令后手动执行。",
     "openInTerminalSuccess": "已通过 {{terminal}} 在 {{path}} 打开终端。",
-    "copyCommandLabel": "复制命令",
-    "copyCommandHint": "将等价的 mise 命令复制到剪贴板。",
     "copiedHint": "已复制",
     "bannerLabel": "缺失 SHELL ACTIVATION",
     "bannerBody": "你的 {{shell}} 配置文件 {{rcPath}} 中没有 `mise activate`。请在下方添加该行，以便在 shell 中使用 mise。",

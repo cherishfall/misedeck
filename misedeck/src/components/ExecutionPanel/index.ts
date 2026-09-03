@@ -8,7 +8,11 @@ export {
 } from "./ExecutionContext";
 export {
   useExecution,
+  toJsonResult,
   type RunRequest,
+  type RunOptions,
+  type RunOutcome,
+  type RunCommandResult,
   type LogLine,
   type ExecutionStatus,
   type ExecutionState,
