@@ -30,6 +30,17 @@ Last updated: 2026-09-03 (session close) — **v1.0.0-beta.6 RELEASED** (`aeef8b
 - **Published assets** (all six built and uploaded): `misedeck_1.0.0-beta.6_aarch64.dmg` (4.1 MB), `misedeck_1.0.0-beta.6_x64-setup.exe` (2.8 MB), `misedeck_1.0.0-beta.6_amd64.deb` (5.3 MB), `misedeck-1.0.0-beta.6-1.x86_64.rpm` (5.3 MB), `misedeck_1.0.0-beta.6_amd64.AppImage` (76.5 MB), `SHA256SUMS`.
 - The only CI annotation is the pre-existing "Node.js 20 is deprecated" notice from `actions/checkout@v4` / `setup-node@v4` / `upload-artifact@v4` — harmless, but worth upgrading those actions eventually.
 
+### Post-release bug found and fixed: streamed output was being truncated
+
+`1feb11d` (after the `v1.0.0-beta.6` tag — **not in the published artifacts**) fixes a real race in both streaming runners.
+
+- **Symptom:** `rust (ubuntu-latest)` went red on `install::tests::run_install_streams_a_short_command` (expected `["line-1","line-2"]`, got `[]`). The commit under test only touched a markdown file, so the test was flaky — but it exposed a production bug.
+- **Root cause:** both runners spawn a reader thread per pipe feeding an `mpsc` channel, then poll `child.try_wait()`. In the exited branch the code **drained the channel before joining the readers**. Any line a reader had not yet sent was lost permanently — nobody drains again after `join()`.
+- **Sites fixed** (all now join-then-drain, with a why-comment): `mise.rs` exit branch; `install.rs` `run_install` exit branch; the inlined loop in the test. The two **timeout branches** (`mise.rs` ~335, `install.rs` ~167) did `kill→wait→join` with no post-join drain, so they dropped the last lines too — both now drain after joining.
+- **Impact:** `mise.rs` is the runner ADR-0005 routes *every* mise invocation through, so a command's tail output — including its error lines — could be silently truncated in the execution panel. That is a data-honesty violation, not a cosmetic one.
+- **Verification:** the race cannot be reproduced locally (on macOS the reader thread usually wins). The ubuntu runner is the real check; `cargo test` and all three CI jobs are green.
+- **Decision left to the owner** (see below): the fix is in `master` but **not** in the published `v1.0.0-beta.6` binaries. Re-cutting requires deleting the remote tag + release — an outward-facing action.
+
 ## Remaining open issues
 
 - **Nothing left to implement.** All 11 tickets from both beta5 batches are closed and merged:
