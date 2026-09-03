@@ -33,10 +33,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { forwardRef, useMemo, useRef, useState } from "react";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
+import { pickDirectory } from "../../directory/pickDirectory";
 import { useTrust, useTrustAction } from "../../state/trustContext";
 import { detectMise, isAppError } from "../../api/mise";
 import { reconcileEnvSources, type EnvSource } from "../../api/miseTools";
@@ -175,22 +175,12 @@ export function DirectoryPreview() {
   };
 
   // The "Choose directory…" action (issue #48): the same Tauri
-  // dialog picker the directory indicator uses. A successful pick
-  // switches the app-level directory context, which re-keys every
-  // query on the page.
-  const onPickDirectory = async () => {
-    try {
-      const picked = await openDialog({
-        directory: true,
-        multiple: false,
-        title: t(I18N_KEYS.directory.pickerTitle),
-      });
-      if (typeof picked === "string" && picked.length > 0) {
-        setDirectory(picked);
-      }
-    } catch {
-      // User cancelled or the dialog failed.
-    }
+  // dialog picker the directory indicator uses, shared via
+  // `directory/pickDirectory.ts` so the two call sites cannot drift.
+  // A successful pick switches the app-level directory context, which
+  // re-keys every query on the page.
+  const onPickDirectory = () => {
+    void pickDirectory(t, setDirectory);
   };
 
   // Every hook stays above the early returns below so the hook

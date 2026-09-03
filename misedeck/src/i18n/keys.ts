@@ -39,9 +39,9 @@ export const I18N_KEYS = {
     globalButton: "directory.globalButton",
     recentsButton: "directory.recentsButton",
     recentsHeader: "directory.recentsHeader",
-    pickerGlyph: "directory.pickerGlyph",
     pickerLabel: "directory.pickerLabel",
     pickerTitle: "directory.pickerTitle",
+    chooseAnother: "directory.chooseAnother",
     removeRecentLabel: "directory.removeRecentLabel",
   },
   sidebar: {

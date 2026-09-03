@@ -14,14 +14,14 @@
     "next": "Next"
   },
   "directory": {
-    "eyebrow": "DIRECTORY",
+    "eyebrow": "CURRENT DIRECTORY",
     "regionLabel": "Directory",
     "globalButton": "Global",
     "recentsButton": "Recent",
     "recentsHeader": "Recent directories",
-    "pickerGlyph": "…",
     "pickerLabel": "Pick a directory",
     "pickerTitle": "Pick a directory for MiseDeck",
+    "chooseAnother": "Choose another directory",
     "removeRecentLabel": "Remove from recents"
   },
   "sidebar": {
@@ -158,11 +158,11 @@
     }
   },
   "preview": {
-    "eyebrow": "MISE / PREVIEW",
-    "title": "Directory preview",
+    "eyebrow": "MISE / OVERVIEW",
+    "title": "Directory overview",
     "hint": "Resolved tools, env, config files, and lockfile for the current directory.",
     "commandHint": "mise -C <dir> ls · mise env · mise config · mise.lock",
-    "nav": "Preview",
+    "nav": "Overview",
     "empty": {
       "title": "Pick a directory to preview",
       "body": "The env, config, and lockfile sections already show the global resolution; the resolved-tools list is directory-scoped. Choose a directory to see what `mise -C <dir> ls` reports there.",

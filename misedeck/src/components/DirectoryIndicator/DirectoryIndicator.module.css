@@ -1,8 +1,8 @@
 /* DirectoryIndicator — slim strip at the top of the content area.
  *
- * Only renders when a directory context is active; hidden in Global.
- * Shows the real-case path with Open-in-Terminal, Copy-Command, and
- * pick/recent actions. Derives colors and type from tokens.css. */
+ * Persistent across Global and Directory modes; the parent swaps the
+ * rendered content via the `mode` prop. Derives colors and type from
+ * tokens.css. */
 
 .strip {
   flex: none;
@@ -68,7 +68,7 @@
 
 .action {
   border: 1px solid var(--line);
-  color: var(--dim);
+  color: var(--ice);
 }
 
 .action:hover:not(:disabled),
@@ -81,9 +81,34 @@
 
 .actionDisabled {
   border: 1px solid var(--line);
-  color: var(--dim);
+  color: var(--ice);
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.actionPrimary {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--beam);
+  border: 1px solid var(--beam);
+  color: var(--void);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease,
+    background var(--motion-state-change) ease;
+}
+
+.actionPrimary:hover:not(:disabled),
+.actionPrimary:focus-visible {
+  background: color-mix(in srgb, var(--beam) 86%, var(--text));
+  border-color: color-mix(in srgb, var(--beam) 86%, var(--text));
+  outline: none;
 }
 
 .popover {
@@ -183,6 +208,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .action,
+  .actionPrimary,
   .recentPick {
     transition: none;
   }

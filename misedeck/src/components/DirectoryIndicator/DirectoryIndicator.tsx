@@ -1,19 +1,24 @@
 // DirectoryIndicator — the slim directory strip from issue #38.
 //
-// Rendered only when a directory context is active (hidden in Global).
-// Shows the real-case path with Open-in-Terminal and directory pick /
-// recent-directory actions. The word "Context/上下文" is retired from UI
-// copy in favor of "Directory / 目录".
+// Persistent across both directory states: it always renders, and only
+// its contents change with `mode`. "current directory / 当前目录" is the
+// binding vocabulary (see docs/design/ui-ux-rules.md:45); the retired
+// "Context/上下文" / "project/项目" words are never used in UI copy.
 //
 // Copy-command used to live here; it moved to the execution panel, which
 // is the actual command history (issue #72 / ADR-0005).
+//
+// The trailing "…" pick button was removed: in directory mode the
+// prominent "Choose another directory" primary button replaces it, and
+// in global mode the primary "Pick a directory" button is the entry
+// point. The shared pick handler lives in `directory/pickDirectory.ts`.
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
+import { pickDirectory } from "../../directory/pickDirectory";
 import {
   useActivation,
   type OpenTerminalOutcome,
@@ -24,7 +29,13 @@ import { FloatingMenu } from "../FloatingMenu";
 
 import styles from "./DirectoryIndicator.module.css";
 
-export function DirectoryIndicator() {
+interface DirectoryIndicatorProps {
+  /** Explicit render mode. Passed by the parent from the directory
+   *  context — the component never infers it from `cwd` itself. */
+  mode: "global" | "directory";
+}
+
+export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
   const { t } = useTranslation();
   const { context, recents, setDirectory, setGlobal, removeRecent } = useDirectory();
   const { openInTerminal, openOutcome, consumeOpenOutcome } = useActivation();
@@ -63,19 +74,8 @@ export function DirectoryIndicator() {
     }, 4000);
   }, [openOutcome, consumeOpenOutcome, t]);
 
-  const onPick = async () => {
-    try {
-      const picked = await openDialog({
-        directory: true,
-        multiple: false,
-        title: t(I18N_KEYS.directory.pickerTitle),
-      });
-      if (typeof picked === "string" && picked.length > 0) {
-        setDirectory(picked);
-      }
-    } catch {
-      // User cancelled or dialog failed.
-    }
+  const onPick = () => {
+    void pickDirectory(t, setDirectory);
   };
 
   const onOpenInTerminal = () => {
@@ -83,6 +83,35 @@ export function DirectoryIndicator() {
     void openInTerminal(path);
   };
 
+  // Global mode: only the Global label and a prominent choose-directory
+  // button. Directory-only actions (open-in-terminal, recents, the picker)
+  // mean nothing without a directory, so they are hidden here.
+  if (mode === "global") {
+    return (
+      <div
+        className={styles.strip}
+        role="region"
+        aria-label={t(I18N_KEYS.directory.globalButton)}
+      >
+        <div className={styles.row}>
+          <span className={styles.eyebrow}>{t(I18N_KEYS.directory.globalButton)}</span>
+          <div className={styles.actions}>
+            <button
+              type="button"
+              className={styles.actionPrimary}
+              onClick={onPick}
+              data-testid="directory-indicator-choose"
+            >
+              {t(I18N_KEYS.directory.pickerLabel)}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Directory mode: the full toolbar. A confirmed directory context is
+  // expected here (the parent derives `mode` from it); guard anyway.
   if (context.kind !== "dir") return null;
   const path = context.path;
 
@@ -168,15 +197,14 @@ export function DirectoryIndicator() {
             </div>
           </FloatingMenu>
 
-          <IconButton
-            aria-label={t(I18N_KEYS.directory.pickerLabel)}
-            variant="secondary"
-            size="sm"
+          <button
+            type="button"
+            className={styles.actionPrimary}
             onClick={onPick}
             data-testid="directory-indicator-pick"
           >
-            {t(I18N_KEYS.directory.pickerGlyph)}
-          </IconButton>
+            {t(I18N_KEYS.directory.chooseAnother)}
+          </button>
         </div>
       </div>
 

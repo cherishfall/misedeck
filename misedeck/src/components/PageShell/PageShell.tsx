@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router";
 
 import { I18N_KEYS } from "../../i18n/keys";
+import { useDirectory } from "../../state/directoryContext";
 
 import { ActivationBanner } from "../ActivationBanner/ActivationBanner";
 import { DirectoryIndicator } from "../DirectoryIndicator/DirectoryIndicator";
@@ -56,6 +57,7 @@ export function PageShell({ children }: PageShellProps) {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => loadCollapsed());
   const { state: execState, dismiss } = useExecutionContext();
+  const { context } = useDirectory();
 
   useEffect(() => {
     persistCollapsed(collapsed);
@@ -128,7 +130,7 @@ export function PageShell({ children }: PageShellProps) {
       </aside>
 
       <div className={styles.content}>
-        <DirectoryIndicator />
+        <DirectoryIndicator mode={context.kind === "dir" ? "directory" : "global"} />
         <ActivationBanner />
         <main className={styles.main}>{children}</main>
         <ExecutionPanelAffordance />
