@@ -1,7 +1,7 @@
 # MiseDeck handoff
 
 This document is a continuation marker between autonomous driver sessions.
-Last updated: 2026-09-03 (session close) — **beta5 feedback batches 1 and 2 are IMPLEMENTED and merged to master: all 11 tickets #62–#64 and #66–#73 closed.** Only the three SPEC parents remain open (#61, #65, #45), all awaiting the owner's in-person visual verification. (beta4 round: #46 73eb690, #47 366c079, #48 aa857fb, #49–#50/#54/#57 earlier, #51 b765193, #52 30c6afb, #53 b09708b, #55 18556c9, #56 f138901, #58 d8ede91, #59 0c7b3d8, #60 b9b1bc1.)
+Last updated: 2026-09-03 (session close) — **v1.0.0-beta.6 TAGGED AND RELEASING** (`aeef8b5` + tag `v1.0.0-beta.6`; release.yml building installers). **beta5 feedback batches 1 and 2 are IMPLEMENTED and merged to master: all 11 tickets #62–#64 and #66–#73 closed.** Only the three SPEC parents remain open (#61, #65, #45), all awaiting the owner's in-person visual verification of beta.6. (beta4 round: #46 73eb690, #47 366c079, #48 aa857fb, #49–#50/#54/#57 earlier, #51 b765193, #52 30c6afb, #53 b09708b, #55 18556c9, #56 f138901, #58 d8ede91, #59 0c7b3d8, #60 b9b1bc1.)
 
 **Status:** v1 implementation (11 tickets, #34–#44) is complete and shipped as beta.4. The beta4 UI/UX feedback round (#46–#60) and both beta5 batches are now fully implemented. **Next step: owner does in-person visual verification (NONE of #46–#73 was visually verified — every ticket was closed with an explicit "not visually verified" note), then closes SPEC parents #45, #61, #65.** Note for verification: #56 changed the uninstall command to target `<tool>@<version>` (was `<tool>`) so the confirmation dialog's command is honest.
 
@@ -19,6 +19,14 @@ Last updated: 2026-09-03 (session close) — **beta5 feedback batches 1 and 2 ar
 - New standing rule set: `docs/design/ui-ux-rules.md` (+ zh-CN mirror), pointed to from `AGENTS.md`. Verification is deliberately **economical**: build + run + static self-audit by default; screenshots only for layout restructures or on request; mark "not visually verified" when nothing was seen.
 - `visual-language.md` (both locales) updated for two beta4 decisions: no `▸` eyebrow glyph; theme is two-state light/dark, default light, no system mode.
 - Nav "double-click to switch" suspicion from the audit: **not reproduced on real hardware, dropped**.
+
+## v1.0.0-beta.6 release (2026-09-03 night)
+
+- Version bump touched the usual **6 places across 5 files**: `misedeck/package.json`, `misedeck/package-lock.json` (2), `misedeck/src-tauri/Cargo.toml`, `misedeck/src-tauri/Cargo.lock` (the `name = "misedeck"` entry at line ~2094), `misedeck/src-tauri/tauri.conf.json`.
+- Flow: `chore(release): bump version to 1.0.0-beta.6` (`aeef8b5`) → annotated tag `v1.0.0-beta.6` (tag message *is* the Release body, en + zh-CN) → push master + tag → `release.yml` builds macOS/Windows/Linux installers and publishes a GitHub Pre-release.
+- `cargo check` and `npm run ci` were both green before tagging.
+- **Push note (third time this happened):** `git push origin <tag>` failed with `CONNECT tunnel failed, response 502`; the proxy form worked: `git -c http.proxy=http://127.0.0.1:7890 push origin v1.0.0-beta.6`. `git push origin master` succeeded without the proxy in the same session — the failure is intermittent, not deterministic.
+- This release also carries the **beta.5 post-tag CI fix** (`2463528`, test-only, Linux `TERMINAL_NOT_FOUND` assertion), which was deliberately held back from beta.5 rather than re-tagging a published release.
 
 ## Remaining open issues
 
