@@ -37,6 +37,7 @@ export const I18N_KEYS = {
     eyebrow: "directory.eyebrow",
     regionLabel: "directory.regionLabel",
     globalButton: "directory.globalButton",
+    globalMode: "directory.globalMode",
     recentsButton: "directory.recentsButton",
     recentsHeader: "directory.recentsHeader",
     pickerLabel: "directory.pickerLabel",

@@ -94,7 +94,7 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
         aria-label={t(I18N_KEYS.directory.globalButton)}
       >
         <div className={styles.row}>
-          <span className={styles.eyebrow}>{t(I18N_KEYS.directory.globalButton)}</span>
+          <span className={styles.eyebrow}>{t(I18N_KEYS.directory.globalMode)}</span>
           <div className={styles.actions}>
             <button
               type="button"

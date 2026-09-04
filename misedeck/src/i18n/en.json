@@ -17,6 +17,7 @@
     "eyebrow": "CURRENT DIRECTORY",
     "regionLabel": "Directory",
     "globalButton": "Global",
+    "globalMode": "GLOBAL MODE",
     "recentsButton": "Recent",
     "recentsHeader": "Recent directories",
     "pickerLabel": "Pick a directory",
