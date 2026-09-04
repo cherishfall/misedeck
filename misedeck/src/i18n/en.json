@@ -561,6 +561,7 @@
     "statusFailed": "failed ({{duration}}s, exit {{code}})",
     "statusCancelled": "cancelled",
     "copy": "Copy command",
+    "copyHint": "Copy the exact command to your clipboard",
     "copied": "Copied",
     "cancel": "Cancel",
     "dismiss": "Dismiss",

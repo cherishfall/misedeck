@@ -561,6 +561,7 @@
     "statusFailed": "失败 ({{duration}}s, 退出码 {{code}})",
     "statusCancelled": "已取消",
     "copy": "复制命令",
+    "copyHint": "复制确切命令到剪贴板",
     "copied": "已复制",
     "cancel": "取消",
     "dismiss": "关闭",
