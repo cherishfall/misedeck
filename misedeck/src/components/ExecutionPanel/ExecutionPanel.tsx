@@ -119,6 +119,41 @@ export function ExecutionPanel() {
             {echo && <span className={styles.command}>{echo}</span>}
           </div>
           <div className={styles.headerRight}>
+            {state.status === "running" && (
+              <>
+                <span className={styles.statusDot} data-tone="beam" />
+                <span className={styles.statusLabel}>{t(I18N_KEYS.execution.statusRunning)}</span>
+              </>
+            )}
+            {state.status === "ok" && (
+              <>
+                <span className={styles.statusDot} data-tone="ok" />
+                <span className={styles.statusLabel}>
+                  {t(I18N_KEYS.execution.statusOk, {
+                    duration: (state.durationMs / 1000).toFixed(1),
+                  })}
+                </span>
+              </>
+            )}
+            {state.status === "failed" && (
+              <>
+                <span className={styles.statusDot} data-tone="fail" />
+                <span className={styles.statusLabel}>
+                  {t(I18N_KEYS.execution.statusFailed, {
+                    duration: (state.durationMs / 1000).toFixed(1),
+                    code: state.exitCode,
+                  })}
+                </span>
+              </>
+            )}
+            {state.status === "cancelled" && (
+              <>
+                <span className={styles.statusDot} data-tone="dim" />
+                <span className={styles.statusLabel}>
+                  {t(I18N_KEYS.execution.statusCancelled)}
+                </span>
+              </>
+            )}
             {echo && (
               <button
                 type="button"
@@ -131,71 +166,26 @@ export function ExecutionPanel() {
               </button>
             )}
             {state.status === "running" && (
-              <>
-                <span className={styles.statusDot} data-tone="beam" />
-                <span className={styles.statusLabel}>{t(I18N_KEYS.execution.statusRunning)}</span>
-                <button
-                  type="button"
-                  className={styles.actionBtn}
-                  onClick={cancel}
-                  aria-label={t(I18N_KEYS.execution.cancel)}
-                >
-                  {t(I18N_KEYS.execution.cancel)}
-                </button>
-              </>
+              <button
+                type="button"
+                className={styles.actionBtn}
+                onClick={cancel}
+                aria-label={t(I18N_KEYS.execution.cancel)}
+              >
+                {t(I18N_KEYS.execution.cancel)}
+              </button>
             )}
-            {state.status === "ok" && (
-              <>
-                <span className={styles.statusDot} data-tone="ok" />
-                <span className={styles.statusLabel}>
-                  {t(I18N_KEYS.execution.statusOk, {
-                    duration: (state.durationMs / 1000).toFixed(1),
-                  })}
-                </span>
-                <button
-                  type="button"
-                  className={styles.actionBtn}
-                  onClick={dismiss}
-                  aria-label={t(I18N_KEYS.execution.dismiss)}
-                >
-                  ×
-                </button>
-              </>
-            )}
-            {state.status === "failed" && (
-              <>
-                <span className={styles.statusDot} data-tone="fail" />
-                <span className={styles.statusLabel}>
-                  {t(I18N_KEYS.execution.statusFailed, {
-                    duration: (state.durationMs / 1000).toFixed(1),
-                    code: state.exitCode,
-                  })}
-                </span>
-                <button
-                  type="button"
-                  className={styles.actionBtn}
-                  onClick={dismiss}
-                  aria-label={t(I18N_KEYS.execution.dismiss)}
-                >
-                  ×
-                </button>
-              </>
-            )}
-            {state.status === "cancelled" && (
-              <>
-                <span className={styles.statusDot} data-tone="dim" />
-                <span className={styles.statusLabel}>
-                  {t(I18N_KEYS.execution.statusCancelled)}
-                </span>
-                <button
-                  type="button"
-                  className={styles.actionBtn}
-                  onClick={dismiss}
-                  aria-label={t(I18N_KEYS.execution.dismiss)}
-                >
-                  ×
-                </button>
-              </>
+            {(state.status === "ok" ||
+              state.status === "failed" ||
+              state.status === "cancelled") && (
+              <button
+                type="button"
+                className={styles.actionBtn}
+                onClick={dismiss}
+                aria-label={t(I18N_KEYS.execution.dismiss)}
+              >
+                {t(I18N_KEYS.execution.dismiss)}
+              </button>
             )}
           </div>
         </div>
