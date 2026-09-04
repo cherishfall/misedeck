@@ -29,11 +29,41 @@ Before shipping any screen, ask: **could a mise CLI user predict what this scree
 
 ## Layout & typography
 
-- Long data never breaks mid-token. Use `nowrap` + ellipsis + tooltip, or scroll inside its container. Flex/grid cells carrying data get `min-width: 0`.
+- Long data never breaks mid-token: fixed table layout + `nowrap` + `text-overflow: ellipsis` + a `title` tooltip is the single default, and **every ellipsized cell must show its full value on hover**. Flex/grid cells carrying data get `min-width: 0`. Scroll containers are reserved for full-browse surfaces (execution log, file content viewers) — a data table never demands horizontal scrolling to read ordinary columns. (Tightened after beta 6: the old "ellipsis or scroll" two-option rule let every page pick differently.)
 - Table headers sit exactly over their columns; every button and input lives under a labeled header.
 - Status reads as `label: value badge` on one line, badge adjacent to the item it describes. No loose two-column grids where a badge's ownership is ambiguous.
 - zh-CN copy: no orphan characters on a trailing line; inline code spans are `nowrap`.
 - Both languages get the same visual treatment — if English is a styled banner, Chinese is the same banner, not a plain sentence.
+
+## Window shrink behavior
+
+The window has a minimum size; its job is preventing unusability, not preventing overflow — content adapts. Four layers, one rule each:
+
+- Window: the minimum size keeps the layout usable; nothing downstream may rely on it to prevent squeezing.
+- Chrome: the sidebar keeps its fixed (collapsible) width; the toolbar path ellipsizes; the content area clips — a page-level horizontal scrollbar is a bug.
+- Content: tables use fixed layout with declared column widths; action and input columns keep their intrinsic width; long data follows the ellipsis rule above; prose keeps soft wrapping.
+- Inputs: every input is wide enough for its full placeholder — a cut-off hint is a bug (half a convention teaches the wrong convention).
+
+## Action buttons
+
+One vocabulary, four variants (color/type semantics owned by `visual-language.md`; usage is bound here):
+
+| Variant | Meaning | Examples |
+| --- | --- | --- |
+| `primary` | The row's main action, when no higher-priority action competes | run, install, add, save |
+| `secondary` | Routine actions | switch, edit, choose directory |
+| `danger` | Destructive / sensitive | uninstall, remove |
+| `ghost` | Dismissive or low-frequency | cancel, open in editor |
+
+- One global action, one visual role: an action that appears on several surfaces (e.g. "choose directory") renders the same variant from the same shared component everywhere. A bespoke re-implementation of an existing button style is a bug.
+- Known exception, intentional: the execution panel keeps monospace controls — it is the app's terminal context. Do not "unify" its buttons onto the UI-font Button.
+
+## Execution panel
+
+- The panel never opens on command start. A closed panel stays closed; an open panel stays open — a new run must not yank away a transcript being read.
+- The single exception: a run that **fails** while the panel is closed opens the panel once. Failure is too easy to miss in an affordance dot alone.
+- Success and cancellation while closed surface through the reopen affordance's tone dot.
+- Header order is status → copy command → close; close is a text button like copy, never a bare glyph.
 
 ## Chrome & themes
 
