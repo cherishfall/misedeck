@@ -428,7 +428,7 @@ function EnvRowActions({
   return (
     <span className={styles.rowActions}>
       <Button
-        variant="ghost"
+        variant="secondary"
         size="sm"
         onClick={startEdit}
         disabled={disabled}
@@ -437,7 +437,7 @@ function EnvRowActions({
         {t(I18N_KEYS.env.editButton)}
       </Button>
       <Button
-        variant="ghost"
+        variant="danger"
         size="sm"
         onClick={() => onWrite((cwd) => miseEnvUnsetArgs(row.name, cwd))}
         disabled={disabled}

@@ -372,7 +372,7 @@ export function TasksPage() {
             {t(I18N_KEYS.tasks.runButton)}
           </Button>
           <Button
-            variant="ghost"
+            variant="secondary"
             size="sm"
             onClick={() => beginEdit(r.name)}
             disabled={isRunning}

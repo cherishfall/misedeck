@@ -1005,7 +1005,7 @@ function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
           autoComplete="off"
         />
         <Button
-          variant="secondary"
+          variant="primary"
           size="sm"
           onClick={pickDirectory}
           disabled={disabled}
