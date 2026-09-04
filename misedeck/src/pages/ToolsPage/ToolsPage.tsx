@@ -480,6 +480,7 @@ export function ToolsPage() {
   const backendColumn: TableColumn<ToolRow> = {
     key: "backend",
     header: t(I18N_KEYS.tools.columns.backend),
+    width: "120px",
     cell: (r) =>
       r.backend !== undefined ? (
         <Badge variant="info" data>{r.backend}</Badge>
@@ -493,6 +494,7 @@ export function ToolsPage() {
     {
       key: "tool",
       header: t(I18N_KEYS.tools.columns.tool),
+      width: "30%",
       cell: (r) => (
         <span className={styles.cellTool}>
           <span className={styles.toolName} title={r.tool}>{r.tool}</span>
@@ -502,9 +504,11 @@ export function ToolsPage() {
     {
       key: "version",
       header: t(I18N_KEYS.tools.columns.version),
+      width: "96px",
       cell: (r) => (
         <span
           className={r.outdated ? styles.cellVersionOutdated : styles.cellVersion}
+          title={r.version}
         >
           {r.version}
         </span>
@@ -513,20 +517,23 @@ export function ToolsPage() {
     {
       key: "requested",
       header: t(I18N_KEYS.tools.columns.requested),
-      cell: (r) => <span className={styles.cellRequested}>{r.requested}</span>,
+      width: "120px",
+      cell: (r) => <span className={styles.cellRequested} title={r.requested}>{r.requested}</span>,
     },
     ...(showBackend ? [backendColumn] : []),
     {
       key: "source",
       header: t(I18N_KEYS.tools.columns.source),
+      width: "100px",
       cell: (r) => <span className={styles.cellSource} title={r.source}>{r.source}</span>,
     },
     {
       key: "latest",
       header: t(I18N_KEYS.tools.columns.latest),
+      width: "150px",
       cell: (r) =>
         r.outdated ? (
-          <span className={styles.cellLatest}>
+          <span className={styles.cellLatest} title={r.latest}>
             <span className={styles.arrow} aria-hidden="true">▹</span>
             <span className={styles.latestValue}>{r.latest}</span>
             <Badge variant="warning">{t(I18N_KEYS.tools.outdatedBadge)}</Badge>
@@ -538,6 +545,7 @@ export function ToolsPage() {
     {
       key: "switchToVersion",
       header: t(I18N_KEYS.tools.columns.switchToVersion),
+      width: "200px",
       cell: (r) => (
         <SwitchVersionCell
           row={r}
@@ -551,6 +559,7 @@ export function ToolsPage() {
     {
       key: "actions",
       header: t(I18N_KEYS.tools.columns.actions),
+      width: "220px",
       cell: (r) => (
         <RowActions
           row={r}
@@ -626,6 +635,7 @@ export function ToolsPage() {
             columns={columns}
             rows={rows}
             rowKey={(r) => r.id}
+            fixed
             empty={
               <EmptyState
                 title={t(I18N_KEYS.tools.empty.title)}

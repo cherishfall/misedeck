@@ -26,7 +26,7 @@
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
-  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .tone-default {

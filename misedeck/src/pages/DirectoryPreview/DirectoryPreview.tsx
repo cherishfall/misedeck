@@ -256,8 +256,9 @@ export function DirectoryPreview() {
     {
       key: "tool",
       header: t(I18N_KEYS.preview.columns.tool),
+      width: "40%",
       cell: (r) => (
-        <span className={styles.cellTool}>
+        <span className={styles.cellTool} title={r.tool}>
           <span className={styles.toolName}>{r.tool}</span>
         </span>
       ),
@@ -265,11 +266,13 @@ export function DirectoryPreview() {
     {
       key: "version",
       header: t(I18N_KEYS.preview.columns.version),
-      cell: (r) => <span className={styles.cellVersion}>{r.version}</span>,
+      width: "120px",
+      cell: (r) => <span className={styles.cellVersion} title={r.version}>{r.version}</span>,
     },
     {
       key: "source",
       header: t(I18N_KEYS.preview.columns.source),
+      width: "120px",
       cell: (r) => (
         <Badge variant={toolSourceVariant(r.source)}>
           {r.source === "project"
@@ -284,14 +287,14 @@ export function DirectoryPreview() {
     {
       key: "name",
       header: t(I18N_KEYS.preview.columns.name),
-      cell: (r) => <span className={styles.cellEnvName}>{r.name}</span>,
+      cell: (r) => <span className={styles.cellEnvName} title={r.name}>{r.name}</span>,
       width: "240px",
     },
     {
       key: "value",
       header: t(I18N_KEYS.preview.columns.value),
       cell: (r) => (
-        <span className={styles.cellEnvValue}>
+        <span className={styles.cellEnvValue} title={r.value || undefined}>
           <span className={styles.envValueText}>{r.value || "—"}</span>
         </span>
       ),
@@ -299,6 +302,7 @@ export function DirectoryPreview() {
     {
       key: "source",
       header: t(I18N_KEYS.preview.columns.source),
+      width: "160px",
       cell: (r) => {
         const label =
           r.source === "tool" && r.sourceDetail
@@ -383,6 +387,7 @@ export function DirectoryPreview() {
               columns={toolColumns}
               rows={toolRows}
               rowKey={(r) => r.id}
+              fixed
               empty={
                 <EmptyState
                   title={t(I18N_KEYS.tools.empty.title)}
@@ -413,6 +418,7 @@ export function DirectoryPreview() {
               columns={envColumns}
               rows={envRows}
               rowKey={(r) => r.id}
+              fixed
               empty={
                 <EmptyState
                   title={t(I18N_KEYS.preview.env.emptyTitle)}
@@ -527,7 +533,7 @@ function ConfigFileRow({ file, rank }: { file: ConfigFile; rank: number }) {
     <li className={styles.configFile} data-testid="preview-config-file">
       <div className={styles.configFileHead}>
         <span className={styles.configRank}>{rank}</span>
-        <span className={styles.configPath}>{file.path}</span>
+        <span className={styles.configPath} title={file.path}>{file.path}</span>
         {file.tools.length > 0 && (
           <span className={styles.configTools}>{file.tools.join(", ")}</span>
         )}
@@ -617,7 +623,7 @@ const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(function TrustB
       >
         {t(I18N_KEYS.trust.banner.body)}
         {trust.path ? (
-          <span className={styles.trustPath}> · {trust.path}</span>
+          <span className={styles.trustPath} title={trust.path}> · {trust.path}</span>
         ) : null}
       </Banner>
       {lastResult === "ok" && (

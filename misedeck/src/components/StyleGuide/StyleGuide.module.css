@@ -148,7 +148,7 @@
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--dim);
-  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 /* ---------- Typography ---------- */
