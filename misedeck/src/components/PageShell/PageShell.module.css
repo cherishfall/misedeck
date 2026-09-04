@@ -114,15 +114,18 @@
   color: inherit;
 }
 
-/* Sidebar-glyph toggle on the top row; it borrows the nav item's at-rest
- * (transparent) and hover/focus (beam border + 6% beam wash) language so the
- * chrome reads as one control family. No padding: the 18px box keeps the glyph
- * aligned with the P/T/E/K/X glyph column instead of overhanging it. */
+/* Sidebar-glyph toggle on the top row. It reuses navItem's box model
+ * (padding var(--space-2), 1px border, same left edge) so the toggle's 16px
+ * SVG and navItem's 20px glyph sit in the same inner region and line up on the
+ * same vertical axis — in both expanded and collapsed states, with no
+ * per-state branching. Hover/focus borrow navItem's beam border + 6% beam wash
+ * so the chrome reads as one control family. */
 .collapseToggle {
   align-self: flex-start;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: var(--space-2);
   border: 1px solid transparent;
   border-radius: var(--radius-panel);
   background: transparent;
