@@ -24,6 +24,7 @@ import {
   type OpenTerminalOutcome,
 } from "../../state/activationContext";
 
+import { Button } from "../Button/Button";
 import { IconButton } from "../IconButton/IconButton";
 import { FloatingMenu } from "../FloatingMenu";
 
@@ -96,14 +97,14 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
         <div className={styles.row}>
           <span className={styles.eyebrow}>{t(I18N_KEYS.directory.globalMode)}</span>
           <div className={styles.actions}>
-            <button
-              type="button"
-              className={styles.actionPrimary}
+            <Button
+              variant="primary"
+              size="sm"
               onClick={onPick}
               data-testid="directory-indicator-choose"
             >
               {t(I18N_KEYS.directory.pickerLabel)}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -197,14 +198,14 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
             </div>
           </FloatingMenu>
 
-          <button
-            type="button"
-            className={styles.actionPrimary}
+          <Button
+            variant="primary"
+            size="sm"
             onClick={onPick}
             data-testid="directory-indicator-pick"
           >
             {t(I18N_KEYS.directory.chooseAnother)}
-          </button>
+          </Button>
         </div>
       </div>
 

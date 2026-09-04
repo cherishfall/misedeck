@@ -87,31 +87,6 @@
   cursor: not-allowed;
 }
 
-.actionPrimary {
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 4px;
-  background: var(--beam);
-  border: 1px solid var(--beam);
-  color: var(--void);
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    color var(--motion-state-change) ease,
-    border-color var(--motion-state-change) ease,
-    background var(--motion-state-change) ease;
-}
-
-.actionPrimary:hover:not(:disabled),
-.actionPrimary:focus-visible {
-  background: color-mix(in srgb, var(--beam) 86%, var(--text));
-  border-color: color-mix(in srgb, var(--beam) 86%, var(--text));
-  outline: none;
-}
-
 .popover {
   min-width: 280px;
   max-width: 480px;
@@ -209,7 +184,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .action,
-  .actionPrimary,
   .recentPick {
     transition: none;
   }
