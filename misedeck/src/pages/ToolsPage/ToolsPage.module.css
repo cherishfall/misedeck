@@ -102,10 +102,11 @@
 /* ---------- Table cells ---------- */
 
 .cellTool {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .toolName {
@@ -117,44 +118,61 @@
 }
 
 .cellVersion {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--beam);
   font-weight: 600;
-  white-space: nowrap;
 }
 
 .cellVersionOutdated {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
-  white-space: nowrap;
 }
 
 .cellRequested {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
-  white-space: nowrap;
 }
 
-/* Long paths never break mid-token: the row scrolls inside the table
- * scroller instead, and the cell carries a title tooltip (issue #57). */
+/* Long sources/paths never break mid-token: under fixed layout the cell
+ * ellipsizes and exposes the full value via the title tooltip (issue #81). */
 .cellSource {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--dim);
-  white-space: nowrap;
 }
 
 .cellLatest {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
-  white-space: nowrap;
 }
 
 .arrow {

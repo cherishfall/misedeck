@@ -135,7 +135,7 @@
   padding: var(--space-3);
   margin: 0;
   white-space: pre-wrap;
-  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 /* ---------- Cells ---------- */
@@ -264,7 +264,10 @@
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--dim);
-  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .trustNote {

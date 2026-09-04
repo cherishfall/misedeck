@@ -308,8 +308,9 @@ export function TasksPage() {
     {
       key: "name",
       header: t(I18N_KEYS.tasks.columns.name),
+      width: "22%",
       cell: (r) => (
-        <span className={styles.cellName}>
+        <span className={styles.cellName} title={r.name}>
           <span className={styles.taskName}>{r.name}</span>
           {r.hide && (
             <span className={styles.taskHidden}>hide</span>
@@ -320,6 +321,7 @@ export function TasksPage() {
     {
       key: "run",
       header: t(I18N_KEYS.tasks.columns.run),
+      width: "28%",
       cell: (r) =>
         r.run ? (
           <code className={styles.cellRun}>{r.run}</code>
@@ -340,6 +342,7 @@ export function TasksPage() {
     {
       key: "depends",
       header: t(I18N_KEYS.tasks.columns.depends),
+      width: "180px",
       cell: (r) =>
         r.depends.length > 0 ? (
           <span className={styles.cellDepends}>
@@ -356,6 +359,7 @@ export function TasksPage() {
     {
       key: "actions",
       header: t(I18N_KEYS.tasks.columns.actions),
+      width: "200px",
       cell: (r) => (
         <span className={styles.cellActions}>
           <Button
@@ -467,6 +471,7 @@ export function TasksPage() {
               columns={columns}
               rows={taskRows}
               rowKey={(r) => r.id}
+              fixed
               empty={
                 <EmptyState
                     title={t(I18N_KEYS.tasks.empty.title)}
@@ -682,7 +687,7 @@ const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(
         >
           {t(I18N_KEYS.tasks.guard.untrustedBody)}
           {trust.path ? (
-            <span className={styles.contextPath}> · {trust.path}</span>
+            <span className={styles.contextPath} title={trust.path}> · {trust.path}</span>
           ) : null}
         </Banner>
         {lastResult === "ok" && (

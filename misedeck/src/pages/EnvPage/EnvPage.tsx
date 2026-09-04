@@ -537,7 +537,7 @@ const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(function TrustB
         }
       >
         {t(I18N_KEYS.env.guard.untrustedBody)}
-        {trust.path ? <span className={styles.trustPath}> · {trust.path}</span> : null}
+        {trust.path ? <span className={styles.trustPath} title={trust.path}> · {trust.path}</span> : null}
       </Banner>
       {lastResult === "ok" && (
         <div className={styles.trustNote} data-testid="env-trust-ok">

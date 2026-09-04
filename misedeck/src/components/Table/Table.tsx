@@ -29,6 +29,10 @@ interface TableProps<T> {
   rowKey: (row: T, index: number) => string;
   /** Optional extra class on the inner <table>. */
   className?: string;
+  /** Opt-in fixed layout: declared column widths hold and long cells
+   * ellipsize instead of ballooning the row (issue #81). Default behavior
+   * (auto layout + shared `.scroller` horizontal scroll) is unchanged. */
+  fixed?: boolean;
   /** Caption / table summary, rendered above the rows. */
   caption?: ReactNode;
   /** Optional footer row, e.g. an aggregate. */
@@ -51,8 +55,11 @@ export function Table<T>({
   tableProps,
   onRowClick,
   empty,
+  fixed,
 }: TableProps<T>) {
-  const tableClasses = [styles.table, className ?? ""].filter(Boolean).join(" ");
+  const tableClasses = [styles.table, className ?? "", fixed ? styles.fixed : ""]
+    .filter(Boolean)
+    .join(" ");
   return (
     <div className={styles.scroller}>
       <table {...tableProps} className={tableClasses}>

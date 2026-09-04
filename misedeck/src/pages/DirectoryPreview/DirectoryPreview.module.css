@@ -130,9 +130,11 @@
 /* ---------- Table cells ---------- */
 
 .cellTool {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .toolName {
@@ -143,6 +145,11 @@
 }
 
 .cellVersion {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--beam);
@@ -150,6 +157,11 @@
 }
 
 .cellEnvName {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
@@ -157,12 +169,14 @@
 }
 
 .cellEnvValue {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
-  word-break: break-all;
-  display: inline-block;
-  max-width: 100%;
 }
 
 .envValueText {
@@ -290,7 +304,10 @@
   font-size: var(--size-data);
   color: var(--text);
   font-weight: 600;
-  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
   flex: 1 1 auto;
 }
 
@@ -327,7 +344,10 @@
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--dim);
-  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .trustNote {

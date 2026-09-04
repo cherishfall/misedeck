@@ -144,7 +144,8 @@ export function SettingsPage() {
     {
       key: "key",
       header: t(I18N_KEYS.settings.columns.key),
-      cell: (r) => <span className={styles.cellKey}>{r.key}</span>,
+      width: "26%",
+      cell: (r) => <span className={styles.cellKey} title={r.key}>{r.key}</span>,
     },
     {
       key: "value",
@@ -154,16 +155,19 @@ export function SettingsPage() {
     {
       key: "type",
       header: t(I18N_KEYS.settings.columns.type),
+      width: "84px",
       cell: (r) => (r.type ? <Badge variant="info" data>{r.type}</Badge> : <span className={styles.dim}>—</span>),
     },
     {
       key: "source",
       header: t(I18N_KEYS.settings.columns.source),
-      cell: (r) => <span className={styles.cellSource}>{r.source ?? "—"}</span>,
+      width: "140px",
+      cell: (r) => <span className={styles.cellSource} title={r.source ?? undefined}>{r.source ?? "—"}</span>,
     },
     {
       key: "actions",
       header: t(I18N_KEYS.settings.columns.actions),
+      width: "210px",
       cell: (r) => <RowEditor row={r} onWrite={runWrite} disabled={isRunning} />,
     },
   ];
@@ -234,6 +238,7 @@ export function SettingsPage() {
               columns={columns}
               rows={settings.data ?? []}
               rowKey={(r) => r.key}
+              fixed
               empty={
                 <EmptyState
                   title={t(I18N_KEYS.settings.empty.title)}
@@ -278,7 +283,7 @@ function ScopeBadge({ cwd }: { cwd: string | null }) {
           : t(I18N_KEYS.env.scope.project)}
       </Badge>
       {!isGlobal && (
-        <span className={styles.scopePath} data-testid="settings-cwd">
+        <span className={styles.scopePath} data-testid="settings-cwd" title={cwd}>
           {cwd}
         </span>
       )}
@@ -458,7 +463,7 @@ const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(function TrustB
         }
       >
         {t(I18N_KEYS.settings.guard.untrustedBody)}
-        {trust.path ? <span className={styles.trustPath}> · {trust.path}</span> : null}
+        {trust.path ? <span className={styles.trustPath} title={trust.path}> · {trust.path}</span> : null}
       </Banner>
       {lastResult === "ok" && (
         <div className={styles.trustNote} data-testid="settings-trust-ok">

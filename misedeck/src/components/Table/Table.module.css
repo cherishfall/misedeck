@@ -15,6 +15,13 @@
   color: var(--text);
 }
 
+/* Opt-in fixed layout (issue #81): declared column widths hold, so the
+ * shared `.scroller` no longer activates for ordinary data and long cells
+ * ellipsize (see consumers' `*.module.css`). Auto layout stays default. */
+.fixed {
+  table-layout: fixed;
+}
+
 .caption {
   caption-side: top;
   text-align: left;

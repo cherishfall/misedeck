@@ -20,6 +20,6 @@
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--beam);
-  word-break: break-all;
+  overflow-wrap: break-word;
   user-select: all;
 }
