@@ -1,6 +1,9 @@
 # MiseDeck handoff
 
 This document is a continuation marker between autonomous driver sessions.
+
+> **⚠️ READ THIS FIRST (2026-09-04 update).** The sections below describing beta4/beta5 and the beta.6 release are **historical and still accurate**. Everything about "remaining open issues" is **SUPERSEDED** — skip straight to **[CURRENT STATE — beta6 batch](#current-state--beta6-batch-74)** at the top of the body. The old "Nothing left to implement" line is stale; there are 4 tickets left to implement.
+
 Last updated: 2026-09-03 (session close) — **v1.0.0-beta.6 RELEASED** (`aeef8b5` + tag `v1.0.0-beta.6`; GitHub Pre-release published 2026-09-03T14:59:40Z with dmg/deb/rpm/AppImage/x64-setup + SHA256SUMS). A streamed-output truncation race was found right after tagging and **fixed on `master` (`1feb11d`)**; the owner chose to leave beta.6 as published, so **beta.6's binaries still contain that bug and the fix rides to the next release.** **beta5 feedback batches 1 and 2 are IMPLEMENTED and merged to master: all 11 tickets #62–#64 and #66–#73 closed.** Only the three SPEC parents remain open (#61, #65, #45), all awaiting the owner's in-person visual verification of beta.6. (beta4 round: #46 73eb690, #47 366c079, #48 aa857fb, #49–#50/#54/#57 earlier, #51 b765193, #52 30c6afb, #53 b09708b, #55 18556c9, #56 f138901, #58 d8ede91, #59 0c7b3d8, #60 b9b1bc1.)
 
 **Status:** v1 implementation (11 tickets, #34–#44) is complete and shipped as beta.4. The beta4 UI/UX feedback round (#46–#60) and both beta5 batches are now fully implemented. **Next step: owner does in-person visual verification (NONE of #46–#73 was visually verified — every ticket was closed with an explicit "not visually verified" note), then closes SPEC parents #45, #61, #65.** Note for verification: #56 changed the uninstall command to target `<tool>@<version>` (was `<tool>`) so the confirmation dialog's command is honest.
@@ -42,7 +45,58 @@ Last updated: 2026-09-03 (session close) — **v1.0.0-beta.6 RELEASED** (`aeef8b
 - **Owner decision (2026-09-03): leave `v1.0.0-beta.6` as published.** The fix stays in `master` and rides to the next release. Do not re-tag or delete the remote tag/release unless the owner asks. Rationale for the next session: the bug is real but narrow (it needs the reader thread to lose the race, which is rare on macOS and shows up mainly under Linux runner load), and the owner prefers not to churn releases for it.
 - **Known limitation of the shipped beta.6 binaries:** a mise command's tail output can occasionally be truncated in the execution panel — most visibly, a failed command showing an empty error. If a user reports that, it is this bug, and it is already fixed on `master`.
 
-## Remaining open issues
+## CURRENT STATE — beta6 batch (#74)
+
+**Driver session of 2026-09-04, stopped early on a model rate limit (429).** Work was driven one ticket per subagent on `master`, committed and pushed per ticket. Baseline `npm run ci` was confirmed green before starting (`6ed1faa`'s ancestors).
+
+### Completed this session (committed + pushed to `master`, issues CLOSED)
+
+| Ticket | What | Commit |
+| --- | --- | --- |
+| #75 | Sidebar toggle icon shares the nav glyph's center line — restored `padding: var(--space-2)` on `.collapseToggle` (reusing navItem's 38px box model), undoing `0ed1129`'s padding removal; stale "18px box" comment rewritten | `b603dd0` |
+| #76 | Language popover stacks vertically — `.popover` given `display: flex; flex-direction: column` (was defaulting to `block` with `inline-block` children) | `37dea50` |
+| #77 | `.actions` gets `margin-left: auto` so the pick button pins right in BOTH modes; new i18n key `directory.globalMode` ("GLOBAL MODE" / "全局模式") split out of `globalButton` for the eyebrow | `a611141` |
+| #78 | Three-level chrome surface hierarchy + `--panel` split into a chrome role vs an elevated role; new `--hull-soft` / `--hull-deep`; **ADR-0006** written (en + zh-CN) | `a49d453` |
+| #79 | Execution panel header reordered to status → copy command → dismiss; the three `×` glyphs replaced with the `execution.dismiss` text label (reuses `.actionBtn`, zero CSS change, zero i18n change) | `cd5a710` |
+| #80 | `start` action no longer forces `isOpen: true` (now `isOpen: state.isOpen`); failure while closed opens the panel **once**, implemented at the failed-transition in the reducer | `6ed1faa` |
+
+Final token values from #78: `--hull` `#1C1614`/`#F5EDE3`, `--hull-soft` `#1F1816`/`#F0E6DA`, `--hull-deep` `#261E1A`/`#E8DDD0`, `--panel` (elevated, decoupled from `--hull`) `#221C1A`/`#F8F0E2`.
+
+### Still OPEN — resume here
+
+| Ticket | What | State |
+| --- | --- | --- |
+| **#81** | Unify long-data shrink behavior (fixed layout + ellipsis + `title` tooltip; kill `break-all`; tighten `ui-ux-rules.md` :32) | **PARTIALLY WRITTEN — see below** |
+| **#82** | Action-column `variant` semantics + EnvPage `inputName` 14ch→20ch + link-form pick button → `primary`; variant mapping table into `ui-ux-rules.md` | Not started |
+| **#83** | Converge `DirectoryIndicator`'s bespoke `.actionPrimary` onto the shared `Button` component | Not started |
+| **#84** | Env var remove runs `mise unset` with no confirmation — must route through `ConfirmDialog` (violates ui-ux-rules: destructive actions always confirm) | Not started |
+
+All four are unblocked (`blocked-by` empty). Parent **#74** stays open until all ten are closed; #61 / #65 / #45 remain open pending the owner's visual verification.
+
+#### ⚠️ #81 has uncommitted, unverified work parked on a branch
+
+The #81 subagent had already edited 14 files when the rate limit killed it mid-ticket. Those edits were committed **as-is, unfinished and unverified**, to branch **`wip/81-long-data`** (commit `a5ca1b1`, pushed to origin) so that `master` stays green and no work is lost. `master` is clean.
+
+Files touched there: `Table.tsx` + `Table.module.css`, `ActivationBanner.module.css`, `DataRow.module.css`, `StyleGuide.module.css`, and both `.tsx` + `.module.css` for DirectoryPreview, EnvPage, SettingsPage, TasksPage, ToolsPage.
+
+**Next agent: do NOT trust that commit.** Start by inspecting the diff (`git diff 6ed1faa..wip/81-long-data`), then either finish it on that branch or cherry-pick selectively onto a fresh branch. Unverified specifics: whether `npm run ci` passes, whether `break-all` is actually down to zero, whether every ellipsized cell has a `title`, and whether the two `ui-ux-rules.md` files were updated at all (likely NOT — the agent died mid-ticket). Note #81 must NOT change button `variant` props on EnvPage/TasksPage — that belongs to #82, which runs after.
+
+### Session rules the owner set for this batch (reapply next session)
+
+- **No visual verification at all.** No screenshots, no running the app, no simulator. The owner does every visual check himself. Verification is `cd misedeck && npm run ci` only (typecheck + lint:i18n + lint:css-tokens + build), plus `cargo check` if Rust is touched.
+- **No over-testing.** One `npm run ci` per ticket.
+- **One ticket per subagent**, sequential (each commits + pushes, so the next subagent's baseline includes the previous commit).
+- Every issue gets closed with a verification block that explicitly states **"NOT visually verified — owner will verify manually"**. Visual acceptance checkboxes are marked intentionally unmet.
+- Push often needs the proxy: `git -c http.proxy=http://127.0.0.1:7890 push origin master` (plain push succeeded for earlier rounds but 502s intermittently; this session every push needed the proxy).
+- Commit ONLY ticket-relevant files. `.workbuddy/` and `beta6-feedback-scratch.md` are intentionally left out of ticket commits.
+
+### Source of truth for the batch
+
+`beta6-feedback-scratch.md` (now committed) holds the verbatim owner feedback, the pixel-level investigations, and the agreed design per item. **One known staleness:** its "Issue 7" section concluded "failure should not auto-open either", but the owner later reversed this and the published #80 says "auto-open once on failure". **The GitHub issue body always wins over the scratch file.**
+
+---
+
+## Remaining open issues (superseded — see CURRENT STATE above)
 
 - **Nothing left to implement.** All 11 tickets from both beta5 batches are closed and merged:
 
@@ -87,11 +141,13 @@ Last updated: 2026-09-03 (session close) — **v1.0.0-beta.6 RELEASED** (`aeef8b
 
 ## Recommended next-session startup
 
-1. `git checkout master && git pull origin master`
-2. Read this file, then `beta4-feedback-scratch.md` (issue mapping + context) and `docs/design/ui-ux-rules.md` (binding UI rules).
-3. Pick any startable ticket from the frontier above — one ticket per session, per the working agreement in `AGENTS.md`.
-4. Git push in this environment may require the proxy parameter:
-   `git -c http.proxy=http://127.0.0.1:7890 push origin master` (plain `git push` worked on 2026-09-02; use the proxy only if it fails).
+**Resume the beta6 batch — start with #81.**
+
+1. `git checkout master && git pull origin master` (currently at `6ed1faa`).
+2. Read **CURRENT STATE — beta6 batch** at the top of this file, then `beta6-feedback-scratch.md` (per-item context) and `docs/design/ui-ux-rules.md` (binding UI rules).
+3. Handle the parked #81 work first: `git diff 6ed1faa..wip/81-long-data` — finish it, then #82, #83, #84 in that order (order matters: #81 must not touch EnvPage/TasksPage `variant` props, which #82 owns; #83 touches `DirectoryIndicator` files that #77/#78 already changed).
+4. One ticket per subagent, sequential, commit + push after each. Apply the **Session rules** block above verbatim — especially no visual verification.
+5. Git push in this environment usually requires the proxy: `git -c http.proxy=http://127.0.0.1:7890 push origin master`.
 
 ---
 
