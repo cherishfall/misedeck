@@ -2,7 +2,7 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-> **⚠️ READ THIS FIRST (2026-09-04 update).** The sections below describing beta4/beta5 and the beta.6 release are **historical and still accurate**. Everything about "remaining open issues" is **SUPERSEDED** — skip straight to **[CURRENT STATE — beta6 batch](#current-state--beta6-batch-74)** at the top of the body. The old "Nothing left to implement" line is stale; there are 4 tickets left to implement.
+> **⚠️ READ THIS FIRST (2026-09-04 update).** The sections below describing beta4/beta5 and the beta.6 release are **historical and still accurate**. The beta6 batch (**#74**, tickets **#75–#84**) is now **fully implemented and closed** — see **[CURRENT STATE — beta6 batch](#current-state--beta6-batch-74)**. What remains open: #74 + #45 / #61 / #65, all awaiting the owner's in-person visual verification.
 
 Last updated: 2026-09-03 (session close) — **v1.0.0-beta.6 RELEASED** (`aeef8b5` + tag `v1.0.0-beta.6`; GitHub Pre-release published 2026-09-03T14:59:40Z with dmg/deb/rpm/AppImage/x64-setup + SHA256SUMS). A streamed-output truncation race was found right after tagging and **fixed on `master` (`1feb11d`)**; the owner chose to leave beta.6 as published, so **beta.6's binaries still contain that bug and the fix rides to the next release.** **beta5 feedback batches 1 and 2 are IMPLEMENTED and merged to master: all 11 tickets #62–#64 and #66–#73 closed.** Only the three SPEC parents remain open (#61, #65, #45), all awaiting the owner's in-person visual verification of beta.6. (beta4 round: #46 73eb690, #47 366c079, #48 aa857fb, #49–#50/#54/#57 earlier, #51 b765193, #52 30c6afb, #53 b09708b, #55 18556c9, #56 f138901, #58 d8ede91, #59 0c7b3d8, #60 b9b1bc1.)
 
@@ -62,24 +62,24 @@ Last updated: 2026-09-03 (session close) — **v1.0.0-beta.6 RELEASED** (`aeef8b
 
 Final token values from #78: `--hull` `#1C1614`/`#F5EDE3`, `--hull-soft` `#1F1816`/`#F0E6DA`, `--hull-deep` `#261E1A`/`#E8DDD0`, `--panel` (elevated, decoupled from `--hull`) `#221C1A`/`#F8F0E2`.
 
-### Still OPEN — resume here
+### Completed in the continuation session (2026-09-04 afternoon) — all four closed
 
-| Ticket | What | State |
+| Ticket | What | Commit |
 | --- | --- | --- |
-| **#81** | Unify long-data shrink behavior (fixed layout + ellipsis + `title` tooltip; kill `break-all`; tighten `ui-ux-rules.md` :32) | **PARTIALLY WRITTEN — see below** |
-| **#82** | Action-column `variant` semantics + EnvPage `inputName` 14ch→20ch + link-form pick button → `primary`; variant mapping table into `ui-ux-rules.md` | Not started |
-| **#83** | Converge `DirectoryIndicator`'s bespoke `.actionPrimary` onto the shared `Button` component | Not started |
-| **#84** | Env var remove runs `mise unset` with no confirmation — must route through `ConfirmDialog` (violates ui-ux-rules: destructive actions always confirm) | Not started |
+| #81 | Long-data shrink behavior unified: `Table` gains an **opt-in** `fixed` prop (default unchanged); 5 data tables opt in; `break-all` **12 → 0** app-wide (the old audit undercounted at 9 — ActivationBanner, DataRow, StyleGuide were also affected); every ellipsized cell carries a `title`. Rescued from `wip/81-long-data` and audited sound. Rules-doc layer was **already** merged in `0d892fb` — verified, not rewritten | `dc3cdc6` |
+| #82 | EnvPage edit `ghost`→`secondary`, remove `ghost`→`danger`; TasksPage edit `ghost`→`secondary`; ToolsPage link-form pick `secondary`→`primary`; `.inputName` `14ch`→`20ch`. Variant mapping table already in `ui-ux-rules.md` — verified, not rewritten. Zero i18n | `dbb9d26` |
+| #83 | Both toolbar pick buttons converge onto `<Button variant="primary" size="sm">`; `.actionPrimary` deleted (0 occurrences left). Owner-approved visual change: mono uppercase / 4px → UI font 600 / 6px | `a76327c` |
+| #84 | Env remove now routes through the shared `ConfirmDialog` showing the exact `mise unset <KEY>` command (`-g` variant when global). New i18n `env.confirm.remove.{title,body}` (en + zh-CN, 409 keys). **Adjacent same-class bug fixed:** `tools.confirm.uninstall.title` used single braces `{tool}`, which i18next does not interpolate — the uninstall dialog rendered a literal "{tool}"; now `{{tool}}` | `6968c14` |
 
-All four are unblocked (`blocked-by` empty). Parent **#74** stays open until all ten are closed; #61 / #65 / #45 remain open pending the owner's visual verification.
+**The beta6 batch is fully implemented: #75–#84 all closed.** Parent **#74** stays open for the owner's in-person visual verification, as do the older SPEC parents #45 / #61 / #65.
 
-#### ⚠️ #81 has uncommitted, unverified work parked on a branch
+### Notes for the owner's verification pass
 
-The #81 subagent had already edited 14 files when the rate limit killed it mid-ticket. Those edits were committed **as-is, unfinished and unverified**, to branch **`wip/81-long-data`** (commit `a5ca1b1`, pushed to origin) so that `master` stays green and no work is lost. `master` is clean.
-
-Files touched there: `Table.tsx` + `Table.module.css`, `ActivationBanner.module.css`, `DataRow.module.css`, `StyleGuide.module.css`, and both `.tsx` + `.module.css` for DirectoryPreview, EnvPage, SettingsPage, TasksPage, ToolsPage.
-
-**Next agent: do NOT trust that commit.** Start by inspecting the diff (`git diff 6ed1faa..wip/81-long-data`), then either finish it on that branch or cherry-pick selectively onto a fresh branch. Unverified specifics: whether `npm run ci` passes, whether `break-all` is actually down to zero, whether every ellipsized cell has a `title`, and whether the two `ui-ux-rules.md` files were updated at all (likely NOT — the agent died mid-ticket). Note #81 must NOT change button `variant` props on EnvPage/TasksPage — that belongs to #82, which runs after.
+- **Nothing in #75–#84 was visually verified.** Every ticket was closed with an explicit "not visually verified" note; verification was `npm run ci` + static audits only.
+- #83 intentionally changes the toolbar button's look (mono uppercase / 4px → UI font 600 / 6px) — expect it to look different, that was the sign-off.
+- #81's static audit: `break-all` 12 → 0; `title` present on every ellipsized cell. The 900px-per-page walkthrough was NOT done.
+- #84's rename path (unset old key + set new key inside `onSave`) deliberately got **no** dialog — it's part of an explicit Save, not a standalone destructive button. Flagged in the issue for a decision.
+- Branch `wip/81-long-data` (`a5ca1b1`) is now historical — its content was rescued into `dc3cdc6`. Left in place (AGENTS.md forbids deleting branches).
 
 ### Session rules the owner set for this batch (reapply next session)
 
