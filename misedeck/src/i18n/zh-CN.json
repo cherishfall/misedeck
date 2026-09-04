@@ -150,7 +150,7 @@
   },
     "confirm": {
       "uninstall": {
-        "title": "卸载 {tool}？",
+        "title": "卸载 {{tool}}？",
         "body": "将运行以下确切命令。所选版本会被移除，此操作无法撤销。"
       },
       "link": {
@@ -264,6 +264,12 @@
     "tooltip": {
       "tool": "由 {{tool}} 通过 `mise env` 注入；在运行时解析，无法通过 `mise set` 设置。",
       "default": "继承自宿主环境；并非由 mise 写入，因此无法通过 `mise set` 设置。"
+    },
+    "confirm": {
+      "remove": {
+        "title": "移除 {{name}}？",
+        "body": "将运行以下确切命令。该环境变量会从当前上下文的 mise 配置中移除，此操作无法撤销。"
+      }
     }
   },
   "tasks": {

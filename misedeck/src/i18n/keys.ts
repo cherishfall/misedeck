@@ -315,6 +315,12 @@ export const I18N_KEYS = {
       tool: "env.tooltip.tool",
       default: "env.tooltip.default",
     },
+    confirm: {
+      remove: {
+        title: "env.confirm.remove.title",
+        body: "env.confirm.remove.body",
+      },
+    },
   },
   tasks: {
     eyebrow: "tasks.eyebrow",

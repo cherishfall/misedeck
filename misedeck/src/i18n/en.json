@@ -150,7 +150,7 @@
   },
     "confirm": {
       "uninstall": {
-        "title": "Uninstall {tool}?",
+        "title": "Uninstall {{tool}}?",
         "body": "This will run the exact command below. The selected version will be removed and this cannot be undone."
       },
       "link": {
@@ -264,6 +264,12 @@
     "tooltip": {
       "tool": "Injected by {{tool}} via `mise env`; resolved at runtime, not settable via `mise set`.",
       "default": "Inherited from the host environment; not written by mise, so not settable via `mise set`."
+    },
+    "confirm": {
+      "remove": {
+        "title": "Remove {{name}}?",
+        "body": "This will run the exact command below. The env var will be removed from mise's config for this context and this cannot be undone."
+      }
     }
   },
   "tasks": {

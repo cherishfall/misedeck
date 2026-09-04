@@ -23,6 +23,8 @@ import {
   Badge,
   Banner,
   Button,
+  commandEcho,
+  ConfirmDialog,
   EmptyState,
   PageShell,
   Table,
@@ -183,7 +185,9 @@ export function EnvPage() {
     {
       key: "actions",
       header: t(I18N_KEYS.env.columns.actions),
-      cell: (r) => <EnvRowActions row={r} onWrite={runWrite} disabled={isRunning} />,
+      cell: (r) => (
+        <EnvRowActions row={r} cwd={cwd} onWrite={runWrite} disabled={isRunning} />
+      ),
       width: "360px",
     },
   ];
@@ -333,15 +337,18 @@ function EnvSourceCell({ row }: { row: EnvRow }) {
 
 function EnvRowActions({
   row,
+  cwd,
   onWrite,
   disabled,
 }: {
   row: EnvRow;
+  cwd: string | null;
   onWrite: (builder: (cwd: string | null) => string[]) => void | Promise<void>;
   disabled: boolean;
 }) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
   const [name, setName] = useState(row.name);
   const [value, setValue] = useState(row.value);
   // Reset the draft only while not actively editing, so an open editor
@@ -439,12 +446,29 @@ function EnvRowActions({
       <Button
         variant="danger"
         size="sm"
-        onClick={() => onWrite((cwd) => miseEnvUnsetArgs(row.name, cwd))}
+        onClick={() => setConfirmingRemove(true)}
         disabled={disabled}
         data-testid={`env-remove-${row.name}`}
       >
         {t(I18N_KEYS.env.removeButton)}
       </Button>
+      {/* Removing an env var is destructive, so it confirms first and the
+          dialog teaches the exact command that will run (ui-ux-rules:
+          "uninstall, unset, overwrite always confirm"). Same ConfirmDialog
+          the tools page uses for uninstall. */}
+      <ConfirmDialog
+        open={confirmingRemove}
+        title={t(I18N_KEYS.env.confirm.remove.title, { name: row.name })}
+        body={t(I18N_KEYS.env.confirm.remove.body)}
+        command={commandEcho("mise", cwd, miseEnvUnsetArgs(row.name, cwd))}
+        confirmLabel={t(I18N_KEYS.env.removeButton)}
+        cancelLabel={t(I18N_KEYS.common.cancel)}
+        onConfirm={() => {
+          setConfirmingRemove(false);
+          void onWrite((cwd) => miseEnvUnsetArgs(row.name, cwd));
+        }}
+        onCancel={() => setConfirmingRemove(false)}
+      />
     </span>
   );
 }
