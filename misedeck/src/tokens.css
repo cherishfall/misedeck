@@ -30,7 +30,7 @@
 
   /* Surface + background. */
   --void: #141010; /* app background — warm near-black */
-  --hull: #1c1614; /* panel surface base */
+  --hull: #1c1614; /* chrome: sidebar */
 
   /* Signal colors (named per the visual language). */
   --beam: #c75b7a; /* brand accent — active / focus / links */
@@ -47,7 +47,9 @@
    * reach for these, not the raw palette. Surfaces are solid; borders
    * are neutral warm tones derived from the text color so both themes
    * stay in family. */
-  --panel: var(--hull);
+  --panel: #221c1a; /* elevated surface: popover / dialog / banner / panel */
+  --hull-soft: #1f1816; /* chrome: top toolbar */
+  --hull-deep: #261e1a; /* chrome: execution deck */
   --line: color-mix(in srgb, var(--text) 16%, transparent);
   --line-strong: color-mix(in srgb, var(--text) 34%, transparent);
   --beam-soft: color-mix(in srgb, var(--beam) 60%, transparent);
@@ -120,7 +122,10 @@
   color-scheme: light;
 
   --void: #fdf8f3; /* parchment */
-  --hull: #ffffff; /* elevated panel surface */
+  --hull: #f5ede3; /* chrome: sidebar */
+  --panel: #f8f0e2; /* elevated surface: popover / dialog / banner / panel */
+  --hull-soft: #f0e6da; /* chrome: top toolbar */
+  --hull-deep: #e8ddd0; /* chrome: execution deck */
   --beam: #8b2252; /* mise wine */
   --ice: #7d7068; /* warm taupe */
   --flare: #9a7245; /* deep amber — keeps contrast on cream */

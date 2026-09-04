@@ -21,7 +21,7 @@
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
-  background: var(--panel);
+  background: var(--hull);
   border-right: 1px solid var(--line);
   overflow: hidden;
 }

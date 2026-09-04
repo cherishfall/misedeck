@@ -22,7 +22,10 @@ All color is CSS custom properties; components consume semantic names only. The 
 | Token | Dark | Light | Role |
 |---|---|---|---|
 | `--void` | `#141010` | `#FDF8F3` | app background — warm near-black / parchment |
-| `--hull` | `#1C1614` | `#FFFFFF` | panel surface base |
+| `--hull` | `#1C1614` | `#F5EDE3` | chrome: sidebar (the panel base) |
+| `--hull-soft` | `#1F1816` | `#F0E6DA` | chrome: top toolbar |
+| `--hull-deep` | `#261E1A` | `#E8DDD0` | chrome: execution deck |
+| `--panel` | `#221C1A` | `#F8F0E2` | elevated surface: popover / dialog / banner / panel |
 | `--beam` | `#C75B7A` | `#8B2252` | brand accent (mise rose/wine) — active states, focus, links |
 | `--ice` | `#9E9288` | `#7D7068` | secondary info — labels, log prefixes, quiet metadata |
 | `--flare` | `#C5975B` | `#9A7245` | attention — outdated versions, warnings |
@@ -33,7 +36,11 @@ All color is CSS custom properties; components consume semantic names only. The 
 
 Derived (computed via `color-mix` from the tokens above, never hardcoded):
 
-- `--panel`: solid `hull` — the panel fill
+- `--panel` is NO LONGER an alias of `--hull`. It is its own warm elevated value, sitting *between* `--void` and `--hull` in both themes (light `#F8F0E2`, dark `#221C1A`). Elevation is carried by both shadow (the lift) and a distinguishable warm tint (the identity): a raised surface must read as separate from both the page and the chrome, so it neither merges into the void nor sinks into the sidebar. Consumed by FloatingMenu (popover), ConfirmDialog, Banner, Panel, and the Tasks/Doctor/Tools cards.
+- The chrome surfaces form a three-level warm hierarchy, all derived from mise's warm parchment / charcoal family:
+  - `--hull` — sidebar (the middle weight).
+  - `--hull-soft` — top toolbar, the lightest chrome (mise `bg-alt` role).
+  - `--hull-deep` — execution deck, the deepest chrome (mise `bg-mute` role); data settles inward.
 - `--line`: `text` at 16% — default borders and dividers (neutral warm, not accent-tinted)
 - `--line-strong`: `text` at 34% — emphasized borders
 - `--beam-soft`: `beam` at 60% — accent edges (active nav, primary borders)
@@ -84,3 +91,11 @@ Everything else is a ≤120ms ease-out state change (hover, focus, panel slide).
 - No sci-fi or display gimmick fonts; character comes from the serif display face + mono data.
 - No decorative numbering (01/02/03) in product UI, no emoji icons; the only decorative glyph is ▹ (used in upgrade paths).
 - Light theme is parchment, not a white corporate reskin: warm surfaces, wine accent, taupe secondary text.
+
+### Chrome surface hierarchy (issue #78)
+
+The three chrome panels and the elevated surfaces are mapped by *role* from mise.jdx.dev's published palette, but not copied verbatim:
+
+- **Elevated surfaces (`--panel`) deliberately do not take mise's `--vp-c-bg-elv` exact values.** Its light `#FFFFFF` is a neutral white (off the warm family) and its dark `#202127` is a blue-grey (blue > red, off-brand). Instead `--panel` uses warm values that sit *between* page and sidebar so a floating surface stays distinguishable from both — shadow carries the lift, color carries the identity.
+- **Dark `--hull-soft` (top toolbar) deviates from mise's `bg-alt` (`#161618`).** At mise's ~50px decorative nav strip that near-black is invisible-but-fine; MiseDeck's top toolbar is a ~22px functional chrome bar that needs to read as a distinct surface, so its dark value is lifted to `#1F1816` — still within the warm charcoal family, no new hue. The light value follows mise's `bg-alt` role.
+- The hierarchy stays inside the warm parchment / warm charcoal family throughout; no new hue is introduced.
