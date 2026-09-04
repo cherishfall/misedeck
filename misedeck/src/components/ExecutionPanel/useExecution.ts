@@ -56,8 +56,12 @@ export interface ExecutionState {
   error: AppError | null;
   /** Post-update version string when `kind === "selfUpdate"`. */
   newVersion: string | null;
-  /** Panel visibility. Hidden by default; opens automatically when a
-   *  command starts and can be dismissed without clearing history. */
+  /** Panel visibility. Hidden by default and stays closed when a command
+   *  starts (so foreground runs no longer yank the user's attention) —
+   *  the reopen affordance surfaces the activity instead. The one
+   *  exception: when a command fails while the panel is closed, it opens
+   *  once so the error and its logs are visible. The panel can be
+   *  dismissed at any time without clearing its history. */
   isOpen: boolean;
 }
 
@@ -91,7 +95,13 @@ function reducer(state: ExecutionState, action: Action): ExecutionState {
         kind: action.kind,
         status: "running",
         request: action.request,
-        isOpen: true,
+        // Preserve the current visibility rather than forcing the panel
+        // open: a command starting must not yank the user's attention. A
+        // closed panel stays closed (the reopen affordance surfaces the
+        // activity); an open panel stays open so a user mid-read isn't
+        // interrupted. Failure is the only thing that may open a closed
+        // panel — see the `exit`/`fail` cases below.
+        isOpen: state.isOpen,
       };
     case "line":
       return {
@@ -104,11 +114,29 @@ function reducer(state: ExecutionState, action: Action): ExecutionState {
         status: action.exitCode === 0 ? "ok" : "failed",
         exitCode: action.exitCode,
         durationMs: action.durationMs,
+        // Auto-open once on failure if the panel is closed, so the error
+        // and its logs are immediately visible (failure exception to the
+        // "no auto-open on start" rule). Success never auto-opens, so we
+        // keep whatever visibility the panel already had. Because a single
+        // run produces exactly one failed-state transition, this opens the
+        // panel at most once per run and cannot re-open a panel the user
+        // dismissed after seeing the failure — there is no re-open loop.
+        isOpen: action.exitCode === 0 ? state.isOpen : true,
       };
     case "complete":
       return { ...state, newVersion: action.newVersion };
     case "fail":
-      return { ...state, status: "failed", error: action.error };
+      return {
+        ...state,
+        status: "failed",
+        error: action.error,
+        // Same "open once on failure" rule as the `exit` case above: a
+        // failed run whose panel is closed pops open so the error is
+        // visible; an already-open panel (or one the user closed) is
+        // left untouched. A run that fails via this path issues a single
+        // `fail` action, so it can never fight the user with a loop.
+        isOpen: true,
+      };
     case "cancel":
       return { ...state, status: "cancelled" };
     case "close":
@@ -377,8 +405,9 @@ export function useExecution() {
     cancelRef.current?.();
   }, []);
 
-  /** Hide the panel without clearing its history. The next run will
-   *  replace the state and re-open automatically. */
+  /** Hide the panel without clearing its history. The next run does NOT
+   *  re-open it automatically — `start` preserves whatever visibility the
+   *  panel already had. It only pops open if that run fails while closed. */
   const dismiss = useCallback(() => {
     dispatch({ type: "close" });
   }, []);
