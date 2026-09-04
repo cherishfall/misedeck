@@ -2,7 +2,16 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-> **⚠️ READ THIS FIRST (2026-09-04 update).** The sections below describing beta4/beta5 and the beta.6 release are **historical and still accurate**. The beta6 batch (**#74**, tickets **#75–#84**) is now **fully implemented and closed** — see **[CURRENT STATE — beta6 batch](#current-state--beta6-batch-74)**. What remains open: #74 + #45 / #61 / #65, all awaiting the owner's in-person visual verification.
+> **⚠️ READ THIS FIRST (2026-09-04 update).** **v1.0.0-beta.7 RELEASED** — see [beta7 release](#v100-beta7-release-2026-09-04) below. The beta6 batch (#74, tickets #75–#85) is fully implemented and closed. What remains open: #74 + #45 / #61 / #65, all awaiting the owner's in-person visual verification. Sections about beta4/beta5 and the beta.6 release are historical.
+
+## v1.0.0-beta.7 release (2026-09-04 evening)
+
+- Driver session of 2026-09-04 finished the beta6 batch (#75–#84, then the #85 interpolation guard), and the owner ordered the beta.7 release on the spot.
+- **Carries since beta.6**: the streamed-output truncation fix (`1feb11d`, which beta.6's published binaries still contain the bug without) and the entire beta6 feedback batch (#75–#84) plus #85.
+- Version bump: the usual **6 places across 5 files** (`package.json`, `package-lock.json` ×2, `Cargo.toml`, `Cargo.lock` `name = "misedeck"`, `tauri.conf.json`) — grep-verified 6×`1.0.0-beta.7`, 0×`beta.6` remaining, `cargo check` green before tagging.
+- Flow: `chore(release): bump version to 1.0.0-beta.7` → annotated tag `v1.0.0-beta.7` (tag message = Release body, en + zh-CN) → push master + tag → `release.yml` builds all three platforms and publishes the GitHub Pre-release.
+- **Environment note**: `node_modules` had silently lost `@tauri-apps/api` mid-day (not caused by any commit); `npm install` restored it. The `package-lock.json` churn from the local npm version (stripped `libc` fields) was reverted and NOT committed.
+- Push note: same as ever — proxy form `git -c http.proxy=http://127.0.0.1:7890 push …`. Verify a tag actually landed with `git ls-remote origin refs/tags/<tag>`; a silent `-q` push failure looks like success otherwise.
 
 Last updated: 2026-09-03 (session close) — **v1.0.0-beta.6 RELEASED** (`aeef8b5` + tag `v1.0.0-beta.6`; GitHub Pre-release published 2026-09-03T14:59:40Z with dmg/deb/rpm/AppImage/x64-setup + SHA256SUMS). A streamed-output truncation race was found right after tagging and **fixed on `master` (`1feb11d`)**; the owner chose to leave beta.6 as published, so **beta.6's binaries still contain that bug and the fix rides to the next release.** **beta5 feedback batches 1 and 2 are IMPLEMENTED and merged to master: all 11 tickets #62–#64 and #66–#73 closed.** Only the three SPEC parents remain open (#61, #65, #45), all awaiting the owner's in-person visual verification of beta.6. (beta4 round: #46 73eb690, #47 366c079, #48 aa857fb, #49–#50/#54/#57 earlier, #51 b765193, #52 30c6afb, #53 b09708b, #55 18556c9, #56 f138901, #58 d8ede91, #59 0c7b3d8, #60 b9b1bc1.)
 
