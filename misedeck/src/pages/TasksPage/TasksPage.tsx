@@ -475,6 +475,7 @@ export function TasksPage() {
               rows={taskRows}
               rowKey={(r) => r.id}
               fixed
+              className={styles.tasksTable}
               empty={
                 <EmptyState
                     title={t(I18N_KEYS.tasks.empty.title)}

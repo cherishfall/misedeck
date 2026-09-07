@@ -140,11 +140,11 @@
 
 /* ---------- Cells ---------- */
 
-/* Fixed layout lets the declared column widths hold, so long values
- * truncate with ellipsis (+ title tooltip) instead of breaking
- * mid-token and ballooning the row height (issue #57). */
-.tableFixed {
-  table-layout: fixed;
+/* The shared `fixed` prop (issue #57) holds the declared column widths;
+ * min-width ≈ their sum (800px px-columns) so narrow windows scroll
+ * horizontally instead of crushing columns (issue #90). */
+.envTable {
+  min-width: 800px;
 }
 
 .cellName {

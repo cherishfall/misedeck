@@ -393,6 +393,7 @@ export function DirectoryPreview() {
               rows={toolRows}
               rowKey={(r) => r.id}
               fixed
+              className={styles.toolsTable}
               empty={
                 <EmptyState
                   title={t(I18N_KEYS.tools.empty.title)}
@@ -424,6 +425,7 @@ export function DirectoryPreview() {
               rows={envRows}
               rowKey={(r) => r.id}
               fixed
+              className={styles.envTable}
               empty={
                 <EmptyState
                   title={t(I18N_KEYS.preview.env.emptyTitle)}

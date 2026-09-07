@@ -141,6 +141,13 @@
 
 /* ---------- Table cells ---------- */
 
+/* min-width ≈ declared column widths (434px px-columns + the 26% key
+ * column): narrow windows scroll horizontally instead of crushing columns
+ * (issue #90). */
+.settingsTable {
+  min-width: calc(434px + 26%);
+}
+
 .cellKey {
   display: block;
   overflow: hidden;

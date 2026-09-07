@@ -232,7 +232,8 @@ export function EnvPage() {
               columns={columns}
               rows={envRows}
               rowKey={(r) => r.id}
-              className={styles.tableFixed}
+              fixed
+              className={styles.envTable}
               empty={
                 <EmptyState
                     title={t(I18N_KEYS.env.empty.title)}

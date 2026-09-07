@@ -31,7 +31,10 @@ interface TableProps<T> {
   className?: string;
   /** Opt-in fixed layout: declared column widths hold and long cells
    * ellipsize instead of ballooning the row (issue #81). Default behavior
-   * (auto layout + shared `.scroller` horizontal scroll) is unchanged. */
+   * (auto layout + shared `.scroller` horizontal scroll) is unchanged.
+   * Consumers pass a className declaring `min-width` ≈ the sum of declared
+   * column widths, so narrow windows scroll instead of crushing columns
+   * (issue #90). */
   fixed?: boolean;
   /** Caption / table summary, rendered above the rows. */
   caption?: ReactNode;

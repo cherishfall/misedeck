@@ -638,6 +638,7 @@ export function ToolsPage() {
             rows={rows}
             rowKey={(r) => r.id}
             fixed
+            className={styles.toolsTable}
             empty={
               <EmptyState
                 title={t(I18N_KEYS.tools.empty.title)}

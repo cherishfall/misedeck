@@ -17,7 +17,10 @@
 
 /* Opt-in fixed layout (issue #81): declared column widths hold, so the
  * shared `.scroller` no longer activates for ordinary data and long cells
- * ellipsize (see consumers' `*.module.css`). Auto layout stays default. */
+ * ellipsize (see consumers' `*.module.css`). Auto layout stays default.
+ * Every fixed table also declares a `min-width` (≈ sum of declared column
+ * widths) in the consumer's module CSS (issue #90): below it the scroller
+ * scrolls horizontally instead of crushing columns. */
 .fixed {
   table-layout: fixed;
 }
@@ -45,6 +48,10 @@
   border-bottom: 1px solid var(--line);
   background: color-mix(in srgb, var(--hull) 60%, transparent);
   white-space: nowrap;
+  /* Guard (issue #90): if a future table still ends up narrower than its
+   * header text, the label ellipsizes instead of overlapping the next column. */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .table tbody td {

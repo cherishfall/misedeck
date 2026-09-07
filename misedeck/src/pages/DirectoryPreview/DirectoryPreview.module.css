@@ -129,6 +129,17 @@
 
 /* ---------- Table cells ---------- */
 
+/* min-width ≈ declared column widths so narrow windows scroll horizontally
+ * instead of crushing columns (issue #90): tools = 240px px-columns + the
+ * 40% tool column; env = 400px px-columns. */
+.toolsTable {
+  min-width: calc(240px + 40%);
+}
+
+.envTable {
+  min-width: 400px;
+}
+
 .cellTool {
   display: block;
   overflow: hidden;

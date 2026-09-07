@@ -102,6 +102,13 @@
 
 /* ---------- Table cells ---------- */
 
+/* min-width ≈ declared column widths (886px px-columns + the conditional
+ * 120px backend column, plus the 30% tool column): below this the shared
+ * scroller scrolls horizontally instead of crushing columns (issue #90). */
+.toolsTable {
+  min-width: calc(1006px + 30%);
+}
+
 .cellTool {
   display: block;
   overflow: hidden;
