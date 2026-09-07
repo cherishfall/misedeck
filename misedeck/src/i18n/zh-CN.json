@@ -113,7 +113,7 @@
       "title": "链接工具",
       "toolPlaceholder": "工具名（如 node）",
       "versionPlaceholder": "版本（如 22.11.0）",
-      "pathLabel": "目录",
+      "noPath": "未选择目录",
       "run": "链接",
       "duplicateVersion": "{{tool}}@{{version}} 已存在，无法重复链接。请先卸载该版本，再重新链接。"
     },

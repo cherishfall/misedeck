@@ -334,11 +334,24 @@
   flex-wrap: wrap;
 }
 
-/* The link form's directory path can be long; let it grow beyond the
- * fixed-width tool/version fields so the path stays readable (issue #71). */
-.linkFormPath {
+/* The link form's directory path is read-only text: it comes only from
+ * the native directory picker (issue #87), never from typing. Display
+ * follows the DirectoryIndicator path pattern — mono, truncating with an
+ * ellipsis; the un-picked placeholder state dims. */
+.linkFormPath,
+.linkFormPathEmpty {
   flex: 1 1 220px;
   min-width: 200px;
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.linkFormPathEmpty {
+  color: var(--dim);
 }
 
 /* Friendly link-conflict hint (issue #71). The raw mise stderr always

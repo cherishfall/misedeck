@@ -993,17 +993,13 @@ function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
           spellCheck={false}
           autoComplete="off"
         />
-        <input
-          type="text"
-          className={styles.linkFormPath}
-          value={path}
-          onChange={(e) => setPath(e.target.value)}
-          placeholder={t(I18N_KEYS.tools.linkForm.pathLabel)}
-          disabled={disabled}
+        <span
+          className={path ? styles.linkFormPath : styles.linkFormPathEmpty}
+          title={path || undefined}
           data-testid="tools-link-path"
-          spellCheck={false}
-          autoComplete="off"
-        />
+        >
+          {path || t(I18N_KEYS.tools.linkForm.noPath)}
+        </span>
         <Button
           variant="primary"
           size="sm"

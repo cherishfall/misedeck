@@ -113,7 +113,7 @@
       "title": "Link a tool",
       "toolPlaceholder": "tool (e.g. node)",
       "versionPlaceholder": "version (e.g. 22.11.0)",
-      "pathLabel": "Directory",
+      "noPath": "No directory picked",
       "run": "Link",
       "duplicateVersion": "{{tool}}@{{version}} already exists. Uninstall it first, then link again."
     },

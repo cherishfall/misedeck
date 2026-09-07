@@ -172,7 +172,7 @@ export const I18N_KEYS = {
       title: "tools.linkForm.title",
       toolPlaceholder: "tools.linkForm.toolPlaceholder",
       versionPlaceholder: "tools.linkForm.versionPlaceholder",
-      pathLabel: "tools.linkForm.pathLabel",
+      noPath: "tools.linkForm.noPath",
       run: "tools.linkForm.run",
       duplicateVersion: "tools.linkForm.duplicateVersion",
     },
