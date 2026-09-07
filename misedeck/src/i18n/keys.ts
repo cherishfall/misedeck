@@ -415,7 +415,6 @@ export const I18N_KEYS = {
       shell: "doctor.summary.shell",
       activated: "doctor.summary.activated",
       notActivated: "doctor.summary.notActivated",
-      shims: "doctor.summary.shims",
       update: "doctor.summary.update",
       updateAvailable: "doctor.summary.updateAvailable",
       upToDate: "doctor.summary.upToDate",

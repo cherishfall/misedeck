@@ -18,6 +18,7 @@ import {
   type TableColumn,
 } from "../../components";
 import { useParsedDoctor } from "../../hooks/useIssue29";
+import { useActivation } from "../../state/activationContext";
 import type { DoctorLine, DoctorPayload } from "../../types/tauri";
 
 import styles from "./DoctorPage.module.css";
@@ -115,6 +116,14 @@ function DoctorContent({
   data: DoctorPayload;
   t: (key: string, options?: Record<string, unknown>) => string;
 }) {
+  // The activation row answers "did I activate mise in my shell?" — that
+  // is the rc-file probe (`shell_activation_check`, issue #28), not
+  // `mise doctor`'s own `activated` field, which describes the GUI
+  // subprocess environment and is necessarily false here (issue #92).
+  const activation = useActivation();
+  const rcActivated: boolean | null =
+    activation.state.kind === "ok" ? activation.state.status.activated : null;
+
   if (data.rawLines && data.rawLines.length > 0) {
     return (
       <section className={styles.section}>
@@ -146,7 +155,7 @@ function DoctorContent({
   const otherWarnings = updateWarningText
     ? warnings.filter((w) => w !== updateWarningText)
     : warnings;
-  const status = doctorStatus(data);
+  const status = doctorStatus(data, rcActivated);
 
   const toolsetRows: ToolsetRow[] = useMemo(() => {
     const toolset = data.toolset ?? {};
@@ -201,14 +210,13 @@ function DoctorContent({
           </StatusRow>
         )}
         <StatusRow label={t(I18N_KEYS.doctor.summary.activated)}>
-          <Badge variant={data.activated ? "success" : "warning"}>
-            {data.activated ? t(I18N_KEYS.common.ok) : t(I18N_KEYS.doctor.summary.notActivated)}
-          </Badge>
-        </StatusRow>
-        <StatusRow label={t(I18N_KEYS.doctor.summary.shims)}>
-          <Badge variant={data.shimsOnPath ? "success" : "warning"}>
-            {data.shimsOnPath ? t(I18N_KEYS.common.ok) : t(I18N_KEYS.doctor.summary.notActivated)}
-          </Badge>
+          {rcActivated === null ? (
+            <span className={styles.muted}>—</span>
+          ) : (
+            <Badge variant={rcActivated ? "success" : "warning"}>
+              {rcActivated ? t(I18N_KEYS.common.ok) : t(I18N_KEYS.doctor.summary.notActivated)}
+            </Badge>
+          )}
         </StatusRow>
       </section>
 
@@ -279,7 +287,10 @@ function DoctorRawLine({ line }: { line: DoctorLine }) {
   );
 }
 
-function doctorStatus(data: DoctorPayload): {
+function doctorStatus(
+  data: DoctorPayload,
+  rcActivated: boolean | null,
+): {
   variant: "success" | "warning" | "danger";
   dotTone: "beam" | "flare" | "breach";
   labelKey: string;
@@ -291,7 +302,7 @@ function doctorStatus(data: DoctorPayload): {
     return { variant: "warning", dotTone: "flare", labelKey: I18N_KEYS.doctor.status.warn };
   }
   const warnings = data.warnings ?? [];
-  if (warnings.length > 0 || data.activated === false || data.shimsOnPath === false) {
+  if (warnings.length > 0 || rcActivated === false) {
     return { variant: "warning", dotTone: "flare", labelKey: I18N_KEYS.doctor.status.warn };
   }
   return { variant: "success", dotTone: "beam", labelKey: I18N_KEYS.doctor.status.ok };

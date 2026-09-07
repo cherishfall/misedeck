@@ -361,7 +361,6 @@
       "shell": "Shell",
       "activated": "Shell activation",
       "notActivated": "Not activated",
-      "shims": "Shims on PATH",
       "update": "Update",
       "updateAvailable": "Available",
       "upToDate": "Up to date"

@@ -361,7 +361,6 @@
       "shell": "Shell",
       "activated": "Shell 激活",
       "notActivated": "未激活",
-      "shims": "Shims 在 PATH",
       "update": "更新",
       "updateAvailable": "可用",
       "upToDate": "已最新"
