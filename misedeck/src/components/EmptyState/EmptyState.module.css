@@ -11,6 +11,8 @@
   background: color-mix(in srgb, var(--hull) 35%, transparent);
   color: var(--text);
   text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .eyebrow {

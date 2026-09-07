@@ -123,7 +123,9 @@ export function PluginsPage() {
         r.aliases && r.aliases.length > 0 ? (
           <span className={styles.cellAliases}>
             {r.aliases.map((a, i) => (
-              <span key={`${a}-${i}`} className={styles.aliasTag}>{a}</span>
+              <Badge key={`${a}-${i}`} variant="info" data>
+                {a}
+              </Badge>
             ))}
           </span>
         ) : (

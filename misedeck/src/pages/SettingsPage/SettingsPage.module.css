@@ -223,7 +223,6 @@
 
 .inputName {
   width: 14ch;
-  text-transform: uppercase;
 }
 
 .input:focus,

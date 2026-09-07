@@ -10,7 +10,8 @@ Before shipping any screen, ask: **could a mise CLI user predict what this scree
 
 ## Data honesty
 
-- Render data exactly as mise reports it. Paths, versions, backend names, and identifiers keep their original case — `vfox:mise-plugins/vfox-1password` stays as-is. Uppercase + wide tracking is for section labels only, never for data.
+- Render data exactly as mise reports it. Paths, versions, backend names, aliases, command names, and identifiers keep their original case — `vfox:mise-plugins/vfox-1password` stays as-is. Uppercase + wide tracking is for section labels only, never for data. User input echoes verbatim too: a key-name field must display `myVar` as `myVar`, never `MYVAR` — visually uppercasing case-sensitive input is the UI lying about the stored value.
+- Uppercase/tracking never reaches data, including by inheritance: `text-transform` and `letter-spacing` inherit, so any component that renders data (EmptyState, Badge, table cells) must reset `text-transform: none; letter-spacing: normal` at its root when an ancestor could carry label styling. Defend at the wrapped component, not at each call site.
 - Missing data renders as `—` or the column is dropped. Never fill a column with a hardcoded or fabricated value — a wrong fact is worse than no fact.
 - When the GUI mirrors a CLI default (e.g. `mise settings ls` shows only explicitly-set keys), keep the CLI behavior as the default; any wider view is an explicit opt-in control labeled with its flag (`--all`).
 
