@@ -31,9 +31,9 @@ This document is a continuation marker between autonomous driver sessions.
 5. **#94** — StyleGuide dev page has hardcoded English gallery strings (i18n gap).
 6. **#89** — EnvPage source Badge and directory recents menu items intentionally keep native `title` (explained in the closing comment; needs a decision only if the owner wants richer affordances there).
 
-## Latest release: v1.0.0-beta.7 (2026-09-04)
+## Latest release: v1.0.0-beta.8 (2026-09-08)
 
-Published with all six assets. Carries the beta6 feedback batch (#75–#84) + #85 + the streamed-output truncation fix (`1feb11d`). beta7's own batch (#87–#95) is on `master` and rides to the **next** release.
+Tag pushed, `release.yml` run 34143786713 building/publishing in the background (macOS/Windows/Linux assets + GitHub Pre-release). Carries the beta7 feedback batch (#87–#95) + dead-command cleanup #96 (`d7852ea`). Confirm the run finished and all six assets are attached before announcing.
 
 ### Release procedure (reapply for the next release)
 
