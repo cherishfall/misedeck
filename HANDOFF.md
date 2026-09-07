@@ -2,7 +2,9 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-> **⚠️ READ THIS FIRST (2026-09-07 update).** **beta7 feedback batch published**: SPEC parent **#86**, tickets **#87–#95** (labels `v1` + `ready-for-agent`, sub-issue links set; only blocking edge: #94 blocked by #93 — both touch ui-ux-rules.md). Source of truth: `beta7-feedback-scratch.md` (committed). All except #94 startable. Still open from before: #74 + #45 / #61 / #65, awaiting the owner's in-person visual verification. Sections about beta4–beta6 are historical.
+> **⚠️ READ THIS FIRST (2026-09-07 update).** **beta7 feedback batch FULLY IMPLEMENTED**: SPEC parent **#86**, tickets **#87–#95 all closed**, one subagent per ticket, sequential on `master`, each committed + pushed + closed. Commits: #87 `c9f1f66`, #88 `dd858bd`, #89 `ba3fdbe`, #90 `80f0c33`, #91 `e407451`, #92 `20e35ac`, #93 `3dc159d`, #94 `824ae43`, #95 `5f6c4fa` (tip of master). **NONE visually verified** — every ticket closed with "NOT visually verified — owner will verify manually". Still open: **#86 / #74 / #45 / #61 / #65 — all SPEC parents awaiting the owner's in-person visual verification.** Sections about beta4–beta6 are historical.
+>
+> **Adjacent findings flagged for future tickets (not done, noted in closing comments):** (1) #95 — Rust `tasks_edit_path` command now registered but unused, remove it; (2) #92 — `DoctorPayload.activated`/`shimsOnPath` + parsing now dead for the summary row (kept for raw output); rules-of-hooks violation pre-existing in `DoctorContent`; (3) #91 — too-old gate parses pipe-delimited params from Rust error text, fragile if `mise version --json` drops `latest`; (4) #90 — ui-ux-rules "never demands horizontal scrolling" line is now in tension with fixed-table min-width; (5) #94 — StyleGuide dev page has hardcoded English gallery strings (i18n gap).
 
 ## v1.0.0-beta.7 release (2026-09-04 evening)
 
