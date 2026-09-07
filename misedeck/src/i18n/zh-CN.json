@@ -464,7 +464,8 @@
     "name": "名称",
     "versionLabel": "版本",
     "source": "来源",
-    "lastUsed": "最后使用"
+    "lastUsed": "最后使用",
+    "latestVersion": "最新版本"
   },
   "errors": {
     "miseNotFound": "MiseDeck 在本机上未找到 mise 可执行文件。",

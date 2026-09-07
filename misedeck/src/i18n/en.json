@@ -464,7 +464,8 @@
     "name": "NAME",
     "versionLabel": "VERSION",
     "source": "SOURCE",
-    "lastUsed": "LAST USED"
+    "lastUsed": "LAST USED",
+    "latestVersion": "LATEST"
   },
   "errors": {
     "miseNotFound": "MiseDeck could not locate the mise binary on this machine.",

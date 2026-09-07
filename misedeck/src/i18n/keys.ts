@@ -519,6 +519,7 @@ export const I18N_KEYS = {
     versionLabel: "labels.versionLabel",
     source: "labels.source",
     lastUsed: "labels.lastUsed",
+    latestVersion: "labels.latestVersion",
   },
   errors: {
     miseNotFound: "errors.miseNotFound",

@@ -77,6 +77,18 @@ export function HomePage() {
     void queryClient.invalidateQueries({ queryKey: ["mise", "detect"] });
   };
 
+  // `mise version --json` reports the newest published release as `latest`;
+  // it is absent when the probe could not fetch it. Plain inequality is
+  // enough — mise versions are date-based and monotonic (issue #91).
+  const latest =
+    view.ok && typeof view.ok.raw.latest === "string"
+      ? view.ok.raw.latest
+      : undefined;
+  const updateAvailable =
+    view.status === "ready" &&
+    latest !== undefined &&
+    latest !== view.ok?.versionDate;
+
   return (
     <PageShell>
       <div className={styles.page}>
@@ -109,6 +121,13 @@ export function HomePage() {
                 tone="beam"
               />
               <DataRow label={t(I18N_KEYS.labels.binary)} value={view.ok.binaryPath} />
+              {updateAvailable && (
+                <DataRow
+                  label={t(I18N_KEYS.labels.latestVersion)}
+                  value={`${view.ok.versionDate} ▹ ${latest}`}
+                  tone="beam"
+                />
+              )}
               <DataRow
                 label="RAW"
                 value={JSON.stringify(view.ok.raw, null, 2)}
@@ -116,6 +135,28 @@ export function HomePage() {
                 full
               />
             </dl>
+            {updateAvailable && (
+              <div className={styles.stateActions}>
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => {
+                    void runSelfUpdate().then(onSelfUpdateOk);
+                  }}
+                  data-testid="ready-self-update"
+                >
+                  {t(I18N_KEYS.miseManagement.selfUpdateButton)}
+                </Button>
+                <a
+                  className={styles.fallback}
+                  href="https://github.com/jdx/mise/releases"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t(I18N_KEYS.miseManagement.releaseNotesLink)}
+                </a>
+              </div>
+            )}
           </Panel>
         )}
 
