@@ -95,8 +95,6 @@
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 14px;
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--text);
   margin: 0;
 }
@@ -251,8 +249,6 @@
 .addLabel {
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--dim);
   margin-right: var(--space-2);
 }
@@ -289,8 +285,6 @@
   color: var(--dim);
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
 }
 
 .dot {

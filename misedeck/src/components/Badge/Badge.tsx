@@ -1,8 +1,8 @@
-// Badge — small mono label with uppercase + tracking.
+// Badge — small mono label, normal case.
 //
 // Used in the tools table for backend tags, in the context bar for
-// status chips, in the version list for "ACTIVE" tags. Mono + tracked
-// per the visual language; the border picks up the variant tint.
+// status chips, in the version list for "Active" tags. Mono per the
+// visual language; the border picks up the variant tint.
 
 import type { HTMLAttributes, ReactNode } from "react";
 
@@ -17,8 +17,9 @@ export type BadgeVariant =
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant;
-  /** Render as a data badge: keep the identifier's original case and drop
-   *  the label tracking (per docs/design/ui-ux-rules.md data honesty). */
+  /** Data badge: the content is an identifier (backend name, setting type).
+   *  Resets any inherited transform/tracking so data renders exactly as
+   *  reported (docs/design/ui-ux-rules.md data honesty). */
   data?: boolean;
   /** Leading glyph slot (e.g. a tiny dot). Optional. */
   leading?: ReactNode;

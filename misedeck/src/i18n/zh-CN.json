@@ -579,7 +579,7 @@
     "openInTerminalError": "无法在 {{path}} 打开终端。请复制命令后手动执行。",
     "openInTerminalSuccess": "已通过 {{terminal}} 在 {{path}} 打开终端。",
     "copiedHint": "已复制",
-    "bannerLabel": "缺失 SHELL ACTIVATION",
+    "bannerLabel": "Shell 激活缺失",
     "bannerBody": "你的 {{shell}} 配置文件 {{rcPath}} 中没有 `mise activate`。请在下方添加该行，以便在 shell 中使用 mise。",
     "bannerBodyUnknownShell": "MiseDeck 无法识别你的 shell（{{name}}）。请在对应 shell 的 rc 文件中添加 `mise activate <shell>` 行，以在交互式 shell 中使用 mise。",
     "copyLineButton": "复制该行",

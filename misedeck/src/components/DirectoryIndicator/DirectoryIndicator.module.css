@@ -54,8 +54,6 @@
 .actionDisabled {
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   padding: 4px 10px;
   border-radius: 4px;
   background: transparent;
@@ -95,8 +93,6 @@
 .popoverHeader {
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--ice);
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--line);
@@ -166,8 +162,6 @@
 .openHintError {
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

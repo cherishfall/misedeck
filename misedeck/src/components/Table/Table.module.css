@@ -1,5 +1,5 @@
 /* Table — semantic <table> for the tools list and other data grids.
- * Mono cells, tracked column headers, right-align numeric columns. */
+ * Mono cells, quiet column headers, right-align numeric columns. */
 
 .scroller {
   width: 100%;
@@ -31,8 +31,6 @@
   padding: 0 0 var(--space-3) 0;
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--dim);
 }
 
@@ -40,8 +38,6 @@
   text-align: left;
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--dim);
   font-weight: 500;
   padding: var(--space-2) var(--space-3);
@@ -91,8 +87,6 @@
   text-align: center;
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--dim);
 }
 

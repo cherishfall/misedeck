@@ -60,12 +60,13 @@ Semantic discipline:
 |---|---|---|
 | Display | Cormorant Garamond 500–600, normal case, no tracking | page titles, the wordmark (italic) |
 | UI / nav | Space Grotesk 400–600 | nav items, buttons, prose |
-| Data | JetBrains Mono 400–600 | versions, paths, commands, logs, badges, section labels (uppercase, letter-spacing ≈ .18em) |
+| Data | JetBrains Mono 400–600 | versions, paths, commands, logs, badges |
+| Eyebrow | JetBrains Mono 400–600, uppercase, letter-spacing ≈ .18em, `--ice` | section eyebrows only (`MISE / TOOLS`) |
 
 - The serif display face is the editorial signature of mise.jdx.dev — it is spent on titles and the wordmark only, never on data or controls.
 - zh-CN: display text falls back to `Songti SC` / `SimSun` (Chinese serifs), UI text to `PingFang SC` / `system-ui`; Latin data keeps JetBrains Mono.
-- Base size 14px, data 11–13px, section labels 10px, display 26px. No fluid type; desktop-app density.
-- Section eyebrows read `MISE / TOOLS` — mono, uppercase, tracked, `--ice`, no prompt glyph.
+- Base size 14px, data 11–13px, eyebrows 10px, display 26px. No fluid type; desktop-app density.
+- Section eyebrows read `MISE / TOOLS` — mono, uppercase, tracked, `--ice`, no prompt glyph. **The eyebrow is the only uppercase element in the system.** This matches mise.jdx.dev exactly: there, only the top eyebrow (`01 THE ESSENTIALS`) is uppercase, while section titles (`Dev tools`, `Environments`), links, and everything else are normal case. Every other MiseDeck label — section titles, table headers, badge text, buttons, loading/empty/error labels, toolbar hints — is normal case with normal tracking.
 
 ## Layout
 

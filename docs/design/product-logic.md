@@ -16,7 +16,7 @@ North-star feeling: *"I always know which mise command this screen is showing me
 2. **No invented concepts.** A page exists only if a mise command (or command family) backs it. Page nouns and verbs come from `CONTEXT.md` / mise's own CLI vocabulary (`use`, `install`, `set`, `run`, `trust`, `doctor`…).
 3. **The command is always visible.** Every page header names the CLI equivalent of what the page does (e.g. Tools → `mise ls` / `mise use`). Every invocation the user asks for — mutations and read queries alike — streams through the execution panel showing the exact argv (AGENTS.md non-negotiable; ADR-0005).
 4. **Chrome gets out of the way.** Navigation is a collapsible sidebar; the directory indicator appears only when relevant; the execution panel appears when the user runs something, not when a table refreshes itself in the background.
-5. **Data is data, labels are labels.** Typography styling (uppercase, tracking) may apply to labels, never to data — paths, versions, commands, values render exactly as mise reports them.
+5. **Data is data, labels are labels.** Typography styling (uppercase, tracking) belongs to the section eyebrow alone, never to data — paths, versions, commands, values render exactly as mise reports them.
 6. **Visual inheritance.** Light and dark themes both follow mise.jdx.dev's look, so the app reads as part of the mise family, not a generic hacker skin.
 
 ## Information architecture

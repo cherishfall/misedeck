@@ -22,8 +22,6 @@
 .label {
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--ice);
   font-weight: 600;
 }

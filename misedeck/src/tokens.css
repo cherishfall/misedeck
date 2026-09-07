@@ -83,7 +83,7 @@
 
   --tracking-display: 0; /* serif display type takes no tracking */
   --tracking-wordmark: 0.01em; /* wordmark — near-natural */
-  --tracking-label: 0.18em; /* section eyebrows, badges */
+  --tracking-label: 0.18em; /* section eyebrows only */
 
   /* ---------- 3. Spacing (4px grid) ---------- */
 

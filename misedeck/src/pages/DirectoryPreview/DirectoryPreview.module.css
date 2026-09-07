@@ -70,8 +70,6 @@
 .refresh {
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--ice);
   background: transparent;
   border: 1px solid var(--line);
@@ -121,8 +119,6 @@
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 14px;
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--text);
   margin: 0;
 }
@@ -216,8 +212,6 @@
 .errorLabel {
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--breach);
 }
 
@@ -338,8 +332,6 @@
   color: var(--dim);
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
 }
 
 .dot {

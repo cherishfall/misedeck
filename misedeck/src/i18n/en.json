@@ -1,6 +1,6 @@
 {
   "common": {
-    "ok": "OK",
+    "ok": "Ok",
     "cancel": "Cancel",
     "save": "Save",
     "close": "Close",
@@ -51,7 +51,7 @@
   },
   "trust": {
     "banner": {
-      "label": "UNTRUSTED CONFIG",
+      "label": "Untrusted config",
       "body": "This directory's mise.toml has not been trusted. Env and tasks will not run until you trust it.",
       "action": "Trust this directory"
     },
@@ -192,14 +192,14 @@
       "value": "Value"
     },
     "source": {
-      "global": "GLOBAL",
-      "project": "DIRECTORY",
-      "tool": "TOOL",
-      "default": "DEFAULT"
+      "global": "Global",
+      "project": "Directory",
+      "tool": "Tool",
+      "default": "Default"
     },
     "toolSource": {
-      "global": "GLOBAL",
-      "project": "THIS DIRECTORY"
+      "global": "Global",
+      "project": "This directory"
     },
     "env": {
       "emptyTitle": "No env vars",
@@ -229,8 +229,8 @@
     "nav": "Env",
     "listTitle": "Resolved env vars",
     "scope": {
-      "global": "GLOBAL",
-      "project": "THIS DIRECTORY"
+      "global": "Global",
+      "project": "This directory"
     },
     "columns": {
       "name": "Name",
@@ -239,10 +239,10 @@
       "actions": "Actions"
     },
     "source": {
-      "global": "GLOBAL",
-      "project": "DIRECTORY",
-      "tool": "TOOL",
-      "default": "DEFAULT"
+      "global": "Global",
+      "project": "Directory",
+      "tool": "Tool",
+      "default": "Default"
     },
     "empty": {
       "title": "No env vars",
@@ -256,7 +256,7 @@
     "addButton": "Add",
     "editButton": "Edit",
     "removeButton": "Remove",
-    "namePlaceholder": "KEY (UPPER_SNAKE)",
+    "namePlaceholder": "Key (UPPER_SNAKE)",
     "valuePlaceholder": "value",
     "guard": {
       "untrustedBody": "Trust this directory before mutating its env vars."
@@ -352,9 +352,9 @@
     "commandHint": "mise doctor",
     "statusLabel": "Health check",
     "status": {
-      "ok": "OK",
-      "warn": "WARN",
-      "error": "ERROR"
+      "ok": "Ok",
+      "warn": "Warn",
+      "error": "Error"
     },
     "summary": {
       "status": "Status",
@@ -437,7 +437,7 @@
   },
   "states": {
     "detecting": "Probing mise…",
-    "ready": "READY",
+    "ready": "Ready",
     "notInstalled": {
       "title": "mise not found",
       "body": "We could not locate the mise binary on this machine. Install it from {{url}} and relaunch MiseDeck.",
@@ -457,14 +457,14 @@
     }
   },
   "labels": {
-    "version": "VERSION",
-    "binary": "BINARY",
-    "minimum": "MINIMUM",
-    "name": "NAME",
-    "versionLabel": "VERSION",
-    "source": "SOURCE",
-    "lastUsed": "LAST USED",
-    "latestVersion": "LATEST"
+    "version": "Version",
+    "binary": "Binary",
+    "minimum": "Minimum",
+    "name": "Name",
+    "versionLabel": "Version",
+    "source": "Source",
+    "lastUsed": "Last used",
+    "latestVersion": "Latest"
   },
   "errors": {
     "miseNotFound": "MiseDeck could not locate the mise binary on this machine.",
@@ -528,7 +528,7 @@
       "danger": "Uninstall",
       "loading": "Working…",
       "disabled": "Disabled",
-      "badgeDefault": "GLOBAL",
+      "badgeDefault": "Global",
       "badgeInfo": "core",
       "badgeSuccess": "active",
       "badgeWarning": "outdated",
@@ -554,8 +554,8 @@
     }
   },
   "execution": {
-    "title": "EXECUTION",
-    "commandLabel": "COMMAND",
+    "title": "Execution",
+    "commandLabel": "Command",
     "statusRunning": "running",
     "statusOk": "ok · {{duration}}s",
     "statusFailed": "failed ({{duration}}s, exit {{code}})",
@@ -579,7 +579,7 @@
     "openInTerminalError": "Could not open a terminal at {{path}}. Copy the command and run it yourself.",
     "openInTerminalSuccess": "Opened {{terminal}} at {{path}}.",
     "copiedHint": "Copied",
-    "bannerLabel": "SHELL ACTIVATION MISSING",
+    "bannerLabel": "Shell activation missing",
     "bannerBody": "Your {{shell}} config at {{rcPath}} does not have `mise activate`. Add the line below so mise can manage your shell's tools.",
     "bannerBodyUnknownShell": "MiseDeck could not detect your shell ({{name}}). Add the appropriate `mise activate <shell>` line to your shell's rc file to use mise in interactive sessions.",
     "copyLineButton": "Copy the line",

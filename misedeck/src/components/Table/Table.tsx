@@ -12,7 +12,7 @@ import styles from "./Table.module.css";
 export interface TableColumn<T> {
   /** Stable key used for React and for the cell-renderer lookup. */
   key: string;
-  /** Tracked label rendered in <th>. */
+  /** Column label rendered in <th>. */
   header: ReactNode;
   /** Render the cell for a given row. */
   cell: (row: T) => ReactNode;

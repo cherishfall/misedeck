@@ -50,8 +50,6 @@
 }
 
 .label {
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
   color: var(--dim);
   font-size: var(--size-label);
 }
@@ -109,8 +107,6 @@
   font-size: var(--size-data);
   border-radius: 4px;
   cursor: pointer;
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
 }
 
 .actionBtn:hover,
@@ -183,8 +179,6 @@
   font-size: var(--size-data);
   border-radius: 4px;
   cursor: pointer;
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
 }
 
 .demoBtn:hover,
@@ -207,8 +201,6 @@
   color: var(--text);
   font-family: var(--font-mono);
   font-size: var(--size-data);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   cursor: pointer;
   transition:
     border-color var(--motion-state-change) ease,

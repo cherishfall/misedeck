@@ -72,8 +72,6 @@
 .clear {
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--ice);
   background: transparent;
   border: 1px solid var(--line);
@@ -105,8 +103,6 @@
   color: var(--dim);
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
 }
 
 .dot {
@@ -119,8 +115,6 @@
 .loadingLabel {
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--dim);
 }
 
@@ -137,8 +131,6 @@
 .errorLabel {
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--breach);
 }
 
@@ -167,8 +159,6 @@
   align-self: flex-start;
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--beam);
   background: transparent;
   border: 1px solid transparent;

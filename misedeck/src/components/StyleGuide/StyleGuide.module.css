@@ -20,8 +20,6 @@
   align-self: flex-start;
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--beam);
   text-decoration: none;
 }
@@ -173,8 +171,6 @@
 .typeLabel {
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--dim);
 }
 
@@ -228,8 +224,6 @@
 .motionLabel {
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--dim);
 }
 
@@ -272,8 +266,6 @@
 .demoLabel {
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--beam);
   margin-bottom: var(--space-2);
 }
@@ -372,8 +364,6 @@
   gap: var(--space-2);
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--dim);
 }
 

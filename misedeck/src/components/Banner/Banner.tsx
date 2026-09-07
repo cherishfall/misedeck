@@ -12,7 +12,7 @@ export type BannerTone = "info" | "warning" | "danger" | "success";
 
 interface BannerProps {
   tone?: BannerTone;
-  /** Tracked label rendered in the top row, e.g. "UNTRUSTED CONFIG". */
+  /** Label rendered in the top row, e.g. "Untrusted config". */
   label: ReactNode;
   /** Body text / children. */
   children: ReactNode;

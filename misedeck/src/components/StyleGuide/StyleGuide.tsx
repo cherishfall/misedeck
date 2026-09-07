@@ -166,8 +166,8 @@ export function StyleGuide() {
       >
         <div className={styles.typeStack}>
           <div className={styles.typeRow}>
-            <span className={styles.typeLabel}>DISPLAY / 22</span>
-            <span className={styles.typeDisplay}>TOOLS</span>
+            <span className={styles.typeLabel}>Display / 22</span>
+            <span className={styles.typeDisplay}>Tools</span>
           </div>
           <div className={styles.typeRow}>
             <span className={styles.typeLabel}>UI / 14</span>
@@ -176,11 +176,11 @@ export function StyleGuide() {
             </span>
           </div>
           <div className={styles.typeRow}>
-            <span className={styles.typeLabel}>DATA / 12</span>
+            <span className={styles.typeLabel}>Data / 12</span>
             <span className={styles.typeMono}>22.11.0 ▹ 22.20.0</span>
           </div>
           <div className={styles.typeRow}>
-            <span className={styles.typeLabel}>LABEL / 10</span>
+            <span className={styles.typeLabel}>Label / 10</span>
             <span className={styles.typeLabelSample}>MISE / TOOLS</span>
           </div>
         </div>
@@ -194,7 +194,7 @@ export function StyleGuide() {
       >
         <div className={styles.motionGrid}>
           <div className={styles.motionItem}>
-            <span className={styles.motionLabel}>PULSE · 1.6s</span>
+            <span className={styles.motionLabel}>Pulse · 1.6s</span>
             <div className={styles.motionRow}>
               <ProgressDot tone="flare" title="attention" />
               <ProgressDot tone="breach" title="error" />
@@ -203,7 +203,7 @@ export function StyleGuide() {
             </div>
           </div>
           <div className={styles.motionItem}>
-            <span className={styles.motionLabel}>CARET BLINK · 1.1s</span>
+            <span className={styles.motionLabel}>Caret blink · 1.1s</span>
             <div className={styles.motionRow}>
               <span className={styles.caret} aria-hidden="true" />
               <span className={styles.motionCode}>$ mise use -g node@latest</span>

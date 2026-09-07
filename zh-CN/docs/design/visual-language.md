@@ -60,12 +60,13 @@ MiseDeck 界面的设计系统基础。在 issue #37 中重写：首个设计冲
 |---|---|---|
 | Display | Cormorant Garamond 500–600，正常大小写，无字距 | 页面标题、wordmark（斜体） |
 | UI / 导航 | Space Grotesk 400–600 | 导航项、按钮、正文 |
-| 数据 | JetBrains Mono 400–600 | 版本、路径、命令、日志、徽章、小节标签（大写，字距 ≈ .18em） |
+| 数据 | JetBrains Mono 400–600 | 版本、路径、命令、日志、徽章 |
+| 眉签 | JetBrains Mono 400–600，大写，字距 ≈ .18em，`--ice` | 仅限小节眉签（`MISE / TOOLS`） |
 
 - 衬线 display 字体是 mise.jdx.dev 的编辑式签名 —— 只花在标题与 wordmark 上，绝不用于数据或控件。
 - zh-CN：display 文本回退到 `Songti SC` / `SimSun`（中文衬线），UI 文本回退到 `PingFang SC` / `system-ui`；Latin 数据保持 JetBrains Mono。
-- 基准字号 14px，数据 11–13px，小节标签 10px，display 26px。无流式字号；桌面应用密度。
-- 小节眉签写作 `MISE / TOOLS` —— 等宽、大写、带字距、`--ice`，不带 prompt 符号。
+- 基准字号 14px，数据 11–13px，眉签 10px，display 26px。无流式字号；桌面应用密度。
+- 小节眉签写作 `MISE / TOOLS` —— 等宽、大写、带字距、`--ice`，不带 prompt 符号。**眉签是整个系统中唯一的大写元素。** 这与 mise.jdx.dev 逐点对齐：官网只有顶级眉签（`01 THE ESSENTIALS`）大写，区块标题（`Dev tools`、`Environments`）、链接等其余一切均为正常大小写。MiseDeck 的其他所有标签——区块标题、表头、徽章文字、按钮、loading/empty/错误标签、工具栏提示——一律正常大小写、正常字距。
 
 ## 布局
 

@@ -1,4 +1,4 @@
-/* DataRow — semantic <dl> row. Mono values, tracked label, optional
+/* DataRow — semantic <dl> row. Mono values, quiet label, optional
  * block layout for raw / multi-line content. */
 
 .row {
@@ -16,8 +16,6 @@
   margin: 0;
   font-family: var(--font-mono);
   font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--ice);
 }
 

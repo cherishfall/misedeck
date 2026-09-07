@@ -1,6 +1,7 @@
-/* Badge — tracked mono label. Border + text pick up the variant
- * tint; the background is a subtle wash of the same color so the
- * badge reads as a "stamp" against the panel. */
+/* Badge — small mono label, normal case (only section eyebrows take
+ * uppercase + tracking). Border + text pick up the variant tint; the
+ * background is a subtle wash of the same color so the badge reads as
+ * a "stamp" against the panel. */
 
 .badge {
   display: inline-flex;
@@ -14,8 +15,6 @@
   font-family: var(--font-mono);
   font-size: var(--size-label);
   font-weight: 500;
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   line-height: 1.4;
   white-space: nowrap;
   justify-self: start;
@@ -34,9 +33,10 @@
   border-color: var(--line-strong);
 }
 
-/* Data badge: identifiers (backend names, setting types) keep their
- * original case and lose the label tracking — uppercase + wide tracking
- * belongs to section labels only (ui-ux-rules.md data honesty). */
+/* Data badge guard: identifiers (backend names, setting types) render
+ * exactly as reported. The base is already normal case; this rule resets
+ * any inherited transform/tracking from an ancestor (ui-ux-rules.md data
+ * honesty — defend at the wrapped component). */
 .data {
   text-transform: none;
   letter-spacing: normal;
