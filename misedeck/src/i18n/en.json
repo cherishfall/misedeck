@@ -69,7 +69,7 @@
     "eyebrow": "MISE / TOOLS",
     "title": "Tools",
     "hint": "Tools installed and active for the current directory. Switch versions, install, uninstall, or upgrade from the table; every mutation streams through the execution panel.",
-    "commandHint": "mise ls · mise use · mise install · mise uninstall · mise upgrade · mise outdated",
+    "commandHint": "mise ls · mise outdated · mise use · mise upgrade · mise uninstall · mise install · mise link · mise ls-remote",
     "columns": {
       "tool": "Tool",
       "version": "Version",
@@ -162,7 +162,7 @@
     "eyebrow": "MISE / OVERVIEW",
     "title": "Directory overview",
     "hint": "Resolved tools, env, config files, and lockfile for the current directory.",
-    "commandHint": "mise -C <dir> ls · mise env · mise config · mise.lock",
+    "commandHint": "mise -C <dir> ls · mise outdated · mise trust · mise env · mise config · mise.lock",
     "nav": "Overview",
     "empty": {
       "title": "Pick a directory to preview",
@@ -276,7 +276,7 @@
     "eyebrow": "MISE / TASKS",
     "title": "Tasks",
     "subtitle": "List, run, and edit the mise tasks for the active directory. Writes go through `mise tasks add` and stream into the panel.",
-    "commandHint": "mise tasks ls · mise run · mise tasks add",
+    "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit --path",
     "nav": "Tasks",
     "columns": {
       "name": "Name",

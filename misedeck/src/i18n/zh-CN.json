@@ -69,7 +69,7 @@
     "eyebrow": "MISE / 工具",
     "title": "工具",
     "hint": "当前目录中已安装并处于活动状态的工具。在表格中切换版本、安装、卸载或升级；所有变更都通过执行面板实时显示。",
-    "commandHint": "mise ls · mise use · mise install · mise uninstall · mise upgrade · mise outdated",
+    "commandHint": "mise ls · mise outdated · mise use · mise upgrade · mise uninstall · mise install · mise link · mise ls-remote",
     "columns": {
       "tool": "工具",
       "version": "版本",
@@ -162,7 +162,7 @@
     "eyebrow": "MISE / 概览",
     "title": "目录概览",
     "hint": "当前目录解析出的工具、环境变量、配置文件与 lockfile。",
-    "commandHint": "mise -C <dir> ls · mise env · mise config · mise.lock",
+    "commandHint": "mise -C <dir> ls · mise outdated · mise trust · mise env · mise config · mise.lock",
     "nav": "概览",
     "empty": {
       "title": "选择一个目录以预览",
@@ -276,7 +276,7 @@
     "eyebrow": "MISE / 任务",
     "title": "任务",
     "subtitle": "列出、运行并编辑当前目录的 mise 任务。写入通过 `mise tasks add`，并在执行面板中实时显示。",
-    "commandHint": "mise tasks ls · mise run · mise tasks add",
+    "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit --path",
     "nav": "任务",
     "columns": {
       "name": "名称",
