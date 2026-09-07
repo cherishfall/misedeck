@@ -16,7 +16,6 @@ import type {
   JsonResult,
   LockfileResult,
   ShellActivationResult,
-  TasksEditPathResult,
   TerminalOpenResult,
   TrustResult,
 } from "../types/tauri";
@@ -114,18 +113,6 @@ export async function trustCheck(cwd: string | null): Promise<TrustResult> {
  *  `api/miseTools.ts`. Used by the tasks page (issue #27). */
 export async function tasksLs(cwd: string | null): Promise<JsonResult> {
   return (await invoke("tasks_ls", { cwd })) as JsonResult;
-}
-
-/** Calls the `tasks_edit_path` Tauri command
- *  (`mise tasks edit --path <name>`). On success, returns the
- *  absolute path of the file that defines the task; on failure,
- *  the structured `AppError`. The page uses this to drive the
- *  "open the TOML directly" affordance (issue #27). */
-export async function tasksEditPath(
-  cwd: string | null,
-  name: string,
-): Promise<TasksEditPathResult> {
-  return (await invoke("tasks_edit_path", { cwd, name })) as TasksEditPathResult;
 }
 
 /** Calls the `shell_activation_check` Tauri command

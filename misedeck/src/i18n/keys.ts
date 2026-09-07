@@ -346,6 +346,7 @@ export const I18N_KEYS = {
     runButton: "tasks.runButton",
     editButton: "tasks.editButton",
     openInEditorButton: "tasks.openInEditorButton",
+    hiddenBadge: "tasks.hiddenBadge",
     editForm: {
       title: "tasks.editForm.title",
       runLabel: "tasks.editForm.runLabel",

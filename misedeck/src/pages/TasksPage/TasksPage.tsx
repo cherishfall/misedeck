@@ -10,11 +10,11 @@
 //                                go through the execution panel
 //                                (no direct TOML edits per the
 //                                architecture doc)
-//   * `mise tasks edit --path <name>`       → returns the path of
-//                                the file that defines the task;
-//                                fed to `tauri-plugin-opener` for
-//                                the "open the TOML directly"
-//                                affordance
+//   * `mise tasks edit --path <name>`       → Open in editor; runs
+//                                through the execution panel like
+//                                every user-triggered mise call
+//                                (ADR-0005), the returned path fed to
+//                                `tauri-plugin-opener`
 //
 // All mutations and the open-in-editor side-effect go through
 // `useTrustGuard()` — when the cwd's `mise.toml` is untrusted,
@@ -46,7 +46,7 @@ import {
   useTrustAction,
   useTrustGuard,
 } from "../../state/trustContext";
-import { detectMise, isAppError, tasksEditPath } from "../../api/mise";
+import { detectMise, isAppError } from "../../api/mise";
 import { useExecutionContext } from "../../components/ExecutionPanel";
 import type { ExecutionStatus } from "../../components/ExecutionPanel";
 import {
@@ -106,6 +106,10 @@ interface TaskRow {
 
 function miseRunTaskArgs(name: string): string[] {
   return ["run", name];
+}
+
+function miseTasksEditPathArgs(name: string): string[] {
+  return ["tasks", "edit", "--path", name];
 }
 
 function miseTasksAddArgs(
@@ -216,36 +220,41 @@ export function TasksPage() {
   // Open the file that defines the task in the OS default editor.
   // The "open the TOML directly" affordance is gated by the trust
   // guard because it touches the same file the user has not yet
-  // trusted. The path is sourced from `mise tasks edit --path`,
-  // which the Rust runner returns as the file mise would edit;
-  // we ship the path to `tauri-plugin-opener` (a read-only
-  // effect on the filesystem).
+  // trusted. `mise tasks edit --path` is a user-triggered mise
+  // invocation, so it runs through the execution panel (ADR-0005);
+  // on success the echoed path from stdout goes to
+  // `tauri-plugin-opener` (a read-only effect on the filesystem).
   const openInEditor = useCallback(
     async (name: string) => {
       if (!guard.allowed) {
         focusTrustBanner();
         return;
       }
-      const res = await tasksEditPath(cwd, name);
+      if (isRunning) return;
+      const res = await run({ cwd, args: miseTasksEditPathArgs(name) });
       if (res.kind === "err") {
-        // Surface the failure as a transient page-level message
-        // — the panel is for mise invocations, this is a UI-side
-        // error from the plugin call.
+        // The failed run auto-opens the panel with stderr; the
+        // page-level message explains what the attempt was for.
         setEditorError(t(I18N_KEYS.tasks.openEditorError.body));
         return;
       }
-      if (!res.path) {
+      if (res.outcome.exitCode !== 0) {
+        setEditorError(t(I18N_KEYS.tasks.openEditorError.body));
+        return;
+      }
+      const path = res.outcome.stdout.trim();
+      if (!path) {
         setEditorError(t(I18N_KEYS.tasks.openEditorError.body));
         return;
       }
       setEditorError(null);
       try {
-        await openExternalPath(res.path);
+        await openExternalPath(path);
       } catch {
         setEditorError(t(I18N_KEYS.tasks.openEditorError.body));
       }
     },
-    [guard.allowed, focusTrustBanner, cwd, t],
+    [guard.allowed, focusTrustBanner, isRunning, run, cwd, t],
   );
 
   // Track the open-in-editor error so the user can see why
@@ -315,7 +324,9 @@ export function TasksPage() {
           <span className={styles.cellName}>
             <span className={styles.taskName}>{r.name}</span>
           {r.hide && (
-            <span className={styles.taskHidden}>hide</span>
+            <span className={styles.taskHidden}>
+              {t(I18N_KEYS.tasks.hiddenBadge)}
+            </span>
           )}
           </span>
         </Tooltip>

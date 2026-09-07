@@ -292,6 +292,7 @@
     "runButton": "运行",
     "editButton": "编辑",
     "openInEditorButton": "在编辑器中打开",
+    "hiddenBadge": "hide",
     "editForm": {
       "title": "编辑任务",
       "runLabel": "运行命令",

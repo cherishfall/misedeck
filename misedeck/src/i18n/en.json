@@ -292,6 +292,7 @@
     "runButton": "Run",
     "editButton": "Edit",
     "openInEditorButton": "Open in editor",
+    "hiddenBadge": "hide",
     "editForm": {
       "title": "Edit task",
       "runLabel": "Run command",
