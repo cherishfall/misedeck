@@ -48,6 +48,7 @@ import {
   MiseMissingState,
   PageShell,
   Table,
+  Tooltip,
   type TableColumn,
 } from "../../components";
 import {
@@ -264,9 +265,9 @@ export function ToolsPage() {
       key: "source",
       header: t(I18N_KEYS.tools.columns.source),
       cell: (r) => (
-        <span className={styles.cellSource} title={r.source?.path ?? r.source?.type ?? ""}>
-          {r.source?.path ?? r.source?.type ?? "—"}
-        </span>
+        <Tooltip text={r.source?.path ?? r.source?.type ?? "—"}>
+          <span className={styles.cellSource}>{r.source?.path ?? r.source?.type ?? "—"}</span>
+        </Tooltip>
       ),
     },
     {
@@ -299,9 +300,9 @@ export function ToolsPage() {
       key: "created",
       header: t(I18N_KEYS.tools.queries.remote.created),
       cell: (r) => (
-        <span className={styles.cellSource} title={r.createdAt ?? ""}>
-          {r.createdAt ?? "—"}
-        </span>
+        <Tooltip text={r.createdAt ?? "—"}>
+          <span className={styles.cellSource}>{r.createdAt ?? "—"}</span>
+        </Tooltip>
       ),
     },
     {
@@ -497,7 +498,7 @@ export function ToolsPage() {
       width: "30%",
       cell: (r) => (
         <span className={styles.cellTool}>
-          <span className={styles.toolName} title={r.tool}>{r.tool}</span>
+          <Tooltip text={r.tool}><span className={styles.toolName}>{r.tool}</span></Tooltip>
         </span>
       ),
     },
@@ -506,26 +507,25 @@ export function ToolsPage() {
       header: t(I18N_KEYS.tools.columns.version),
       width: "96px",
       cell: (r) => (
-        <span
-          className={r.outdated ? styles.cellVersionOutdated : styles.cellVersion}
-          title={r.version}
-        >
-          {r.version}
-        </span>
+        <Tooltip text={r.version}>
+          <span className={r.outdated ? styles.cellVersionOutdated : styles.cellVersion}>
+            {r.version}
+          </span>
+        </Tooltip>
       ),
     },
     {
       key: "requested",
       header: t(I18N_KEYS.tools.columns.requested),
       width: "120px",
-      cell: (r) => <span className={styles.cellRequested} title={r.requested}>{r.requested}</span>,
+      cell: (r) => <Tooltip text={r.requested}><span className={styles.cellRequested}>{r.requested}</span></Tooltip>,
     },
     ...(showBackend ? [backendColumn] : []),
     {
       key: "source",
       header: t(I18N_KEYS.tools.columns.source),
       width: "100px",
-      cell: (r) => <span className={styles.cellSource} title={r.source}>{r.source}</span>,
+      cell: (r) => <Tooltip text={r.source}><span className={styles.cellSource}>{r.source}</span></Tooltip>,
     },
     {
       key: "latest",
@@ -533,11 +533,13 @@ export function ToolsPage() {
       width: "150px",
       cell: (r) =>
         r.outdated ? (
-          <span className={styles.cellLatest} title={r.latest}>
-            <span className={styles.arrow} aria-hidden="true">▹</span>
-            <span className={styles.latestValue}>{r.latest}</span>
-            <Badge variant="warning">{t(I18N_KEYS.tools.outdatedBadge)}</Badge>
-          </span>
+          <Tooltip text={r.latest}>
+            <span className={styles.cellLatest}>
+              <span className={styles.arrow} aria-hidden="true">▹</span>
+              <span className={styles.latestValue}>{r.latest}</span>
+              <Badge variant="warning">{t(I18N_KEYS.tools.outdatedBadge)}</Badge>
+            </span>
+          </Tooltip>
         ) : (
           <span className={styles.dim}>—</span>
         ),
@@ -993,13 +995,14 @@ function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
           spellCheck={false}
           autoComplete="off"
         />
-        <span
-          className={path ? styles.linkFormPath : styles.linkFormPathEmpty}
-          title={path || undefined}
-          data-testid="tools-link-path"
-        >
+        <Tooltip text={path}>
+          <span
+            className={path ? styles.linkFormPath : styles.linkFormPathEmpty}
+            data-testid="tools-link-path"
+          >
           {path || t(I18N_KEYS.tools.linkForm.noPath)}
-        </span>
+          </span>
+        </Tooltip>
         <Button
           variant="primary"
           size="sm"

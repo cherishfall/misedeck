@@ -36,6 +36,7 @@ import {
   EmptyState,
   PageShell,
   Table,
+  Tooltip,
   type TableColumn,
 } from "../../components";
 import { useParsedSettingsList } from "../../hooks/useIssue29";
@@ -145,7 +146,7 @@ export function SettingsPage() {
       key: "key",
       header: t(I18N_KEYS.settings.columns.key),
       width: "26%",
-      cell: (r) => <span className={styles.cellKey} title={r.key}>{r.key}</span>,
+      cell: (r) => <Tooltip text={r.key}><span className={styles.cellKey}>{r.key}</span></Tooltip>,
     },
     {
       key: "value",
@@ -162,7 +163,7 @@ export function SettingsPage() {
       key: "source",
       header: t(I18N_KEYS.settings.columns.source),
       width: "140px",
-      cell: (r) => <span className={styles.cellSource} title={r.source ?? undefined}>{r.source ?? "—"}</span>,
+      cell: (r) => (r.source ? <Tooltip text={r.source}><span className={styles.cellSource}>{r.source}</span></Tooltip> : <span className={styles.cellSource}>—</span>),
     },
     {
       key: "actions",
@@ -283,9 +284,9 @@ function ScopeBadge({ cwd }: { cwd: string | null }) {
           : t(I18N_KEYS.env.scope.project)}
       </Badge>
       {!isGlobal && (
-        <span className={styles.scopePath} data-testid="settings-cwd" title={cwd}>
-          {cwd}
-        </span>
+        <Tooltip text={cwd}>
+          <span className={styles.scopePath} data-testid="settings-cwd">{cwd}</span>
+        </Tooltip>
       )}
     </div>
   );
@@ -463,7 +464,7 @@ const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(function TrustB
         }
       >
         {t(I18N_KEYS.settings.guard.untrustedBody)}
-        {trust.path ? <span className={styles.trustPath} title={trust.path}> · {trust.path}</span> : null}
+        {trust.path ? <Tooltip text={trust.path}><span className={styles.trustPath}> · {trust.path}</span></Tooltip> : null}
       </Banner>
       {lastResult === "ok" && (
         <div className={styles.trustNote} data-testid="settings-trust-ok">

@@ -17,7 +17,15 @@ import { useNavigate } from "react-router";
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
 import { detectMise, isAppError } from "../../api/mise";
-import { Badge, Button, EmptyState, PageShell, Table, type TableColumn } from "../../components";
+import {
+  Badge,
+  Button,
+  EmptyState,
+  PageShell,
+  Table,
+  Tooltip,
+  type TableColumn,
+} from "../../components";
 import { useParsedPluginsList, useParsedRegistry } from "../../hooks/useIssue29";
 import type { InstalledPlugin, RegistryItem } from "../../types/tauri";
 
@@ -77,7 +85,7 @@ export function PluginsPage() {
       header: t(I18N_KEYS.plugins.columns.source),
       cell: (p) =>
         p.source !== undefined ? (
-          <span className={styles.cellSource} title={p.source}>{p.source}</span>
+          <Tooltip text={p.source}><span className={styles.cellSource}>{p.source}</span></Tooltip>
         ) : (
           <span className={styles.dim}>—</span>
         ),

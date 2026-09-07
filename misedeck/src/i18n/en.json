@@ -570,6 +570,10 @@
     "reopen": "Execution",
     "reopenRunning": "Execution · running"
   },
+  "tooltip": {
+    "copy": "Copy",
+    "copied": "Copied"
+  },
   "activation": {
     "openInTerminalLabel": "Open in terminal",
     "openInTerminalError": "Could not open a terminal at {{path}}. Copy the command and run it yourself.",

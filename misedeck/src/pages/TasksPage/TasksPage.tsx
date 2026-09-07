@@ -59,6 +59,7 @@ import {
   EmptyState,
   PageShell,
   Table,
+  Tooltip,
   type TableColumn,
 } from "../../components";
 import { useParsedTasksList } from "../../hooks/useTasksList";
@@ -310,12 +311,14 @@ export function TasksPage() {
       header: t(I18N_KEYS.tasks.columns.name),
       width: "22%",
       cell: (r) => (
-        <span className={styles.cellName} title={r.name}>
-          <span className={styles.taskName}>{r.name}</span>
+        <Tooltip text={r.name}>
+          <span className={styles.cellName}>
+            <span className={styles.taskName}>{r.name}</span>
           {r.hide && (
             <span className={styles.taskHidden}>hide</span>
           )}
-        </span>
+          </span>
+        </Tooltip>
       ),
     },
     {
@@ -687,7 +690,7 @@ const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(
         >
           {t(I18N_KEYS.tasks.guard.untrustedBody)}
           {trust.path ? (
-            <span className={styles.contextPath} title={trust.path}> · {trust.path}</span>
+            <Tooltip text={trust.path}><span className={styles.contextPath}> · {trust.path}</span></Tooltip>
           ) : null}
         </Banner>
         {lastResult === "ok" && (

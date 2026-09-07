@@ -50,12 +50,13 @@ import {
   useLockfile,
 } from "../../hooks/useToolsList";
 import {
-  Banner,
   Badge,
+  Banner,
   Button,
   EmptyState,
   PageShell,
   Table,
+  Tooltip,
   type TableColumn,
 } from "../../components";
 
@@ -258,16 +259,18 @@ export function DirectoryPreview() {
       header: t(I18N_KEYS.preview.columns.tool),
       width: "40%",
       cell: (r) => (
-        <span className={styles.cellTool} title={r.tool}>
-          <span className={styles.toolName}>{r.tool}</span>
-        </span>
+        <Tooltip text={r.tool}>
+          <span className={styles.cellTool}>
+            <span className={styles.toolName}>{r.tool}</span>
+          </span>
+        </Tooltip>
       ),
     },
     {
       key: "version",
       header: t(I18N_KEYS.preview.columns.version),
       width: "120px",
-      cell: (r) => <span className={styles.cellVersion} title={r.version}>{r.version}</span>,
+      cell: (r) => <Tooltip text={r.version}><span className={styles.cellVersion}>{r.version}</span></Tooltip>,
     },
     {
       key: "source",
@@ -287,16 +290,18 @@ export function DirectoryPreview() {
     {
       key: "name",
       header: t(I18N_KEYS.preview.columns.name),
-      cell: (r) => <span className={styles.cellEnvName} title={r.name}>{r.name}</span>,
+      cell: (r) => <Tooltip text={r.name}><span className={styles.cellEnvName}>{r.name}</span></Tooltip>,
       width: "240px",
     },
     {
       key: "value",
       header: t(I18N_KEYS.preview.columns.value),
       cell: (r) => (
-        <span className={styles.cellEnvValue} title={r.value || undefined}>
-          <span className={styles.envValueText}>{r.value || "—"}</span>
-        </span>
+        <Tooltip text={r.value}>
+          <span className={styles.cellEnvValue}>
+            <span className={styles.envValueText}>{r.value || "—"}</span>
+          </span>
+        </Tooltip>
       ),
     },
     {
@@ -533,7 +538,7 @@ function ConfigFileRow({ file, rank }: { file: ConfigFile; rank: number }) {
     <li className={styles.configFile} data-testid="preview-config-file">
       <div className={styles.configFileHead}>
         <span className={styles.configRank}>{rank}</span>
-        <span className={styles.configPath} title={file.path}>{file.path}</span>
+        <Tooltip text={file.path}><span className={styles.configPath}>{file.path}</span></Tooltip>
         {file.tools.length > 0 && (
           <span className={styles.configTools}>{file.tools.join(", ")}</span>
         )}
@@ -623,7 +628,7 @@ const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(function TrustB
       >
         {t(I18N_KEYS.trust.banner.body)}
         {trust.path ? (
-          <span className={styles.trustPath} title={trust.path}> · {trust.path}</span>
+          <Tooltip text={trust.path}><span className={styles.trustPath}> · {trust.path}</span></Tooltip>
         ) : null}
       </Banner>
       {lastResult === "ok" && (

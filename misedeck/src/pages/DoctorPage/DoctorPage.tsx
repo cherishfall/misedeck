@@ -14,6 +14,7 @@ import {
   EmptyState,
   PageShell,
   Table,
+  Tooltip,
   type TableColumn,
 } from "../../components";
 import { useParsedDoctor } from "../../hooks/useIssue29";
@@ -165,12 +166,12 @@ function DoctorContent({
     {
       key: "tool",
       header: t(I18N_KEYS.doctor.columns.tool),
-      cell: (r) => <span className={styles.cellTool} title={r.tool}>{r.tool}</span>,
+      cell: (r) => <Tooltip text={r.tool}><span className={styles.cellTool}>{r.tool}</span></Tooltip>,
     },
     {
       key: "version",
       header: t(I18N_KEYS.doctor.columns.version),
-      cell: (r) => <span className={styles.cellVersion} title={r.version}>{r.version}</span>,
+      cell: (r) => <Tooltip text={r.version}><span className={styles.cellVersion}>{r.version}</span></Tooltip>,
     },
   ];
 
@@ -187,17 +188,16 @@ function DoctorContent({
         </StatusRow>
         {data.version && (
           <StatusRow label={t(I18N_KEYS.labels.version)}>
-            <span className={styles.statusValueText} title={data.version}>{data.version}</span>
+            <Tooltip text={data.version}><span className={styles.statusValueText}>{data.version}</span></Tooltip>
           </StatusRow>
         )}
         {data.shell?.name && (
           <StatusRow label={t(I18N_KEYS.doctor.summary.shell)}>
-            <span
-              className={styles.statusValueText}
-              title={`${data.shell.name} ${data.shell.version ?? ""}`.trim()}
-            >
-              {data.shell.name} {data.shell.version}
-            </span>
+            <Tooltip text={`${data.shell.name} ${data.shell.version ?? ""}`.trim()}>
+              <span className={styles.statusValueText}>
+                {data.shell.name} {data.shell.version}
+              </span>
+            </Tooltip>
           </StatusRow>
         )}
         <StatusRow label={t(I18N_KEYS.doctor.summary.activated)}>
@@ -243,7 +243,7 @@ function DoctorContent({
         ) : (
           <ul className={styles.fileList}>
             {(data.configFiles ?? []).map((path, i) => (
-              <li key={i} className={styles.fileItem} title={path}>{path}</li>
+              <li key={i} className={styles.fileItem}><Tooltip text={path}>{path}</Tooltip></li>
             ))}
           </ul>
         )}
@@ -372,9 +372,9 @@ function UpgradeNotice({
       </header>
       <p className={styles.upgradeFraming}>{t(I18N_KEYS.doctor.updateNotice.framing)}</p>
       <div className={styles.upgradePath}>
-        <span className={styles.upgradeCurrent} title={current}>{current}</span>
+        <Tooltip text={current}><span className={styles.upgradeCurrent}>{current}</span></Tooltip>
         <span className={styles.upgradeArrow} aria-hidden="true">▹</span>
-        <span className={styles.upgradeLatest} title={latest}>{latest}</span>
+        <Tooltip text={latest}><span className={styles.upgradeLatest}>{latest}</span></Tooltip>
       </div>
       <button
         type="button"

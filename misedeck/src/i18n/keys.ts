@@ -73,6 +73,10 @@ export const I18N_KEYS = {
     reopen: "execution.reopen",
     reopenRunning: "execution.reopenRunning",
   },
+  tooltip: {
+    copy: "tooltip.copy",
+    copied: "tooltip.copied",
+  },
   activation: {
     openInTerminalLabel: "activation.openInTerminalLabel",
     openInTerminalError: "activation.openInTerminalError",

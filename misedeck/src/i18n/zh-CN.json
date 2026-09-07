@@ -570,6 +570,10 @@
     "reopen": "执行面板",
     "reopenRunning": "执行面板 · 运行中"
   },
+  "tooltip": {
+    "copy": "复制",
+    "copied": "已复制"
+  },
   "activation": {
     "openInTerminalLabel": "在终端中打开",
     "openInTerminalError": "无法在 {{path}} 打开终端。请复制命令后手动执行。",

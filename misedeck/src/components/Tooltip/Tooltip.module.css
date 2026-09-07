@@ -1,0 +1,48 @@
+/* Tooltip — the hover layer for ellipsized data (issue #89). Portaled
+ * into document.body like FloatingMenu; fixed positioning with top/left
+ * supplied inline from the trigger's getBoundingClientRect. No entrance
+ * animation — visual-language.md permits only the two ambient motions. */
+
+.trigger {
+  /* Inline wrapper so the cell's ellipsis styles stay on the data span;
+   * min-width: 0 lets it shrink inside flex cells. */
+  display: inline;
+  min-width: 0;
+}
+
+.layer {
+  position: fixed;
+  z-index: var(--z-popover);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--void) 60%, transparent);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  max-width: 60ch;
+}
+
+.text {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+.copy {
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  color: var(--beam);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.copy:hover {
+  text-decoration: underline;
+}

@@ -27,6 +27,7 @@ import {
 import { Button } from "../Button/Button";
 import { IconButton } from "../IconButton/IconButton";
 import { FloatingMenu } from "../FloatingMenu";
+import { Tooltip } from "../Tooltip/Tooltip";
 
 import styles from "./DirectoryIndicator.module.css";
 
@@ -120,9 +121,9 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
     <div className={styles.strip} role="region" aria-label={t(I18N_KEYS.directory.regionLabel)}>
       <div className={styles.row}>
         <span className={styles.eyebrow}>{t(I18N_KEYS.directory.eyebrow)}</span>
-        <span className={styles.path} data-testid="directory-indicator-path" title={path}>
-          {path}
-        </span>
+        <Tooltip text={path}>
+          <span className={styles.path} data-testid="directory-indicator-path">{path}</span>
+        </Tooltip>
 
         <div className={styles.actions}>
           <button

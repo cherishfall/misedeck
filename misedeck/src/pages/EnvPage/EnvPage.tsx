@@ -23,11 +23,12 @@ import {
   Badge,
   Banner,
   Button,
-  commandEcho,
   ConfirmDialog,
   EmptyState,
   PageShell,
   Table,
+  Tooltip,
+  commandEcho,
   type TableColumn,
 } from "../../components";
 import { useParsedEnvList } from "../../hooks/useEnvList";
@@ -164,16 +165,16 @@ export function EnvPage() {
     {
       key: "name",
       header: t(I18N_KEYS.env.columns.name),
-      cell: (r) => <span className={styles.cellName} title={r.name}>{r.name}</span>,
+      cell: (r) => <Tooltip text={r.name}><span className={styles.cellName}>{r.name}</span></Tooltip>,
       width: "220px",
     },
     {
       key: "value",
       header: t(I18N_KEYS.env.columns.value),
       cell: (r) => (
-        <span className={styles.cellValue} title={r.value || undefined}>
-          {r.value || "—"}
-        </span>
+        <Tooltip text={r.value}>
+          <span className={styles.cellValue}>{r.value || "—"}</span>
+        </Tooltip>
       ),
     },
     {
@@ -273,9 +274,9 @@ function ScopeBadge({ cwd }: { cwd: string | null }) {
         {isGlobal ? t(I18N_KEYS.env.scope.global) : t(I18N_KEYS.env.scope.project)}
       </Badge>
       {!isGlobal && (
-        <span className={styles.scopePath} data-testid="env-cwd" title={cwd}>
-          {cwd}
-        </span>
+        <Tooltip text={cwd}>
+          <span className={styles.scopePath} data-testid="env-cwd">{cwd}</span>
+        </Tooltip>
       )}
     </div>
   );
@@ -325,9 +326,9 @@ function EnvSourceCell({ row }: { row: EnvRow }) {
         {label}
       </Badge>
       {row.sourcePath && (
-        <span className={styles.sourcePath} title={row.sourcePath}>
-          {row.sourcePath}
-        </span>
+        <Tooltip text={row.sourcePath}>
+          <span className={styles.sourcePath}>{row.sourcePath}</span>
+        </Tooltip>
       )}
     </div>
   );
@@ -561,7 +562,7 @@ const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(function TrustB
         }
       >
         {t(I18N_KEYS.env.guard.untrustedBody)}
-        {trust.path ? <span className={styles.trustPath} title={trust.path}> · {trust.path}</span> : null}
+        {trust.path ? <Tooltip text={trust.path}><span className={styles.trustPath}> · {trust.path}</span></Tooltip> : null}
       </Banner>
       {lastResult === "ok" && (
         <div className={styles.trustNote} data-testid="env-trust-ok">
