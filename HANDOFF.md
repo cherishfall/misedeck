@@ -2,7 +2,7 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-> **⚠️ READ THIS FIRST (2026-09-04 update).** **v1.0.0-beta.7 RELEASED** — see [beta7 release](#v100-beta7-release-2026-09-04) below. The beta6 batch (#74, tickets #75–#85) is fully implemented and closed. What remains open: #74 + #45 / #61 / #65, all awaiting the owner's in-person visual verification. Sections about beta4/beta5 and the beta.6 release are historical.
+> **⚠️ READ THIS FIRST (2026-09-07 update).** **beta7 feedback batch published**: SPEC parent **#86**, tickets **#87–#95** (labels `v1` + `ready-for-agent`, sub-issue links set; only blocking edge: #94 blocked by #93 — both touch ui-ux-rules.md). Source of truth: `beta7-feedback-scratch.md` (committed). All except #94 startable. Still open from before: #74 + #45 / #61 / #65, awaiting the owner's in-person visual verification. Sections about beta4–beta6 are historical.
 
 ## v1.0.0-beta.7 release (2026-09-04 evening)
 
