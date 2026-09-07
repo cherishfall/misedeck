@@ -24,7 +24,7 @@ This document is a continuation marker between autonomous driver sessions.
 
 ### Adjacent findings flagged for future tickets (not done; details in the tickets' closing comments)
 
-1. **#95** — Rust command `tasks_edit_path` (`lib.rs`, `mise.rs` helper, `tests/tasks.rs`, mirrored `TasksEditPathResult` in `types/tauri.ts`) is now registered but unused; remove it.
+1. ~~**#95** — dead Rust command `tasks_edit_path`~~ **Done as #96** (`6f9d81b`, closed). Also removed the other dead Tauri commands found in the same sweep: `tools_ls`, `tools_ls_remote`, `tools_ls_tool` (the `ls` family has been dispatched through the execution panel's generic `run_mise_command` since #72; the "kept for callers outside the UI" comment was stale). Kept: the `mise.rs` helpers + `TasksEditPathResult` enum + `tests/tools.rs`/`tests/tasks.rs` — still exercised by Rust integration tests. Inventory now: every registered command has a live frontend caller.
 2. **#92** — `DoctorPayload.activated`/`shimsOnPath` + their parsing are dead for the summary row (kept for raw output); pre-existing rules-of-hooks violation in `DoctorContent`.
 3. **#91** — the too-old gate parses pipe-delimited params from Rust error text; fragile if `mise version --json` ever drops `latest`.
 4. **#90** — ui-ux-rules "a data table never demands horizontal scrolling" is now in tension with fixed-table min-width; needs a one-line doc clarification.
