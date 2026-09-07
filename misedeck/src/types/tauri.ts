@@ -48,7 +48,7 @@ export type DetectMiseResult =
 
 /**
  * Discriminated union for the read-only tools commands
- * (`tools_ls`, `tools_outdated`, `tools_ls_remote`). The Rust
+ * (`tools_outdated`, `tools_env`, …). The Rust
  * boundary returns the raw JSON mise produced as `value`; the JS
  * side parses it into the typed shapes below. Mirrors `JsonResult`
  * in `src-tauri/src/lib.rs`.
@@ -120,17 +120,6 @@ export interface MiseTask {
   /** True when the task is marked `hide = true` in the TOML. */
   hide: boolean;
 }
-
-/**
- * The `tasks_edit_path` Tauri command returns this discriminated
- * union (issue #27). On success, the path is shipped as `path`
- * (Option<String>); on failure, the structured `AppError` is
- * shipped as `err`. Mirrors `TasksEditPathResult` in
- * `src-tauri/src/lib.rs`.
- */
-export type TasksEditPathResult =
-  | { kind: "ok"; path: string | null }
-  | { kind: "err"; err: AppError };
 
 /**
  * The `read_lockfile` Tauri command returns a discriminated union so

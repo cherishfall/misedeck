@@ -20,8 +20,8 @@ pub mod shell;
 use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
 use mise::{
     check_trust, detect_mise as run_mise_probe, locate_mise, mise_config_files, mise_doctor,
-    mise_env, mise_env_extended, mise_ls, mise_ls_remote, mise_ls_tool, mise_outdated, mise_plugins_ls,
-    mise_registry, mise_settings_ls, mise_tasks_edit_path, mise_tasks_ls, read_mise_lockfile,
+    mise_env, mise_env_extended, mise_outdated, mise_plugins_ls,
+    mise_registry, mise_settings_ls, mise_tasks_ls, read_mise_lockfile,
     run_mise, run_trust,
     AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
 };
@@ -80,11 +80,10 @@ mod tasks_edit_result {
 
     use super::mise::AppError;
 
-    /// Discriminated union for the `tasks_edit_path` Tauri command
-    /// (issue #27). On success, the absolute path of the file that
-    /// defines the task is shipped as `path`; on failure, the
-    /// structured `AppError` is shipped as `err`. Mirrors
-    /// `TrustResult` so the JS side can pattern-match on `kind`.
+    /// Discriminated union formerly returned by the
+    /// `tasks_edit_path` Tauri command (issue #27; the command was
+    /// removed in #96). The type is kept because the integration
+    /// tests in `tests/tasks.rs` still assert its wire shape.
     #[derive(Debug, Serialize)]
     #[serde(tag = "kind", rename_all = "snake_case")]
     pub enum TasksEditPathResult {
@@ -408,24 +407,6 @@ where
     }
 }
 
-/// `mise ls --json` for the current directory context. Read-only;
-/// returns the raw JSON object mise emits.
-#[tauri::command]
-async fn tools_ls(cwd: Option<String>) -> JsonResult {
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return JsonResult::Err { err: e },
-    };
-    let cwd_owned = cwd.as_deref().map(PathBuf::from);
-    match spawn_run(move || {
-        let cwd = cwd_owned.as_deref();
-        mise_ls(&path, cwd)
-    }).await {
-        Ok(value) => JsonResult::Ok { value },
-        Err(err) => JsonResult::Err { err },
-    }
-}
-
 /// `mise outdated --json --bump` for the current directory context.
 /// Read-only; returns the raw JSON object mise emits (`{}` when no
 /// tools are outdated).
@@ -439,56 +420,6 @@ async fn tools_outdated(cwd: Option<String>) -> JsonResult {
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
         mise_outdated(&path, cwd)
-    }).await {
-        Ok(value) => JsonResult::Ok { value },
-        Err(err) => JsonResult::Err { err },
-    }
-}
-
-/// `mise ls-remote --json <tool>` for upstream version browsing.
-/// Read-only; returns the raw JSON array mise emits. `tool` is
-/// rejected when empty so the runner never sees a half-formed argv.
-#[tauri::command]
-async fn tools_ls_remote(cwd: Option<String>, tool: String) -> JsonResult {
-    if tool.is_empty() {
-        return JsonResult::Err {
-            err: AppError::command_failed("tools_ls_remote: tool is empty", String::new()),
-        };
-    }
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return JsonResult::Err { err: e },
-    };
-    let cwd_owned = cwd.as_deref().map(PathBuf::from);
-    match spawn_run(move || {
-        let cwd = cwd_owned.as_deref();
-        mise_ls_remote(&path, cwd, &tool)
-    }).await {
-        Ok(value) => JsonResult::Ok { value },
-        Err(err) => JsonResult::Err { err },
-    }
-}
-
-/// `mise ls --json <tool>` for the installed-versions query section
-/// (issue #55). Read-only; returns the raw JSON object mise emits
-/// (`{tool: [items...]}`) so the JS side can flatten and render every
-/// installed version, active or not. `tool` is rejected when empty so
-/// the runner never sees a half-formed argv.
-#[tauri::command]
-async fn tools_ls_tool(cwd: Option<String>, tool: String) -> JsonResult {
-    if tool.is_empty() {
-        return JsonResult::Err {
-            err: AppError::command_failed("tools_ls_tool: tool is empty", String::new()),
-        };
-    }
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return JsonResult::Err { err: e },
-    };
-    let cwd_owned = cwd.as_deref().map(PathBuf::from);
-    match spawn_run(move || {
-        let cwd = cwd_owned.as_deref();
-        mise_ls_tool(&path, cwd, &tool)
     }).await {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
@@ -642,35 +573,6 @@ async fn tasks_ls(cwd: Option<String>) -> JsonResult {
     }).await {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
-    }
-}
-
-/// `mise tasks edit --path <name>` — return the absolute path of
-/// the file that defines the named task. The JS side feeds the
-/// path to `tauri-plugin-opener` for the "open the TOML
-/// directly" affordance. `name` is rejected when empty so the
-/// runner never sees a half-formed argv.
-#[tauri::command]
-async fn tasks_edit_path(cwd: Option<String>, name: String) -> TasksEditPathResult {
-    if name.is_empty() {
-        return TasksEditPathResult::Err {
-            err: AppError::command_failed(
-                "tasks_edit_path: task name is empty",
-                String::new(),
-            ),
-        };
-    }
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return TasksEditPathResult::Err { err: e },
-    };
-    let cwd_owned = cwd.as_deref().map(PathBuf::from);
-    match spawn_run(move || {
-        let cwd = cwd_owned.as_deref();
-        mise_tasks_edit_path(&path, cwd, &name)
-    }).await {
-        Ok(p) => TasksEditPathResult::Ok { path: p },
-        Err(err) => TasksEditPathResult::Err { err },
     }
 }
 
@@ -851,10 +753,7 @@ pub fn run() {
             run_mise_command,
             install_mise,
             mise_self_update,
-            tools_ls,
             tools_outdated,
-            tools_ls_remote,
-            tools_ls_tool,
             tools_env,
             env_ls,
             read_lockfile,
@@ -862,7 +761,6 @@ pub fn run() {
             trust_check,
             mise_trust,
             tasks_ls,
-            tasks_edit_path,
             settings_ls,
             doctor,
             registry,

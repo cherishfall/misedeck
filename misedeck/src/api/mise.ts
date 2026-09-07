@@ -44,9 +44,8 @@ export async function detectMise(): Promise<DetectMiseResult> {
 // The `ls` family (`tools_ls`, `tools_ls_tool`, `tools_ls_remote`) has no
 // wrapper here on purpose: those reads are dispatched through the
 // execution panel's runner so the exact command is visible and runs once
-// (ADR-0005, issue #72). See `useToolsList.ts`. The Tauri commands and
-// their runner functions remain, typed contract intact, for callers
-// outside the UI.
+// (ADR-0005, issue #72). See `useToolsList.ts`. The dedicated Tauri
+// commands were removed in #96 once they had no callers left.
 
 /** Calls the `tools_outdated` Tauri command and returns the typed union. */
 export async function toolsOutdated(cwd: string | null): Promise<JsonResult> {
