@@ -136,3 +136,24 @@
 | 记入 HANDOFF 候选 | P6 列显隐、P8 焦点管理、P9 骨架屏、P10 目录收藏（略擦边，待真实痛点） |
 | 排序指示符设计决策 | `↑/↓` 文本字形，作为**数据**呈现（非装饰字形），不受"caret 禁令"约束；排序列表头用 `--text` 字重标示 |
 
+---
+
+## Issue 6【视觉】: 概览页节眉签重复/精分 + mise.lock 缺失态占位
+
+**用户原话**: 「概览页这个多出来的 mise.lock 是不是个bug，还有 前面都是 MISE / 概览 的标题，为什么最下面有个MISE.LOCK 的标题，下面还有个 mise.lock 的，我没懂」（附截图）
+
+**代码调查结论**:
+
+1. **mise.lock 节非 bug**：是有意功能（`DirectoryPreview.tsx:12` 注释：存在时只读展示 lockfile 内容）；缺失时显示「未找到 mise.lock。」占位。
+2. **眉签精分根因**：概览页各节的 `sectionEyebrow` 原样重复页面眉签「MISE / 概览」（`:362/:410/:500`），唯独 lockfile 节自带 `MISE.LOCK` 眉签 + `mise.lock` 标题（i18n `preview.lockfile.eyebrow/title`），同一词出现两次。正好违反本批次刚写入规则的 A7（eyebrow 一页只出现一次）。
+3. **同类全站扫描**：诊断页同样模式 5 处（`DoctorPage.tsx:131/230/246/262/381` 重复 `doctor.eyebrow`）、环境变量页 1 处（`EnvPage.tsx:218`）；StyleGuide 为 demo 豁免。
+
+**定稿（2026-09-08，用户确认推荐）**:
+
+| 项 | 定稿 |
+|---|---|
+| 节级眉签 | **全部删除**（概览 3 处重复 + lockfile 的 MISE.LOCK + 诊断 5 处 + 环境变量 1 处）；页面眉签只在页头出现一次；各节只留标题。lockfile 节标题保留 `mise.lock`（文件名照实呈现） |
+| i18n 清理 | 删除/停用 `preview.lockfile.eyebrow` 等不再使用的 key（双语 + keys.ts） |
+| mise.lock 缺失态 | **缺失即不渲染整节**；存在时正常只读展示；commandHint 保留 `mise.lock` 字样承担教学 |
+| 拟定 issue | labels: bug（视觉违规）, v1；与规则 A7 互为印证 |
+
