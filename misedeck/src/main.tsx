@@ -11,7 +11,6 @@ import { DirectoryProvider } from "./state/directoryContext";
 import { TrustProvider } from "./state/trustContext";
 import { ActivationProvider } from "./state/activationContext";
 import { ExecutionProvider } from "./components/ExecutionPanel";
-import { StyleGuide } from "./components/StyleGuide/StyleGuide";
 import { HomePage } from "./pages/HomePage/HomePage";
 import { ToolsPage } from "./pages/ToolsPage/ToolsPage";
 import { DirectoryPreview } from "./pages/DirectoryPreview/DirectoryPreview";
@@ -54,11 +53,6 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/doctor" element={<DoctorPage />} />
                     <Route path="/plugins" element={<PluginsPage />} />
-                    {/* Styleguide is internal design documentation (#36):
-                        dev builds only, never shipped in the product UI. */}
-                    {import.meta.env.DEV && (
-                      <Route path="/__styleguide" element={<StyleGuide />} />
-                    )}
                   </Routes>
                 </BrowserRouter>
               </ExecutionProvider>

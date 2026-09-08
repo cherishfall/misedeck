@@ -126,37 +126,37 @@
       "duplicateVersion": "{{tool}}@{{version}} already exists. Uninstall it first, then link again."
     },
     "queries": {
-    "installed": {
-      "title": "Installed versions",
-      "toolPlaceholder": "tool (e.g. node)",
-      "run": "Run",
-      "clear": "Clear",
-      "emptyTitle": "No installed versions",
-      "emptyBody": "`mise ls <tool>` lists every installed version — active and inactive. Run it above to query a tool.",
-      "active": "active",
-      "inactive": "inactive",
-      "activeColumn": "Active"
+      "installed": {
+        "title": "Installed versions",
+        "toolPlaceholder": "tool (e.g. node)",
+        "run": "Run",
+        "clear": "Clear",
+        "emptyTitle": "No installed versions",
+        "emptyBody": "`mise ls <tool>` lists every installed version — active and inactive. Run it above to query a tool.",
+        "active": "active",
+        "inactive": "inactive",
+        "activeColumn": "Active"
+      },
+      "remote": {
+        "title": "Remote versions",
+        "toolPlaceholder": "tool (e.g. node)",
+        "run": "Run",
+        "clear": "Clear",
+        "emptyTitle": "No remote versions",
+        "emptyBody": "`mise ls-remote <tool>` lists versions available upstream. Run it above to query a tool.",
+        "created": "Created"
+      },
+      "pagination": {
+        "total": "{{count}} total",
+        "pageOf": "Page {{current}} of {{total}}",
+        "pageSize": "Per page",
+        "pageSizeHelp": "Min {{min}}",
+        "prev": "Previous",
+        "next": "Next",
+        "jumpTo": "Jump to",
+        "jump": "Go"
+      }
     },
-    "remote": {
-      "title": "Remote versions",
-      "toolPlaceholder": "tool (e.g. node)",
-      "run": "Run",
-      "clear": "Clear",
-      "emptyTitle": "No remote versions",
-      "emptyBody": "`mise ls-remote <tool>` lists versions available upstream. Run it above to query a tool.",
-      "created": "Created"
-    },
-    "pagination": {
-      "total": "{{count}} total",
-      "pageOf": "Page {{current}} of {{total}}",
-      "pageSize": "Per page",
-      "pageSizeHelp": "Min {{min}}",
-      "prev": "Previous",
-      "next": "Next",
-      "jumpTo": "Jump to",
-      "jump": "Go"
-    }
-  },
     "confirm": {
       "uninstall": {
         "title": "Uninstall {{tool}}?",
@@ -510,74 +510,6 @@
     "switcherCurrent": "{{label}}: {{value}}",
     "light": "Light",
     "dark": "Dark"
-  },
-  "styleguide": {
-    "eyebrow": "MISE / STYLEGUIDE",
-    "title": "Visual system",
-    "backToHome": "← back to Home",
-    "sections": {
-      "color": "Color tokens",
-      "typography": "Typography tokens",
-      "motion": "Motion",
-      "panel": "Panel",
-      "button": "Button",
-      "iconButton": "IconButton",
-      "badge": "Badge",
-      "banner": "Banner",
-      "table": "Table",
-      "dataRow": "DataRow",
-      "emptyState": "EmptyState",
-      "progressDot": "ProgressDot"
-    },
-    "notes": {
-      "color": "All color is consumed from CSS custom properties; components never hardcode hex values. Both themes inherit mise.jdx.dev's look — warm parchment light, warm charcoal dark; dark values are the default, light overrides live under [data-theme=light].",
-      "typography": "Display is Cormorant Garamond (serif, normal case) — the editorial signature of mise.jdx.dev. UI is Space Grotesk 400–500, data is JetBrains Mono. zh-CN display falls back to Songti SC, UI text to PingFang SC.",
-      "motion": "Only two ambient motions exist: the attention pulse (~1.6s) and the caret blink (~1.1s). Everything else is a ≤120ms ease-out state change. Motion is disabled under prefers-reduced-motion.",
-      "panel": "Solid hull fill, 1px line border, 8px radius. Flat and quiet — no glow, no translucency.",
-      "button": "Primary (beam fill), secondary (line border), ghost (no border, dim → text), danger (breach fill). Loading and disabled use the same reduced-opacity treatment.",
-      "iconButton": "Square button carrying only a glyph. Used wherever a control needs a visual but no label — kebabs in tables, in-line tool buttons.",
-      "badge": "Mono label with tracked uppercase. The border picks up the variant tint; the background is a subtle wash so badges read as a stamp against a panel.",
-      "banner": "Full-width notice with leading dot, label, body, optional trailing action. Tones inherit the system's signal colors.",
-      "table": "Semantic <table> for the tools list and other data grids. Mono cells, tracked column headers, right-align numeric columns.",
-      "dataRow": "Definition-list row (dt + dd) with mono values. Used on the Home page and reused on settings, env, and plugin detail pages.",
-      "emptyState": "Page-level 'nothing to show' panel. The eyebrow follows the MISE / SECTION convention so the empty state's page is clear.",
-      "progressDot": "Status dot (beam / flare / breach / dim) with the attention-pulse animation when the tone is flare/breach — the only ambient motion attached to a state component."
-    },
-    "samples": {
-      "panelDefault": "A standard surface for any block of related content.",
-      "panelInfo": "info tone — secondary information.",
-      "panelWarning": "warning tone — needs attention soon.",
-      "panelDanger": "danger tone — destructive or failing.",
-      "primary": "+ Install tool",
-      "secondary": "Versions",
-      "ghost": "Cancel",
-      "danger": "Uninstall",
-      "loading": "Working…",
-      "disabled": "Disabled",
-      "badgeDefault": "Global",
-      "badgeInfo": "core",
-      "badgeSuccess": "active",
-      "badgeWarning": "outdated",
-      "badgeDanger": "error",
-      "bannerInfo": "Untrusted config",
-      "bannerWarning": "mise 2024.12.1 is older than 2025.1.0 — update to continue.",
-      "bannerDanger": "Config file not found in the current directory.",
-      "bannerSuccess": "Lockfile is up to date.",
-      "tableTool": "Tool",
-      "tableBackend": "Backend",
-      "tableCurrent": "Current",
-      "tableLatest": "Latest",
-      "tableSource": "Source",
-      "tableActions": "Actions",
-      "emptyTitle": "No tools installed",
-      "emptyBody": "Run `mise use -g node@latest` to install your first tool, or browse the registry for something else.",
-      "emptyAction": "+ Install tool",
-      "dotReady": "ready",
-      "dotAttention": "needs attention",
-      "dotError": "error",
-      "dotIdle": "idle",
-      "iconLabel": "menu"
-    }
   },
   "execution": {
     "title": "Execution",

@@ -9,8 +9,7 @@
 // Definitions are collected from every `--token: <value>` declaration in
 // `src/**/*.css` (tokens.css is the source of truth, but component CSS may
 // legitimately declare local custom properties). References are collected
-// from `var(--token)` in CSS files and from string literals in TS/TSX
-// (the StyleGuide lists tokens as `var(--…)` strings).
+// from `var(--token)` in CSS files and from string literals in TS/TSX.
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -62,7 +61,7 @@ function main() {
     }
   }
 
-  // TS/TSX string literals (e.g. the StyleGuide token table).
+  // TS/TSX string literals.
   for (const file of listFiles(SRC_DIR, [".ts", ".tsx"])) {
     const text = readFileSync(file, "utf8");
     for (const m of text.matchAll(REF_RE)) {

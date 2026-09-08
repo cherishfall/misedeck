@@ -12,7 +12,7 @@ This document is a continuation marker between autonomous driver sessions.
 | #115 i18n-concat lint | `339f7d0` | `scripts/check-i18n-concat.ts` in ci (AST walk, rejects t(…) as + operand / in template literals); sweep fixed 4 sites (TasksPage count + hardcoded `runLabel required`, ThemeSwitcher, EnvPage/Preview source badges); rule codified in conventions.md both locales |
 | #116 component font-size sweep | `da5a38e` | `scripts/check-css-font-size.ts` in ci; 18 literals in 8 component CSS modules folded to `--size-*` tokens, zero remain. **Largest visual fold: EmptyState title 18→14px**; full fold table on the issue — owner visual verification needed |
 
-**Still open / pending owner decision:** StyleGuide demo drift — recommendation delivered to owner: delete page-pattern demo exhibits (hand-copied page fragments like the stale Latest-column table demo), keep only demos built from real shared components. Awaiting owner go-ahead before ticketing.
+**#117 done (this session):** StyleGuide dev gallery removed entirely — component + CSS module, `/__styleguide` route in `main.tsx`, the whole `styleguide.*` i18n namespace (60 keys × 2 locales), and the now-stale mentions in `docs/design/product-logic.md` (both locales) and `check-css-tokens.ts` comments. The "StyleGuide demo drift" owner decision below is thereby resolved by deletion.
 
 **Beta8 batch fully implemented.** All 16 tickets **#98–#113** closed in one autonomous run; SPEC parent **#97 stays open** pending the owner's in-person visual verification (same protocol as #86). Every ticket: `npm run ci` (+ `cargo check` where Rust touched) green, static self-audit, **NOT visually verified**.
 
@@ -35,7 +35,7 @@ This document is a continuation marker between autonomous driver sessions.
 | #112 page dead-ends & copy | `80f64fb` | tasks open-config CTA; plugins uninstall via ConfirmDialog; doctor → Home link; settings count i18n |
 | #113 token alignment | `4051c96` | found 17 literals in 7 files (ticket said 14/6); all mapped to `--size-*` tokens |
 
-**Adjacent findings flagged on closing comments (not ticketed yet):** TasksPage hardcoded `"{runLabel} required"` string + its toolbar count concatenation (same class as #112's settings fix); ToolsPage "Active" column now partially redundant with the inline 未激活 note; StyleGuide demo shows the old Latest-column pattern; component-level CSS px literals remain (Badge 9px, Button 11.5/12.5px, etc. — #113 covered pages only); tools-page click-tool doesn't scroll the query section into view; `docs/design/tools-page.prototype.html` still has ▾ carets (static prototype).
+**Adjacent findings flagged on closing comments (not ticketed yet):** TasksPage hardcoded `"{runLabel} required"` string + its toolbar count concatenation (same class as #112's settings fix); ToolsPage "Active" column now partially redundant with the inline 未激活 note; component-level CSS px literals remain (Badge 9px, Button 11.5/12.5px, etc. — #113 covered pages only); tools-page click-tool doesn't scroll the query section into view; `docs/design/tools-page.prototype.html` still has ▾ carets (static prototype).
 
 **Beta7 batch fully closed** (tickets #87–#95, SPEC #86):
 
@@ -61,7 +61,7 @@ This document is a continuation marker between autonomous driver sessions.
 2. **#92** — `DoctorPayload.activated`/`shimsOnPath` + their parsing are dead for the summary row (kept for raw output); pre-existing rules-of-hooks violation in `DoctorContent`.
 3. **#91** — the too-old gate parses pipe-delimited params from Rust error text; fragile if `mise version --json` ever drops `latest`.
 4. **#90** — ui-ux-rules "a data table never demands horizontal scrolling" is now in tension with fixed-table min-width; needs a one-line doc clarification.
-5. **#94** — StyleGuide dev page has hardcoded English gallery strings (i18n gap).
+5. ~~**#94** — StyleGuide dev page hardcoded English gallery strings~~ Resolved by #117 (StyleGuide deleted).
 6. **#89** — EnvPage source Badge and directory recents menu items intentionally keep native `title` (explained in the closing comment; needs a decision only if the owner wants richer affordances there).
 
 ## Latest release: v1.0.0-beta.8 (2026-09-08)
