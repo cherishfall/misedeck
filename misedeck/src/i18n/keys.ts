@@ -153,7 +153,6 @@ export const I18N_KEYS = {
       install: "tools.actions.install",
       uninstall: "tools.actions.uninstall",
       upgrade: "tools.actions.upgrade",
-      upgradeAll: "tools.actions.upgradeAll",
       switch: "tools.actions.switch",
       link: "tools.actions.link",
     },

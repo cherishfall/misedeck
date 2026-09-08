@@ -9,9 +9,11 @@
 // is the actual command history (issue #72 / ADR-0005).
 //
 // The trailing "…" pick button was removed: in directory mode the
-// prominent "Choose another directory" primary button replaces it, and
-// in global mode the primary "Pick a directory" button is the entry
-// point. The shared pick handler lives in `directory/pickDirectory.ts`.
+// "Choose another directory" button replaces it, and in global mode the
+// "Pick a directory" button is the entry point. Both render `secondary`
+// — choose-directory's table variant — since they share the toolbar with
+// other buttons (ui-ux-rules.md variant mapping, beta8). The shared pick
+// handler lives in `directory/pickDirectory.ts`.
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -87,8 +89,8 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
     void openInTerminal(path);
   };
 
-  // Global mode: only the Global label and a prominent choose-directory
-  // button. Directory-only actions (open-in-terminal, recents, the picker)
+  // Global mode: only the Global label and the choose-directory button.
+  // Directory-only actions (open-in-terminal, recents, the picker)
   // mean nothing without a directory, so they are hidden here.
   if (mode === "global") {
     return (
@@ -111,7 +113,7 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
               </Button>
             )}
             <Button
-              variant="primary"
+              variant="secondary"
               size="sm"
               onClick={onPick}
               data-testid="directory-indicator-choose"
@@ -222,7 +224,7 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
           </FloatingMenu>
 
           <Button
-            variant="primary"
+            variant="secondary"
             size="sm"
             onClick={onPick}
             data-testid="directory-indicator-pick"

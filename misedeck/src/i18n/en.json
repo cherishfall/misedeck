@@ -99,7 +99,6 @@
       "install": "Install",
       "uninstall": "Uninstall",
       "upgrade": "Upgrade",
-      "upgradeAll": "Upgrade all",
       "switch": "Switch",
       "link": "Link"
     },

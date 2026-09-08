@@ -99,7 +99,6 @@
       "install": "安装",
       "uninstall": "卸载",
       "upgrade": "升级",
-      "upgradeAll": "全部升级",
       "switch": "切换",
       "link": "链接"
     },

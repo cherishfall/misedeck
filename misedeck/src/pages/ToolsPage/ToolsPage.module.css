@@ -58,12 +58,6 @@
   flex-wrap: wrap;
 }
 
-.toolbarActions {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
 .toolbarHint {
   font-family: var(--font-ui);
   font-size: var(--size-data);

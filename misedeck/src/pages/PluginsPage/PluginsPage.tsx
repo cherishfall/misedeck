@@ -141,7 +141,7 @@ export function PluginsPage() {
       header: t(I18N_KEYS.plugins.columns.actions),
       cell: (r) => (
         <Button
-          variant="secondary"
+          variant="primary"
           size="sm"
           onClick={() => onInstall(r.short)}
           data-testid={`plugins-install-${r.short}`}

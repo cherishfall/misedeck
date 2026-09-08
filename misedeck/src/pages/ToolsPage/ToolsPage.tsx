@@ -131,8 +131,8 @@ function miseUseArgs(tool: string, version: string, cwd: string | null): string[
     : ["use", `${tool}@${version}`];
 }
 
-function miseUpgradeArgs(tool: string | undefined): string[] {
-  return tool ? ["upgrade", "--bump", tool] : ["upgrade", "--bump"];
+function miseUpgradeArgs(tool: string): string[] {
+  return ["upgrade", "--bump", tool];
 }
 
 /**
@@ -412,10 +412,6 @@ export function ToolsPage() {
   // Top-toolbar refresh (issue #98); the page keeps no local button.
   useRegisterPageRefresh(onRefresh);
 
-  const onUpgradeAll = () => {
-    void runMutation(() => miseUpgradeArgs(undefined));
-  };
-
   // Link a local directory as a tool version (issue #71). Routes through
   // the shared mutation runner so the trust gate and single-flight guard
   // apply unchanged. The conflict message, if any, is derived from the
@@ -590,31 +586,13 @@ export function ToolsPage() {
 
         <div className={styles.toolbar}>
           {/* F13 (issue #98): the hint renders in every state — loading
-              included — so it never pops in/out and shifts the actions. */}
+              included — so it never pops in/out. */}
           <span className={styles.toolbarHint}>
             {outdated.data == null
               ? t(I18N_KEYS.common.loading)
               : outdated.data.length > 0
                 ? t(I18N_KEYS.tools.outdatedBadge) + ` (${outdated.data.length})`
                 : t(I18N_KEYS.tools.noOutdated)}
-          </span>
-          <span className={styles.toolbarActions}>
-            {/* Disabled when nothing is outdated; the reason sits next
-                to the button (`tools.noOutdated`) and on its title. */}
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={onUpgradeAll}
-              disabled={isRunning || (outdated.data?.length ?? 0) === 0}
-              title={
-                outdated.data != null && outdated.data.length === 0
-                  ? t(I18N_KEYS.tools.noOutdated)
-                  : undefined
-              }
-              data-testid="tools-upgrade-all"
-            >
-              {t(I18N_KEYS.tools.actions.upgradeAll)}
-            </Button>
           </span>
         </div>
 
@@ -1002,7 +980,7 @@ function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
           </span>
         </Tooltip>
         <Button
-          variant="primary"
+          variant="secondary"
           size="sm"
           onClick={pickDirectory}
           disabled={disabled}
