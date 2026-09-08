@@ -12,8 +12,8 @@
 /
 ├── CONTEXT.md
 ├── docs/adr/
-│   ├── 0001-event-sourced-orders.md
-│   └── 0002-postgres-for-write-model.md
+│   ├── 0001-tauri-react-cross-platform.md
+│   └── 0002-distribution-github-releases-and-homebrew-tap.md
 └── src/
 ```
 
@@ -34,4 +34,4 @@
 
 如果你的输出与现有 ADR 矛盾，明确地提出来，而不是静默地覆盖：
 
-> _Contradicts ADR-0007 (event-sourced orders), but worth reopening because…_
+> _与 ADR-0007（GUI 层的交互能力与贴合 CLI 的交互正交）矛盾，但值得重新讨论，因为……_

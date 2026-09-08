@@ -2,6 +2,8 @@
 
 > [English](../../../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)
 
+> **状态（2026-09）：** 已接受。GitHub Releases 分发已实现（`release.yml`）；自托管 Homebrew tap **尚未实现** —— CI 中没有任何 tap 发布逻辑。
+
 v1 以未签名二进制发布在 GitHub Releases 上，并配合自托管的 Homebrew tap（`cherishfall/homebrew-tap`）。不做 Apple 公证（$99/年），不做 Windows 代码签名。提交到官方 `homebrew-cask` 仓库推迟到项目达到其知名度门槛（约 50 stars）之后；tap 不需要任何形式的审批。
 
 ## Consequences

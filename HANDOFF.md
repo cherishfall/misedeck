@@ -76,7 +76,7 @@ Tag pushed, `release.yml` run 34143786713 building/publishing in the background 
 
 ## Standing architecture / rules the next session must know
 
-- **`FloatingMenu`** (`misedeck/src/components/FloatingMenu/`) is the only floating-layer implementation; **`Tooltip`** (`misedeck/src/components/Tooltip/`) is the only hover-detail layer for ellipsized data (has a copy button; native `title` on data is gone app-wide).
+- **`FloatingMenu`** (`misedeck/src/components/FloatingMenu/`) is the only floating-layer implementation; **`Tooltip`** (`misedeck/src/components/Tooltip/`) is the only hover-detail layer for ellipsized data (has a copy button; native `title` on data is gone app-wide, with two intentional exceptions — the EnvPage source Badge and the directory recents menu items, per the #89 finding above).
 - **`useExecutionContext().run()` returns a result** and every mise invocation (reads included) goes through the execution panel — **ADR-0005**. Read hooks have no `queryFn`; the panel run is the fetch. `RunOptions.background` keeps app-initiated refreshes off the transcript. Never reintroduce direct `invoke()` calls.
 - **Copy-command lives in the execution panel**; `DirectoryIndicator`'s copy button is deleted (#72).
 - **Naming:** preview page = 概览 / Overview; `directory.eyebrow` = 当前目录 / CURRENT DIRECTORY. The terminology ban (`ui-ux-rules.md`) also covers 上下文 / 项目.

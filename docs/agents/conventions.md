@@ -53,16 +53,16 @@ tickets should reuse the existing six when possible.
 
 1. `cargo check` and the frontend typecheck pass; all tests pass.
 2. Every acceptance criterion in the ticket is demonstrably met.
-3. The app was run and the changed flow driven end-to-end; a screenshot (or harness-provided UI evidence) is attached to the closing comment.
+3. The changed flow was verified economically per `docs/design/ui-ux-rules.md` ("Verify economically"): `npm run ci` green plus a mechanical static self-audit of the diff — no screenshots, no computer-use drives, no running the app by default. If nobody saw the rendered result, mark the issue "not visually verified".
 4. All new UI copy exists in both `en.json` and `zh-CN.json`.
 5. If a doc was touched, its mirrored counterpart under `zh-CN/` was updated in the same change.
 6. The closing comment states what was verified and how.
 
 ## Verification loop (replaces human code review)
 
-1. Build: `cargo check` + frontend typecheck must pass.
-2. Run the app, drive the changed flow with the computer-use tools, and screenshot the result.
-3. State in the PR/summary what was verified and how.
+1. Build: `npm run ci` (frontend typecheck + lint guards + build) and `cargo check` must pass.
+2. Self-audit the diff mechanically per `docs/design/ui-ux-rules.md` ("Verify economically"). Reach for screenshots or a manual click-through only when the change restructures layout, or a human asks.
+3. State in the PR/summary what was verified and how; if nothing visual was checked, mark the issue "not visually verified".
 
 ## Cross-platform
 

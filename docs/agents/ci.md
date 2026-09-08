@@ -10,7 +10,7 @@ maintainer cuts a release.
 
 | Workflow    | Trigger                                  | What it does                                                                                                                                       | Wall-clock budget |
 | ----------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run lint:i18n` · `npm run lint:css-tokens` · `npm run build` · `cargo check` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu. | < 5 min            |
+| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run build` · `cargo check` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu. | < 5 min            |
 | `release.yml` | push of a `v*.*.*` tag, or `workflow_dispatch` | Builds Tauri bundles for `macos-latest`, `windows-latest`, `ubuntu-latest` in parallel; uploads per-platform artifacts; on a real tag push, publishes a GitHub Release. | matrix-driven     |
 
 The `ci.yml` workflow is the gate that keeps `master` green. The
@@ -22,14 +22,20 @@ The matrix only builds on **tag push** (see ADR-0002 — no auto-versioning).
 To cut a release:
 
 1. Pick the commit on `master` you want to ship.
-2. Make sure the version is bumped in **both**:
-   - `misedeck/src-tauri/Cargo.toml` (`[package].version`)
+2. Make sure the version is bumped in all six places, all equal:
    - `misedeck/package.json` (`"version"`)
-   The two must match. The Tauri CLI will read the `Cargo.toml` value
-   and stamp it into the bundle metadata; the `package.json` value is
-   what Vite injects at build time.
-3. Update the changelog entry in the bilingual README (or wherever the
-   project keeps it after #32).
+   - `misedeck/package-lock.json` (the top-level `"version"` and the
+     `packages[""].version` entry)
+   - `misedeck/src-tauri/Cargo.toml` (`[package].version`)
+   - `misedeck/src-tauri/Cargo.lock` (the `name = "misedeck"` package's
+     `version`)
+   - `misedeck/src-tauri/tauri.conf.json` (`"version"`)
+   The Tauri CLI stamps the version into the bundle metadata; the
+   `package.json` value is what Vite injects at build time.
+3. Release notes come from the tag annotation message, or fall back to
+   `.github/release-template.md` for lightweight tags (see "Annotated vs
+   lightweight tags" below). The README has no changelog section, so
+   there is nothing else to update.
 4. Tag the commit with a `vMAJOR.MINOR.PATCH` tag and push it:
    ```sh
    git tag v0.2.0 <commit-sha>
@@ -157,10 +163,10 @@ platform caches don't collide; `ci.yml` runs on a single OS per
 
 ```
 .github/
-├── release.yml           # tag-triggered matrix + release job
 ├── release-template.md   # curated notes; <version> substituted
-├── ci.yml                # push-to-master + PR gate
-└── workflows/            # (no other workflows today)
+└── workflows/
+    ├── ci.yml            # push-to-master + PR gate
+    └── release.yml       # tag-triggered matrix + release job
 
 zh-CN/.github/
 └── release-template.md   # bilingual mirror, same shape

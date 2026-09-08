@@ -12,8 +12,8 @@ This repo is single-context: one `CONTEXT.md` at the repo root plus `docs/adr/`.
 /
 ├── CONTEXT.md
 ├── docs/adr/
-│   ├── 0001-event-sourced-orders.md
-│   └── 0002-postgres-for-write-model.md
+│   ├── 0001-tauri-react-cross-platform.md
+│   └── 0002-distribution-github-releases-and-homebrew-tap.md
 └── src/
 ```
 
@@ -34,4 +34,4 @@ If the concept you need isn't in the glossary yet, that's a signal: either you'r
 
 If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
 
-> _Contradicts ADR-0007 (event-sourced orders), but worth reopening because…_
+> _Contradicts ADR-0007 (GUI-layer affordances are orthogonal to CLI-shaped interaction), but worth reopening because…_

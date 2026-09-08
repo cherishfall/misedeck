@@ -55,9 +55,17 @@ jobs:
         working-directory: misedeck
         run: npm run lint:i18n
 
+      - name: i18n string-concatenation guard
+        working-directory: misedeck
+        run: npm run lint:i18n-concat
+
       - name: CSS design-token reference check
         working-directory: misedeck
         run: npm run lint:css-tokens
+
+      - name: CSS font-size token check
+        working-directory: misedeck
+        run: npm run lint:css-font-size
 
       - name: Frontend production build
         working-directory: misedeck

@@ -13,7 +13,7 @@ Runner 层位于 Tauri command 与 mise CLI 之间，代码在 `misedeck/src-tau
 
 ## Streaming
 
-Runner 用后台读线程（每个 pipe 一个）按行切分，通过有界 `mpsc::channel` 转发。主循环在两次 `try_wait` 之间非阻塞排空 channel，面板就能看到实时输出。`STREAMING_TIMEOUT`（30 分钟）到点自动 kill 进程。当前 ticket 的 cancel 是软取消；真正需要 kill 长进程的下个 ticket（#22 mutations）会再加 kill handle。
+Runner 用后台读线程（每个 pipe 一个）按行切分，通过有界 `mpsc::channel` 转发。主循环在两次 `try_wait` 之间非阻塞排空 channel，面板就能看到实时输出。`STREAMING_TIMEOUT`（30 分钟）到点自动 kill 进程。来自 UI 的取消是软取消：Rust runner 没有向 JS 侧暴露 kill handle，所以 `cancel` 只是把面板标记为已取消并释放单飞槽位，进程本身只靠超时自动 kill 回收。
 
 ## Captured 模式
 
@@ -21,7 +21,7 @@ Runner 用后台读线程（每个 pipe 一个）按行切分，通过有界 `mp
 
 ## 测试
 
-测试在 `misedeck/src-tauri/tests/`。Runner 只调用 fixture-mise 脚本（`tests/fixtures/mise/fixture-mise`），**绝不**碰用户的真 mise。新增 slug：`doctor-happy`、`doctor-fail`、`doctor-mixed`。共享 `FIXTURE_MISE_SLUG` 环境变量的测试用 `serial_test` 串行。
+测试在 `misedeck/src-tauri/tests/`。Runner 只调用 fixture-mise 脚本（`tests/fixtures/mise/fixture-mise`），**绝不**碰用户的真 mise。新增 fixture slug 遵循 conventions.md 的布局（`tests/fixtures/mise/<argv 用 - 连接>`）；现有集合就在该目录里。共享 `FIXTURE_MISE_SLUG` 环境变量的测试用 `serial_test` 串行。
 
 ## 前端 hook
 

@@ -9,7 +9,7 @@
 
 | Workflow      | 触发时机                                    | 做了什么                                                                                                                                  | 墙钟预算   |
 | ------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `tsc --noEmit` · `npm run lint:i18n` · `npm run lint:css-tokens` · `npm run build` · `cargo check` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu。 | < 5 分钟    |
+| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `tsc --noEmit` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run build` · `cargo check` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu。 | < 5 分钟    |
 | `release.yml` | 推送 `v*.*.*` tag，或 `workflow_dispatch`   | 在 `macos-latest`、`windows-latest`、`ubuntu-latest` 上并行构建 Tauri bundle；上传各平台 artifact；真实 tag 推送时发布 GitHub Release。       | 由矩阵决定 |
 
 `ci.yml` 是保证 `master` 绿色的闸门。`release.yml` 才是真正产出
@@ -20,12 +20,17 @@ artifact 的那个。
 矩阵只在**推送 tag 时构建**（见 ADR-0002 —— 不做自动版本号）。发版步骤：
 
 1. 在 `master` 上选定要发布的 commit。
-2. 同步更新两个地方的版本号：
-   - `misedeck/src-tauri/Cargo.toml`（`[package].version`）
+2. 同步更新全部六处版本号，保持一致：
    - `misedeck/package.json`（`"version"`）
-   两者必须一致。Tauri CLI 会读取 `Cargo.toml` 的值并写入 bundle 的元数据；
-   `package.json` 的值是 Vite 在构建时注入的。
-3. 在双语 README 中更新 changelog 条目（或者在 #32 落地后，按项目惯例的位置更新）。
+   - `misedeck/package-lock.json`（顶层 `"version"` 和 `packages[""].version`）
+   - `misedeck/src-tauri/Cargo.toml`（`[package].version`）
+   - `misedeck/src-tauri/Cargo.lock`（`name = "misedeck"` 包的 `version`）
+   - `misedeck/src-tauri/tauri.conf.json`（`"version"`）
+   Tauri CLI 会把版本号写入 bundle 元数据；`package.json` 的值是
+   Vite 在构建时注入的。
+3. 发版说明来自 tag 附注消息；轻量 tag 则回退到
+   `.github/release-template.md`（见下文「附注 tag vs 轻量 tag」）。
+   README 没有 changelog 章节，无需额外更新。
 4. 给该 commit 打 `vMAJOR.MINOR.PATCH` tag 并推送：
    ```sh
    git tag v0.2.0 <commit-sha>
@@ -137,10 +142,10 @@ CI 矩阵使用 `dtolnay/rust-toolchain@stable` 与 Node 22；lockfile 是
 
 ```
 .github/
-├── release.yml           # tag 触发的矩阵 + release job
 ├── release-template.md   # 策划好的发版说明，<version> 会被替换
-├── ci.yml                # 推 master + PR 的闸门
-└── workflows/            # （目前没有别的 workflow）
+└── workflows/
+    ├── ci.yml            # 推 master + PR 的闸门
+    └── release.yml       # tag 触发的矩阵 + release job
 
 zh-CN/.github/
 └── release-template.md   # 双语镜像，结构相同

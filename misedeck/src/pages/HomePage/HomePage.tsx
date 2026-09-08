@@ -299,9 +299,13 @@ export function HomePage() {
 }
 
 /**
- * The Rust side encodes i18n keys with pipe-delimited params, e.g.
- *   "errors.miseTooOld|found=2024.12.31|min=2025.1.0"
- * Parse them out for `react-i18next`'s `t(key, { params })` call.
+ * The Rust side encodes an i18n key plus pipe-delimited params in
+ * `AppError.message`, e.g. the MISE_TOO_OLD probe sends
+ *   "errors.miseTooOld|found=2024.12.31|minimum=2025.1.0"
+ * The key segment is historical (the `errors.miseTooOld` i18n key no
+ * longer exists — too-old copy lives in `states.tooOld.*`); only the
+ * params are parsed out here for `react-i18next`'s
+ * `t(key, { params })` call.
  */
 function parseMessageParams(message: string): Record<string, string> {
   const out: Record<string, string> = {};

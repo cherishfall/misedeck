@@ -13,7 +13,7 @@ The runner is the layer between the Tauri commands and the mise CLI. It lives in
 
 ## Streaming
 
-The runner uses background reader threads (one per pipe) to split lines and forward them through a bounded `mpsc::channel`. The main loop non-blocking-drains the channel between `try_wait` polls so the panel sees output in real time. The runner auto-kills the process at `STREAMING_TIMEOUT` (30 minutes, per the conventions). Cancellation from the UI is a soft cancel in the current ticket; the next ticket that needs true process kill (#22 mutations, which can take longer than the demo `mise doctor`) will thread a kill handle through.
+The runner uses background reader threads (one per pipe) to split lines and forward them through a bounded `mpsc::channel`. The main loop non-blocking-drains the channel between `try_wait` polls so the panel sees output in real time. The runner auto-kills the process at `STREAMING_TIMEOUT` (30 minutes, per the conventions). Cancellation from the UI is a soft cancel: the Rust runner exposes no kill handle to the JS side, so `cancel` marks the panel as cancelled and frees the single-flight slot while the process itself is reaped only by the timeout auto-kill.
 
 ## Captured mode
 
@@ -21,7 +21,7 @@ The probe path (`detect_mise`) uses the same `run_mise` but with a no-op `on_eve
 
 ## Testing
 
-Tests live in `misedeck/src-tauri/tests/`. The fixture-mise script (`tests/fixtures/mise/fixture-mise`) is the only thing the runner ever calls; the user's real mise binary is **never** touched. New slugs: `doctor-happy`, `doctor-fail`, `doctor-mixed`. The `serial_test` crate serializes tests that share the `FIXTURE_MISE_SLUG` env var.
+Tests live in `misedeck/src-tauri/tests/`. The fixture-mise script (`tests/fixtures/mise/fixture-mise`) is the only thing the runner ever calls; the user's real mise binary is **never** touched. New fixture slugs follow the conventions.md layout (`tests/fixtures/mise/<argv-joined-by->`); the existing set lives in that directory. The `serial_test` crate serializes tests that share the `FIXTURE_MISE_SLUG` env var.
 
 ## Frontend hook
 

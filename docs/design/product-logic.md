@@ -36,7 +36,7 @@ North-star feeling: *"I always know which mise command this screen is showing me
 │ Doctor                   │                                │
 │ Settings                 │                                │
 │                          ├────────────────────────────────┤
-│ 🌐 English ▾   ☾        │  [Execution panel — on demand] │
+│ 🌐 English     ☾        │  [Execution panel — on demand] │
 └──────────────────────────┴────────────────────────────────┘
 ```
 
@@ -44,8 +44,8 @@ North-star feeling: *"I always know which mise command this screen is showing me
 - **Sidebar toggle**: a standard sidebar glyph with a tooltip ("Collapse sidebar" / "Expand sidebar") sits on the sidebar's top row; in the collapsed rail it stays at the top. No brand lockup — the window title carries the name (#49 supersedes the beta3 brand lockup).
 - **Main group**: Preview → Tools → Env → Tasks → Plugins (order = priority).
 - **Bottom group**: Home (mise status / guided install / self-update), Doctor, Settings — the app's own machinery.
-- **Footer**: language menu (compact dropdown: globe + current locale, scalable to more locales) and theme toggle (system / light / dark, default system).
-- **Directory indicator**: a slim strip at the top of the content area, rendered **only when a directory context is active** (hidden in Global). Shows `当前目录 / Directory` + the real-case path, with Open-in-Terminal, Copy-Command, pick/recent actions. The word "Context/上下文" is retired from UI copy (the domain term *Directory context* stays in the glossary).
+- **Footer**: language menu (compact dropdown: globe + current locale, scalable to more locales) and theme toggle (light / dark, default light — no system mode).
+- **Directory indicator**: a slim strip at the top of the content area, rendered **only when a directory context is active** (hidden in Global). Shows `当前目录 / Directory` + the real-case path, with Open-in-Terminal and pick/recent actions. The word "Context/上下文" is retired from UI copy (the domain term *Directory context* stays in the glossary).
 
 ## Page inventory (target state)
 

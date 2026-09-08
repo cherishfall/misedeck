@@ -25,7 +25,7 @@ Before shipping any screen, ask: **could a mise CLI user predict what this scree
 ## Interaction integrity
 
 - Destructive actions (uninstall, unset, overwrite) always confirm first.
-- A control that would be a no-op right now renders disabled — an active-looking button that does nothing ("Upgrade all" when everything is current) reads as broken. When the enabled state depends on a count, put the count in the label ("Upgrade 3").
+- A control that would be a no-op right now renders disabled — an active-looking button that does nothing reads as broken. When the enabled state depends on a count, put the count in the label so the user can see the button has real work behind it (e.g. a bulk action that names how many rows it will act on).
 - Rows render read-only by default; an explicit Edit expands the inline form. A field the CLI cannot write (tool-injected env vars) or that must not be typed by hand (picker-owned path) renders as read-only text — never an editable input.
 - Match the input to the data type: a boolean gets a two-state control; known key names get a datalist sourced from `mise settings ls --all`.
 - Prefer submit-and-catch over pre-flight validation against cached or stale state. Known stderr signatures map to actionable i18n messages — name the object, state the consequence, offer the in-GUI next step; the raw mise error is never swallowed — it stays in the execution-panel transcript.
