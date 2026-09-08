@@ -164,14 +164,12 @@
     "commandHint": "mise -C <dir> ls · mise outdated · mise trust · mise env · mise config · mise.lock",
     "nav": "Overview",
     "empty": {
-      "title": "Pick a directory to preview",
-      "body": "The env, config, and lockfile sections already show the global resolution; the resolved-tools list is directory-scoped. Choose a directory to see what `mise -C <dir> ls` reports there.",
+      "body": "The env, config, and lockfile sections already show the global resolution; this list is directory-scoped. Choose a directory to see what `mise -C <dir> ls` reports there.",
       "action": "Choose directory…"
     },
     "sections": {
       "tools": "Resolved tools",
       "env": "Resolved env",
-      "lockfile": "Lockfile",
       "config": "Config files"
     },
     "config": {
@@ -211,9 +209,7 @@
       "body": "`mise -C <dir> ls --json` did not return. Stderr is preserved in the execution panel."
     },
     "lockfile": {
-      "eyebrow": "MISE.LOCK",
       "title": "mise.lock",
-      "missing": "No mise.lock found.",
       "empty": "(empty file)",
       "errorTitle": "Failed to read lockfile",
       "errorBody": "MiseDeck could not read the current directory's mise.lock. Stderr is preserved in the execution panel."

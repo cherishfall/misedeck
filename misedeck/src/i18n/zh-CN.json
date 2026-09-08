@@ -164,14 +164,12 @@
     "commandHint": "mise -C <dir> ls · mise outdated · mise trust · mise env · mise config · mise.lock",
     "nav": "概览",
     "empty": {
-      "title": "选择一个目录以预览",
-      "body": "环境变量、配置文件与 lockfile 各节已展示全局解析结果；工具列表按目录解析。选择一个目录，查看 `mise -C <dir> ls` 在该目录的结果。",
+      "body": "环境变量、配置文件与 lockfile 各节已展示全局解析结果；此列表按目录解析。选择一个目录，查看 `mise -C <dir> ls` 在该目录的结果。",
       "action": "选择目录…"
     },
     "sections": {
       "tools": "已解析的工具",
       "env": "已解析的环境变量",
-      "lockfile": "Lockfile",
       "config": "配置文件"
     },
     "config": {
@@ -211,9 +209,7 @@
       "body": "`mise -C <dir> ls --json` 未返回结果。stderr 已在执行面板中保留。"
     },
     "lockfile": {
-      "eyebrow": "MISE.LOCK",
       "title": "mise.lock",
-      "missing": "未找到 mise.lock。",
       "empty": "（空文件）",
       "errorTitle": "读取 lockfile 失败",
       "errorBody": "MiseDeck 无法读取当前目录的 mise.lock。stderr 已在执行面板中保留。"

@@ -107,13 +107,6 @@
   gap: var(--space-1);
 }
 
-.sectionEyebrow {
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--ice);
-}
 
 .sectionTitle {
   font-family: var(--font-display);

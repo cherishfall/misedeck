@@ -10,8 +10,9 @@
 //                                 rendered in the Global directory
 //                                 context too
 //   * <dir>/mise.lock           → read-only pre block when present;
-//                                 a muted "missing" line when not
-//                                 (the runner reports `null` for the
+//                                 the section is not rendered at all
+//                                 when the lockfile is missing (the
+//                                 runner reports `null` for the
 //                                 Global context)
 //
 // The page also surfaces the trust UX (issue #25): when the cwd's
@@ -355,13 +356,14 @@ export function DirectoryPreview() {
 
         {/* ---------- Resolved tools ---------- */}
         <section className={styles.section} data-testid="preview-section-tools">
-          <header className={styles.sectionHead}>
-            <span className={styles.sectionEyebrow}>{t(I18N_KEYS.preview.eyebrow)}</span>
-            <h2 className={styles.sectionTitle}>{t(I18N_KEYS.preview.sections.tools)}</h2>
-          </header>
+          {cwd !== null && (
+            <header className={styles.sectionHead}>
+              <h2 className={styles.sectionTitle}>{t(I18N_KEYS.preview.sections.tools)}</h2>
+            </header>
+          )}
           {cwd === null && (
             <EmptyState
-              title={t(I18N_KEYS.preview.empty.title)}
+              title={t(I18N_KEYS.preview.sections.tools)}
               body={t(I18N_KEYS.preview.empty.body)}
               action={
                 <Button
@@ -404,7 +406,6 @@ export function DirectoryPreview() {
         {/* ---------- Resolved env ---------- */}
         <section className={styles.section} data-testid="preview-section-env">
           <header className={styles.sectionHead}>
-            <span className={styles.sectionEyebrow}>{t(I18N_KEYS.preview.eyebrow)}</span>
             <h2 className={styles.sectionTitle}>{t(I18N_KEYS.preview.sections.env)}</h2>
           </header>
           {envError && (
@@ -437,9 +438,9 @@ export function DirectoryPreview() {
         <ConfigFilesSection />
 
         {/* ---------- Lockfile ---------- */}
+        {(lockfileError || lockfileContent !== null) && (
         <section className={styles.section} data-testid="preview-section-lockfile">
           <header className={styles.sectionHead}>
-            <span className={styles.sectionEyebrow}>{t(I18N_KEYS.preview.lockfile.eyebrow)}</span>
             <h2 className={styles.sectionTitle}>{t(I18N_KEYS.preview.lockfile.title)}</h2>
           </header>
           {lockfileError && (
@@ -449,11 +450,6 @@ export function DirectoryPreview() {
               {lockfileError.stderr && (
                 <pre className={styles.errorStderr}>{lockfileError.stderr}</pre>
               )}
-            </div>
-          )}
-          {!lockfileError && lockfileContent === null && (
-            <div className={styles.lockfileMuted} data-testid="preview-lockfile-missing">
-              {t(I18N_KEYS.preview.lockfile.missing)}
             </div>
           )}
           {!lockfileError && lockfileContent === "" && (
@@ -467,6 +463,7 @@ export function DirectoryPreview() {
             </pre>
           )}
         </section>
+        )}
       </div>
     </PageShell>
   );
@@ -494,7 +491,6 @@ function ConfigFilesSection() {
   return (
     <section className={styles.section} data-testid="preview-section-config">
       <header className={styles.sectionHead}>
-        <span className={styles.sectionEyebrow}>{t(I18N_KEYS.preview.eyebrow)}</span>
         <h2 className={styles.sectionTitle}>{t(I18N_KEYS.preview.sections.config)}</h2>
         <p className={styles.configOrderNote}>{t(I18N_KEYS.preview.config.orderNote)}</p>
       </header>

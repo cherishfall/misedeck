@@ -126,7 +126,6 @@ function DoctorContent({
     return (
       <section className={styles.section}>
         <header className={styles.sectionHead}>
-          <span className={styles.sectionEyebrow}>{t(I18N_KEYS.doctor.eyebrow)}</span>
           <h2 className={styles.sectionTitle}>{t(I18N_KEYS.doctor.rawTitle)}</h2>
         </header>
         <div className={styles.rawLines}>
@@ -225,8 +224,7 @@ function DoctorContent({
       {otherWarnings.length > 0 && (
         <section className={styles.section}>
           <header className={styles.sectionHead}>
-            <span className={styles.sectionEyebrow}>{t(I18N_KEYS.doctor.eyebrow)}</span>
-            <h2 className={styles.sectionTitle}>{t(I18N_KEYS.doctor.warnings.title)}</h2>
+              <h2 className={styles.sectionTitle}>{t(I18N_KEYS.doctor.warnings.title)}</h2>
           </header>
           <ul className={styles.warningList}>
             {otherWarnings.map((w, i) => (
@@ -241,7 +239,6 @@ function DoctorContent({
 
       <section className={styles.section}>
         <header className={styles.sectionHead}>
-          <span className={styles.sectionEyebrow}>{t(I18N_KEYS.doctor.eyebrow)}</span>
           <h2 className={styles.sectionTitle}>{t(I18N_KEYS.doctor.configFiles.title)}</h2>
         </header>
         {(data.configFiles ?? []).length === 0 ? (
@@ -257,7 +254,6 @@ function DoctorContent({
 
       <section className={styles.section}>
         <header className={styles.sectionHead}>
-          <span className={styles.sectionEyebrow}>{t(I18N_KEYS.doctor.eyebrow)}</span>
           <h2 className={styles.sectionTitle}>{t(I18N_KEYS.doctor.toolset.title)}</h2>
         </header>
         <Table<ToolsetRow>
@@ -376,7 +372,6 @@ function UpgradeNotice({
   return (
     <section className={styles.upgrade} aria-label={t(I18N_KEYS.doctor.updateNotice.title)}>
       <header className={styles.sectionHead}>
-        <span className={styles.sectionEyebrow}>{t(I18N_KEYS.doctor.eyebrow)}</span>
         <h2 className={styles.upgradeTitle}>{t(I18N_KEYS.doctor.updateNotice.title)}</h2>
       </header>
       <p className={styles.upgradeFraming}>{t(I18N_KEYS.doctor.updateNotice.framing)}</p>

@@ -226,7 +226,6 @@ export function EnvPage() {
 
         <section className={styles.section} data-testid="env-section">
           <header className={styles.sectionHead}>
-            <span className={styles.sectionEyebrow}>{t(I18N_KEYS.env.eyebrow)}</span>
             <h2 className={styles.sectionTitle}>{t(I18N_KEYS.env.listTitle)}</h2>
           </header>
 

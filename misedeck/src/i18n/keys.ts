@@ -218,14 +218,12 @@ export const I18N_KEYS = {
     commandHint: "preview.commandHint",
     nav: "preview.nav",
     empty: {
-      title: "preview.empty.title",
       body: "preview.empty.body",
       action: "preview.empty.action",
     },
     sections: {
       tools: "preview.sections.tools",
       env: "preview.sections.env",
-      lockfile: "preview.sections.lockfile",
       config: "preview.sections.config",
     },
     config: {
@@ -265,9 +263,7 @@ export const I18N_KEYS = {
       body: "preview.toolsError.body",
     },
     lockfile: {
-      eyebrow: "preview.lockfile.eyebrow",
       title: "preview.lockfile.title",
-      missing: "preview.lockfile.missing",
       empty: "preview.lockfile.empty",
       errorTitle: "preview.lockfile.errorTitle",
       errorBody: "preview.lockfile.errorBody",
