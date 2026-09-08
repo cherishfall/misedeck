@@ -2,8 +2,8 @@
 //
 //   * mise ls --json         → table rows (tool, version, requested,
 //                              backend, source, latest, actions)
-//   * mise outdated --json   → outdated badges on the rows that
-//                              appear in the map
+//   * mise outdated --json   → the Latest column's current → latest
+//                              path on the rows that appear in the map
 //   * mise use -g            → switch a tool's requested version
 //   * mise install -g        → install a new tool/version
 //   * mise uninstall -g      → remove an installed tool
@@ -247,11 +247,19 @@ export function ToolsPage() {
       header: t(I18N_KEYS.tools.columns.version),
       sortValue: (r) => r.version,
       sortVersion: true,
-      cell: (r) => (
-        <span className={r.active ? styles.cellVersion : styles.cellVersionOutdated}>
-          {r.version}
-        </span>
-      ),
+      // Inactive versions dim and carry a small「未激活」note — no new
+      // badge concept (issue #110).
+      cell: (r) =>
+        r.active ? (
+          <span className={styles.cellVersion}>{r.version}</span>
+        ) : (
+          <span className={styles.cellVersionInactive}>
+            {r.version}{" "}
+            <span className={styles.inactiveNote}>
+              {t(I18N_KEYS.tools.queries.installed.inactive)}
+            </span>
+          </span>
+        ),
     },
     {
       key: "requested",
@@ -540,9 +548,11 @@ export function ToolsPage() {
       width: "96px",
       sortValue: (r) => r.version,
       sortVersion: true,
+      // The current version's color is stable — it describes current
+      // state; attention belongs to the Latest column (issue #110).
       cell: (r) => (
         <Tooltip text={r.version}>
-          <span className={r.outdated ? styles.cellVersionOutdated : styles.cellVersion}>
+          <span className={styles.cellVersion}>
             {r.version}
           </span>
         </Tooltip>
@@ -570,12 +580,14 @@ export function ToolsPage() {
       sortValue: (r) => (r.outdated ? r.latest : ""),
       sortVersion: true,
       cell: (r) =>
+        // The full current → latest upgrade path; the shared
+        // `upgrade-arrow` span carries the --flare arrow (issue #110).
         r.outdated ? (
-          <Tooltip text={r.latest}>
+          <Tooltip text={`${r.version} → ${r.latest}`}>
             <span className={styles.cellLatest}>
-              <span className="upgrade-arrow" aria-hidden="true">→</span>
+              {r.version}{" "}
+              <span className="upgrade-arrow" aria-hidden="true">→</span>{" "}
               <span className={styles.latestValue}>{r.latest}</span>
-              <Badge variant="warning">{t(I18N_KEYS.tools.outdatedBadge)}</Badge>
             </span>
           </Tooltip>
         ) : (

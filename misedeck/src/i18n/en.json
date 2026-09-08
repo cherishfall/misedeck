@@ -133,6 +133,7 @@
       "emptyTitle": "No installed versions",
       "emptyBody": "`mise ls <tool>` lists every installed version — active and inactive. Run it above to query a tool.",
       "active": "active",
+      "inactive": "inactive",
       "activeColumn": "Active"
     },
     "remote": {

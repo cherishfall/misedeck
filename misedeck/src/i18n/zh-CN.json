@@ -133,6 +133,7 @@
       "emptyTitle": "没有已安装版本",
       "emptyBody": "`mise ls <tool>` 会列出每个已安装版本——无论是否处于活动状态。在上方运行即可查询某个工具。",
       "active": "活动",
+      "inactive": "未激活",
       "activeColumn": "活动"
     },
     "remote": {

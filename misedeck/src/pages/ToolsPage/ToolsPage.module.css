@@ -104,7 +104,9 @@
   font-weight: 600;
 }
 
-.cellVersionOutdated {
+/* Inactive installed versions dim and carry a small「未激活」note —
+ * no new badge concept (issue #110). */
+.cellVersionInactive {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -112,7 +114,13 @@
   min-width: 0;
   font-family: var(--font-mono);
   font-size: var(--size-data);
-  color: var(--text);
+  color: var(--dim);
+}
+
+.inactiveNote {
+  font-family: var(--font-ui);
+  font-size: var(--size-label);
+  color: var(--dim);
 }
 
 .cellRequested {

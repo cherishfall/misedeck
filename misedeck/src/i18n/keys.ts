@@ -194,6 +194,7 @@ export const I18N_KEYS = {
         run: "tools.queries.installed.run",
         clear: "tools.queries.installed.clear",
         active: "tools.queries.installed.active",
+        inactive: "tools.queries.installed.inactive",
         activeColumn: "tools.queries.installed.activeColumn",
         emptyTitle: "tools.queries.installed.emptyTitle",
         emptyBody: "tools.queries.installed.emptyBody",
