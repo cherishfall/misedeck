@@ -240,6 +240,7 @@ export function SettingsPage() {
               rows={settings.data ?? []}
               rowKey={(r) => r.key}
               fixed
+              resizeKey="settings"
               className={styles.settingsTable}
               empty={
                 <EmptyState

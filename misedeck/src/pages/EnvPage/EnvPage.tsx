@@ -243,6 +243,7 @@ export function EnvPage() {
               rows={envRows}
               rowKey={(r) => r.id}
               fixed
+              resizeKey="env"
               className={styles.envTable}
               empty={
                 <EmptyState

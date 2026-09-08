@@ -484,6 +484,7 @@ export function TasksPage() {
               rows={taskRows}
               rowKey={(r) => r.id}
               fixed
+              resizeKey="tasks"
               className={styles.tasksTable}
               empty={
                 <EmptyState

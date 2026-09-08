@@ -393,6 +393,7 @@ export function DirectoryPreview() {
               rows={toolRows}
               rowKey={(r) => r.id}
               fixed
+              resizeKey="directory-preview.tools"
               className={styles.toolsTable}
               empty={
                 <EmptyState
@@ -424,6 +425,7 @@ export function DirectoryPreview() {
               rows={envRows}
               rowKey={(r) => r.id}
               fixed
+              resizeKey="directory-preview.env"
               className={styles.envTable}
               empty={
                 <EmptyState

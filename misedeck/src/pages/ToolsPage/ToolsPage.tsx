@@ -614,6 +614,7 @@ export function ToolsPage() {
             rows={rows}
             rowKey={(r) => r.id}
             fixed
+            resizeKey="tools"
             className={styles.toolsTable}
             empty={
               <EmptyState

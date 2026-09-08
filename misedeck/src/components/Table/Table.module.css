@@ -35,6 +35,7 @@
 }
 
 .table thead th {
+  position: relative;
   text-align: left;
   font-family: var(--font-mono);
   font-size: var(--size-label);
@@ -90,6 +91,33 @@
   color: var(--dim);
 }
 
+/* Column drag-resize handle (issue #104): an invisible hit strip on the
+ * header's right border that reveals a 1px line on hover. */
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+}
+
+.resizeHandle::after {
+  content: "";
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  right: 0;
+  width: 1px;
+  background: var(--line-strong);
+  opacity: 0;
+  transition: opacity var(--motion-state-change) ease;
+}
+
+.resizeHandle:hover::after {
+  opacity: 1;
+}
+
 .table tfoot td {
   padding: var(--space-3);
   border-top: 1px solid var(--line-strong);
@@ -100,7 +128,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .row,
-  .rowClickable {
+  .rowClickable,
+  .resizeHandle::after {
     transition: none;
   }
 }
