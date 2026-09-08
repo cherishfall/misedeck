@@ -4,7 +4,11 @@ This document is a continuation marker between autonomous driver sessions.
 
 ## CURRENT STATE (2026-09-08)
 
-**All implementation tickets are closed.** The beta7 feedback batch (**#87–#95**, SPEC parent #86) is fully implemented — one subagent per ticket, sequential on `master`, each committed + pushed + closed:
+**Beta8 feedback batch published.** SPEC parent **#97** ("SPEC: beta8 feedback batch — chrome consistency, tools-page polish, GUI-layer table affordances") with 16 tickets **#98–#113**, all labelled `v1` + `ready-for-agent`, attached as sub-issues of #97. Blocking edges: #104←#103, #105←#104, #106←#103, #110←#100. Full mapping table in `docs/feedback/beta8-feedback-scratch.md` header. **The tools page is the top priority of this batch** — work tools-touching tickets (#110, #111, plus table tickets feeding it) first. Each ticket is one fresh context; acceptance = `npm run ci` + `cargo check` + static self-audit, all marked "not visually verified".
+
+Ticket map: #98 chrome/toolbar+caret+unified refresh · #99 HomePage version compare+update row · #100 glyph sweep ▹→→ · #101 eyebrow dedupe+lockfile hidden · #102 remove upgrade-all+install variant · #103 fixed px columns · #104 column drag-resize · #105 sortable columns · #106 table text filter · #107 Tooltip guard+CopyButton · #108 UI-state persistence · #109 form Enter/Esc+datalists · #110 tools table signals · #111 tools form comprehension · #112 page dead-ends & copy · #113 token alignment.
+
+**Beta7 batch fully closed** (tickets #87–#95, SPEC #86):
 
 | Ticket | Commit |
 | --- | --- |

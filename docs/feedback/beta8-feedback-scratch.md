@@ -1,6 +1,25 @@
 # v1.0.0-beta.8 反馈记录
 
-> 状态：收集进行中（2026-09-08 起）。
+> 状态：已发布（2026-09-08）。SPEC 父 issue #97；tickets #98–#113（映射见文末）。
+>
+> | Ticket | 内容 |
+> |---|---|
+> | #98 | Chrome: toolbar 平衡 + caret 移除 + 统一刷新（Issue 1/2/7 + F13/F18） |
+> | #99 | HomePage: 方向性版本比较 + 更新行/按钮/RAW（Issue 2/3/10） |
+> | #100 | 字形清扫：▹→→ + ▾ 残留（Issue 2） |
+> | #101 | 节眉签去重 + lockfile 缺失态隐藏 + 概览空态去重（Issue 6/10） |
+> | #102 | 移除全部升级 + 安装按钮 variant 统一（Issue 8） |
+> | #103 | 表格：5 处百分比列 → 固定 px（Issue 4 Q1） |
+> | #104 | 表格列宽拖拽 + 最小宽度 + localStorage（Issue 4 Q2，blocked by #103） |
+> | #105 | 表格列排序（↑/↓ 数据字形）（Issue 5 P3，blocked by #104） |
+> | #106 | 表格文本过滤 + Registry 搜索清除（Issue 5 P1/10，blocked by #103） |
+> | #107 | 原语：Tooltip 空值守卫 + 共享 CopyButton（Issue 5 P2/9 F8/10） |
+> | #108 | UI 状态持久化（面板/侧栏/pageSize）（Issue 5 P4） |
+> | #109 | 表单键盘化：9 处 Enter/Esc + datalist + 占位修复（Issue 9 F3-F5/10） |
+> | #110 | 工具表格信号语义（Issue 9 T2，blocked by #100） |
+> | #111 | 工具表单可理解性（Issue 9 T1/T5） |
+> | #112 | 页面死胡同与文案：任务空态/插件卸载/诊断链接/设置计数（Issue 10） |
+> | #113 | token 对齐：14 处硬编码字号（Issue 10） |
 > 流程：用户逐条口述 → 我记录原话并做代码调查 → 有不确定处用 grill-with-docs 拷问到共识 → 全部收集完后综合分析 → to-spec 发布 SPEC 父 issue → to-tickets 发布 tickets。
 > 每条结构：用户原话（+截图）→ 代码调查结论 → 对齐后的理解 → 定稿。
 > 基线：beta.8 已发布（`v1.0.0-beta.8`），beta7 批次（#86 SPEC、#87–#96）全部关闭；遗留 open 项为 SPEC 父 issue #86 / #74 / #65 / #61 / #45，等待主人视觉验收。
