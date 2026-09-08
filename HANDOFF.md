@@ -2,9 +2,18 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-08, updated 2)
+## CURRENT STATE (2026-09-08, updated 3)
 
-**Post-beta8 cleanup batch done.** Follow-up tickets **#114–#116** (spawned from the beta8 adjacent-findings review) implemented and closed; **AGENTS.md gained a new working agreement** (en + zh-CN, commit `92247b2`): rule-introducing tickets must sweep their own class app-wide in the same commit, and mechanically checkable classes should get lint guards in `npm run ci` instead of written rules alone.
+**Pre-beta9 cleanup/slimming done** (two audit subagents → two fix subagents; not ticketed, one-shot maintenance commits):
+
+- Code sweep `93813eb`: **fixed a live bug** — ExecutionPanel log lines referenced nonexistent CSS classes (`stderrLine`/`stdoutLine`), so stderr tinting never applied; now `styles.line` + `data-stream`. Deleted: 31 dead i18n keys (both locales), dead hooks (`useGlobalEnvList`, `useParsedGlobalEnvList`, `dirContextLabel`), orphaned CSS (ExecutionPanel demo/caret residue, LanguageSwitcher `.root`, DirectoryPreview `.dim`, VersionQuerySection `.collapseToggle`), unused deps (`thiserror` crate, `@tauri-apps/plugin-shell` npm — Rust-side plugin stays, it powers external links), stale comments (lib.rs/mise.rs/tools.rs/IconButton). Consolidated: clipboard writes → shared `writeClipboard` (ActivationBanner, DoctorPage); Table column-width storage → `loadPersistent`/`savePersistent`. `npm run ci` + `cargo test` (124) green.
+- Docs sweep `5259ad6` (all edits mirrored en + zh-CN): theme is light/dark default light (product-logic was wrong); directory-indicator action list dropped Copy-Command; conventions DoD now matches the no-visual-verification rule; runner.md cancel description corrected to reality (still soft-cancel from JS — the audit's premise was wrong; only real kill is the 30-min timeout); ci.md release bump = 6 places/5 files + file-layout tree fixed + changelog hedge resolved; **`.github/workflows/ci.yml` now runs all four lint guards** (`lint:i18n-concat`, `lint:css-font-size` added); ui-ux-rules no-op example genericized off the deleted upgrade-all; IA sketch caret removed; i18n.md key-group table → pointer to keys.ts, error-code list shows all 7 codes; domain.md fictional ADR names → real ones; `docs/agents/getting-started.md` **deleted** (scaffold era, both locales) + AGENTS.md pointer removed; ADR-0002 status note: Homebrew tap not yet implemented; tools-page.prototype.html bannered as historical.
+
+**Known gap discovered, not fixed (candidate for a beta9 ticket):** `mise.rs` error payloads reference message keys `errors.miseNotFound` / `errors.miseTooOld` etc., but the i18n catalogs contain only `errors.timeout` — other error codes have no dedicated `errors.*` key (`MISE_TOO_OLD` copy actually lives in `states.tooOld.*`). Documented in i18n.md as a known gap.
+
+**Pending owner decisions (flagged, not acted on):** (1) HANDOFF.md has no zh-CN mirror — recommend documenting the exemption in AGENTS.md rather than mirroring an ephemeral handoff doc; (2) `docs/agents/issue-tracker.md` /triage + /wayfinder boilerplate sections unused by the real workflow — trim or keep; (3) zero-caller shared-component variants (Badge `danger`, Banner `danger`/`success`, DataRow `muted`, ProgressDot `ice`, IconButton `secondary`) — kept for now, consistent with the earlier Banner-success decision.
+
+**Post-beta8 cleanup batch done.** Follow-up tickets **#114–#117** implemented and closed (OutdatedHint refactor resolving the #102 deviation; i18n-concat lint guard; component font-size token sweep + guard; StyleGuide gallery deleted). **AGENTS.md gained a new working agreement** (en + zh-CN, commit `92247b2`): rule-introducing tickets must sweep their own class app-wide, and mechanically checkable classes get lint guards in `npm run ci`.
 
 | Ticket | Commit | Notes |
 | --- | --- | --- |
