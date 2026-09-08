@@ -16,6 +16,7 @@ export { IconButton } from "./IconButton/IconButton";
 export { KeyForm, Suggestions } from "./KeyForm/KeyForm";
 export { LanguageSwitcher } from "./LanguageSwitcher/LanguageSwitcher";
 export { MiseMissingState } from "./MiseMissingState/MiseMissingState";
+export { OutdatedHint } from "./OutdatedHint/OutdatedHint";
 export { PageShell } from "./PageShell/PageShell";
 export { useRegisterPageRefresh } from "./PageShell/pageRefresh";
 export { Pagination } from "./Pagination/Pagination";

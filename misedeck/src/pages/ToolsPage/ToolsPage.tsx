@@ -48,6 +48,7 @@ import {
   EmptyState,
   KeyForm,
   MiseMissingState,
+  OutdatedHint,
   PageShell,
   Suggestions,
   Table,
@@ -665,13 +666,7 @@ export function ToolsPage() {
         <div className={styles.toolbar}>
           {/* F13 (issue #98): the hint renders in every state — loading
               included — so it never pops in/out. */}
-          <span className={styles.toolbarHint}>
-            {outdated.data == null
-              ? t(I18N_KEYS.common.loading)
-              : outdated.data.length > 0
-                ? t(I18N_KEYS.tools.outdatedBadge) + ` (${outdated.data.length})`
-                : t(I18N_KEYS.tools.noOutdated)}
-          </span>
+          <OutdatedHint count={outdated.data == null ? null : outdated.data.length} />
           <TableFilter
             value={filter.query}
             onChange={filter.setQuery}

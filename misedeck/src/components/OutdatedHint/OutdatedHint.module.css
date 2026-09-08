@@ -1,0 +1,7 @@
+.hint {
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--dim);
+}

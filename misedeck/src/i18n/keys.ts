@@ -33,6 +33,8 @@ export const I18N_KEYS = {
     back: "common.back",
     next: "common.next",
     clear: "common.clear",
+    outdatedCount: "common.outdatedCount",
+    allUpToDate: "common.allUpToDate",
     filter: {
       noMatchTitle: "common.filter.noMatchTitle",
       noMatchBody: "common.filter.noMatchBody",
@@ -147,13 +149,11 @@ export const I18N_KEYS = {
       title: "tools.missing.title",
       body: "tools.missing.body",
     },
-    outdatedBadge: "tools.outdatedBadge",
     installHint: "tools.installHint",
     error: {
       title: "tools.error.title",
       body: "tools.error.body",
     },
-    noOutdated: "tools.noOutdated",
     filterPlaceholder: "tools.filterPlaceholder",
     switchVersion: {
       placeholder: "tools.switchVersion.placeholder",

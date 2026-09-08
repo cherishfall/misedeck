@@ -13,6 +13,8 @@
     "back": "Back",
     "next": "Next",
     "clear": "Clear",
+    "outdatedCount": "{{count}} outdated",
+    "allUpToDate": "All installed tools are up to date.",
     "filter": {
       "noMatchTitle": "No matching rows",
       "noMatchBody": "No rows match the current filter. Edit or clear the filter to bring the full list back."
@@ -93,13 +95,11 @@
       "title": "Tools unavailable",
       "body": "MiseDeck needs the mise CLI to list installed tools. Go back and install mise to populate this page."
     },
-    "outdatedBadge": "outdated",
     "installHint": "Browse the Registry",
     "error": {
       "title": "Failed to load tools",
       "body": "`mise ls --json` did not return. Stderr is preserved in the execution panel."
     },
-    "noOutdated": "All installed tools are up to date.",
     "filterPlaceholder": "Filter tools…",
     "switchVersion": {
       "placeholder": "22.11.0"

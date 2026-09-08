@@ -55,6 +55,7 @@ import {
   Banner,
   Button,
   EmptyState,
+  OutdatedHint,
   PageShell,
   Table,
   Tooltip,
@@ -344,11 +345,7 @@ export function DirectoryPreview() {
         </header>
 
         <div className={styles.toolbar}>
-          <span className={styles.toolbarHint}>
-            {outdated.data && outdated.data.length > 0
-              ? t(I18N_KEYS.tools.outdatedBadge) + ` (${outdated.data.length})`
-              : t(I18N_KEYS.tools.noOutdated)}
-          </span>
+          <OutdatedHint count={outdated.data == null ? null : outdated.data.length} />
         </div>
 
 

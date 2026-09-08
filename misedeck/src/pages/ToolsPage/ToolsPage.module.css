@@ -58,14 +58,6 @@
   flex-wrap: wrap;
 }
 
-.toolbarHint {
-  font-family: var(--font-ui);
-  font-size: var(--size-data);
-  letter-spacing: normal;
-  text-transform: none;
-  color: var(--dim);
-}
-
 /* ---------- Table cells ---------- */
 
 /* min-width = sum of declared column widths (160 tool + 96 version + 120

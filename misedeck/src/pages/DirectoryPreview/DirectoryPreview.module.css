@@ -59,14 +59,6 @@
   flex-wrap: wrap;
 }
 
-.toolbarHint {
-  font-family: var(--font-ui);
-  font-size: var(--size-data);
-  letter-spacing: normal;
-  text-transform: none;
-  color: var(--dim);
-}
-
 .configToggle {
   font-family: var(--font-mono);
   font-size: var(--size-label);
@@ -106,7 +98,6 @@
   flex-direction: column;
   gap: var(--space-1);
 }
-
 
 .sectionTitle {
   font-family: var(--font-display);
