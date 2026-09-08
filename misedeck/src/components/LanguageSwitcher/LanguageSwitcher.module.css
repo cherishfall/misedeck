@@ -69,20 +69,6 @@
   text-overflow: ellipsis;
 }
 
-/* Slim chevron signaling the expandable list (#54); rotates to point
- * at the popover (which opens upward) while it is open. */
-.chevron,
-.chevronOpen {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform var(--motion-state-change) ease;
-}
-
-.chevronOpen {
-  transform: rotate(180deg);
-}
-
 .popover {
   display: flex;
   flex-direction: column;
@@ -122,8 +108,6 @@
 @media (prefers-reduced-motion: reduce) {
   .trigger,
   .triggerIcon,
-  .chevron,
-  .chevronOpen,
   .option,
   .optionActive {
     transition: none;

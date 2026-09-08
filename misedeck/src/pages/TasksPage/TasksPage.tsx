@@ -60,6 +60,7 @@ import {
   PageShell,
   Table,
   Tooltip,
+  useRegisterPageRefresh,
   type TableColumn,
 } from "../../components";
 import { useParsedTasksList } from "../../hooks/useTasksList";
@@ -182,6 +183,12 @@ export function TasksPage() {
   // every action button so the user can't fire two mutations
   // at once.
   const isRunning = execState.status === "running";
+
+  // Top-toolbar refresh (issue #98).
+  const onRefresh = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["tasks", "ls", cwd] });
+  }, [queryClient, cwd]);
+  useRegisterPageRefresh(onRefresh);
 
   // Run a task via the panel. The trust guard is checked first
   // (running a task in an untrusted directory would also fail
@@ -432,17 +439,6 @@ export function TasksPage() {
               ? `${tasks.data.length} ${t(I18N_KEYS.tasks.columns.name).toLowerCase()}`
               : t(I18N_KEYS.common.loading)}
           </span>
-          <button
-            type="button"
-            className={styles.refresh}
-            onClick={() =>
-              void queryClient.invalidateQueries({ queryKey: ["tasks", "ls", cwd] })
-            }
-            disabled={tasks.isPending}
-            data-testid="tasks-refresh"
-          >
-            {t(I18N_KEYS.common.refresh)}
-          </button>
         </div>
 
 

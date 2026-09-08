@@ -5,12 +5,16 @@
 // capability keeps a tooltip-labeled icon entry.
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
+import {
+  PageRefreshContext,
+  type PageRefreshCallback,
+} from "./pageRefresh";
 
 import { ActivationBanner } from "../ActivationBanner/ActivationBanner";
 import { DirectoryIndicator } from "../DirectoryIndicator/DirectoryIndicator";
@@ -58,6 +62,11 @@ export function PageShell({ children }: PageShellProps) {
   const [collapsed, setCollapsed] = useState(() => loadCollapsed());
   const { state: execState, dismiss } = useExecutionContext();
   const { context } = useDirectory();
+  // The page-registered refresh callback (issue #98): the current page
+  // registers "invalidate all my queries"; the toolbar button in the
+  // DirectoryIndicator strip invokes whatever is registered.
+  const [refresh, setRefresh] = useState<PageRefreshCallback | null>(null);
+  const refreshContext = useMemo(() => ({ refresh, setRefresh }), [refresh]);
 
   useEffect(() => {
     persistCollapsed(collapsed);
@@ -130,9 +139,11 @@ export function PageShell({ children }: PageShellProps) {
       </aside>
 
       <div className={styles.content}>
-        <DirectoryIndicator mode={context.kind === "dir" ? "directory" : "global"} />
-        <ActivationBanner />
-        <main className={styles.main}>{children}</main>
+        <PageRefreshContext.Provider value={refreshContext}>
+          <DirectoryIndicator mode={context.kind === "dir" ? "directory" : "global"} />
+          <ActivationBanner />
+          <main className={styles.main}>{children}</main>
+        </PageRefreshContext.Provider>
         <ExecutionPanelAffordance />
         <ExecutionPanel />
       </div>

@@ -6,6 +6,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useCallback } from "react";
 
 import { detectMise } from "../../api/mise";
 import { I18N_KEYS } from "../../i18n/keys";
@@ -17,6 +18,7 @@ import {
   PageShell,
   Panel,
   ProgressDot,
+  useRegisterPageRefresh,
 } from "../../components";
 import { useExecutionContext } from "../../components/ExecutionPanel";
 
@@ -76,6 +78,13 @@ export function HomePage() {
   const onSelfUpdateOk = () => {
     void queryClient.invalidateQueries({ queryKey: ["mise", "detect"] });
   };
+
+  // Top-toolbar refresh (issue #98): the version probe is the page's
+  // only query.
+  const onRefresh = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["mise", "detect"] });
+  }, [queryClient]);
+  useRegisterPageRefresh(onRefresh);
 
   // `mise version --json` reports the newest published release as `latest`;
   // it is absent when the probe could not fetch it. Plain inequality is

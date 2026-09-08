@@ -4,7 +4,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
@@ -15,6 +15,7 @@ import {
   PageShell,
   Table,
   Tooltip,
+  useRegisterPageRefresh,
   type TableColumn,
 } from "../../components";
 import { useParsedDoctor } from "../../hooks/useIssue29";
@@ -42,6 +43,12 @@ export function DoctorPage() {
   });
 
   const doctor = useParsedDoctor();
+
+  // Top-toolbar refresh (issue #98): invalidate this page's query.
+  const onRefresh = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["doctor", cwd] });
+  }, [queryClient, cwd]);
+  useRegisterPageRefresh(onRefresh);
 
   if (detect.isPending) {
     return <DoctorLoading />;
@@ -79,15 +86,6 @@ export function DoctorPage() {
           <span className={styles.toolbarHint}>
             {doctor.data ? t(I18N_KEYS.doctor.statusLabel) : t(I18N_KEYS.common.loading)}
           </span>
-          <button
-            type="button"
-            className={styles.refresh}
-            onClick={() => void queryClient.invalidateQueries({ queryKey: ["doctor", cwd] })}
-            disabled={doctor.isPending}
-            data-testid="doctor-refresh"
-          >
-            {t(I18N_KEYS.common.refresh)}
-          </button>
         </div>
 
 

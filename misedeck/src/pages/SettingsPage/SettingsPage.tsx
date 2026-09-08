@@ -37,6 +37,7 @@ import {
   PageShell,
   Table,
   Tooltip,
+  useRegisterPageRefresh,
   type TableColumn,
 } from "../../components";
 import { useParsedSettingsList } from "../../hooks/useIssue29";
@@ -103,6 +104,13 @@ export function SettingsPage() {
       void queryClient.invalidateQueries({ queryKey: ["settings", "ls", cwd] });
     }
   }, [execState.status, cwd, queryClient]);
+
+  // Top-toolbar refresh (issue #98): the prefix key covers both the
+  // explicit and the `--all` settings queries.
+  const onRefresh = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["settings", "ls", cwd] });
+  }, [queryClient, cwd]);
+  useRegisterPageRefresh(onRefresh);
 
   const isRunning = execState.status === "running";
 
@@ -201,15 +209,6 @@ export function SettingsPage() {
               />
               <span>{t(I18N_KEYS.settings.showAll)}</span>
             </label>
-            <button
-              type="button"
-              className={styles.refresh}
-              onClick={() => void queryClient.invalidateQueries({ queryKey: ["settings", "ls", cwd] })}
-              disabled={settings.isPending}
-              data-testid="settings-refresh"
-            >
-              {t(I18N_KEYS.common.refresh)}
-            </button>
           </div>
         </div>
 

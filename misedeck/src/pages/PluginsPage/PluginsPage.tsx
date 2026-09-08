@@ -11,7 +11,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { I18N_KEYS } from "../../i18n/keys";
@@ -24,6 +24,7 @@ import {
   PageShell,
   Table,
   Tooltip,
+  useRegisterPageRefresh,
   type TableColumn,
 } from "../../components";
 import { useParsedPluginsList, useParsedRegistry } from "../../hooks/useIssue29";
@@ -63,10 +64,13 @@ export function PluginsPage() {
     });
   }, [registry.data, query]);
 
-  const onRefresh = () => {
+  // Top-toolbar refresh (issue #98): one callback refreshes both the
+  // Registry and the installed list.
+  const onRefresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["plugins", "ls", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["registry", cwd] });
-  };
+  }, [queryClient, cwd]);
+  useRegisterPageRefresh(onRefresh);
 
   // Hand the registry shorthand to the Tools page install section;
   // the actual `mise install` runs there through the execution panel.
@@ -223,15 +227,6 @@ export function PluginsPage() {
               spellCheck={false}
               autoComplete="off"
             />
-            <button
-              type="button"
-              className={styles.refresh}
-              onClick={onRefresh}
-              disabled={registry.isPending || plugins.isPending}
-              data-testid="plugins-refresh"
-            >
-              {t(I18N_KEYS.common.refresh)}
-            </button>
           </div>
 
           {registryError && (

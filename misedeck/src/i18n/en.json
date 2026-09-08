@@ -89,7 +89,6 @@
       "body": "MiseDeck needs the mise CLI to list installed tools. Go back and install mise to populate this page."
     },
     "outdatedBadge": "outdated",
-    "refresh": "Refresh",
     "installHint": "Install a tool from the registry",
     "error": {
       "title": "Failed to load tools",
@@ -218,8 +217,7 @@
       "empty": "(empty file)",
       "errorTitle": "Failed to read lockfile",
       "errorBody": "MiseDeck could not read the current directory's mise.lock. Stderr is preserved in the execution panel."
-    },
-    "refresh": "Refresh"
+    }
   },
   "env": {
     "eyebrow": "MISE / ENV",

@@ -1,9 +1,10 @@
 /* TasksPage — the tasks table (issue #27).
  *
  * Mirrors the directory-preview / config-page styles: a header
- * strip with eyebrow + title + hint, a sub-toolbar with refresh,
+ * strip with eyebrow + title + hint, a sub-toolbar with the hint,
  * and then the table (or the appropriate empty state). The edit form, when open, sits below the row being
- * edited inside a subtle frame.
+ * edited inside a subtle frame. Refresh lives in the top toolbar
+ * (issue #98).
  *
  * Token mapping fixed in issue #35: this module previously referenced
  * non-existent custom properties (--color-fg-*, --color-line-*,
@@ -93,28 +94,6 @@
   font-family: var(--font-mono);
   font-size: var(--size-label);
   color: var(--dim);
-}
-
-.refresh {
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  color: var(--ice);
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: var(--space-1) 10px;
-  cursor: pointer;
-  transition: border-color var(--motion-state-change) ease-out, color var(--motion-state-change) ease-out;
-}
-
-.refresh:hover:not(:disabled) {
-  border-color: var(--line-strong);
-  color: var(--text);
-}
-
-.refresh:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .errorState {

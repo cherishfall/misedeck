@@ -89,7 +89,6 @@
       "body": "MiseDeck 需要 mise CLI 才能列出已安装的工具。请返回并安装 mise 以填充此页面。"
     },
     "outdatedBadge": "过期",
-    "refresh": "刷新",
     "installHint": "从 registry 安装工具",
     "error": {
       "title": "加载工具列表失败",
@@ -218,8 +217,7 @@
       "empty": "（空文件）",
       "errorTitle": "读取 lockfile 失败",
       "errorBody": "MiseDeck 无法读取当前目录的 mise.lock。stderr 已在执行面板中保留。"
-    },
-    "refresh": "刷新"
+    }
   },
   "env": {
     "eyebrow": "MISE / 环境变量",

@@ -143,7 +143,6 @@ export const I18N_KEYS = {
       body: "tools.missing.body",
     },
     outdatedBadge: "tools.outdatedBadge",
-    refresh: "tools.refresh",
     installHint: "tools.installHint",
     error: {
       title: "tools.error.title",
@@ -273,7 +272,6 @@ export const I18N_KEYS = {
       errorTitle: "preview.lockfile.errorTitle",
       errorBody: "preview.lockfile.errorBody",
     },
-    refresh: "preview.refresh",
   },
   env: {
     eyebrow: "env.eyebrow",

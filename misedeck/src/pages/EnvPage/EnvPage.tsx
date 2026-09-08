@@ -29,6 +29,7 @@ import {
   Table,
   Tooltip,
   commandEcho,
+  useRegisterPageRefresh,
   type TableColumn,
 } from "../../components";
 import { useParsedEnvList } from "../../hooks/useEnvList";
@@ -111,6 +112,16 @@ export function EnvPage() {
       void queryClient.refetchQueries({ queryKey: ["env", "ls", null], type: "active" });
     }
   }, [execState.status, cwd, queryClient]);
+
+  // Top-toolbar refresh (issue #98): invalidate both the active and the
+  // global env queries, plus the preview page's env query.
+  const onRefresh = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["env", "ls", cwd] });
+    void queryClient.invalidateQueries({ queryKey: ["env", "ls", null] });
+    void queryClient.invalidateQueries({ queryKey: ["tools", "env", cwd] });
+    void queryClient.invalidateQueries({ queryKey: ["tools", "env", null] });
+  }, [queryClient, cwd]);
+  useRegisterPageRefresh(onRefresh);
 
   const isRunning = execState.status === "running";
 

@@ -53,7 +53,7 @@
 .action,
 .actionDisabled {
   font-family: var(--font-mono);
-  font-size: var(--size-label);
+  font-size: var(--size-data);
   padding: 4px 10px;
   border-radius: 4px;
   background: transparent;
@@ -67,7 +67,7 @@
 
 .action {
   border: 1px solid var(--line);
-  color: var(--ice);
+  color: var(--text);
 }
 
 .action:hover:not(:disabled),
@@ -80,7 +80,7 @@
 
 .actionDisabled {
   border: 1px solid var(--line);
-  color: var(--ice);
+  color: var(--text);
   opacity: 0.5;
   cursor: not-allowed;
 }

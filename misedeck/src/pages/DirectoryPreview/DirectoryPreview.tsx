@@ -32,7 +32,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { forwardRef, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useMemo, useRef, useState } from "react";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
@@ -57,6 +57,7 @@ import {
   PageShell,
   Table,
   Tooltip,
+  useRegisterPageRefresh,
   type TableColumn,
 } from "../../components";
 
@@ -166,14 +167,19 @@ export function DirectoryPreview() {
     return reconcileEnvSources(env.data, globalEnv);
   }, [env.data, globalEnv]);
 
-  const onRefresh = () => {
+  // Register the page refresh with the top toolbar (issue #98): one
+  // callback invalidates every query this page fetches. Registered
+  // unconditionally (before the early returns below) so hook order is
+  // stable across the detect / Global / directory states.
+  const onRefresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "env", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "lockfile", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "config", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "env", null] });
-  };
+  }, [queryClient, cwd]);
+  useRegisterPageRefresh(onRefresh);
 
   // The "Choose directory…" action (issue #48): the same Tauri
   // dialog picker the directory indicator uses, shared via
@@ -334,15 +340,6 @@ export function DirectoryPreview() {
               ? t(I18N_KEYS.tools.outdatedBadge) + ` (${outdated.data.length})`
               : t(I18N_KEYS.tools.noOutdated)}
           </span>
-          <button
-            type="button"
-            className={styles.refresh}
-            onClick={onRefresh}
-            disabled={tools.isPending || env.isPending || lockfile.isPending}
-            data-testid="preview-refresh"
-          >
-            {t(I18N_KEYS.preview.refresh)}
-          </button>
         </div>
 
 
@@ -546,7 +543,7 @@ function ConfigFileRow({ file, rank }: { file: ConfigFile; rank: number }) {
         )}
         <button
           type="button"
-          className={styles.refresh}
+          className={styles.configToggle}
           onClick={() => setExpanded((v) => !v)}
           data-testid="preview-config-toggle"
         >

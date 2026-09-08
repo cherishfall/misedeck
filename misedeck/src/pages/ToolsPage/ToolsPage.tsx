@@ -49,6 +49,7 @@ import {
   PageShell,
   Table,
   Tooltip,
+  useRegisterPageRefresh,
   type TableColumn,
 } from "../../components";
 import {
@@ -404,10 +405,12 @@ export function ToolsPage() {
     [guard.allowed, isRunning, run, cwd],
   );
 
-  const onRefresh = () => {
+  const onRefresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
-  };
+  }, [queryClient, cwd]);
+  // Top-toolbar refresh (issue #98); the page keeps no local button.
+  useRegisterPageRefresh(onRefresh);
 
   const onUpgradeAll = () => {
     void runMutation(() => miseUpgradeArgs(undefined));
@@ -586,11 +589,14 @@ export function ToolsPage() {
         </header>
 
         <div className={styles.toolbar}>
+          {/* F13 (issue #98): the hint renders in every state — loading
+              included — so it never pops in/out and shifts the actions. */}
           <span className={styles.toolbarHint}>
-            {outdated.data != null &&
-              (outdated.data.length > 0
+            {outdated.data == null
+              ? t(I18N_KEYS.common.loading)
+              : outdated.data.length > 0
                 ? t(I18N_KEYS.tools.outdatedBadge) + ` (${outdated.data.length})`
-                : t(I18N_KEYS.tools.noOutdated))}
+                : t(I18N_KEYS.tools.noOutdated)}
           </span>
           <span className={styles.toolbarActions}>
             {/* Disabled when nothing is outdated; the reason sits next
@@ -609,15 +615,6 @@ export function ToolsPage() {
             >
               {t(I18N_KEYS.tools.actions.upgradeAll)}
             </Button>
-            <button
-              type="button"
-              className={styles.refresh}
-              onClick={onRefresh}
-              disabled={tools.isPending || outdated.isPending}
-              data-testid="tools-refresh"
-            >
-              {t(I18N_KEYS.tools.refresh)}
-            </button>
           </span>
         </div>
 

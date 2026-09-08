@@ -67,7 +67,7 @@
   color: var(--dim);
 }
 
-.refresh {
+.configToggle {
   font-family: var(--font-mono);
   font-size: var(--size-label);
   color: var(--ice);
@@ -81,14 +81,14 @@
     border-color var(--motion-state-change) ease;
 }
 
-.refresh:hover:not(:disabled),
-.refresh:focus-visible {
+.configToggle:hover:not(:disabled),
+.configToggle:focus-visible {
   color: var(--beam);
   border-color: var(--line-strong);
   outline: none;
 }
 
-.refresh:disabled {
+.configToggle:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

@@ -19,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
 import { pickDirectory } from "../../directory/pickDirectory";
+import { usePageRefresh } from "../PageShell/pageRefresh";
 import {
   useActivation,
   type OpenTerminalOutcome,
@@ -41,6 +42,7 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
   const { t } = useTranslation();
   const { context, recents, setDirectory, setGlobal, removeRecent } = useDirectory();
   const { openInTerminal, openOutcome, consumeOpenOutcome } = useActivation();
+  const pageRefresh = usePageRefresh();
   const [recentsOpen, setRecentsOpen] = useState(false);
   const [openHint, setOpenHint] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const openHintTimer = useRef<number | null>(null);
@@ -98,6 +100,16 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
         <div className={styles.row}>
           <span className={styles.eyebrow}>{t(I18N_KEYS.directory.globalMode)}</span>
           <div className={styles.actions}>
+            {pageRefresh && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={pageRefresh}
+                data-testid="toolbar-refresh"
+              >
+                {t(I18N_KEYS.common.refresh)}
+              </Button>
+            )}
             <Button
               variant="primary"
               size="sm"
@@ -142,6 +154,16 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
           >
             {t(I18N_KEYS.activation.openInTerminalLabel)}
           </button>
+          {pageRefresh && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={pageRefresh}
+              data-testid="toolbar-refresh"
+            >
+              {t(I18N_KEYS.common.refresh)}
+            </Button>
+          )}
           <FloatingMenu
             open={recentsOpen && recents.length > 0}
             onOpenChange={setRecentsOpen}
@@ -161,7 +183,7 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
                 disabled={recents.length === 0 && !recentsOpen}
                 data-testid="directory-indicator-recents"
               >
-                {t(I18N_KEYS.directory.recentsButton)} ▾
+                {t(I18N_KEYS.directory.recentsButton)}
               </button>
             )}
           >

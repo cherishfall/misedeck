@@ -62,32 +62,6 @@
   color: var(--dim);
 }
 
-.refresh {
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  color: var(--ice);
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 4px 10px;
-  cursor: pointer;
-  transition:
-    color var(--motion-state-change) ease,
-    border-color var(--motion-state-change) ease;
-}
-
-.refresh:hover:not(:disabled),
-.refresh:focus-visible {
-  color: var(--beam);
-  border-color: var(--line-strong);
-  outline: none;
-}
-
-.refresh:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 /* ---------- Summary panel ---------- */
 
 /* Single-column health rows: each is `label: value badge` on one line
