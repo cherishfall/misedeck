@@ -90,7 +90,7 @@ export function StyleGuide() {
           {r.latest !== "—" ? (
             <>
               <span>22.11.0</span>
-              <span className={styles.arrow}>▹</span>
+              <span className="upgrade-arrow" aria-hidden="true">→</span>
               <span className={styles.latestValue}>{r.latest}</span>
             </>
           ) : (
@@ -111,7 +111,7 @@ export function StyleGuide() {
       cell: () => (
         <span className={styles.cellActions}>
           <Button size="sm" variant="ghost">
-            Versions ▾
+            Versions
           </Button>
           <IconButton size="sm" variant="ghost" aria-label="more">
             ⋯
@@ -177,7 +177,7 @@ export function StyleGuide() {
           </div>
           <div className={styles.typeRow}>
             <span className={styles.typeLabel}>Data / 12</span>
-            <span className={styles.typeMono}>22.11.0 ▹ 22.20.0</span>
+            <span className={styles.typeMono}>22.11.0 → 22.20.0</span>
           </div>
           <div className={styles.typeRow}>
             <span className={styles.typeLabel}>Label / 10</span>
@@ -256,7 +256,7 @@ export function StyleGuide() {
           <Button variant="primary" leading="+">
             {t(I18N_KEYS.styleguide.samples.primary)}
           </Button>
-          <Button variant="secondary" trailing="▾">
+          <Button variant="secondary">
             {t(I18N_KEYS.styleguide.samples.secondary)}
           </Button>
           <Button variant="ghost">{t(I18N_KEYS.styleguide.samples.ghost)}</Button>
@@ -266,7 +266,7 @@ export function StyleGuide() {
           <Button variant="primary" size="sm">
             {t(I18N_KEYS.styleguide.samples.primary)}
           </Button>
-          <Button variant="secondary" size="sm" trailing="▾">
+          <Button variant="secondary" size="sm">
             {t(I18N_KEYS.styleguide.samples.secondary)}
           </Button>
           <Button variant="ghost" size="sm">
@@ -289,7 +289,6 @@ export function StyleGuide() {
       >
         <div className={styles.demoRow}>
           <IconButton aria-label="more">⋯</IconButton>
-          <IconButton aria-label="expand" variant="secondary">▾</IconButton>
           <IconButton aria-label="close" size="sm">✕</IconButton>
           <IconButton aria-label="add" variant="secondary">+</IconButton>
         </div>

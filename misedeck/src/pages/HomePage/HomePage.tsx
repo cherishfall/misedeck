@@ -147,7 +147,7 @@ export function HomePage() {
                     <span className={styles.latestValue}>
                       <span>
                         {view.ok.versionDate}{" "}
-                        <span className={styles.upgradeArrow} aria-hidden="true">
+                        <span className="upgrade-arrow" aria-hidden="true">
                           →
                         </span>{" "}
                         {latest}

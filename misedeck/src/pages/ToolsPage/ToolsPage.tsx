@@ -538,7 +538,7 @@ export function ToolsPage() {
         r.outdated ? (
           <Tooltip text={r.latest}>
             <span className={styles.cellLatest}>
-              <span className={styles.arrow} aria-hidden="true">▹</span>
+              <span className="upgrade-arrow" aria-hidden="true">→</span>
               <span className={styles.latestValue}>{r.latest}</span>
               <Badge variant="warning">{t(I18N_KEYS.tools.outdatedBadge)}</Badge>
             </span>

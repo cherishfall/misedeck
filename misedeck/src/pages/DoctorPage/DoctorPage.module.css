@@ -248,10 +248,6 @@
   color: var(--text);
 }
 
-.upgradeArrow {
-  color: var(--flare);
-}
-
 .upgradeLatest {
   color: var(--flare);
   font-weight: 600;

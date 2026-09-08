@@ -326,7 +326,7 @@ function StatusRow({
   );
 }
 
-/** Extract the `current ▹ latest` pair from a mise self-update warning.
+/** Extract the `current → latest` pair from a mise self-update warning.
  *  Matches `… version <latest> available … currently on <current> …`. */
 function parseUpgradePath(warnings: string[]): { current: string; latest: string } | null {
   for (const w of warnings) {
@@ -382,7 +382,7 @@ function UpgradeNotice({
       <p className={styles.upgradeFraming}>{t(I18N_KEYS.doctor.updateNotice.framing)}</p>
       <div className={styles.upgradePath}>
         <Tooltip text={current}><span className={styles.upgradeCurrent}>{current}</span></Tooltip>
-        <span className={styles.upgradeArrow} aria-hidden="true">▹</span>
+        <span className="upgrade-arrow" aria-hidden="true">→</span>
         <Tooltip text={latest}><span className={styles.upgradeLatest}>{latest}</span></Tooltip>
       </div>
       <button

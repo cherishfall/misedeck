@@ -321,10 +321,6 @@
   color: var(--text);
 }
 
-.arrow {
-  color: var(--flare);
-}
-
 .latestValue {
   color: var(--flare);
   font-weight: 600;

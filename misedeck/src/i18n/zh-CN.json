@@ -522,7 +522,7 @@
       "panelWarning": "warning 色调 —— 需要尽快关注。",
       "panelDanger": "danger 色调 —— 破坏性或失败状态。",
       "primary": "+ 安装工具",
-      "secondary": "版本 ▾",
+      "secondary": "版本",
       "ghost": "取消",
       "danger": "卸载",
       "loading": "处理中…",

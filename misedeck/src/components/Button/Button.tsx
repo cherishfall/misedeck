@@ -24,7 +24,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
   /** Optional glyph rendered before the label. */
   leading?: ReactNode;
-  /** Glyph rendered after the label, e.g. "▾". Optional. */
+  /** Glyph rendered after the label, e.g. "›". Optional. */
   trailing?: ReactNode;
   children?: ReactNode;
 }

@@ -522,7 +522,7 @@
       "panelWarning": "warning tone — needs attention soon.",
       "panelDanger": "danger tone — destructive or failing.",
       "primary": "+ Install tool",
-      "secondary": "Versions ▾",
+      "secondary": "Versions",
       "ghost": "Cancel",
       "danger": "Uninstall",
       "loading": "Working…",

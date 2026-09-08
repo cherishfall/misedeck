@@ -95,10 +95,6 @@
   gap: var(--space-3);
 }
 
-.upgradeArrow {
-  color: var(--flare);
-}
-
 /* RAW block copy affordance (local stand-in until the shared CopyButton
  * primitive lands, issue #107). */
 .rawWrap {

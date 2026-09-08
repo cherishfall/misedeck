@@ -183,7 +183,14 @@ body {
   outline-offset: 2px;
 }
 
-/* ---------- 8. Ambient keyframes ----------
+/* ---------- 8. Shared glyph classes ----------
+ * The upgrade-path arrow (→) renders identically everywhere — one span
+ * class, one token color (ui-ux-rules.md "Glyphs & icons"). */
+.upgrade-arrow {
+  color: var(--flare);
+}
+
+/* ---------- 9. Ambient keyframes ----------
  * The two ambient motions allowed in the system. Everything else
  * (panel slide, button hover, etc.) uses --motion-state-change. */
 
