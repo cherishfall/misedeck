@@ -44,7 +44,7 @@
 }
 
 .block {
-  font-size: 11px;
+  font-size: var(--size-data);
   white-space: pre;
   max-height: 180px;
   overflow: auto;

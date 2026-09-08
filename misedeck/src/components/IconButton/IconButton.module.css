@@ -33,13 +33,13 @@
 .size-sm {
   width: 24px;
   height: 24px;
-  font-size: 12px;
+  font-size: var(--size-data);
 }
 
 .size-md {
   width: 30px;
   height: 30px;
-  font-size: 14px;
+  font-size: var(--size-base);
 }
 
 .variant-secondary {

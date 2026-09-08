@@ -28,7 +28,7 @@
 .title {
   margin: 0;
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: var(--size-base);
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--text);

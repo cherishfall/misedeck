@@ -109,7 +109,7 @@
   width: 20px;
   height: 20px;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: var(--size-data);
   font-weight: 600;
   color: inherit;
 }

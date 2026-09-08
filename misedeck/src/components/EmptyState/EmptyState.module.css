@@ -26,7 +26,7 @@
 .title {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 18px;
+  font-size: var(--size-base);
   letter-spacing: var(--tracking-display);
   color: var(--text);
 }

@@ -50,12 +50,12 @@
 /* ---------- Sizes ---------- */
 
 .size-sm {
-  font-size: 11.5px;
+  font-size: var(--size-data);
   padding: 4px 10px;
 }
 
 .size-md {
-  font-size: 12.5px;
+  font-size: var(--size-data);
   padding: 8px 14px;
 }
 
@@ -118,7 +118,7 @@
   display: inline-flex;
   align-items: center;
   font-family: var(--font-mono);
-  font-size: 0.9em;
+  font-size: var(--size-data);
 }
 
 .label {

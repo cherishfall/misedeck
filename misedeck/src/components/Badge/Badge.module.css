@@ -23,7 +23,7 @@
 .affix {
   display: inline-flex;
   align-items: center;
-  font-size: 9px;
+  font-size: var(--size-label);
 }
 
 /* Variants — text + border from the tinted tokens. Background stays

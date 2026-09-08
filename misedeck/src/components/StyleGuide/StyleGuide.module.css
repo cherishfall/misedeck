@@ -84,7 +84,7 @@
 .sectionTitle {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 16px;
+  font-size: var(--size-base);
   letter-spacing: var(--tracking-display);
   color: var(--text);
   margin: 0;
@@ -92,7 +92,7 @@
 
 .sectionNote {
   font-family: var(--font-ui);
-  font-size: 12.5px;
+  font-size: var(--size-data);
   color: var(--dim);
   line-height: 1.5;
   margin: 0;
@@ -144,7 +144,7 @@
 
 .swatchToken {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--size-label);
   color: var(--dim);
   overflow-wrap: break-word;
 }
@@ -272,7 +272,7 @@
 
 .demoBody {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: var(--size-data);
   color: var(--text);
   line-height: 1.5;
   margin: 0;
@@ -302,13 +302,13 @@
 .cellName {
   font-family: var(--font-ui);
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--size-data);
   color: var(--text);
 }
 
 .cellMono {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--size-data);
   color: var(--text);
 }
 
@@ -317,7 +317,7 @@
   align-items: center;
   gap: var(--space-2);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--size-data);
   color: var(--text);
 }
 
@@ -328,7 +328,7 @@
 
 .cellSource {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--size-data);
   color: var(--dim);
 }
 
