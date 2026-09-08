@@ -220,3 +220,28 @@
 
 **保留不动的样板**（审查确认做对了）：链接冲突 stderr 翻译流程（`ToolsPage.tsx:352-387`，后续友好错误提示的模板）、backend 条件列（`:477-492`，"宁可删列"规则的范本）。F16 远程列表已安装标记：做（低成本的闭环）。
 
+---
+
+## Issue 10【全站同类扫描】: 工具页 18 条的同类问题在其他页面（全部定稿照修）
+
+**用户原话**: 「同时看看其他页面有没有这些问题，有的话一并修了」→ 扫描后「全部按照推荐来」
+
+**扫描方法**：子代理对 HomePage / DirectoryPreview / EnvPage / TasksPage / PluginsPage / DoctorPage / SettingsPage 逐页核对 C1–C11 坑类（对应工具页 F1–F18）。
+
+**定稿（2026-09-08，用户确认全部推荐）**:
+
+| 项 | 定稿 |
+|---|---|
+| 回车/Esc 共享模式 | 全站 9 个表单点（Tools×4、Env×2、Tasks×1、Settings×2）统一 `<form onSubmit>` + Esc 还原；做成共享模式/小封装，不做每页一次性实现 |
+| 任务页空状态 | 给「在编辑器打开配置文件」出口（与编辑任务同一路线），不做页内建任务 UI |
+| 插件已安装区 | 加卸载行操作（确认框 + 执行面板，真实 `mise plugins uninstall`），消除死胡同 |
+| 诊断页 | 更新提示加 ghost 链接「去首页更新」（与一键 self-update 闭环）；`:205` Tooltip trim 并入组件守卫 |
+| 设置页 | 工具栏计数改独立 i18n key + `{{count}}` 插值（双语），不再用列头拼句子 |
+| 首页 | 升级行 tone beam → flare；RAW JSON 块加复制按钮（RAW 保持现状不收起） |
+| 概览页 | 全局模式下空状态与节头去重（卡片标题承载节名） |
+| Env datalist | 变量名输入 datalist（表内已有键名）；zh 占位裁切修复（22ch 或缩短文案） |
+| Tasks datalist | depends 输入 datalist（同页任务名） |
+| Registry 搜索 | 加清除按钮（沿用分页"清空"模式） |
+| token 对齐 | 14 处硬编码字号（6 个页面 CSS）一个机械化 ticket 清完，同 beta5 #67 形状 |
+| 拟定 tickets | 并入 Issue 9 的切分：回车/Esc 与 datalist 进 T3 扩展为全站 ticket；token 对齐单独一张；其余按页归入对应 ticket |
+
