@@ -111,7 +111,7 @@
 .sectionTitle {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--size-base);
   color: var(--text);
   margin: 0;
 }
@@ -140,7 +140,7 @@
 .toolName {
   font-family: var(--font-ui);
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--size-data);
   color: var(--text);
 }
 

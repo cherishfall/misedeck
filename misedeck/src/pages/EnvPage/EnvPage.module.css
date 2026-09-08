@@ -87,7 +87,7 @@
 .sectionTitle {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--size-base);
   color: var(--text);
   margin: 0;
 }
@@ -177,7 +177,7 @@
 .sourcePath {
   display: block;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--size-label);
   color: var(--dim);
   white-space: nowrap;
   overflow: hidden;

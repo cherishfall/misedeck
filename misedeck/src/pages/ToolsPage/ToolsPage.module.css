@@ -87,7 +87,7 @@
 .toolName {
   font-family: var(--font-ui);
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--size-data);
   color: var(--text);
   white-space: nowrap;
 }
@@ -157,7 +157,7 @@
   white-space: nowrap;
   min-width: 0;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--size-data);
   color: var(--dim);
 }
 
