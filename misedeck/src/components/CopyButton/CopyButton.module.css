@@ -1,0 +1,16 @@
+/* CopyButton — shared copy affordance (issue #107). A quiet text
+ * button in the link color; call sites add positioning via className. */
+
+.copy {
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  color: var(--beam);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.copy:hover {
+  text-decoration: underline;
+}

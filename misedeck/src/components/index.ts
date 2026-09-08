@@ -7,6 +7,7 @@ export { Badge } from "./Badge/Badge";
 export { Banner } from "./Banner/Banner";
 export { Button } from "./Button/Button";
 export { ConfirmDialog } from "./ConfirmDialog/ConfirmDialog";
+export { CopyButton } from "./CopyButton/CopyButton";
 export { DataRow } from "./DataRow/DataRow";
 export { DirectoryIndicator } from "./DirectoryIndicator/DirectoryIndicator";
 export { EmptyState } from "./EmptyState/EmptyState";

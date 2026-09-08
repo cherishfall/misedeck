@@ -25,10 +25,8 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { useTranslation } from "react-i18next";
 
-import { I18N_KEYS } from "../../i18n/keys";
-import { writeClipboard } from "../../utils/clipboard";
+import { CopyButton } from "../CopyButton";
 import styles from "./Tooltip.module.css";
 
 /** Hover intent before the layer opens — well under the OS ~1s title. */
@@ -37,8 +35,6 @@ const OPEN_DELAY_MS = 250;
 const CLOSE_DELAY_MS = 120;
 /** Gap between trigger and layer, in px. */
 const GAP_PX = 6;
-/** How long the "Copied" acknowledgement lasts. */
-const COPIED_MS = 1200;
 
 export interface TooltipProps {
   /** The full value: shown in the layer and copied by its button. */
@@ -47,16 +43,13 @@ export interface TooltipProps {
 }
 
 export function Tooltip({ text, children }: TooltipProps) {
-  const { t } = useTranslation();
   const triggerRef = useRef<HTMLSpanElement | null>(null);
   const layerRef = useRef<HTMLDivElement | null>(null);
   const tooltipId = useId();
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
-  const [copied, setCopied] = useState(false);
   const openTimerRef = useRef<number | null>(null);
   const closeTimerRef = useRef<number | null>(null);
-  const copiedTimerRef = useRef<number | null>(null);
 
   const clearTimer = (ref: { current: number | null }) => {
     if (ref.current !== null) {
@@ -69,7 +62,6 @@ export function Tooltip({ text, children }: TooltipProps) {
     () => () => {
       clearTimer(openTimerRef);
       clearTimer(closeTimerRef);
-      clearTimer(copiedTimerRef);
     },
     [],
   );
@@ -89,7 +81,6 @@ export function Tooltip({ text, children }: TooltipProps) {
     closeTimerRef.current = window.setTimeout(() => {
       closeTimerRef.current = null;
       setOpen(false);
-      setCopied(false);
     }, CLOSE_DELAY_MS);
   }, []);
 
@@ -127,18 +118,11 @@ export function Tooltip({ text, children }: TooltipProps) {
     };
   }, [open]);
 
-  const onCopy = async () => {
-    if (!(await writeClipboard(text))) return;
-    setCopied(true);
-    clearTimer(copiedTimerRef);
-    copiedTimerRef.current = window.setTimeout(() => {
-      setCopied(false);
-      copiedTimerRef.current = null;
-    }, COPIED_MS);
-  };
-
-  // Empty value (a "—" cell): no full text to show, render untouched.
-  if (!text) return <>{children}</>;
+  // Empty value guard (issue #107): no pop when there is no full value
+  // to show — an empty or "—" (missing-data) cell renders untouched.
+  // One guard here covers every call site.
+  const trimmed = text.trim();
+  if (!trimmed || trimmed === "—") return <>{children}</>;
 
   return (
     <span
@@ -165,14 +149,7 @@ export function Tooltip({ text, children }: TooltipProps) {
             onMouseLeave={scheduleClose}
           >
             <span className={styles.text}>{text}</span>
-            <button
-              type="button"
-              className={styles.copy}
-              onClick={onCopy}
-              aria-label={copied ? t(I18N_KEYS.tooltip.copied) : t(I18N_KEYS.tooltip.copy)}
-            >
-              {copied ? t(I18N_KEYS.tooltip.copied) : t(I18N_KEYS.tooltip.copy)}
-            </button>
+            <CopyButton text={text} className={styles.copy} />
           </div>,
           document.body,
         )}

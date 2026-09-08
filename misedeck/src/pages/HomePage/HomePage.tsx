@@ -6,16 +6,16 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 
 import { detectMise } from "../../api/mise";
 import { I18N_KEYS } from "../../i18n/keys";
 import type { AppError, AppErrorCode, DetectMiseOk } from "../../types/tauri";
-import { writeClipboard } from "../../utils/clipboard";
 import { compareVersions } from "../../utils/versions";
 
 import {
   Button,
+  CopyButton,
   DataRow,
   PageShell,
   Panel,
@@ -101,14 +101,6 @@ export function HomePage() {
     latest !== undefined &&
     compareVersions(latest, view.ok?.versionDate ?? "") > 0;
 
-  const [rawCopied, setRawCopied] = useState(false);
-  const onCopyRaw = async () => {
-    if (!view.ok) return;
-    if (!(await writeClipboard(JSON.stringify(view.ok.raw, null, 2)))) return;
-    setRawCopied(true);
-    window.setTimeout(() => setRawCopied(false), 1500);
-  };
-
   return (
     <PageShell>
       <div className={styles.page}>
@@ -173,16 +165,10 @@ export function HomePage() {
                   block
                   full
                 />
-                <button
-                  type="button"
+                <CopyButton
+                  text={JSON.stringify(view.ok.raw, null, 2)}
                   className={styles.rawCopy}
-                  onClick={() => void onCopyRaw()}
-                  aria-label={
-                    rawCopied ? t(I18N_KEYS.tooltip.copied) : t(I18N_KEYS.tooltip.copy)
-                  }
-                >
-                  {rawCopied ? t(I18N_KEYS.tooltip.copied) : t(I18N_KEYS.tooltip.copy)}
-                </button>
+                />
               </div>
             </dl>
             {updateAvailable && (
