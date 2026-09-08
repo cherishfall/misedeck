@@ -18,7 +18,7 @@ import { useTranslation } from "react-i18next";
 import { I18N_KEYS } from "../../i18n/keys";
 import { isAppError } from "../../api/mise";
 import type { JsonResult } from "../../types/tauri";
-import { Button, EmptyState, Pagination, Table, type TableColumn } from "../../components";
+import { Button, EmptyState, Pagination, Table, sortRows, type SortState, type TableColumn } from "../../components";
 import { useExecutionContext } from "../../components/ExecutionPanel";
 
 import styles from "./VersionQuerySection.module.css";
@@ -85,8 +85,12 @@ export function VersionQuerySection<TRow>({
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(MIN_PAGE_SIZE);
+  // Sort state lives here (controlled, issue #105): sorting applies to
+  // the full result set before the page window is sliced, not within it.
+  const [sort, setSort] = useState<SortState | null>(null);
+  const sortedRows = sortRows(rows, columns, sort);
 
-  const total = rows.length;
+  const total = sortedRows.length;
   const showPager = total > PAGER_THRESHOLD;
   const totalPages = showPager ? Math.max(1, Math.ceil(total / pageSize)) : 1;
   // Clamp at render time so a page never points past the (possibly
@@ -94,8 +98,8 @@ export function VersionQuerySection<TRow>({
   // last page.
   const page = showPager ? Math.min(Math.max(1, currentPage), totalPages) : 1;
   const visibleRows = showPager
-    ? rows.slice((page - 1) * pageSize, page * pageSize)
-    : rows;
+    ? sortedRows.slice((page - 1) * pageSize, page * pageSize)
+    : sortedRows;
 
   // Keep the controlled currentPage in bounds when the result set
   // shrinks: if the last page just emptied, step back automatically so
@@ -200,6 +204,8 @@ export function VersionQuerySection<TRow>({
                 columns={columns}
                 rows={visibleRows}
                 rowKey={(r) => rowKey(r)}
+                sort={sort}
+                onSortChange={setSort}
                 empty={<EmptyState eyebrow={title} title={emptyTitle} body={emptyBody} />}
               />
               {showPager && (

@@ -82,11 +82,13 @@ export function PluginsPage() {
     {
       key: "name",
       header: t(I18N_KEYS.plugins.columns.name),
+      sortValue: (p) => p.name,
       cell: (p) => <span className={styles.cellTool}>{p.name}</span>,
     },
     {
       key: "source",
       header: t(I18N_KEYS.plugins.columns.source),
+      sortValue: (p) => p.source ?? "",
       cell: (p) =>
         p.source !== undefined ? (
           <Tooltip text={p.source}><span className={styles.cellSource}>{p.source}</span></Tooltip>
@@ -100,6 +102,7 @@ export function PluginsPage() {
     {
       key: "short",
       header: t(I18N_KEYS.plugins.columns.tool),
+      sortValue: (r) => r.short,
       cell: (r) => <span className={styles.cellTool}>{r.short}</span>,
     },
     {
@@ -118,6 +121,7 @@ export function PluginsPage() {
     {
       key: "description",
       header: t(I18N_KEYS.plugins.columns.description),
+      sortValue: (r) => r.description ?? "",
       cell: (r) => <span className={styles.cellDescription}>{r.description ?? "—"}</span>,
     },
     {

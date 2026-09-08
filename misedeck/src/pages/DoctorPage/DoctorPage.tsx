@@ -172,11 +172,14 @@ function DoctorContent({
     {
       key: "tool",
       header: t(I18N_KEYS.doctor.columns.tool),
+      sortValue: (r) => r.tool,
       cell: (r) => <Tooltip text={r.tool}><span className={styles.cellTool}>{r.tool}</span></Tooltip>,
     },
     {
       key: "version",
       header: t(I18N_KEYS.doctor.columns.version),
+      sortValue: (r) => r.version,
+      sortVersion: true,
       cell: (r) => <Tooltip text={r.version}><span className={styles.cellVersion}>{r.version}</span></Tooltip>,
     },
   ];

@@ -118,6 +118,30 @@
   opacity: 1;
 }
 
+/* Click-to-sort header (issue #105): the button inherits the header's
+ * label styling; the sorted column is marked with --text and carries an
+ * ↑/↓ data glyph (exempt from the caret ban). */
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+th.sorted .sortButton {
+  color: var(--text);
+}
+
+.sortIndicator {
+  color: var(--text);
+}
+
 .table tfoot td {
   padding: var(--space-3);
   border-top: 1px solid var(--line-strong);

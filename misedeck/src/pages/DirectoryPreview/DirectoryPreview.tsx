@@ -266,6 +266,7 @@ export function DirectoryPreview() {
       header: t(I18N_KEYS.preview.columns.tool),
       width: "160px",
       minWidth: "120px",
+      sortValue: (r) => r.tool,
       cell: (r) => (
         <Tooltip text={r.tool}>
           <span className={styles.cellTool}>
@@ -278,12 +279,15 @@ export function DirectoryPreview() {
       key: "version",
       header: t(I18N_KEYS.preview.columns.version),
       width: "120px",
+      sortValue: (r) => r.version,
+      sortVersion: true,
       cell: (r) => <Tooltip text={r.version}><span className={styles.cellVersion}>{r.version}</span></Tooltip>,
     },
     {
       key: "source",
       header: t(I18N_KEYS.preview.columns.source),
       width: "120px",
+      sortValue: (r) => r.source,
       cell: (r) => (
         <Badge variant={toolSourceVariant(r.source)}>
           {r.source === "project"
@@ -298,12 +302,14 @@ export function DirectoryPreview() {
     {
       key: "name",
       header: t(I18N_KEYS.preview.columns.name),
+      sortValue: (r) => r.name,
       cell: (r) => <Tooltip text={r.name}><span className={styles.cellEnvName}>{r.name}</span></Tooltip>,
       width: "240px",
     },
     {
       key: "value",
       header: t(I18N_KEYS.preview.columns.value),
+      sortValue: (r) => r.value,
       cell: (r) => (
         <Tooltip text={r.value}>
           <span className={styles.cellEnvValue}>
@@ -316,6 +322,7 @@ export function DirectoryPreview() {
       key: "source",
       header: t(I18N_KEYS.preview.columns.source),
       width: "160px",
+      sortValue: (r) => `${r.source} ${r.sourceDetail ?? ""}`.trim(),
       cell: (r) => {
         const label =
           r.source === "tool" && r.sourceDetail

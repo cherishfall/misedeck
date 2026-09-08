@@ -327,6 +327,7 @@ export function TasksPage() {
       header: t(I18N_KEYS.tasks.columns.name),
       width: "200px",
       minWidth: "140px",
+      sortValue: (r) => r.name,
       cell: (r) => (
         <Tooltip text={r.name}>
           <span className={styles.cellName}>
@@ -345,6 +346,7 @@ export function TasksPage() {
       header: t(I18N_KEYS.tasks.columns.run),
       width: "260px",
       minWidth: "180px",
+      sortValue: (r) => r.run ?? "",
       cell: (r) =>
         r.run ? (
           <code className={styles.cellRun}>{r.run}</code>
@@ -355,6 +357,7 @@ export function TasksPage() {
     {
       key: "description",
       header: t(I18N_KEYS.tasks.columns.description),
+      sortValue: (r) => r.description ?? "",
       cell: (r) =>
         r.description ? (
           <span className={styles.cellDescription}>{r.description}</span>
@@ -366,6 +369,7 @@ export function TasksPage() {
       key: "depends",
       header: t(I18N_KEYS.tasks.columns.depends),
       width: "180px",
+      sortValue: (r) => r.depends.join(", "),
       cell: (r) =>
         r.depends.length > 0 ? (
           <span className={styles.cellDepends}>

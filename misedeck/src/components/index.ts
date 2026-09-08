@@ -19,5 +19,5 @@ export { useRegisterPageRefresh } from "./PageShell/pageRefresh";
 export { Pagination } from "./Pagination/Pagination";
 export { Panel } from "./Panel/Panel";
 export { ProgressDot } from "./ProgressDot/ProgressDot";
-export { Table, type TableColumn } from "./Table/Table";
+export { Table, sortRows, type SortState, type TableColumn } from "./Table/Table";
 export { Tooltip } from "./Tooltip/Tooltip";

@@ -155,23 +155,27 @@ export function SettingsPage() {
       header: t(I18N_KEYS.settings.columns.key),
       width: "240px",
       minWidth: "160px",
+      sortValue: (r) => r.key,
       cell: (r) => <Tooltip text={r.key}><span className={styles.cellKey}>{r.key}</span></Tooltip>,
     },
     {
       key: "value",
       header: t(I18N_KEYS.settings.columns.value),
+      sortValue: (r) => formatValue(r.value),
       cell: (r) => <span className={styles.cellValue}>{formatValue(r.value)}</span>,
     },
     {
       key: "type",
       header: t(I18N_KEYS.settings.columns.type),
       width: "84px",
+      sortValue: (r) => r.type ?? "",
       cell: (r) => (r.type ? <Badge variant="info" data>{r.type}</Badge> : <span className={styles.dim}>—</span>),
     },
     {
       key: "source",
       header: t(I18N_KEYS.settings.columns.source),
       width: "140px",
+      sortValue: (r) => r.source ?? "",
       cell: (r) => (r.source ? <Tooltip text={r.source}><span className={styles.cellSource}>{r.source}</span></Tooltip> : <span className={styles.cellSource}>—</span>),
     },
     {

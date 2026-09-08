@@ -176,12 +176,14 @@ export function EnvPage() {
     {
       key: "name",
       header: t(I18N_KEYS.env.columns.name),
+      sortValue: (r) => r.name,
       cell: (r) => <Tooltip text={r.name}><span className={styles.cellName}>{r.name}</span></Tooltip>,
       width: "220px",
     },
     {
       key: "value",
       header: t(I18N_KEYS.env.columns.value),
+      sortValue: (r) => r.value,
       cell: (r) => (
         <Tooltip text={r.value}>
           <span className={styles.cellValue}>{r.value || "—"}</span>
@@ -191,6 +193,7 @@ export function EnvPage() {
     {
       key: "source",
       header: t(I18N_KEYS.env.columns.source),
+      sortValue: (r) => `${r.source} ${r.sourceDetail ?? ""}`.trim(),
       cell: (r) => <EnvSourceCell row={r} />,
       width: "220px",
     },

@@ -241,6 +241,8 @@ export function ToolsPage() {
     {
       key: "version",
       header: t(I18N_KEYS.tools.columns.version),
+      sortValue: (r) => r.version,
+      sortVersion: true,
       cell: (r) => (
         <span className={r.active ? styles.cellVersion : styles.cellVersionOutdated}>
           {r.version}
@@ -250,6 +252,7 @@ export function ToolsPage() {
     {
       key: "requested",
       header: t(I18N_KEYS.tools.columns.requested),
+      sortValue: (r) => r.requestedVersion ?? "",
       cell: (r) => <span className={styles.cellRequested}>{r.requestedVersion ?? "—"}</span>,
     },
     {
@@ -265,6 +268,7 @@ export function ToolsPage() {
     {
       key: "source",
       header: t(I18N_KEYS.tools.columns.source),
+      sortValue: (r) => r.source?.path ?? r.source?.type ?? "",
       cell: (r) => (
         <Tooltip text={r.source?.path ?? r.source?.type ?? "—"}>
           <span className={styles.cellSource}>{r.source?.path ?? r.source?.type ?? "—"}</span>
@@ -295,11 +299,14 @@ export function ToolsPage() {
     {
       key: "version",
       header: t(I18N_KEYS.tools.columns.version),
+      sortValue: (r) => r.version,
+      sortVersion: true,
       cell: (r) => <span className={styles.cellVersion}>{r.version}</span>,
     },
     {
       key: "created",
       header: t(I18N_KEYS.tools.queries.remote.created),
+      sortValue: (r) => r.createdAt ?? "",
       cell: (r) => (
         <Tooltip text={r.createdAt ?? "—"}>
           <span className={styles.cellSource}>{r.createdAt ?? "—"}</span>
@@ -481,6 +488,7 @@ export function ToolsPage() {
     key: "backend",
     header: t(I18N_KEYS.tools.columns.backend),
     width: "120px",
+    sortValue: (r) => r.backend ?? "",
     cell: (r) =>
       r.backend !== undefined ? (
         <Badge variant="info" data>{r.backend}</Badge>
@@ -496,6 +504,7 @@ export function ToolsPage() {
       header: t(I18N_KEYS.tools.columns.tool),
       width: "160px",
       minWidth: "120px",
+      sortValue: (r) => r.tool,
       cell: (r) => (
         <span className={styles.cellTool}>
           <Tooltip text={r.tool}><span className={styles.toolName}>{r.tool}</span></Tooltip>
@@ -506,6 +515,8 @@ export function ToolsPage() {
       key: "version",
       header: t(I18N_KEYS.tools.columns.version),
       width: "96px",
+      sortValue: (r) => r.version,
+      sortVersion: true,
       cell: (r) => (
         <Tooltip text={r.version}>
           <span className={r.outdated ? styles.cellVersionOutdated : styles.cellVersion}>
@@ -518,6 +529,7 @@ export function ToolsPage() {
       key: "requested",
       header: t(I18N_KEYS.tools.columns.requested),
       width: "120px",
+      sortValue: (r) => r.requested,
       cell: (r) => <Tooltip text={r.requested}><span className={styles.cellRequested}>{r.requested}</span></Tooltip>,
     },
     ...(showBackend ? [backendColumn] : []),
@@ -525,12 +537,15 @@ export function ToolsPage() {
       key: "source",
       header: t(I18N_KEYS.tools.columns.source),
       width: "100px",
+      sortValue: (r) => r.source,
       cell: (r) => <Tooltip text={r.source}><span className={styles.cellSource}>{r.source}</span></Tooltip>,
     },
     {
       key: "latest",
       header: t(I18N_KEYS.tools.columns.latest),
       width: "150px",
+      sortValue: (r) => (r.outdated ? r.latest : ""),
+      sortVersion: true,
       cell: (r) =>
         r.outdated ? (
           <Tooltip text={r.latest}>
