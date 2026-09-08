@@ -16,7 +16,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import {
   useCallback,
   useEffect,
@@ -107,7 +107,10 @@ interface UninstallTarget {
 // the global config without extra flags for those three commands.
 
 function miseInstallArgs(tool: string, version: string): string[] {
-  return ["install", `${tool}@${version}`];
+  // An empty version means latest (issue #111): `mise install <tool>`.
+  return version.length > 0
+    ? ["install", `${tool}@${version}`]
+    : ["install", tool];
 }
 
 function miseUninstallArgs(tool: string, version: string): string[] {
@@ -218,6 +221,13 @@ export function ToolsPage() {
   const onInstalledRun = () => {
     const tool = installedInput.trim();
     if (tool.length === 0) return;
+    setInstalledQuery(tool);
+    void readIntoCache(["tools", "ls-tool", cwd, tool], cwd, ["ls", "--json", tool]);
+  };
+  // Clicking a tool name in the table prefills the installed-versions
+  // query and runs it immediately (issue #111).
+  const onToolQuery = (tool: string) => {
+    setInstalledInput(tool);
     setInstalledQuery(tool);
     void readIntoCache(["tools", "ls-tool", cwd, tool], cwd, ["ls", "--json", tool]);
   };
@@ -538,7 +548,16 @@ export function ToolsPage() {
       sortValue: (r) => r.tool,
       cell: (r) => (
         <span className={styles.cellTool}>
-          <Tooltip text={r.tool}><span className={styles.toolName}>{r.tool}</span></Tooltip>
+          <Tooltip text={r.tool}>
+            <button
+              type="button"
+              className={`${styles.toolName} ${styles.toolNameButton}`}
+              onClick={() => onToolQuery(r.tool)}
+              data-testid={`tools-query-${r.tool}`}
+            >
+              {r.tool}
+            </button>
+          </Tooltip>
         </span>
       ),
     },
@@ -929,11 +948,14 @@ interface InstallToolFormProps {
 
 /**
  * The "install a new tool" form at the bottom of the page. The user
- * types a tool name and version; Install dispatches
- * `mise install -g <tool>@<version>` through the execution panel.
+ * types a tool name; the version may stay empty, which means latest
+ * (issue #111). Install dispatches `mise install <tool>[@<version>]`
+ * through the execution panel. The ghost link leads to the Plugins
+ * page Registry — the browse-then-install loop stays inside the GUI.
  */
 function InstallToolForm({ prefillTool, onInstall, disabled }: InstallToolFormProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [tool, setTool] = useState(prefillTool);
   const [version, setVersion] = useState("");
   // Sync the pre-fill when a new `?install=` handover arrives (the
@@ -952,14 +974,26 @@ function InstallToolForm({ prefillTool, onInstall, disabled }: InstallToolFormPr
   };
   return (
     <div className={styles.installForm} data-testid="tools-install-form">
-      <h2 className={styles.installFormTitle}>
-        {t(I18N_KEYS.tools.installForm.title)}
-      </h2>
+      <div className={styles.installFormHead}>
+        <h2 className={styles.installFormTitle}>
+          {t(I18N_KEYS.tools.installForm.title)}
+        </h2>
+        {/* Browse-then-install loop (issue #111): reuses the formerly
+            dead `tools.installHint` key as the ghost link label. */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/plugins")}
+          data-testid="tools-browse-registry"
+        >
+          {t(I18N_KEYS.tools.installHint)}
+        </Button>
+      </div>
       <KeyForm
         className={styles.installFormRow}
         onSubmit={onSubmit}
         onRevert={onRevert}
-        submitDisabled={disabled || tool.length === 0 || version.length === 0}
+        submitDisabled={disabled || tool.length === 0}
       >
         <input
           type="text"
@@ -987,7 +1021,7 @@ function InstallToolForm({ prefillTool, onInstall, disabled }: InstallToolFormPr
           variant="primary"
           size="sm"
           onClick={onSubmit}
-          disabled={disabled || tool.length === 0 || version.length === 0}
+          disabled={disabled || tool.length === 0}
           data-testid="tools-install-button"
         >
           {t(I18N_KEYS.tools.actions.install)}
@@ -1060,6 +1094,9 @@ function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
       <h2 className={styles.installFormTitle}>
         {t(I18N_KEYS.tools.linkForm.title)}
       </h2>
+      <p className={styles.formNote}>
+        {t(I18N_KEYS.tools.linkForm.explanation)}
+      </p>
       <KeyForm
         className={styles.installFormRow}
         onSubmit={onSubmit}

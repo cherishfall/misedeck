@@ -87,14 +87,14 @@
     },
     "empty": {
       "title": "No tools installed",
-      "body": "`mise ls` shows installed tools. Run `mise use -g node@latest` to install your first tool, or browse the registry for something else."
+      "body": "Install your first tool with the form below, or browse the Registry on the Plugins page."
     },
     "missing": {
       "title": "Tools unavailable",
       "body": "MiseDeck needs the mise CLI to list installed tools. Go back and install mise to populate this page."
     },
     "outdatedBadge": "outdated",
-    "installHint": "Install a tool from the registry",
+    "installHint": "Browse the Registry",
     "error": {
       "title": "Failed to load tools",
       "body": "`mise ls --json` did not return. Stderr is preserved in the execution panel."
@@ -114,10 +114,11 @@
     "installForm": {
       "title": "Install a tool",
       "toolPlaceholder": "tool (e.g. node)",
-      "versionPlaceholder": "version (e.g. 22.11.0)"
+      "versionPlaceholder": "version (empty = latest)"
     },
     "linkForm": {
       "title": "Link a tool",
+      "explanation": "Link adopts a directory you built locally as an installed version instead of downloading one: `mise link <tool>@<version> <path>` symlinks it into mise.",
       "toolPlaceholder": "tool (e.g. node)",
       "versionPlaceholder": "version (e.g. 22.11.0)",
       "noPath": "No directory picked",

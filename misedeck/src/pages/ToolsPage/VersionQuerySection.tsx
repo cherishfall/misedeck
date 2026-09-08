@@ -7,8 +7,9 @@
 // Both require a non-empty tool name before running. Results paginate
 // client-side once they exceed 10 rows (mise offers no --limit /
 // --offset, so the full set is fetched and sliced here). The exact mise
-// command is shown as the section's command hint so the GUI keeps
-// teaching the CLI. Run dispatches through the execution panel like
+// command is shown live as the section's command preview, updating as
+// the user types so the GUI keeps teaching the CLI (issue #111). Run
+// dispatches through the execution panel like
 // every other invocation (ADR-0005), so the command echo and live output
 // are visible; the panel run's result is what fills the table.
 
@@ -149,11 +150,12 @@ export function VersionQuerySection<TRow>({
     <section className={styles.section} data-testid={`versions-${title}`}>
       <header className={styles.head}>
         <h2 className={styles.sectionTitle}>{title}</h2>
-        {hasQuery && (
-          <p className={styles.command} data-testid="versions-command">
-            {command}
-          </p>
-        )}
+        {/* Live command preview (issue #111): always visible, updating
+            as the user types so the section teaches the CLI command
+            being built — not only after a query has run. */}
+        <p className={styles.command} data-testid="versions-command">
+          {command}
+        </p>
       </header>
 
       <KeyForm

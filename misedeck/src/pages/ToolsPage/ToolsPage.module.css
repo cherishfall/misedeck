@@ -92,6 +92,20 @@
   white-space: nowrap;
 }
 
+/* Clicking a tool name prefills and runs the installed-versions query
+ * (issue #111); the button keeps the toolName look — only the hover
+ * color signals interactivity. */
+.toolNameButton {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.toolNameButton:hover:not(:disabled) {
+  color: var(--beam);
+}
+
 .cellVersion {
   display: block;
   overflow: hidden;
@@ -300,6 +314,26 @@
   font-size: var(--size-base);
   color: var(--text);
   margin: 0;
+}
+
+/* Form header row: title left, low-frequency exit (browse Registry
+ * ghost link) right (issue #111). */
+.installFormHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* One-line explanation under a form title (the link form's `mise link`
+ * description, issue #111). */
+.formNote {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--dim);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 60ch;
 }
 
 .installFormRow {

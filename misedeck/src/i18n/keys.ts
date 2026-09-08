@@ -181,6 +181,7 @@ export const I18N_KEYS = {
     },
     linkForm: {
       title: "tools.linkForm.title",
+      explanation: "tools.linkForm.explanation",
       toolPlaceholder: "tools.linkForm.toolPlaceholder",
       versionPlaceholder: "tools.linkForm.versionPlaceholder",
       noPath: "tools.linkForm.noPath",

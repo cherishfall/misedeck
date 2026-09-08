@@ -1266,12 +1266,17 @@ pub fn mise_plugins_ls(
 // helpers here emit the pure argv and leave the global flag to the
 // caller.
 
-/// Build the argv for `mise install <tool>@<version>`.
+/// Build the argv for `mise install <tool>@<version>`. An empty version
+/// means latest (issue #111): `mise install <tool>`.
 pub fn mise_install_argv(tool: &str, version: &str) -> Vec<String> {
-    vec![
-        "install".to_string(),
-        format!("{tool}@{version}"),
-    ]
+    if version.is_empty() {
+        vec!["install".to_string(), tool.to_string()]
+    } else {
+        vec![
+            "install".to_string(),
+            format!("{tool}@{version}"),
+        ]
+    }
 }
 
 /// Build the argv for `mise uninstall <tool>@<version>`. Targeting the

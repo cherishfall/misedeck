@@ -69,6 +69,12 @@ fn mise_install_argv_preserves_backend_prefix() {
 }
 
 #[test]
+fn mise_install_argv_empty_version_means_latest() {
+    let argv = mise_install_argv("node", "");
+    assert_eq!(argv, vec!["install".to_string(), "node".to_string()]);
+}
+
+#[test]
 fn mise_uninstall_argv_builds_uninstall_command() {
     let argv = mise_uninstall_argv("node", "22.11.0");
     assert_eq!(
