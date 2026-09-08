@@ -31,7 +31,7 @@
   },
   "miseManagement": {
     "guidedInstallButton": "引导式安装",
-    "selfUpdateButton": "运行 mise self-update",
+    "selfUpdateButton": "更新版本",
     "releaseNotesLink": "查看发布说明",
     "selfUpdateSuccessBody": "mise 已更新到 {{version}}。请重启 MiseDeck 以加载新二进制。",
     "selfUpdateNoProbeBody": "mise self-update 已完成。更新后版本探测失败 —— 请重启 MiseDeck 确认。"

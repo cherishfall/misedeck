@@ -6,11 +6,12 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 import { detectMise } from "../../api/mise";
 import { I18N_KEYS } from "../../i18n/keys";
 import type { AppError, AppErrorCode, DetectMiseOk } from "../../types/tauri";
+import { writeClipboard } from "../../utils/clipboard";
 
 import {
   Button,
@@ -87,8 +88,9 @@ export function HomePage() {
   useRegisterPageRefresh(onRefresh);
 
   // `mise version --json` reports the newest published release as `latest`;
-  // it is absent when the probe could not fetch it. Plain inequality is
-  // enough — mise versions are date-based and monotonic (issue #91).
+  // it is absent when the probe could not fetch it. The compare is
+  // directional (issue #99): only a strictly newer latest offers an
+  // update — an equal or locally-newer install shows nothing.
   const latest =
     view.ok && typeof view.ok.raw.latest === "string"
       ? view.ok.raw.latest
@@ -96,7 +98,15 @@ export function HomePage() {
   const updateAvailable =
     view.status === "ready" &&
     latest !== undefined &&
-    latest !== view.ok?.versionDate;
+    compareVersions(latest, view.ok?.versionDate ?? "") > 0;
+
+  const [rawCopied, setRawCopied] = useState(false);
+  const onCopyRaw = async () => {
+    if (!view.ok) return;
+    if (!(await writeClipboard(JSON.stringify(view.ok.raw, null, 2)))) return;
+    setRawCopied(true);
+    window.setTimeout(() => setRawCopied(false), 1500);
+  };
 
   return (
     <PageShell>
@@ -133,22 +143,52 @@ export function HomePage() {
               {updateAvailable && (
                 <DataRow
                   label={t(I18N_KEYS.labels.latestVersion)}
-                  value={`${view.ok.versionDate} ▹ ${latest}`}
-                  tone="beam"
+                  value={
+                    <span className={styles.latestValue}>
+                      <span>
+                        {view.ok.versionDate}{" "}
+                        <span className={styles.upgradeArrow} aria-hidden="true">
+                          →
+                        </span>{" "}
+                        {latest}
+                      </span>
+                      <a
+                        className={styles.fallback}
+                        href="https://github.com/jdx/mise/releases"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {t(I18N_KEYS.miseManagement.releaseNotesLink)}
+                      </a>
+                    </span>
+                  }
+                  tone="flare"
                 />
               )}
-              <DataRow
-                label="RAW"
-                value={JSON.stringify(view.ok.raw, null, 2)}
-                block
-                full
-              />
+              <div className={styles.rawWrap}>
+                <DataRow
+                  label="RAW"
+                  value={JSON.stringify(view.ok.raw, null, 2)}
+                  block
+                  full
+                />
+                <button
+                  type="button"
+                  className={styles.rawCopy}
+                  onClick={() => void onCopyRaw()}
+                  aria-label={
+                    rawCopied ? t(I18N_KEYS.tooltip.copied) : t(I18N_KEYS.tooltip.copy)
+                  }
+                >
+                  {rawCopied ? t(I18N_KEYS.tooltip.copied) : t(I18N_KEYS.tooltip.copy)}
+                </button>
+              </div>
             </dl>
             {updateAvailable && (
               <div className={styles.stateActions}>
                 <Button
                   variant="primary"
-                  size="md"
+                  size="sm"
                   onClick={() => {
                     void runSelfUpdate().then(onSelfUpdateOk);
                   }}
@@ -156,14 +196,6 @@ export function HomePage() {
                 >
                   {t(I18N_KEYS.miseManagement.selfUpdateButton)}
                 </Button>
-                <a
-                  className={styles.fallback}
-                  href="https://github.com/jdx/mise/releases"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t(I18N_KEYS.miseManagement.releaseNotesLink)}
-                </a>
               </div>
             )}
           </Panel>
@@ -185,7 +217,7 @@ export function HomePage() {
             <div className={styles.stateActions}>
               <Button
                 variant="primary"
-                size="md"
+                size="sm"
                 onClick={runInstall}
                 data-testid="not-found-guided-install"
               >
@@ -221,7 +253,7 @@ export function HomePage() {
             <div className={styles.stateActions}>
               <Button
                 variant="primary"
-                size="md"
+                size="sm"
                 onClick={() => {
                   void runSelfUpdate().then(onSelfUpdateOk);
                 }}
@@ -277,6 +309,24 @@ export function HomePage() {
       </div>
     </PageShell>
   );
+}
+
+/**
+ * Directional compare for mise's date-based versions (e.g. 2026.9.2):
+ * split on `.` and compare segment-wise numerically. Returns > 0 when
+ * `a` is newer. Unparseable segments compare as equal (no update offer).
+ */
+function compareVersions(a: string, b: string): number {
+  const as = a.split(".");
+  const bs = b.split(".");
+  const len = Math.max(as.length, bs.length);
+  for (let i = 0; i < len; i++) {
+    const av = Number.parseInt(as[i] ?? "0", 10);
+    const bv = Number.parseInt(bs[i] ?? "0", 10);
+    if (Number.isNaN(av) || Number.isNaN(bv)) return 0;
+    if (av !== bv) return av - bv;
+  }
+  return 0;
 }
 
 /**

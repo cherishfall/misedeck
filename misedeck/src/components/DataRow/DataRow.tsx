@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 
 import styles from "./DataRow.module.css";
 
-export type DataRowTone = "default" | "beam" | "muted";
+export type DataRowTone = "default" | "beam" | "muted" | "flare";
 
 interface DataRowProps {
   /** Tracked label, e.g. "VERSION". Pass an i18n key. */

@@ -39,6 +39,10 @@
   color: var(--dim);
 }
 
+.tone-flare {
+  color: var(--flare);
+}
+
 .block {
   font-size: 11px;
   white-space: pre;
