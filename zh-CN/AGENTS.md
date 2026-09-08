@@ -31,6 +31,7 @@
 - 所有 UI 文案走 i18n（en + zh-CN）；禁止硬编码文案。
 - 从第一天起跨平台：路径与进程创建只走 Tauri/Rust 的 API。
 - 新建或修改任何 Tauri command 前读 `docs/agents/architecture.md`；调用 mise、处理错误、写测试前读 `docs/agents/conventions.md`。
+- 维护者报告视觉或交互错误时，评估它是否能泛化为规则。能泛化就在修该实例的同时，把规则固化进 `docs/design/ui-ux-rules.md`（和/或 `visual-language.md`）的两种语言版本，作为同一反馈周期的一部分——让这一类 bug 在生成时就被拦住，而不是在后面的 beta 里反复出现。
 
 ## 文档语言
 

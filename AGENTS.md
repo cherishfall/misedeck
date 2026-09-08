@@ -31,6 +31,7 @@ An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + Re
 - All UI strings go through i18n (en + zh-CN); no hardcoded copy.
 - Cross-platform from day one: paths and process spawning via Tauri/Rust APIs only.
 - Read `docs/agents/architecture.md` before creating or modifying any Tauri command, and `docs/agents/conventions.md` before invoking mise, handling errors, or writing tests.
+- When the owner reports a visual or interaction error, evaluate whether it generalizes into a rule. If yes, fix the instance *and* codify the rule into `docs/design/ui-ux-rules.md` (and/or `visual-language.md`) in both locales as part of the same feedback cycle — the class of bug should be caught at generation time, not re-surface in later betas.
 
 ## Documentation languages
 

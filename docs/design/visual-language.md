@@ -49,7 +49,7 @@ Derived (computed via `color-mix` from the tokens above, never hardcoded):
 Semantic discipline:
 
 - **beam** marks *current state* (active version, selected nav, focus) and carries the brand.
-- **flare** marks *actionable drift* (a newer version exists, a warning). Outdated is always rendered as the upgrade path `22.11.0 ▹ 22.20.0`, never as color alone.
+- **flare** marks *actionable drift* (a newer version exists, a warning). This document owns only the color semantic; how outdated versions render (the upgrade-path glyph) is bound in `ui-ux-rules.md`.
 - **breach** is only destructive actions and real errors.
 - **grove** is only success/ready states.
 - No `text-shadow` glow anywhere; emphasis comes from color and weight, not luminescence.
@@ -66,7 +66,8 @@ Semantic discipline:
 - The serif display face is the editorial signature of mise.jdx.dev — it is spent on titles and the wordmark only, never on data or controls.
 - zh-CN: display text falls back to `Songti SC` / `SimSun` (Chinese serifs), UI text to `PingFang SC` / `system-ui`; Latin data keeps JetBrains Mono.
 - Base size 14px, data 11–13px, eyebrows 10px, display 26px. No fluid type; desktop-app density.
-- Section eyebrows read `MISE / TOOLS` — mono, uppercase, tracked, `--ice`, no prompt glyph. **The eyebrow is the only uppercase element in the system.** This matches mise.jdx.dev exactly: there, only the top eyebrow (`01 THE ESSENTIALS`) is uppercase, while section titles (`Dev tools`, `Environments`), links, and everything else are normal case. Every other MiseDeck label — section titles, table headers, badge text, buttons, loading/empty/error labels, toolbar hints — is normal case with normal tracking.
+- Section eyebrows read `MISE / TOOLS` — mono, uppercase, tracked, `--ice`, no prompt glyph. **The eyebrow is the only uppercase element in the system.** This matches mise.jdx.dev, where only the top eyebrow (`01 THE ESSENTIALS`) is uppercase; normal-case enforcement for every other label is bound in `ui-ux-rules.md`.
+- An eyebrow names a section once: never repeat the page eyebrow inside that page's cards, never stack identical eyebrows down one page.
 
 ## Layout
 
@@ -88,9 +89,10 @@ Everything else is a ≤120ms ease-out state change (hover, focus, panel slide).
 ## Guardrails (what keeps this in the mise family)
 
 - No glow effects (text-shadow / box-shadow luminescence), no glassmorphism, no animated gradient lines, no corner brackets — the HUD vocabulary is retired.
+- Borders are solid — no dashed or dotted borders anywhere.
 - No cool blue-gray palettes; surfaces are warm (parchment / charcoal) in both themes.
 - No sci-fi or display gimmick fonts; character comes from the serif display face + mono data.
-- No decorative numbering (01/02/03) in product UI, no emoji icons; the only decorative glyph is ▹ (used in upgrade paths).
+- No decorative numbering (01/02/03) in product UI, no emoji icons; the only decorative glyph is → (used in upgrade paths).
 - Light theme is parchment, not a white corporate reskin: warm surfaces, wine accent, taupe secondary text.
 
 ### Chrome surface hierarchy (issue #78)
