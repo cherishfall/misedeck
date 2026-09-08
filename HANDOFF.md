@@ -2,11 +2,30 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-08)
+## CURRENT STATE (2026-09-08, updated)
 
-**Beta8 feedback batch published.** SPEC parent **#97** ("SPEC: beta8 feedback batch — chrome consistency, tools-page polish, GUI-layer table affordances") with 16 tickets **#98–#113**, all labelled `v1` + `ready-for-agent`, attached as sub-issues of #97. Blocking edges: #104←#103, #105←#104, #106←#103, #110←#100. Full mapping table in `docs/feedback/beta8-feedback-scratch.md` header. **The tools page is the top priority of this batch** — work tools-touching tickets (#110, #111, plus table tickets feeding it) first. Each ticket is one fresh context; acceptance = `npm run ci` + `cargo check` + static self-audit, all marked "not visually verified".
+**Beta8 batch fully implemented.** All 16 tickets **#98–#113** closed in one autonomous run; SPEC parent **#97 stays open** pending the owner's in-person visual verification (same protocol as #86). Every ticket: `npm run ci` (+ `cargo check` where Rust touched) green, static self-audit, **NOT visually verified**.
 
-Ticket map: #98 chrome/toolbar+caret+unified refresh · #99 HomePage version compare+update row · #100 glyph sweep ▹→→ · #101 eyebrow dedupe+lockfile hidden · #102 remove upgrade-all+install variant · #103 fixed px columns · #104 column drag-resize · #105 sortable columns · #106 table text filter · #107 Tooltip guard+CopyButton · #108 UI-state persistence · #109 form Enter/Esc+datalists · #110 tools table signals · #111 tools form comprehension · #112 page dead-ends & copy · #113 token alignment.
+| Ticket | Commit | Notes |
+| --- | --- | --- |
+| #98 chrome/toolbar+caret+unified refresh | `54db21f` | PageShell-owned unified refresh (`useRegisterPageRefresh`); 7 local refresh buttons deleted |
+| #99 HomePage version compare+update row | `3660bb6` | segment-wise compare; DataRow `flare` tone added; RAW copy (stand-in until #107) |
+| #100 glyph sweep ▹→→ + ▾ leftovers | `25e7080` | shared `.upgrade-arrow` in tokens.css; zero ▹/▾ left in src |
+| #101 eyebrow dedupe+lockfile hidden | `fbb2f1b` | 9 section eyebrows removed; lockfile section renders only with content/error |
+| #102 remove upgrade-all+install variant | `c4713bc` | `tools.noOutdated` KEPT — still feeds live toolbar hints (deviation noted on ticket) |
+| #103 fixed px columns | `9308322` | 5 % columns → px; `TableColumn.minWidth` added |
+| #104 column drag-resize | `bccf5f7` | opt-in `resizeKey` on Table; localStorage `misedeck.tableWidths.<key>` |
+| #105 sortable columns | `06d71d0` | `sortValue`/`sortVersion`; `compareVersions` extracted to `utils/versions.ts` |
+| #106 table text filter | `bd06cbe` | `useTableFilter` + `TableFilter` component; registry search gained clear |
+| #107 Tooltip guard+CopyButton | `9e98e19` | shared CopyButton; Tooltip pops only on non-empty/non-— values |
+| #108 UI-state persistence | `8dcdfe5` | `usePersistentState` hook; panel height is NEW (drag handle 120–600px) |
+| #109 form Enter/Esc+datalists | `72e29bc` | `KeyForm`+`Suggestions` components; 9 sites; placeholder width fixes |
+| #110 tools table signals | `c9da912` | inactive note (not badge); `current → latest` path; stable version color |
+| #111 tools form comprehension | `69820e5` | empty version = latest (JS+Rust argv in lockstep); click-tool-prefills-query; live command preview |
+| #112 page dead-ends & copy | `80f64fb` | tasks open-config CTA; plugins uninstall via ConfirmDialog; doctor → Home link; settings count i18n |
+| #113 token alignment | `4051c96` | found 17 literals in 7 files (ticket said 14/6); all mapped to `--size-*` tokens |
+
+**Adjacent findings flagged on closing comments (not ticketed yet):** TasksPage hardcoded `"{runLabel} required"` string + its toolbar count concatenation (same class as #112's settings fix); ToolsPage "Active" column now partially redundant with the inline 未激活 note; StyleGuide demo shows the old Latest-column pattern; component-level CSS px literals remain (Badge 9px, Button 11.5/12.5px, etc. — #113 covered pages only); tools-page click-tool doesn't scroll the query section into view; `docs/design/tools-page.prototype.html` still has ▾ carets (static prototype).
 
 **Beta7 batch fully closed** (tickets #87–#95, SPEC #86):
 
