@@ -11,6 +11,7 @@ import { useCallback } from "react";
 import { detectMise } from "../../api/mise";
 import { I18N_KEYS } from "../../i18n/keys";
 import type { AppError, AppErrorCode, DetectMiseOk } from "../../types/tauri";
+import { parseAppErrorMessage } from "../../utils/appError";
 import { compareVersions } from "../../utils/versions";
 
 import {
@@ -230,7 +231,7 @@ export function HomePage() {
             </div>
             <p className={styles.stateBody}>
               {(() => {
-                const params = parseMessageParams(view.err.message);
+                const { params } = parseAppErrorMessage(view.err.message);
                 return t(I18N_KEYS.states.tooOld.body, {
                   found: params.found ?? "—",
                   minimum: params.minimum ?? "—",
@@ -296,26 +297,4 @@ export function HomePage() {
       </div>
     </PageShell>
   );
-}
-
-/**
- * The Rust side encodes an i18n key plus pipe-delimited params in
- * `AppError.message`, e.g. the MISE_TOO_OLD probe sends
- *   "errors.miseTooOld|found=2024.12.31|minimum=2025.1.0"
- * The key segment is historical (the `errors.miseTooOld` i18n key no
- * longer exists — too-old copy lives in `states.tooOld.*`); only the
- * params are parsed out here for `react-i18next`'s
- * `t(key, { params })` call.
- */
-function parseMessageParams(message: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  const parts = message.split("|");
-  for (let i = 1; i < parts.length; i++) {
-    const eq = parts[i].indexOf("=");
-    if (eq < 0) continue;
-    const k = parts[i].slice(0, eq);
-    const v = parts[i].slice(eq + 1);
-    out[k] = v;
-  }
-  return out;
 }

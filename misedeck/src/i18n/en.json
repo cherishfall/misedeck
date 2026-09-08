@@ -471,7 +471,11 @@
     "latestVersion": "Latest"
   },
   "errors": {
-    "timeout": "mise did not respond within the timeout."
+    "miseNotFound": "The mise CLI was not found on this machine. Install it from https://mise.jdx.dev/installing.html and relaunch MiseDeck.",
+    "miseTooOld": "Found mise {{found}}, but MiseDeck requires at least {{minimum}}. Run `mise self-update` to upgrade.",
+    "terminalNotFound": "No terminal emulator was found on this Linux system (looked for gnome-terminal, konsole, xfce4-terminal).",
+    "timeout": "mise did not respond within the timeout.",
+    "unknown": "Something went wrong. The execution panel has the details."
   },
   "languages": {
     "english": "English",

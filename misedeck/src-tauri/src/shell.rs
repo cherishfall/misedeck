@@ -512,7 +512,7 @@ pub fn open_in_terminal(path: Option<&str>) -> Result<TerminalOpenOutcome, AppEr
         }
         return Err(AppError::new(
             code::TERMINAL_NOT_FOUND,
-            "no terminal emulator detected on this Linux system",
+            "errors.terminalNotFound",
             String::new(),
         ));
     }

@@ -43,6 +43,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   openInTerminal as invokeOpenInTerminal,
@@ -53,6 +54,7 @@ import type {
   AppError,
   TerminalOpenOutcome,
 } from "../types/tauri";
+import { resolveAppErrorMessage } from "../utils/appError";
 
 /** The UI's view of the activation probe. Mirrors the
  *  `TrustState` shape (issue #25) so the banner code reads the
@@ -184,6 +186,7 @@ function shellDisplayName(s: ActivationStatus["shell"]): string {
 }
 
 export function ActivationProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const [state, setState] = useState<ActivationState>({ kind: "loading" });
   const [dismissedMap, setDismissedMap] = useState<DismissedMap>(() => loadDismissed());
   const [openOutcome, setOpenOutcome] = useState<OpenTerminalOutcome | null>(null);
@@ -198,13 +201,19 @@ export function ActivationProvider({ children }: { children: ReactNode }) {
       if (result.kind === "ok") {
         setState({ kind: "ok", status: result.ok });
       } else {
-        setState({ kind: "error", message: result.err.message });
+        // `err.message` can be key-shaped (`errors.*` + params per the
+        // AppError contract) — resolve it so a raw key never reaches
+        // the screen (issue #118).
+        setState({
+          kind: "error",
+          message: resolveAppErrorMessage(result.err.message, t),
+        });
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       setState({ kind: "error", message });
     }
-  }, []);
+  }, [t]);
 
   // Probe once on mount. The "once" is per app start — the
   // provider is at the root of the tree (see `main.tsx`).

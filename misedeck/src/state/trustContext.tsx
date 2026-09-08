@@ -45,11 +45,14 @@ import {
   type ReactNode,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { trustCheck } from "../api/mise";
 import { useExecutionContext } from "../components/ExecutionPanel";
+import { I18N_KEYS } from "../i18n/keys";
 import { useDirectory } from "./directoryContext";
 import type { TrustSource, TrustStatus } from "../types/tauri";
+import { resolveAppErrorMessage } from "../utils/appError";
 
 export type TrustState =
   | { kind: "unknown" }
@@ -96,6 +99,7 @@ function toErr(error: unknown): { kind: "err"; err: { message: string } } {
 }
 
 export function TrustProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const { cwd } = useDirectory();
   // The trust query is keyed by cwd so switching the directory
   // refetches automatically. The query is disabled when there is
@@ -115,10 +119,19 @@ export function TrustProvider({ children }: { children: ReactNode }) {
   });
 
   const state: TrustState = useMemo(() => {
-    if (q.isPending) return { kind: "unknown" };
-    if (q.error) return toTrustState(toErr(q.error));
-    return toTrustState(q.data);
-  }, [q.isPending, q.error, q.data]);
+    const raw = q.isPending
+      ? ({ kind: "unknown" } as TrustState)
+      : q.error
+        ? toTrustState(toErr(q.error))
+        : toTrustState(q.data);
+    // `err.message` can be key-shaped (`errors.*` + params per the
+    // AppError contract) — resolve it so a raw key never reaches the
+    // screen (issue #118).
+    if (raw.kind === "error") {
+      return { kind: "error", message: resolveAppErrorMessage(raw.message, t) };
+    }
+    return raw;
+  }, [q.isPending, q.error, q.data, t]);
 
   const value = useMemo<TrustContextValue>(() => ({ state }), [state]);
   return <TrustContext.Provider value={value}>{children}</TrustContext.Provider>;
@@ -139,7 +152,8 @@ interface TrustAction {
   running: boolean;
   /** Last terminal status. Cleared at the start of each run. */
   lastResult: "ok" | "error" | null;
-  /** Last error message (i18n key or raw text) when `lastResult === "error"`. */
+  /** Last error as display copy (resolved via `resolveAppErrorMessage`)
+   *  when `lastResult === "error"`. */
   lastError: string | null;
   /** Run `mise trust` for the cwd. The trust query is invalidated
    *  on success so the banner re-evaluates. */
@@ -158,6 +172,7 @@ interface TrustAction {
  * `run()` as the action target.
  */
 export function useTrustAction(): TrustAction {
+  const { t } = useTranslation();
   const { cwd } = useDirectory();
   const { state: execState, runTrust } = useExecutionContext();
   const queryClient = useQueryClient();
@@ -195,10 +210,14 @@ export function useTrustAction(): TrustAction {
         void queryClient.invalidateQueries({ queryKey: ["mise", "trust", cwd] });
       } else if (execState.status === "failed") {
         setLastResult("error");
-        setLastError(execState.error?.message ?? "unknown");
+        setLastError(
+          execState.error
+            ? resolveAppErrorMessage(execState.error.message, t)
+            : t(I18N_KEYS.errors.unknown),
+        );
       }
     }
-  }, [running, execState.status, execState.error, cwd, queryClient]);
+  }, [running, execState.status, execState.error, cwd, queryClient, t]);
 
   const run = useCallback(async () => {
     await runTrust(cwd);

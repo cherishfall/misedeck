@@ -521,7 +521,11 @@ export const I18N_KEYS = {
     latestVersion: "labels.latestVersion",
   },
   errors: {
+    miseNotFound: "errors.miseNotFound",
+    miseTooOld: "errors.miseTooOld",
+    terminalNotFound: "errors.terminalNotFound",
     timeout: "errors.timeout",
+    unknown: "errors.unknown",
   },
   languages: {
     english: "languages.english",

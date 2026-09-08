@@ -16,7 +16,7 @@ struct AppError {
 }
 ```
 
-UI 通过 i18n 渲染 `code`，并通过执行面板提供 stderr。调用方对 `code` 做模式匹配，绝不匹配消息文本。
+UI 通过 i18n 渲染 `code`，并通过执行面板提供 stderr。调用方对 `code` 做模式匹配，绝不匹配消息文本。UI 中每一个展示 `err.message` 的位置都通过 `resolveAppErrorMessage`（`misedeck/src/utils/appError.ts`）解析：它拆解 `key|param=value|…` 线格式并在 i18n 目录中查键（找不到时回退到 `errors.unknown`，原始键永远不会被渲染）；对原始细节文本（COMMAND_FAILED / PARSE_FAILED）则原样透传。
 
 **边界序列化**：每个跨越 Rust↔TS 边界的类型在 Rust 侧使用 `#[serde(rename_all = "camelCase")]`；对应的 TS 类型为 camelCase。`code` 的取值来自这个固定集合——发明新的是 bug：
 

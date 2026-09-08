@@ -471,7 +471,11 @@
     "latestVersion": "最新版本"
   },
   "errors": {
-    "timeout": "mise 未在超时时间内响应。"
+    "miseNotFound": "未在这台机器上找到 mise CLI。请按 https://mise.jdx.dev/installing.html 安装后重新启动 MiseDeck。",
+    "miseTooOld": "检测到 mise {{found}}，但 MiseDeck 要求至少 {{minimum}}。请运行 `mise self-update` 升级。",
+    "terminalNotFound": "未在这个 Linux 系统上找到终端模拟器（已查找 gnome-terminal、konsole、xfce4-terminal）。",
+    "timeout": "mise 未在超时时间内响应。",
+    "unknown": "出现了未知错误，详情请见执行面板。"
   },
   "languages": {
     "english": "English",
