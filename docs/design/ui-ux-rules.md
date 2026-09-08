@@ -78,6 +78,7 @@ One vocabulary, four variants (color/type semantics owned by `visual-language.md
 
 - Window chrome (title bar) follows the resolved theme; verify, because it is configured on the Rust side, not in CSS.
 - Light and dark are designed counterparts. A screen is done when it has been *seen* in both.
+- Refresh is a page-level capability owned by the top toolbar: one shared refresh button, wired to the page's registered refresh (invalidate everything the page fetched). Pages and sections never place their own refresh buttons (beta8).
 
 ## Copy
 
