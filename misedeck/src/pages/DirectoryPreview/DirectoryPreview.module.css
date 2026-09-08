@@ -118,11 +118,11 @@
 
 /* ---------- Table cells ---------- */
 
-/* min-width ≈ declared column widths so narrow windows scroll horizontally
- * instead of crushing columns (issue #90): tools = 240px px-columns + the
- * 40% tool column; env = 400px px-columns. */
+/* min-width = sum of declared column widths so narrow windows scroll
+ * horizontally instead of crushing columns (issues #90, #103):
+ * tools = 160 + 120 + 120; env = 240 + 160 + value column. */
 .toolsTable {
-  min-width: calc(240px + 40%);
+  min-width: 400px;
 }
 
 .envTable {

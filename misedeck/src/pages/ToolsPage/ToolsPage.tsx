@@ -494,7 +494,8 @@ export function ToolsPage() {
     {
       key: "tool",
       header: t(I18N_KEYS.tools.columns.tool),
-      width: "30%",
+      width: "160px",
+      minWidth: "120px",
       cell: (r) => (
         <span className={styles.cellTool}>
           <Tooltip text={r.tool}><span className={styles.toolName}>{r.tool}</span></Tooltip>

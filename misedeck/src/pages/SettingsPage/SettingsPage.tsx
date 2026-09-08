@@ -153,7 +153,8 @@ export function SettingsPage() {
     {
       key: "key",
       header: t(I18N_KEYS.settings.columns.key),
-      width: "26%",
+      width: "240px",
+      minWidth: "160px",
       cell: (r) => <Tooltip text={r.key}><span className={styles.cellKey}>{r.key}</span></Tooltip>,
     },
     {

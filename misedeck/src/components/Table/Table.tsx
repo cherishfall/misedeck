@@ -20,6 +20,9 @@ export interface TableColumn<T> {
   numeric?: boolean;
   /** Custom width, e.g. "120px" or "1fr". */
   width?: string;
+  /** Minimum width for column resizing, e.g. "120px" (issue #103;
+   * consumed by the resize ticket #104). */
+  minWidth?: string;
 }
 
 interface TableProps<T> {
@@ -71,7 +74,10 @@ export function Table<T>({
           <tr>
             {columns.map((c) => {
               const thProps: ThHTMLAttributes<HTMLTableCellElement> = {
-                style: c.width ? { width: c.width } : undefined,
+                style:
+                  c.width || c.minWidth
+                    ? { width: c.width, minWidth: c.minWidth }
+                    : undefined,
               };
               if (c.numeric) thProps.className = styles.numeric;
               return (

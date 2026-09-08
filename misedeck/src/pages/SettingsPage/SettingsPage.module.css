@@ -109,11 +109,11 @@
 
 /* ---------- Table cells ---------- */
 
-/* min-width ≈ declared column widths (434px px-columns + the 26% key
- * column): narrow windows scroll horizontally instead of crushing columns
- * (issue #90). */
+/* min-width = sum of declared column widths (240 key + 84 type + 140
+ * source + 210 actions): narrow windows scroll horizontally instead of
+ * crushing columns (issues #90, #103). */
 .settingsTable {
-  min-width: calc(434px + 26%);
+  min-width: 674px;
 }
 
 .cellKey {

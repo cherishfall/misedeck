@@ -325,7 +325,8 @@ export function TasksPage() {
     {
       key: "name",
       header: t(I18N_KEYS.tasks.columns.name),
-      width: "22%",
+      width: "200px",
+      minWidth: "140px",
       cell: (r) => (
         <Tooltip text={r.name}>
           <span className={styles.cellName}>
@@ -342,7 +343,8 @@ export function TasksPage() {
     {
       key: "run",
       header: t(I18N_KEYS.tasks.columns.run),
-      width: "28%",
+      width: "260px",
+      minWidth: "180px",
       cell: (r) =>
         r.run ? (
           <code className={styles.cellRun}>{r.run}</code>

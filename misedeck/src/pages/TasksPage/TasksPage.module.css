@@ -77,11 +77,11 @@
   min-width: 0;
 }
 
-/* min-width ≈ declared column widths (380px px-columns + the 50%
- * name/run columns): narrow windows scroll horizontally instead of
- * crushing columns (issue #90). */
+/* min-width = sum of declared column widths (200 name + 260 run + 180
+ * depends + 200 actions): narrow windows scroll horizontally instead of
+ * crushing columns (issues #90, #103). */
 .tasksTable {
-  min-width: calc(380px + 50%);
+  min-width: 840px;
 }
 
 .toolbar {

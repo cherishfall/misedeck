@@ -264,7 +264,8 @@ export function DirectoryPreview() {
     {
       key: "tool",
       header: t(I18N_KEYS.preview.columns.tool),
-      width: "40%",
+      width: "160px",
+      minWidth: "120px",
       cell: (r) => (
         <Tooltip text={r.tool}>
           <span className={styles.cellTool}>
