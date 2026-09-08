@@ -4,22 +4,29 @@
 //   * mise plugins ls --urls  → installed plugins (name, source), top
 //   * mise registry --json    → browsable registry of tool shorthands
 //                               → backends, with a search filter
+//   * mise plugins uninstall  → installed row action; confirms first,
+//                               then runs through the execution panel
+//                               (issue #112)
 //
-// The page itself is read-only; the registry row's "Install…" action
-// hands the tool name to the Tools page install section, where the
-// mutation runs through the execution panel.
+// The registry row's "Install…" action hands the tool name to the
+// Tools page install section, where the mutation runs through the
+// execution panel.
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
 import { detectMise, isAppError } from "../../api/mise";
+import { useExecutionContext } from "../../components/ExecutionPanel";
+import type { ExecutionStatus } from "../../components/ExecutionPanel";
 import {
   Badge,
   Button,
+  commandEcho,
+  ConfirmDialog,
   EmptyState,
   PageShell,
   Table,
@@ -33,6 +40,12 @@ import { useTableFilter } from "../../hooks/useTableFilter";
 import type { InstalledPlugin, RegistryItem } from "../../types/tauri";
 
 import styles from "./PluginsPage.module.css";
+
+// ---------- Args builders ----------
+
+function misePluginsUninstallArgs(name: string): string[] {
+  return ["plugins", "uninstall", name];
+}
 
 export function PluginsPage() {
   const { t } = useTranslation();
@@ -49,6 +62,35 @@ export function PluginsPage() {
 
   const plugins = useParsedPluginsList();
   const registry = useParsedRegistry();
+
+  // Plugin uninstall (issue #112): a destructive mutation, so it
+  // confirms first (the dialog teaches the exact command) and then
+  // runs through the execution panel. Plugins are global mise state
+  // — the directory trust guard does not apply, unlike the tasks /
+  // settings pages that write the cwd's config file.
+  const { state: execState, run } = useExecutionContext();
+  const isRunning = execState.status === "running";
+  const [pendingUninstall, setPendingUninstall] = useState<string | null>(null);
+
+  // After a successful uninstall the read query is stale; observe the
+  // running → ok transition (same pattern as tools/tasks) and
+  // invalidate the installed list.
+  const lastWriteStatusRef = useRef<ExecutionStatus>("idle");
+  useEffect(() => {
+    const prev = lastWriteStatusRef.current;
+    lastWriteStatusRef.current = execState.status;
+    if (prev === "running" && execState.status === "ok") {
+      void queryClient.invalidateQueries({ queryKey: ["plugins", "ls", cwd] });
+    }
+  }, [execState.status, cwd, queryClient]);
+
+  const uninstallPlugin = useCallback(
+    async (name: string) => {
+      if (isRunning) return;
+      await run({ cwd, args: misePluginsUninstallArgs(name) });
+    },
+    [isRunning, run, cwd],
+  );
 
   const pluginsError = plugins.error?.kind === "err" ? plugins.error.err : null;
   const registryError = registry.error?.kind === "err" ? registry.error.err : null;
@@ -91,6 +133,21 @@ export function PluginsPage() {
         ) : (
           <span className={styles.dim}>—</span>
         ),
+    },
+    {
+      key: "actions",
+      header: t(I18N_KEYS.plugins.columns.actions),
+      cell: (p) => (
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={() => setPendingUninstall(p.name)}
+          disabled={isRunning}
+          data-testid={`plugins-uninstall-${p.name}`}
+        >
+          {t(I18N_KEYS.plugins.actions.uninstall)}
+        </Button>
+      ),
     },
   ];
 
@@ -250,6 +307,29 @@ export function PluginsPage() {
             />
           )}
         </section>
+
+        <ConfirmDialog
+          open={pendingUninstall !== null}
+          title={
+            pendingUninstall
+              ? t(I18N_KEYS.plugins.confirm.uninstall.title, { name: pendingUninstall })
+              : ""
+          }
+          body={t(I18N_KEYS.plugins.confirm.uninstall.body)}
+          command={
+            pendingUninstall
+              ? commandEcho("mise", cwd, misePluginsUninstallArgs(pendingUninstall))
+              : ""
+          }
+          confirmLabel={t(I18N_KEYS.plugins.actions.uninstall)}
+          cancelLabel={t(I18N_KEYS.common.cancel)}
+          onConfirm={() => {
+            const name = pendingUninstall;
+            setPendingUninstall(null);
+            if (name) void uninstallPlugin(name);
+          }}
+          onCancel={() => setPendingUninstall(null)}
+        />
       </div>
     </PageShell>
   );

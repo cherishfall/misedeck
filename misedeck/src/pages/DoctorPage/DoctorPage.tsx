@@ -5,12 +5,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
 import { detectMise, isAppError } from "../../api/mise";
 import {
   Badge,
+  Button,
   EmptyState,
   PageShell,
   Table,
@@ -349,6 +351,7 @@ function UpgradeNotice({
   t: TFn;
 }) {
   const [copied, setCopied] = useState(false);
+  const navigate = useNavigate();
 
   const onCopy = async () => {
     const command = "mise self-update";
@@ -393,6 +396,16 @@ function UpgradeNotice({
           ? t(I18N_KEYS.doctor.updateNotice.copied)
           : t(I18N_KEYS.doctor.updateNotice.copy)}
       </button>
+      {/* Close the loop (issue #112): HomePage owns the one-click
+          `mise self-update`; this ghost link points there. */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate("/")}
+        data-testid="doctor-update-on-home"
+      >
+        {t(I18N_KEYS.doctor.updateNotice.updateOnHome)}
+      </Button>
     </section>
   );
 }

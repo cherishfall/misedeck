@@ -348,6 +348,7 @@ export const I18N_KEYS = {
     empty: {
       title: "tasks.empty.title",
       body: "tasks.empty.body",
+      openConfig: "tasks.empty.openConfig",
     },
     runButton: "tasks.runButton",
     editButton: "tasks.editButton",
@@ -369,6 +370,9 @@ export const I18N_KEYS = {
     openEditorError: {
       title: "tasks.openEditorError.title",
       body: "tasks.openEditorError.body",
+    },
+    openConfigError: {
+      body: "tasks.openConfigError.body",
     },
     readError: {
       title: "tasks.readError.title",
@@ -403,6 +407,7 @@ export const I18N_KEYS = {
     valuePlaceholder: "settings.valuePlaceholder",
     showAll: "settings.showAll",
     filterPlaceholder: "settings.filterPlaceholder",
+    count: "settings.count",
     guard: {
       untrustedBody: "settings.guard.untrustedBody",
     },
@@ -432,6 +437,7 @@ export const I18N_KEYS = {
       framing: "doctor.updateNotice.framing",
       copy: "doctor.updateNotice.copy",
       copied: "doctor.updateNotice.copied",
+      updateOnHome: "doctor.updateNotice.updateOnHome",
     },
     warnings: {
       title: "doctor.warnings.title",
@@ -477,6 +483,13 @@ export const I18N_KEYS = {
     },
     actions: {
       install: "plugins.actions.install",
+      uninstall: "plugins.actions.uninstall",
+    },
+    confirm: {
+      uninstall: {
+        title: "plugins.confirm.uninstall.title",
+        body: "plugins.confirm.uninstall.body",
+      },
     },
     installedEmpty: {
       title: "plugins.installedEmpty.title",

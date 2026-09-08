@@ -293,7 +293,8 @@
     },
     "empty": {
       "title": "没有任务",
-      "body": "`mise tasks ls` 没有返回任务。任务来自作用域内 mise.toml 的 `[tasks]` 表，或 `mise-tasks/` 目录下的可执行文件。"
+      "body": "`mise tasks ls` 没有返回任务。任务来自作用域内 mise.toml 的 `[tasks]` 表，或 `mise-tasks/` 目录下的可执行文件。",
+      "openConfig": "在编辑器中打开配置文件"
     },
     "runButton": "运行",
     "editButton": "编辑",
@@ -315,6 +316,9 @@
     "openEditorError": {
       "title": "无法打开配置文件",
       "body": "`mise tasks edit --path` 没有返回可用路径。stderr 已在执行面板中保留。"
+    },
+    "openConfigError": {
+      "body": "`mise config ls --json` 没有返回可打开的配置文件。stderr 已在执行面板中保留。"
     },
     "readError": {
       "title": "加载任务失败",
@@ -349,6 +353,7 @@
     "valuePlaceholder": "值",
     "showAll": "显示全部（`--all`）",
     "filterPlaceholder": "过滤设置…",
+    "count": "{{count}} 项设置",
     "guard": {
       "untrustedBody": "在修改此目录的设置之前，请先信任它。"
     }
@@ -399,7 +404,8 @@
       "title": "有可用更新",
       "framing": "mise 有新版本可用。",
       "copy": "复制 mise self-update",
-      "copied": "已复制"
+      "copied": "已复制",
+      "updateOnHome": "去首页更新"
     }
   },
   "plugins": {
@@ -422,7 +428,14 @@
       "actions": "操作"
     },
     "actions": {
-      "install": "安装…"
+      "install": "安装…",
+      "uninstall": "卸载"
+    },
+    "confirm": {
+      "uninstall": {
+        "title": "卸载 {{name}}？",
+        "body": "这将运行下方所示的命令。该插件将被移除，且无法撤销。"
+      }
     },
     "installedEmpty": {
       "title": "未安装插件",

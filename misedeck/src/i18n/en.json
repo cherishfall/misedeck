@@ -293,7 +293,8 @@
     },
     "empty": {
       "title": "No tasks",
-      "body": "`mise tasks ls` returned no tasks here. Tasks come from the `[tasks]` table of a mise.toml in scope, or from executable files under `mise-tasks/`."
+      "body": "`mise tasks ls` returned no tasks here. Tasks come from the `[tasks]` table of a mise.toml in scope, or from executable files under `mise-tasks/`.",
+      "openConfig": "Open config file in editor"
     },
     "runButton": "Run",
     "editButton": "Edit",
@@ -315,6 +316,9 @@
     "openEditorError": {
       "title": "Could not open the config file",
       "body": "`mise tasks edit --path` did not return a usable path. Stderr is preserved in the execution panel."
+    },
+    "openConfigError": {
+      "body": "`mise config ls --json` did not return a config file to open. Stderr is preserved in the execution panel."
     },
     "readError": {
       "title": "Failed to load tasks",
@@ -349,6 +353,7 @@
     "valuePlaceholder": "value",
     "showAll": "Show all (`--all`)",
     "filterPlaceholder": "Filter settings…",
+    "count": "{{count}} settings",
     "guard": {
       "untrustedBody": "Trust this directory before mutating its settings."
     }
@@ -399,7 +404,8 @@
       "title": "Update available",
       "framing": "A new mise release is available.",
       "copy": "Copy mise self-update",
-      "copied": "Copied"
+      "copied": "Copied",
+      "updateOnHome": "Update on Home"
     }
   },
   "plugins": {
@@ -422,7 +428,14 @@
       "actions": "Actions"
     },
     "actions": {
-      "install": "Install…"
+      "install": "Install…",
+      "uninstall": "Uninstall"
+    },
+    "confirm": {
+      "uninstall": {
+        "title": "Uninstall {{name}}?",
+        "body": "This will run the exact command below. The plugin will be removed and this cannot be undone."
+      }
     },
     "installedEmpty": {
       "title": "No plugins installed",

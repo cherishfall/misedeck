@@ -210,7 +210,7 @@ export function SettingsPage() {
         <div className={styles.toolbar}>
           <span className={styles.toolbarHint}>
             {settings.data
-              ? `${settings.data.length} ${t(I18N_KEYS.settings.columns.key).toLowerCase()}`
+              ? t(I18N_KEYS.settings.count, { count: settings.data.length })
               : t(I18N_KEYS.common.loading)}
           </span>
           <div className={styles.toolbarActions}>

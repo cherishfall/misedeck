@@ -69,7 +69,7 @@ import {
 import { useParsedTasksList } from "../../hooks/useTasksList";
 import { useTableFilter } from "../../hooks/useTableFilter";
 
-import type { MiseTask } from "../../types/tauri";
+import type { ConfigFile, MiseTask } from "../../types/tauri";
 
 import styles from "./TasksPage.module.css";
 
@@ -115,6 +115,10 @@ function miseRunTaskArgs(name: string): string[] {
 
 function miseTasksEditPathArgs(name: string): string[] {
   return ["tasks", "edit", "--path", name];
+}
+
+function miseConfigLsArgs(): string[] {
+  return ["config", "ls", "--json"];
 }
 
 function miseTasksAddArgs(
@@ -271,6 +275,52 @@ export function TasksPage() {
   // Track the open-in-editor error so the user can see why
   // nothing happened. Cleared on each new attempt.
   const [editorError, setEditorError] = useState<string | null>(null);
+
+  // The empty state's way out (issue #112): open the config file
+  // that would define tasks in the OS editor. Same route as the
+  // per-row open-in-editor — the path lookup is a user-triggered
+  // mise invocation, so it runs through the execution panel
+  // (ADR-0005) and the returned path goes to
+  // `tauri-plugin-opener`. `mise config ls --json` reports the
+  // loaded files in precedence order, highest first; that top file
+  // is where a new `[tasks]` entry belongs.
+  const openConfigInEditor = useCallback(
+    async () => {
+      if (!guard.allowed) {
+        focusTrustBanner();
+        return;
+      }
+      if (isRunning) return;
+      const res = await run({ cwd, args: miseConfigLsArgs() });
+      if (res.kind === "err" || res.outcome.exitCode !== 0) {
+        setEditorError(t(I18N_KEYS.tasks.openConfigError.body));
+        return;
+      }
+      let path: string | null = null;
+      try {
+        const parsed: unknown = JSON.parse(res.outcome.stdout);
+        if (Array.isArray(parsed)) {
+          const first = parsed[0] as ConfigFile | undefined;
+          if (first && typeof first.path === "string" && first.path) {
+            path = first.path;
+          }
+        }
+      } catch {
+        path = null;
+      }
+      if (!path) {
+        setEditorError(t(I18N_KEYS.tasks.openConfigError.body));
+        return;
+      }
+      setEditorError(null);
+      try {
+        await openExternalPath(path);
+      } catch {
+        setEditorError(t(I18N_KEYS.tasks.openConfigError.body));
+      }
+    },
+    [guard.allowed, focusTrustBanner, isRunning, run, cwd, t],
+  );
 
   // The edit form is per-row; `editingName === row.name` opens
   // the form below that row. The form is a single child
@@ -516,6 +566,17 @@ export function TasksPage() {
                   <EmptyState
                     title={t(I18N_KEYS.tasks.empty.title)}
                     body={t(I18N_KEYS.tasks.empty.body)}
+                    action={
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => void openConfigInEditor()}
+                        disabled={isRunning}
+                        data-testid="tasks-open-config"
+                      >
+                        {t(I18N_KEYS.tasks.empty.openConfig)}
+                      </Button>
+                    }
                   />
                 )
               }
