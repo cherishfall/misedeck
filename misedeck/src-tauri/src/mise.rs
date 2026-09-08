@@ -43,7 +43,6 @@ pub mod code {
     pub const COMMAND_FAILED: &str = "COMMAND_FAILED";
     pub const PARSE_FAILED: &str = "PARSE_FAILED";
     pub const TIMEOUT: &str = "TIMEOUT";
-    pub const UNTRUSTED: &str = "UNTRUSTED";
     /// One-off addition for issue #28's open-in-terminal command
     /// (Linux only): no common terminal emulator was found on
     /// `PATH`. Documented in `docs/agents/conventions.md`.

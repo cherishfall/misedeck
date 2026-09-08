@@ -26,7 +26,6 @@ export type AppErrorCode =
   | "COMMAND_FAILED"
   | "PARSE_FAILED"
   | "TIMEOUT"
-  | "UNTRUSTED"
   | "TERMINAL_NOT_FOUND";
 
 export interface AppError {

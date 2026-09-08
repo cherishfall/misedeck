@@ -10,7 +10,7 @@ Every Tauri command returns `Result<T, AppError>` where `T` is a serde-serializa
 
 ```rust
 struct AppError {
-    code: String,      // SCREAMING_SNAKE, e.g. MISE_NOT_FOUND, MISE_TOO_OLD, COMMAND_FAILED, PARSE_FAILED, UNTRUSTED
+    code: String,      // SCREAMING_SNAKE, e.g. MISE_NOT_FOUND, MISE_TOO_OLD, COMMAND_FAILED, PARSE_FAILED, TIMEOUT
     message: String,   // i18n key + params, resolved in the UI — never pre-rendered copy
     stderr: String,    // raw mise stderr when a command failed; empty otherwise
 }
@@ -21,7 +21,7 @@ The UI renders `code` via i18n and offers stderr through the execution panel. Ca
 **Boundary serialization**: every type crossing the Rust↔TS boundary uses `#[serde(rename_all = "camelCase")]` on the Rust side; the matching TS type is camelCase. `code` values come from this fixed set — inventing new ones is a bug:
 
 ```
-MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  UNTRUSTED  TIMEOUT  TERMINAL_NOT_FOUND
+MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  TIMEOUT  TERMINAL_NOT_FOUND
 ```
 
 `TERMINAL_NOT_FOUND` is a one-off addition for issue #28's

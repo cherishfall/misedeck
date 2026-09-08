@@ -71,7 +71,8 @@ const TrustContext = createContext<TrustContextValue | null>(null);
  *  `TrustState`. Exported for unit tests / debugging. */
 export function toTrustState(value: unknown): TrustState {
   if (value === null || value === undefined) return { kind: "unknown" };
-  if (typeof value !== "object") return { kind: "error", message: "unexpected response" };
+  if (typeof value !== "object")
+    return { kind: "error", message: I18N_KEYS.errors.unknown };
   const v = value as { kind?: string; ok?: TrustStatus; err?: { message?: string } };
   if (v.kind === "ok" && v.ok) {
     const source = v.ok.source;
@@ -86,7 +87,7 @@ export function toTrustState(value: unknown): TrustState {
   if (v.kind === "err" && v.err) {
     return { kind: "error", message: v.err.message ?? "unknown" };
   }
-  return { kind: "error", message: "unexpected response" };
+  return { kind: "error", message: I18N_KEYS.errors.unknown };
 }
 
 /** Wrap a thrown IPC error as the structured `{kind: "err"}` shape

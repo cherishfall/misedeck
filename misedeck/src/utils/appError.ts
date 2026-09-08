@@ -30,6 +30,9 @@ const KNOWN_MESSAGE_KEYS: ReadonlySet<string> = new Set([
   I18N_KEYS.errors.miseTooOld,
   I18N_KEYS.errors.terminalNotFound,
   I18N_KEYS.errors.timeout,
+  // Also the defensive fallback inside `toTrustState` for a malformed
+  // `TrustResult` payload — it emits the key, the hook resolves it.
+  I18N_KEYS.errors.unknown,
 ]);
 
 export interface ParsedAppErrorMessage {

@@ -55,7 +55,6 @@ function toViewState(
     case "PARSE_FAILED":
       return { status: "parseFailed", err: value.err };
     case "COMMAND_FAILED":
-    case "UNTRUSTED":
     default:
       return { status: "commandFailed", err: value.err };
   }
