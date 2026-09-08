@@ -101,6 +101,9 @@
     },
     "noOutdated": "所有已安装工具均为最新版本。",
     "filterPlaceholder": "过滤工具…",
+    "switchVersion": {
+      "placeholder": "22.11.0"
+    },
     "actions": {
       "install": "安装",
       "uninstall": "卸载",

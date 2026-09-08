@@ -46,8 +46,10 @@ import {
   Button,
   ConfirmDialog,
   EmptyState,
+  KeyForm,
   MiseMissingState,
   PageShell,
+  Suggestions,
   Table,
   TableFilter,
   Tooltip,
@@ -468,6 +470,19 @@ export function ToolsPage() {
     [r.tool, r.version, r.requested, r.backend ?? "", r.source, r.latest].join("\n"),
   );
 
+  // Datalist data (issue #109): the switch-version inputs list the
+  // tool's installed versions + latest; the query inputs list the known
+  // tool names. Both come from the live `mise ls` / `mise outdated`
+  // reads already on the page.
+  const versionsByTool = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const { tool, items } of tools.data ?? []) {
+      map.set(tool, items.map((it) => it.version));
+    }
+    return map;
+  }, [tools.data]);
+  const toolNames = useMemo(() => rows.map((r) => r.tool), [rows]);
+
   // Mise-missing state.
   if (detect.isPending) {
     return <ToolsLoading />;
@@ -571,15 +586,23 @@ export function ToolsPage() {
       key: "switchToVersion",
       header: t(I18N_KEYS.tools.columns.switchToVersion),
       width: "200px",
-      cell: (r) => (
-        <SwitchVersionCell
-          row={r}
-          disabled={isRunning}
-          onSwitch={(version) =>
-            void runMutation((cwd) => miseUseArgs(r.tool, version, cwd))
-          }
-        />
-      ),
+      cell: (r) => {
+        const installed = versionsByTool.get(r.tool) ?? [];
+        const suggestions =
+          r.outdated && r.latest && !installed.includes(r.latest)
+            ? [...installed, r.latest]
+            : installed;
+        return (
+          <SwitchVersionCell
+            row={r}
+            disabled={isRunning}
+            versionSuggestions={suggestions}
+            onSwitch={(version) =>
+              void runMutation((cwd) => miseUseArgs(r.tool, version, cwd))
+            }
+          />
+        );
+      },
     },
     {
       key: "actions",
@@ -683,6 +706,8 @@ export function ToolsPage() {
           onInputChange={setInstalledInput}
           onRun={onInstalledRun}
           onClear={onInstalledClear}
+          onRevertInput={() => setInstalledInput(installedQuery)}
+          toolListId="tools-name-suggestions"
           canRun={installedInput.trim().length > 0}
           isPending={installed.isPending}
           error={installed.error}
@@ -705,6 +730,8 @@ export function ToolsPage() {
           onInputChange={setRemoteInput}
           onRun={onRemoteRun}
           onClear={onRemoteClear}
+          onRevertInput={() => setRemoteInput(remoteQuery)}
+          toolListId="tools-name-suggestions"
           canRun={remoteInput.trim().length > 0}
           isPending={remote.isPending}
           error={remote.error}
@@ -718,6 +745,10 @@ export function ToolsPage() {
           emptyTitle={t(I18N_KEYS.tools.queries.remote.emptyTitle)}
           emptyBody={t(I18N_KEYS.tools.queries.remote.emptyBody)}
         />
+
+        {/* Known tool names, referenced by both query inputs' datalist
+            (issue #109). Rendered once for the page. */}
+        <Suggestions id="tools-name-suggestions" options={toolNames} />
 
         <ConfirmDialog
           open={pendingUninstall !== null}
@@ -771,6 +802,9 @@ function ToolsLoading() {
 interface SwitchVersionCellProps {
   row: ToolRow;
   disabled: boolean;
+  /** The tool's installed versions + latest, offered as completion on
+   *  the version input (issue #109). */
+  versionSuggestions: string[];
   onSwitch: (version: string) => void;
 }
 
@@ -778,9 +812,10 @@ interface SwitchVersionCellProps {
  * The per-row "switch to version" editor: a narrow version input +
  * Save-style Switch button dispatching `mise use [-g] <tool>@<version>`.
  * Lives in its own labeled column so the header sits exactly over the
- * input (issue #57).
+ * input (issue #57). Enter submits via the shared KeyForm pattern and
+ * Escape reverts the input to the row's current version (issue #109).
  */
-function SwitchVersionCell({ row, disabled, onSwitch }: SwitchVersionCellProps) {
+function SwitchVersionCell({ row, disabled, versionSuggestions, onSwitch }: SwitchVersionCellProps) {
   const { t } = useTranslation();
   const [version, setVersion] = useState(row.version);
   // Reset local state when the row's underlying version changes
@@ -789,20 +824,28 @@ function SwitchVersionCell({ row, disabled, onSwitch }: SwitchVersionCellProps) 
     setVersion(row.version);
   }, [row.version]);
   const dirty = version !== row.version;
+  const listId = `tools-switch-versions-${row.tool}`;
 
   return (
-    <span className={styles.cellSwitch}>
+    <KeyForm
+      className={styles.cellSwitch}
+      onSubmit={() => onSwitch(version)}
+      onRevert={() => setVersion(row.version)}
+      submitDisabled={disabled || !dirty || version.length === 0}
+    >
       <input
         type="text"
         className={styles.input}
         value={version}
         onChange={(e) => setVersion(e.target.value)}
-        placeholder={t(I18N_KEYS.tools.installForm.versionPlaceholder)}
+        placeholder={t(I18N_KEYS.tools.switchVersion.placeholder)}
         disabled={disabled}
         data-testid={`tools-switch-version-${row.tool}`}
         spellCheck={false}
         autoComplete="off"
+        list={listId}
       />
+      <Suggestions id={listId} options={versionSuggestions} />
       <Button
         variant="primary"
         size="sm"
@@ -812,7 +855,7 @@ function SwitchVersionCell({ row, disabled, onSwitch }: SwitchVersionCellProps) 
       >
         {t(I18N_KEYS.tools.actions.switch)}
       </Button>
-    </span>
+    </KeyForm>
   );
 }
 
@@ -889,12 +932,23 @@ function InstallToolForm({ prefillTool, onInstall, disabled }: InstallToolFormPr
   const onSubmit = () => {
     onInstall(tool, version);
   };
+  // Escape reverts the draft: the tool name returns to the handover
+  // prefill (or empty) and the version clears (issue #109).
+  const onRevert = () => {
+    setTool(prefillTool);
+    setVersion("");
+  };
   return (
     <div className={styles.installForm} data-testid="tools-install-form">
       <h2 className={styles.installFormTitle}>
         {t(I18N_KEYS.tools.installForm.title)}
       </h2>
-      <span className={styles.installFormRow}>
+      <KeyForm
+        className={styles.installFormRow}
+        onSubmit={onSubmit}
+        onRevert={onRevert}
+        submitDisabled={disabled || tool.length === 0 || version.length === 0}
+      >
         <input
           type="text"
           className={styles.input}
@@ -926,7 +980,7 @@ function InstallToolForm({ prefillTool, onInstall, disabled }: InstallToolFormPr
         >
           {t(I18N_KEYS.tools.actions.install)}
         </Button>
-      </span>
+      </KeyForm>
     </div>
   );
 }
@@ -982,13 +1036,24 @@ function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
     if (!canSubmit) return;
     onLink(tool, version, path);
   };
+  // Escape clears the draft, including the picker-owned path (issue #109).
+  const onRevert = () => {
+    setTool("");
+    setVersion("");
+    setPath("");
+  };
 
   return (
     <div className={styles.installForm} data-testid="tools-link-form">
       <h2 className={styles.installFormTitle}>
         {t(I18N_KEYS.tools.linkForm.title)}
       </h2>
-      <span className={styles.installFormRow}>
+      <KeyForm
+        className={styles.installFormRow}
+        onSubmit={onSubmit}
+        onRevert={onRevert}
+        submitDisabled={!canSubmit}
+      >
         <input
           type="text"
           className={styles.input}
@@ -1037,7 +1102,7 @@ function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
         >
           {t(I18N_KEYS.tools.actions.link)}
         </Button>
-      </span>
+      </KeyForm>
       {conflict && (
         <p className={styles.linkConflict} role="alert" data-testid="tools-link-conflict">
           {conflict}

@@ -25,7 +25,9 @@ import {
   Button,
   ConfirmDialog,
   EmptyState,
+  KeyForm,
   PageShell,
+  Suggestions,
   Table,
   TableFilter,
   Tooltip,
@@ -283,6 +285,13 @@ export function EnvPage() {
           )}
 
           <AddEnvForm onWrite={runWrite} disabled={isRunning} />
+
+          {/* Existing keys, referenced as completion by both var-name
+              inputs' datalist (issue #109). Rendered once for the page. */}
+          <Suggestions
+            id="env-name-suggestions"
+            options={envRows.map((r) => r.name)}
+          />
         </section>
       </div>
     </PageShell>
@@ -428,7 +437,12 @@ function EnvRowActions({
 
   if (editing) {
     return (
-      <span className={styles.rowEditor}>
+      <KeyForm
+        className={styles.rowEditor}
+        onSubmit={onSave}
+        onRevert={cancelEdit}
+        submitDisabled={disabled || !dirty || name.length === 0 || value.length === 0}
+      >
         <input
           type="text"
           className={styles.inputName}
@@ -439,6 +453,7 @@ function EnvRowActions({
           data-testid={`env-name-${row.name}`}
           spellCheck={false}
           autoComplete="off"
+          list="env-name-suggestions"
         />
         <input
           type="text"
@@ -469,7 +484,7 @@ function EnvRowActions({
         >
           {t(I18N_KEYS.common.cancel)}
         </Button>
-      </span>
+      </KeyForm>
     );
   }
 
@@ -529,8 +544,19 @@ function AddEnvForm({
   const onAdd = () => {
     void onWrite((cwd) => miseEnvSetArgs(name, value, cwd));
   };
+  // Escape clears the draft (issue #109).
+  const onRevert = () => {
+    setName("");
+    setValue("");
+  };
   return (
-    <div className={styles.addForm} data-testid="env-add">
+    <KeyForm
+      className={styles.addForm}
+      testId="env-add"
+      onSubmit={onAdd}
+      onRevert={onRevert}
+      submitDisabled={disabled || name.length === 0 || value.length === 0}
+    >
       <span className={styles.addLabel}>{t(I18N_KEYS.env.addLabel)}</span>
       <input
         type="text"
@@ -542,6 +568,7 @@ function AddEnvForm({
         data-testid="env-add-name"
         spellCheck={false}
         autoComplete="off"
+        list="env-name-suggestions"
       />
       <input
         type="text"
@@ -563,7 +590,7 @@ function AddEnvForm({
       >
         {t(I18N_KEYS.env.addButton)}
       </Button>
-    </div>
+    </KeyForm>
   );
 }
 

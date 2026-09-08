@@ -34,7 +34,9 @@ import {
   Banner,
   Button,
   EmptyState,
+  KeyForm,
   PageShell,
+  Suggestions,
   Table,
   TableFilter,
   Tooltip,
@@ -351,8 +353,22 @@ function RowEditor({
   const dirty = isBool
     ? checked !== (row.value === true)
     : value !== formatValue(row.value);
+  // Escape reverts the draft to the row's current value (issue #109).
+  const onRevert = () => {
+    setValue(formatValue(row.value));
+    setChecked(row.value === true);
+  };
   return (
-    <span className={styles.rowEditor}>
+    <KeyForm
+      className={styles.rowEditor}
+      onSubmit={() =>
+        onWrite((cwd) =>
+          miseSettingsSetArgs(row.key, isBool ? String(checked) : value, cwd),
+        )
+      }
+      onRevert={onRevert}
+      submitDisabled={disabled || !dirty || (!isBool && value.length === 0)}
+    >
       {isBool ? (
         <input
           type="checkbox"
@@ -394,7 +410,7 @@ function RowEditor({
       >
         {t(I18N_KEYS.settings.unsetButton)}
       </Button>
-    </span>
+    </KeyForm>
   );
 }
 
@@ -415,8 +431,19 @@ function AddSettingForm({
   const onAdd = () => {
     void onWrite((cwd) => miseSettingsSetArgs(key, value, cwd));
   };
+  // Escape clears the draft (issue #109).
+  const onRevert = () => {
+    setKey("");
+    setValue("");
+  };
   return (
-    <div className={styles.addForm} data-testid="settings-add">
+    <KeyForm
+      className={styles.addForm}
+      testId="settings-add"
+      onSubmit={onAdd}
+      onRevert={onRevert}
+      submitDisabled={disabled || key.length === 0 || value.length === 0}
+    >
       <span className={styles.addLabel}>{t(I18N_KEYS.settings.addSettingLabel)}</span>
       <input
         type="text"
@@ -429,11 +456,7 @@ function AddSettingForm({
         autoComplete="off"
         list="settings-key-suggestions"
       />
-      <datalist id="settings-key-suggestions">
-        {keySuggestions.map((k) => (
-          <option key={k} value={k} />
-        ))}
-      </datalist>
+      <Suggestions id="settings-key-suggestions" options={keySuggestions} />
       <input
         type="text"
         className={styles.input}
@@ -452,7 +475,7 @@ function AddSettingForm({
       >
         {t(I18N_KEYS.settings.addButton)}
       </Button>
-    </div>
+    </KeyForm>
   );
 }
 

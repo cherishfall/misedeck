@@ -253,7 +253,9 @@
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 4px 8px;
-  min-width: 120px;
+  /* Wide enough for the full "version (e.g. 22.11.0)" placeholder in
+     both locales — a cut-off hint is a bug (issue #109). */
+  min-width: 208px;
   transition:
     border-color var(--motion-state-change) ease,
     box-shadow var(--motion-state-change) ease;

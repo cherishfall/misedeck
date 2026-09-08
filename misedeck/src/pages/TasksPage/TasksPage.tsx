@@ -57,7 +57,9 @@ import {
   Banner,
   Button,
   EmptyState,
+  KeyForm,
   PageShell,
+  Suggestions,
   Table,
   TableFilter,
   Tooltip,
@@ -523,6 +525,7 @@ export function TasksPage() {
               <EditForm
                 key={editingTask.name}
                 task={editingTask}
+                dependsListId="tasks-depends-suggestions"
                 onSave={async (runCmd, depends) => {
                   await saveTask(editingTask.name, runCmd, depends);
                   onEditSaved();
@@ -531,6 +534,13 @@ export function TasksPage() {
                 disabled={isRunning}
               />
             )}
+
+            {/* Task names on the page, referenced as completion by the
+                edit form's depends input (issue #109). */}
+            <Suggestions
+              id="tasks-depends-suggestions"
+              options={taskRows.map((r) => r.name)}
+            />
           </>
         )}
       </div>
@@ -565,11 +575,15 @@ function TasksLoading() {
  */
 function EditForm({
   task,
+  dependsListId,
   onSave,
   onCancel,
   disabled,
 }: {
   task: MiseTask;
+  /** Datalist id the depends input references for task-name completion
+   *  (issue #109); the page renders the shared <datalist> once. */
+  dependsListId: string;
   onSave: (runCmd: string, depends: string[]) => void | Promise<void>;
   onCancel: () => void;
   disabled: boolean;
@@ -591,9 +605,12 @@ function EditForm({
   const valid = run.trim().length > 0;
 
   return (
-    <div
+    <KeyForm
       className={styles.editForm}
-      data-testid={`tasks-edit-form-${task.name}`}
+      testId={`tasks-edit-form-${task.name}`}
+      onSubmit={() => void onSave(run, depends)}
+      onRevert={onCancel}
+      submitDisabled={disabled || !dirty || !valid}
     >
       <h3 className={styles.editFormTitle}>
         {t(I18N_KEYS.tasks.editForm.title)} · {task.name}
@@ -650,6 +667,7 @@ function EditForm({
           disabled={disabled}
           spellCheck={false}
           autoComplete="off"
+          list={dependsListId}
         />
       </div>
 
@@ -678,7 +696,7 @@ function EditForm({
           </span>
         )}
       </div>
-    </div>
+    </KeyForm>
   );
 }
 

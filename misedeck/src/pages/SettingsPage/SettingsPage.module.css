@@ -190,7 +190,9 @@
 }
 
 .inputName {
-  width: 14ch;
+  /* Wide enough for the full "setting name" placeholder — a cut-off
+     hint is a bug (issue #109). */
+  width: 18ch;
 }
 
 .input:focus,

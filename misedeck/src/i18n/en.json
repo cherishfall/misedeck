@@ -101,6 +101,9 @@
     },
     "noOutdated": "All installed tools are up to date.",
     "filterPlaceholder": "Filter tools…",
+    "switchVersion": {
+      "placeholder": "22.11.0"
+    },
     "actions": {
       "install": "Install",
       "uninstall": "Uninstall",

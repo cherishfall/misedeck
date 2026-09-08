@@ -214,7 +214,9 @@
 }
 
 .inputName {
-  width: 20ch;
+  /* Wide enough for the full zh placeholder 变量名（大写下划线） —
+     a cut-off hint is a bug (issue #109). */
+  width: 24ch;
 }
 
 .inputValue {

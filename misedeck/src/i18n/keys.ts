@@ -155,6 +155,9 @@ export const I18N_KEYS = {
     },
     noOutdated: "tools.noOutdated",
     filterPlaceholder: "tools.filterPlaceholder",
+    switchVersion: {
+      placeholder: "tools.switchVersion.placeholder",
+    },
     actions: {
       install: "tools.actions.install",
       uninstall: "tools.actions.uninstall",

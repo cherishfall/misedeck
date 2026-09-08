@@ -19,7 +19,7 @@ import { I18N_KEYS } from "../../i18n/keys";
 import { isAppError } from "../../api/mise";
 import type { JsonResult } from "../../types/tauri";
 import { usePersistentState } from "../../hooks/usePersistentState";
-import { Button, EmptyState, Pagination, Table, sortRows, type SortState, type TableColumn } from "../../components";
+import { Button, EmptyState, KeyForm, Pagination, Table, sortRows, type SortState, type TableColumn } from "../../components";
 import { useExecutionContext } from "../../components/ExecutionPanel";
 
 import styles from "./VersionQuerySection.module.css";
@@ -62,6 +62,12 @@ interface VersionQuerySectionProps<TRow> {
   clearLabel: string;
   emptyTitle: string;
   emptyBody: string;
+  /** Datalist id the tool input references for known-tool completion
+   *  (issue #109); the page renders the shared <datalist> once. */
+  toolListId?: string;
+  /** Escape in the tool input reverts it to the last committed query
+   *  (issue #109). */
+  onRevertInput?: () => void;
 }
 
 export function VersionQuerySection<TRow>({
@@ -84,6 +90,8 @@ export function VersionQuerySection<TRow>({
   clearLabel,
   emptyTitle,
   emptyBody,
+  toolListId,
+  onRevertInput,
 }: VersionQuerySectionProps<TRow>) {
   const { t } = useTranslation();
   // The panel runs one foreground command at a time; surface that state
@@ -148,7 +156,12 @@ export function VersionQuerySection<TRow>({
         )}
       </header>
 
-      <div className={styles.queryRow}>
+      <KeyForm
+        className={styles.queryRow}
+        onSubmit={handleRun}
+        onRevert={onRevertInput}
+        submitDisabled={!canRun || isMutationRunning}
+      >
         <input
           type="text"
           className={styles.input}
@@ -158,6 +171,7 @@ export function VersionQuerySection<TRow>({
           disabled={isMutationRunning}
           spellCheck={false}
           autoComplete="off"
+          list={toolListId}
           data-testid="versions-tool-input"
         />
         <Button
@@ -180,7 +194,7 @@ export function VersionQuerySection<TRow>({
             {clearLabel}
           </button>
         )}
-      </div>
+      </KeyForm>
 
       {hasQuery && (
         <>
