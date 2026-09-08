@@ -52,6 +52,10 @@ Tag pushed, `release.yml` run 34143786713 building/publishing in the background 
 - Chrome surface hierarchy: `--hull` / `--hull-soft` / `--hull-deep` + `--panel` as the elevated role — **ADR-0006** (#78).
 - No frontend component test harness (no vitest/jest). Rust tests live in `misedeck/src-tauri/tests/`.
 
+## Feedback docs
+
+Per-beta feedback scratch/audit docs live in **`docs/feedback/`** (`betaN-feedback-scratch.md`, audits). New cycles (e.g. beta8) go there — never the repo root.
+
 ## Working agreement reminders
 
 - **One ticket per session / subagent.** Do not batch unrelated tickets.

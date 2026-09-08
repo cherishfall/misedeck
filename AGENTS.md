@@ -11,6 +11,7 @@ An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + Re
 ## Before you code
 
 - Read `CONTEXT.md` (domain glossary) and any ADR in `docs/adr/` touching your area. Use glossary vocabulary in code, issues, and UI copy.
+- Per-beta feedback scratch/audit docs live in `docs/feedback/` (`betaN-feedback-scratch.md`, `betaN-audit-*.md`); new feedback cycles create their files there, never at the repo root. These are working scratch docs, exempt from the zh-CN mirroring rule.
 - The v1 spec and implementation tickets live in GitHub Issues (`ready-for-agent` label); see `docs/agents/issue-tracker.md`.
 - UI work derives color, type, layout, and motion from `docs/design/visual-language.md` (issue #33); never invent new tokens or effects.
 - UI work (any page, component, style, or copy) also follows `docs/design/ui-ux-rules.md` — hard interaction and presentation rules distilled from beta review cycles. Violating them is a bug.

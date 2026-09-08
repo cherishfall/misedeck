@@ -11,6 +11,7 @@
 ## 动手写代码前
 
 - 阅读 `CONTEXT.md`（领域术语表）和 `docs/adr/` 中与你要动的区域相关的 ADR。代码、issue 和 UI 文案统一使用术语表词汇。
+- 每个 beta 版本的反馈 scratch/audit 文档放在 `docs/feedback/`（`betaN-feedback-scratch.md`、`betaN-audit-*.md`）；新的反馈周期一律在该目录建文件，不要放仓库根目录。这类工作性 scratch 文档不受 zh-CN 镜像规则约束。
 - v1 spec 和实现 tickets 在 GitHub Issues（`ready-for-agent` 标签）；见 `docs/agents/issue-tracker.md`。
 - UI 工作的色彩、字体、布局、动效一律取自 `docs/design/visual-language.md`（issue #33）；禁止临时发明新 token 或动效。
 - UI 工作（任何页面、组件、样式或文案）还须遵守 `docs/design/ui-ux-rules.md`——从 beta 反馈周期沉淀的硬性交互与呈现规则。违反即为 bug。
