@@ -68,6 +68,11 @@ tickets should reuse the existing six when possible.
 
 Paths, home dirs, process spawning, and shell detection go through Tauri/Rust cross-platform APIs. macOS-only behavior (e.g. Gatekeeper notes) lives behind platform guards with a no-op or equivalent elsewhere.
 
+## i18n
+
+- Never concatenate translated strings in code — no `t(...) + x`, no `x + t(...)`, no `t(...)` inside a template literal. Word order, punctuation, and plural rules are owned by the locale, not the code. Put the entire phrase in `en.json` + `zh-CN.json` with `{{placeholders}}` and pass the parts via `t(key, { ... })` — counts included (`"{{count}} settings"`, not `` `${n} ${t(...)}` ``).
+- `npm run lint:i18n-concat` enforces this over `src/**` at generation time (wired into `npm run ci`); a genuinely locale-safe exception belongs in the script's explicit allowlist with a reason, never as a dodged pattern.
+
 ## Style
 
 Match the surrounding file. Comment only where the code cannot say why. Keep diffs scoped to the ticket.

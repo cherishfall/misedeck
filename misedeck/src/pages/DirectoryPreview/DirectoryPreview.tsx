@@ -327,7 +327,10 @@ export function DirectoryPreview() {
       cell: (r) => {
         const label =
           r.source === "tool" && r.sourceDetail
-            ? `${t(I18N_KEYS.preview.source.tool)} · ${r.sourceDetail}`
+            ? t(I18N_KEYS.preview.source.toolDetail, {
+                source: t(I18N_KEYS.preview.source.tool),
+                detail: r.sourceDetail,
+              })
             : t(I18N_KEYS.preview.source[r.source]);
         return <Badge variant={envSourceVariant(r.source)}>{label}</Badge>;
       },

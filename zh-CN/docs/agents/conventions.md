@@ -63,6 +63,11 @@ MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  UNTRUSTED  TIMEOUT  
 
 路径、home 目录、进程生成和 shell 检测都走 Tauri/Rust 的跨平台 API。macOS 专属行为（如 Gatekeeper 说明）放在平台守卫之后，其他平台上为空操作或等价实现。
 
+## i18n
+
+- 绝不在代码中拼接翻译后的字符串——不允许 `t(...) + x`、`x + t(...)`，也不允许在模板字符串中嵌入 `t(...)`。语序、标点和复数规则归语言环境所有，而不是代码。把整句话放进 `en.json` + `zh-CN.json`，用 `{{占位符}}`，通过 `t(key, { ... })` 传入各部分——计数也不例外（`"{{count}} settings"`，而不是 `` `${n} ${t(...)}` ``）。
+- `npm run lint:i18n-concat` 在生成期对 `src/**` 强制执行此规则（已接入 `npm run ci`）；确实语言环境安全的例外必须连同理由写进脚本的显式 allowlist，绝不允许靠改写代码规避检查。
+
 ## Style
 
 与周围文件保持一致。只在代码无法说明"为什么"的地方写注释。diff 保持在 ticket 范围内。

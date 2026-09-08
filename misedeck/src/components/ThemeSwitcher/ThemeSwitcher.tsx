@@ -28,7 +28,10 @@ export function ThemeSwitcher({ iconOnly = false }: ThemeSwitcherProps) {
   const { theme, setTheme } = useTheme();
 
   const toggle = () => setTheme(theme === "dark" ? "light" : "dark");
-  const label = `${t(I18N_KEYS.theme.switcherLabel)}: ${t(THEME_LABELS[theme])}`;
+  const label = t(I18N_KEYS.theme.switcherCurrent, {
+    label: t(I18N_KEYS.theme.switcherLabel),
+    value: t(THEME_LABELS[theme]),
+  });
 
   if (iconOnly) {
     return (

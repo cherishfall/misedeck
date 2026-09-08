@@ -360,7 +360,10 @@ function EnvSourceCell({ row }: { row: EnvRow }) {
   const { t } = useTranslation();
   const label =
     row.source === "tool" && row.sourceDetail
-      ? `${t(I18N_KEYS.env.source.tool)} · ${row.sourceDetail}`
+      ? t(I18N_KEYS.env.source.toolDetail, {
+          source: t(I18N_KEYS.env.source.tool),
+          detail: row.sourceDetail,
+        })
       : t(I18N_KEYS.env.source[row.source]);
   // Tool-injected and host-inherited rows cannot be set via `mise set`;
   // the badge carries a CLI-terms tooltip explaining why (issue #58).

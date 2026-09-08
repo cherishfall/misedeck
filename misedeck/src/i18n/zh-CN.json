@@ -202,6 +202,7 @@
       "global": "全局",
       "project": "目录",
       "tool": "工具",
+      "toolDetail": "{{source}} · {{detail}}",
       "default": "默认"
     },
     "toolSource": {
@@ -247,6 +248,7 @@
       "global": "全局",
       "project": "目录",
       "tool": "工具",
+      "toolDetail": "{{source}} · {{detail}}",
       "default": "默认"
     },
     "empty": {
@@ -282,6 +284,7 @@
     "title": "任务",
     "subtitle": "列出、运行并编辑当前目录的 mise 任务。写入通过 `mise tasks add`，并在执行面板中实时显示。",
     "filterPlaceholder": "过滤任务…",
+    "count": "{{count}} 个任务",
     "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit --path",
     "nav": "任务",
     "columns": {
@@ -308,7 +311,8 @@
       "dependsPlaceholder": "lint, test",
       "dependsHelp": "每个名称是本目录 `mise.toml` 中的一个任务，使用逗号分隔。",
       "saveButton": "保存",
-      "cancelButton": "取消"
+      "cancelButton": "取消",
+      "runRequired": "必须填写运行命令"
     },
     "guard": {
       "untrustedBody": "在修改此目录的任务之前，请先信任它。"
@@ -503,6 +507,7 @@
   },
   "theme": {
     "switcherLabel": "主题",
+    "switcherCurrent": "{{label}}：{{value}}",
     "light": "浅色",
     "dark": "深色"
   },

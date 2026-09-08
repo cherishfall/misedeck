@@ -256,6 +256,7 @@ export const I18N_KEYS = {
       global: "preview.source.global",
       project: "preview.source.project",
       tool: "preview.source.tool",
+      toolDetail: "preview.source.toolDetail",
       default: "preview.source.default",
     },
     toolSource: {
@@ -301,6 +302,7 @@ export const I18N_KEYS = {
       global: "env.source.global",
       project: "env.source.project",
       tool: "env.source.tool",
+      toolDetail: "env.source.toolDetail",
       default: "env.source.default",
     },
     empty: {
@@ -338,6 +340,7 @@ export const I18N_KEYS = {
     commandHint: "tasks.commandHint",
     nav: "tasks.nav",
     filterPlaceholder: "tasks.filterPlaceholder",
+    count: "tasks.count",
     columns: {
       name: "tasks.columns.name",
       run: "tasks.columns.run",
@@ -363,6 +366,7 @@ export const I18N_KEYS = {
       dependsHelp: "tasks.editForm.dependsHelp",
       saveButton: "tasks.editForm.saveButton",
       cancelButton: "tasks.editForm.cancelButton",
+      runRequired: "tasks.editForm.runRequired",
     },
     guard: {
       untrustedBody: "tasks.guard.untrustedBody",
@@ -557,6 +561,7 @@ export const I18N_KEYS = {
   },
   theme: {
     switcherLabel: "theme.switcherLabel",
+    switcherCurrent: "theme.switcherCurrent",
     light: "theme.light",
     dark: "theme.dark",
   },

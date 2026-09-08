@@ -202,6 +202,7 @@
       "global": "Global",
       "project": "Directory",
       "tool": "Tool",
+      "toolDetail": "{{source}} · {{detail}}",
       "default": "Default"
     },
     "toolSource": {
@@ -247,6 +248,7 @@
       "global": "Global",
       "project": "Directory",
       "tool": "Tool",
+      "toolDetail": "{{source}} · {{detail}}",
       "default": "Default"
     },
     "empty": {
@@ -282,6 +284,7 @@
     "title": "Tasks",
     "subtitle": "List, run, and edit the mise tasks for the active directory. Writes go through `mise tasks add` and stream into the panel.",
     "filterPlaceholder": "Filter tasks…",
+    "count": "{{count}} tasks",
     "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit --path",
     "nav": "Tasks",
     "columns": {
@@ -308,7 +311,8 @@
       "dependsPlaceholder": "lint, test",
       "dependsHelp": "Each name is a task in this directory's `mise.toml`. Separate with commas.",
       "saveButton": "Save",
-      "cancelButton": "Cancel"
+      "cancelButton": "Cancel",
+      "runRequired": "A run command is required"
     },
     "guard": {
       "untrustedBody": "Trust this directory before mutating its tasks."
@@ -503,6 +507,7 @@
   },
   "theme": {
     "switcherLabel": "Theme",
+    "switcherCurrent": "{{label}}: {{value}}",
     "light": "Light",
     "dark": "Dark"
   },

@@ -502,7 +502,7 @@ export function TasksPage() {
         <div className={styles.toolbar}>
           <span className={styles.toolbarHint}>
             {tasks.data
-              ? `${tasks.data.length} ${t(I18N_KEYS.tasks.columns.name).toLowerCase()}`
+              ? t(I18N_KEYS.tasks.count, { count: tasks.data.length })
               : t(I18N_KEYS.common.loading)}
           </span>
           <TableFilter
@@ -753,7 +753,7 @@ function EditForm({
         </Button>
         {!valid && (
           <span className={styles.editFormError}>
-            {t(I18N_KEYS.tasks.editForm.runLabel)} required
+            {t(I18N_KEYS.tasks.editForm.runRequired)}
           </span>
         )}
       </div>
