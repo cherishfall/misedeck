@@ -19,6 +19,7 @@ import type {
 
 import styles from "./Table.module.css";
 import { compareVersions } from "../../utils/versions";
+import { loadPersistent, savePersistent } from "../../hooks/usePersistentState";
 
 /** Column sort state (issue #105): which column, which direction. */
 export interface SortState {
@@ -70,20 +71,13 @@ function parsePx(value: string | undefined): number | undefined {
 }
 
 function loadWidths(storageKey: string): Record<string, number> {
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw === null) return {};
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) return {};
-    const widths: Record<string, number> = {};
-    for (const [key, value] of Object.entries(parsed)) {
-      if (typeof value === "number" && Number.isFinite(value)) widths[key] = value;
-    }
-    return widths;
-  } catch {
-    // Corrupt localStorage falls back to declared widths.
-    return {};
+  const parsed = loadPersistent<unknown>(storageKey, {});
+  if (typeof parsed !== "object" || parsed === null) return {};
+  const widths: Record<string, number> = {};
+  for (const [key, value] of Object.entries(parsed)) {
+    if (typeof value === "number" && Number.isFinite(value)) widths[key] = value;
   }
+  return widths;
 }
 
 export interface TableColumn<T> {
@@ -210,11 +204,7 @@ export function Table<T>({
       document.body.style.userSelect = previousUserSelect;
       setOverrides((prev) => {
         if (storageKey !== null) {
-          try {
-            localStorage.setItem(storageKey, JSON.stringify(prev));
-          } catch {
-            // Quota/serialization failure drops persistence, not the drag.
-          }
+          savePersistent(storageKey, prev);
         }
         return prev;
       });

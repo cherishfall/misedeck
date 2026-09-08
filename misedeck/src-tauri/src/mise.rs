@@ -818,9 +818,8 @@ pub fn mise_tasks_ls(
 /// the file that defines the named task. mise prints a single line
 /// (the path) on stdout; the runner surfaces it as `Some(path)` on
 /// exit 0, `None` on non-zero exit (the file does not exist or the
-/// task is not in scope). The JS side uses this as the
-/// "open the TOML directly" affordance — the path is fed to
-/// `tauri-plugin-opener` which calls the OS's default editor.
+/// task is not in scope). Exercised by the Rust integration tests
+/// only; no JS caller uses it today.
 pub fn mise_tasks_edit_path(
     mise_path: &Path,
     cwd: Option<&Path>,

@@ -168,54 +168,6 @@
   color: var(--flare);
 }
 
-.linePrefix {
-  color: var(--dim);
-  flex-shrink: 0;
-}
-
-.line[data-stream="stderr"] .linePrefix {
-  color: var(--breach);
-}
-
-.lineText {
-  flex: 1;
-  min-width: 0;
-}
-
-.caret {
-  display: inline-block;
-  color: var(--beam);
-  animation: caret-blink var(--motion-caret-blink) steps(1) infinite;
-}
-
-@keyframes caret-blink {
-  0%, 50% { opacity: 1; }
-  50.01%, 100% { opacity: 0; }
-}
-
-.demoRow {
-  display: flex;
-  justify-content: flex-start;
-}
-
-.demoBtn {
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--beam);
-  padding: 6px 14px;
-  font-family: var(--font-mono);
-  font-size: var(--size-data);
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.demoBtn:hover,
-.demoBtn:focus-visible {
-  border-color: var(--beam-soft);
-  background: color-mix(in srgb, var(--beam) 8%, transparent);
-  outline: none;
-}
-
 .affordance {
   align-self: flex-end;
   display: inline-flex;

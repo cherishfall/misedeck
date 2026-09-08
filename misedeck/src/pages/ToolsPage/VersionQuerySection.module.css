@@ -154,24 +154,3 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
-
-.collapseToggle {
-  align-self: flex-start;
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  color: var(--beam);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  padding: 4px 8px;
-  cursor: pointer;
-  transition:
-    color var(--motion-state-change) ease,
-    border-color var(--motion-state-change) ease;
-}
-
-.collapseToggle:hover:not(:disabled),
-.collapseToggle:focus-visible {
-  border-color: var(--line-strong);
-  outline: none;
-}

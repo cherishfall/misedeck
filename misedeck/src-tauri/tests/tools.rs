@@ -1,9 +1,10 @@
-// Integration tests for the read-only tools commands (issue #21).
+// Integration tests for the read-only tools runners in `mise.rs`
+// (issue #21):
 //
-//   * tools_ls        → mise ls --json
-//   * tools_ls_tool   → mise ls --json <tool>
-//   * tools_outdated  → mise outdated --json --bump
-//   * tools_ls_remote → mise ls-remote --json <tool>
+//   * mise_ls        → mise ls --json
+//   * mise_ls_tool   → mise ls --json <tool>
+//   * mise_outdated  → mise outdated --json --bump
+//   * mise_ls_remote → mise ls-remote --json <tool>
 //
 // The fixture-mise script serves recorded JSON / stderr / exit code
 // per argv joined by `-`. New slugs live under tests/fixtures/mise/.

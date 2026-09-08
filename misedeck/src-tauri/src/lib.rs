@@ -42,8 +42,8 @@ mod json_result {
 
     use super::mise::AppError;
 
-    /// Discriminated union for the read-only tools commands
-    /// (`tools_ls`, `tools_outdated`, `tools_ls_remote`). On success,
+    /// Discriminated union for the read-only query commands
+    /// (`tools_outdated`, `tools_env`, `env_ls`, `tasks_ls`, …). On success,
     /// the raw JSON payload mise returned is shipped as `value`; on
     /// failure, the structured `AppError` is shipped as `err`. The
     /// JS side parses the `value` into the typed shapes defined in

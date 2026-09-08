@@ -247,7 +247,8 @@ export function ExecutionPanel() {
           {state.lines.map((line, i) => (
             <div
               key={i}
-              className={line.stream === "stderr" ? styles.stderrLine : styles.stdoutLine}
+              className={styles.line}
+              data-stream={line.stream}
             >
               {line.text}
             </div>

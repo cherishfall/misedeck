@@ -3,15 +3,9 @@
     "ok": "Ok",
     "cancel": "Cancel",
     "save": "Save",
-    "close": "Close",
-    "copy": "Copy",
-    "search": "Search",
     "refresh": "Refresh",
     "loading": "Loading…",
-    "error": "Error",
-    "retry": "Retry",
     "back": "Back",
-    "next": "Next",
     "clear": "Clear",
     "outdatedCount": "{{count}} outdated",
     "allUpToDate": "All installed tools are up to date.",
@@ -39,9 +33,7 @@
   "miseManagement": {
     "guidedInstallButton": "Guided install",
     "selfUpdateButton": "Update",
-    "releaseNotesLink": "View release notes",
-    "selfUpdateSuccessBody": "mise updated to {{version}}. Reload MiseDeck to pick up the new binary.",
-    "selfUpdateNoProbeBody": "mise self-update completed. The post-update version probe failed — restart MiseDeck to confirm."
+    "releaseNotesLink": "View release notes"
   },
   "nav": {
     "home": "Home",
@@ -51,7 +43,6 @@
     "doctor": "Doctor",
     "settings": "Settings",
     "plugins": "Plugins",
-    "about": "About",
     "regionLabel": "Navigation",
     "mainGroupLabel": "Main navigation",
     "bottomGroupLabel": "App navigation"
@@ -122,7 +113,6 @@
       "toolPlaceholder": "tool (e.g. node)",
       "versionPlaceholder": "version (e.g. 22.11.0)",
       "noPath": "No directory picked",
-      "run": "Link",
       "duplicateVersion": "{{tool}}@{{version}} already exists. Uninstall it first, then link again."
     },
     "queries": {
@@ -231,7 +221,6 @@
     "title": "Env",
     "hint": "Resolved environment variables for the current directory. Add, edit, or remove vars; every write goes through `mise set` / `mise unset` and streams into the panel.",
     "commandHint": "mise env --json-extended · mise set · mise unset",
-    "nav": "Env",
     "listTitle": "Resolved env vars",
     "filterPlaceholder": "Filter env vars…",
     "scope": {
@@ -286,7 +275,6 @@
     "filterPlaceholder": "Filter tasks…",
     "count": "{{count}} tasks",
     "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit --path",
-    "nav": "Tasks",
     "columns": {
       "name": "Name",
       "run": "Run",
@@ -377,14 +365,10 @@
       "status": "Status",
       "shell": "Shell",
       "activated": "Shell activation",
-      "notActivated": "Not activated",
-      "update": "Update",
-      "updateAvailable": "Available",
-      "upToDate": "Up to date"
+      "notActivated": "Not activated"
     },
     "warnings": {
-      "title": "Warnings",
-      "none": "No warnings."
+      "title": "Warnings"
     },
     "configFiles": {
       "title": "Config files",
@@ -484,21 +468,10 @@
   "labels": {
     "version": "Version",
     "binary": "Binary",
-    "minimum": "Minimum",
-    "name": "Name",
-    "versionLabel": "Version",
-    "source": "Source",
-    "lastUsed": "Last used",
     "latestVersion": "Latest"
   },
   "errors": {
-    "miseNotFound": "MiseDeck could not locate the mise binary on this machine.",
-    "miseTooOld": "mise {{found}} is older than the minimum supported {{minimum}}.",
-    "timeout": "mise did not respond within the timeout.",
-    "generic": "MiseDeck hit an unexpected error.",
-    "network": "Network unavailable. Check your connection and try again.",
-    "untrusted": "This config file is not yet trusted. Run `mise trust` to continue.",
-    "unknown": "An unknown error occurred."
+    "timeout": "mise did not respond within the timeout."
   },
   "languages": {
     "english": "English",
@@ -513,7 +486,6 @@
   },
   "execution": {
     "title": "Execution",
-    "commandLabel": "Command",
     "statusRunning": "running",
     "statusOk": "ok · {{duration}}s",
     "statusFailed": "failed ({{duration}}s, exit {{code}})",
@@ -524,7 +496,6 @@
     "cancel": "Cancel",
     "dismiss": "Dismiss",
     "emptyHint": "No command has been run yet.",
-    "demoRunDoctor": "Run mise doctor",
     "reopen": "Execution",
     "reopenRunning": "Execution · running"
   },
@@ -541,8 +512,6 @@
     "bannerBody": "Your {{shell}} config at {{rcPath}} does not have `mise activate`. Add the line below so mise can manage your shell's tools.",
     "bannerBodyUnknownShell": "MiseDeck could not detect your shell ({{name}}). Add the appropriate `mise activate <shell>` line to your shell's rc file to use mise in interactive sessions.",
     "copyLineButton": "Copy the line",
-    "dismissButton": "Dismiss",
-    "errorTitle": "Could not check shell activation",
-    "errorBody": "MiseDeck could not read your shell's rc file. The activation banner will reappear on the next launch."
+    "dismissButton": "Dismiss"
   }
 }

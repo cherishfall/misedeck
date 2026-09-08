@@ -37,11 +37,6 @@ export function dirContextToCwd(ctx: DirContext): string | null {
   return ctx.kind === "dir" ? ctx.path : null;
 }
 
-/** Display label for the context, used in the bar. */
-export function dirContextLabel(ctx: DirContext): string {
-  return ctx.kind === "dir" ? ctx.path : "Global";
-}
-
 const STORAGE_KEY = "misedeck.directoryContext.v1";
 const RECENTS_KEY = "misedeck.directoryRecents.v1";
 const MAX_RECENTS = 8;

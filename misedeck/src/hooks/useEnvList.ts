@@ -1,7 +1,6 @@
 // Hooks for the first-class Env page (issue #41).
 //
-//   * useEnvList      → mise env --json-extended (with source)
-//   * useGlobalEnvList → mise env --json-extended for the global context
+//   * useEnvList → mise env --json-extended (with source)
 //
 // Each hook is keyed by the directory context so switching Global ↔ a
 // directory refetches the data.
@@ -39,21 +38,6 @@ export function useEnvList(): UseQueryResult<JsonResult> {
   });
 }
 
-/**
- * Global resolved env list (`mise env --json-extended` with no `-C`).
- * Disabled when the active context is already global.
- */
-export function useGlobalEnvList(): UseQueryResult<JsonResult> {
-  const { cwd } = useDirectory();
-  return useQuery({
-    queryKey: ["env", "ls", null],
-    queryFn: () => envLs(null),
-    enabled: cwd !== null,
-    refetchOnWindowFocus: false,
-    retry: false,
-  });
-}
-
 /** Convenience wrapper that parses `useEnvList` into typed entries. */
 export function useParsedEnvList(): {
   isPending: boolean;
@@ -73,11 +57,3 @@ export function useParsedEnvList(): {
   return { isPending: false, data: parseEnvExtendedPayload(q.data.value), error: null };
 }
 
-/** Convenience wrapper that parses `useGlobalEnvList`. */
-export function useParsedGlobalEnvList(): EnvEntry[] | null {
-  const q = useGlobalEnvList();
-  if (q.isPending || q.error || !q.data || q.data.kind === "err") {
-    return null;
-  }
-  return parseEnvExtendedPayload(q.data.value);
-}

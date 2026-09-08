@@ -21,6 +21,7 @@ import {
   type TableColumn,
 } from "../../components";
 import { useParsedDoctor } from "../../hooks/useIssue29";
+import { writeClipboard } from "../../utils/clipboard";
 import { useActivation } from "../../state/activationContext";
 import type { DoctorLine, DoctorPayload } from "../../types/tauri";
 
@@ -355,24 +356,13 @@ function UpgradeNotice({
 
   const onCopy = async () => {
     const command = "mise self-update";
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(command);
-      } else {
-        const ta = document.createElement("textarea");
-        ta.value = command;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-      }
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
+    const ok = await writeClipboard(command);
+    if (!ok) {
       /* clipboard unavailable — leave the affordance inert */
+      return;
     }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
   };
 
   return (

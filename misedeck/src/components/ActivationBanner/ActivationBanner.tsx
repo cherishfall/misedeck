@@ -29,6 +29,7 @@ import {
 
 import { Banner } from "../Banner/Banner";
 import { Button } from "../Button/Button";
+import { writeClipboard } from "../../utils/clipboard";
 
 import styles from "./ActivationBanner.module.css";
 
@@ -144,28 +145,12 @@ async function copyToClipboard(
   text: string,
   onCopied: (v: boolean) => void,
 ): Promise<void> {
-  try {
-    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      await navigator.clipboard.writeText(text);
-    } else {
-      // Fallback: a hidden textarea + execCommand. Used on
-      // older webviews; Tauri 2's webview is recent enough
-      // that this branch should never run, but it keeps the
-      // affordance working in headless smoke tests.
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-    }
-    onCopied(true);
-    window.setTimeout(() => onCopied(false), 1500);
-  } catch {
+  const ok = await writeClipboard(text);
+  if (!ok) {
     // Silent failure — the banner stays put, the user can
     // re-click. Surfacing a toast here would be noise.
+    return;
   }
+  onCopied(true);
+  window.setTimeout(() => onCopied(false), 1500);
 }

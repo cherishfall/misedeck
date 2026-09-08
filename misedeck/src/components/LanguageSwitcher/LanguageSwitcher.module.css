@@ -4,10 +4,6 @@
  * any number of supported languages. Every color and type token comes
  * from tokens.css. */
 
-.root {
-  position: relative;
-}
-
 .trigger {
   display: inline-flex;
   align-items: center;
