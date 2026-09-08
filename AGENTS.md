@@ -23,6 +23,7 @@ An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + Re
 - Stay inside the ticket's acceptance criteria. Notice something the ticket does not cover? Comment on the issue instead of expanding scope.
 - Autonomous mode: when the user asks you to drive tickets continuously, after closing one ticket move straight to the next startable one. Stop and ask only when: a decision needs human taste (visual design, naming), an outward-facing action is required (release, repo settings, secrets), the same ticket has failed three attempts, or requirements are ambiguous.
 - Feedback review ends with a proactive sweep. The product owner is not a professional UI/product reviewer — reported issues are a subset of what exists. When closing a feedback cycle, audit the whole app for same-class and adjacent issues; report what you found, **including the checks that came back clean**, and either flag a finding for a decision or ticket it on professional judgment. Staying silent about a known gap is not an option.
+- Rule-introducing tickets sweep their own class. When a ticket fixes one instance of a pattern AND establishes a rule (i18n concatenation, hardcoded tokens, glyph misuse, button-variant vocabulary, …), the ticket's scope includes an app-wide sweep of that same pattern — fix every occurrence in the same commit, don't leave same-class residue for follow-up tickets. When the class is mechanically checkable, prefer a lint guard wired into `npm run ci` over a written rule alone (generation-time, not review-time).
 
 ## Non-negotiables
 
