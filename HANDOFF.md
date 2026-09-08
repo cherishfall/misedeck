@@ -2,7 +2,17 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-08, updated)
+## CURRENT STATE (2026-09-08, updated 2)
+
+**Post-beta8 cleanup batch done.** Follow-up tickets **#114–#116** (spawned from the beta8 adjacent-findings review) implemented and closed; **AGENTS.md gained a new working agreement** (en + zh-CN, commit `92247b2`): rule-introducing tickets must sweep their own class app-wide in the same commit, and mechanically checkable classes should get lint guards in `npm run ci` instead of written rules alone.
+
+| Ticket | Commit | Notes |
+| --- | --- | --- |
+| #114 shared OutdatedHint | `eb9f8b9` | one component owns loading/n>0/all-up-to-date; `common.outdatedCount`/`common.allUpToDate` ({{count}} interpolation); `tools.outdatedBadge`/`tools.noOutdated` retired — **#102 deviation formally resolved**; count format changed `outdated (3)` → `3 outdated` (visual, owner to verify) |
+| #115 i18n-concat lint | `339f7d0` | `scripts/check-i18n-concat.ts` in ci (AST walk, rejects t(…) as + operand / in template literals); sweep fixed 4 sites (TasksPage count + hardcoded `runLabel required`, ThemeSwitcher, EnvPage/Preview source badges); rule codified in conventions.md both locales |
+| #116 component font-size sweep | `da5a38e` | `scripts/check-css-font-size.ts` in ci; 18 literals in 8 component CSS modules folded to `--size-*` tokens, zero remain. **Largest visual fold: EmptyState title 18→14px**; full fold table on the issue — owner visual verification needed |
+
+**Still open / pending owner decision:** StyleGuide demo drift — recommendation delivered to owner: delete page-pattern demo exhibits (hand-copied page fragments like the stale Latest-column table demo), keep only demos built from real shared components. Awaiting owner go-ahead before ticketing.
 
 **Beta8 batch fully implemented.** All 16 tickets **#98–#113** closed in one autonomous run; SPEC parent **#97 stays open** pending the owner's in-person visual verification (same protocol as #86). Every ticket: `npm run ci` (+ `cargo check` where Rust touched) green, static self-audit, **NOT visually verified**.
 
