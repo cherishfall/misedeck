@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router";
 
 import { I18N_KEYS } from "../../i18n/keys";
+import { usePersistentState } from "../../hooks/usePersistentState";
 import { useDirectory } from "../../state/directoryContext";
 import {
   PageRefreshContext,
@@ -39,27 +40,11 @@ interface PageShellProps {
   children: ReactNode;
 }
 
-function loadCollapsed(): boolean {
-  try {
-    const raw = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-    return raw === "true";
-  } catch {
-    return false;
-  }
-}
-
-function persistCollapsed(collapsed: boolean) {
-  try {
-    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
-  } catch {
-    // ignore
-  }
-}
-
 export function PageShell({ children }: PageShellProps) {
   const { t } = useTranslation();
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(() => loadCollapsed());
+  // Collapsed state persists across restarts (issue #108).
+  const [collapsed, setCollapsed] = usePersistentState(SIDEBAR_COLLAPSED_KEY, false);
   const { state: execState, dismiss } = useExecutionContext();
   const { context } = useDirectory();
   // The page-registered refresh callback (issue #98): the current page
@@ -67,10 +52,6 @@ export function PageShell({ children }: PageShellProps) {
   // DirectoryIndicator strip invokes whatever is registered.
   const [refresh, setRefresh] = useState<PageRefreshCallback | null>(null);
   const refreshContext = useMemo(() => ({ refresh, setRefresh }), [refresh]);
-
-  useEffect(() => {
-    persistCollapsed(collapsed);
-  }, [collapsed]);
 
   // Read-only pages render without the panel. If the user navigates to one
   // while no command is running, hide the panel while preserving history so

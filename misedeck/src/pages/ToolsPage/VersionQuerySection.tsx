@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { I18N_KEYS } from "../../i18n/keys";
 import { isAppError } from "../../api/mise";
 import type { JsonResult } from "../../types/tauri";
+import { usePersistentState } from "../../hooks/usePersistentState";
 import { Button, EmptyState, Pagination, Table, sortRows, type SortState, type TableColumn } from "../../components";
 import { useExecutionContext } from "../../components/ExecutionPanel";
 
@@ -27,6 +28,9 @@ import styles from "./VersionQuerySection.module.css";
 const PAGER_THRESHOLD = 10;
 /** Page-size floor; values below reset to this on commit. */
 const MIN_PAGE_SIZE = 10;
+/** localStorage namespace for each table's persisted pageSize
+ *  (issue #108), keyed per table by the caller's `pageSizeKey`. */
+const PAGE_SIZE_STORAGE_PREFIX = "misedeck.pageSize.";
 
 interface VersionQuerySectionProps<TRow> {
   /** Section heading (e.g. "Installed versions"). */
@@ -50,6 +54,9 @@ interface VersionQuerySectionProps<TRow> {
   columns: TableColumn<TRow>[];
   rows: TRow[];
   rowKey: (row: TRow) => string;
+  /** Per-table persistence key for the page size (issue #108), e.g.
+   *  "tools.installed"; each table's pageSize restores independently. */
+  pageSizeKey: string;
   toolPlaceholder: string;
   runLabel: string;
   clearLabel: string;
@@ -71,6 +78,7 @@ export function VersionQuerySection<TRow>({
   columns,
   rows,
   rowKey,
+  pageSizeKey,
   toolPlaceholder,
   runLabel,
   clearLabel,
@@ -84,7 +92,14 @@ export function VersionQuerySection<TRow>({
   const isMutationRunning = execState.status === "running";
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(MIN_PAGE_SIZE);
+  // Page size persists per table across restarts (issue #108); a stored
+  // value below the floor clamps back up.
+  const [storedPageSize, setPageSize] = usePersistentState(
+    PAGE_SIZE_STORAGE_PREFIX + pageSizeKey,
+    MIN_PAGE_SIZE,
+  );
+  const pageSize =
+    Number.isFinite(storedPageSize) ? Math.max(MIN_PAGE_SIZE, storedPageSize) : MIN_PAGE_SIZE;
   // Sort state lives here (controlled, issue #105): sorting applies to
   // the full result set before the page window is sliced, not within it.
   const [sort, setSort] = useState<SortState | null>(null);

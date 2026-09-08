@@ -6,11 +6,15 @@
 // structured result so a read's caller can feed the query cache without
 // invoking mise a second time.
 
-import { useCallback, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import { Channel, invoke } from "@tauri-apps/api/core";
 
 import type { AppError, JsonResult } from "../../types/tauri";
 import { isAppError } from "../../api/mise";
+import { loadPersistent, savePersistent } from "../../hooks/usePersistentState";
+
+/** localStorage key for the panel's persisted open state (issue #108). */
+const PANEL_OPEN_KEY = "misedeck.panelOpen.v1";
 
 export interface RunRequest {
   cwd: string | null;
@@ -264,7 +268,14 @@ function discardingChannel(): Channel<unknown> {
 }
 
 export function useExecution() {
-  const [state, dispatch] = useReducer(reducer, initial);
+  const [state, dispatch] = useReducer(reducer, {
+    ...initial,
+    // Open state restores across restarts (issue #108).
+    isOpen: loadPersistent(PANEL_OPEN_KEY, initial.isOpen),
+  });
+  useEffect(() => {
+    savePersistent(PANEL_OPEN_KEY, state.isOpen);
+  }, [state.isOpen]);
   // We keep the most recent cancel handle on a ref so the cancel button
   // can find it without re-rendering.
   const cancelRef = useRef<(() => void) | null>(null);

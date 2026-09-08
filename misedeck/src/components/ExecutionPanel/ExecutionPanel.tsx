@@ -12,13 +12,21 @@
 // trigger an install, self-update, or arbitrary mise command. The
 // panel itself is presentational.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
+import { usePersistentState } from "../../hooks/usePersistentState";
 import { writeClipboard } from "../../utils/clipboard";
 import { useExecutionContext } from "./ExecutionContext";
 import styles from "./ExecutionPanel.module.css";
+
+/** localStorage key for the persisted panel height (issue #108). */
+const PANEL_HEIGHT_KEY = "misedeck.panelHeight.v1";
+/** Log-area height bounds in px; the default matches the CSS `max-height`. */
+const DEFAULT_PANEL_HEIGHT = 240;
+const MIN_PANEL_HEIGHT = 120;
+const MAX_PANEL_HEIGHT = 600;
 
 /**
  * Build the human-readable command echo (what the user would type in
@@ -65,6 +73,37 @@ export function ExecutionPanel() {
   // Transient "Copied" acknowledgement for the copy affordance.
   const [copied, setCopied] = useState(false);
   const copiedTimerRef = useRef<number | null>(null);
+
+  // Log height is user-adjustable via the top-edge drag handle and
+  // persists across restarts (issue #108); a corrupt or out-of-range
+  // stored value clamps into bounds.
+  const [storedHeight, setStoredHeight] = usePersistentState(PANEL_HEIGHT_KEY, DEFAULT_PANEL_HEIGHT);
+  const panelHeight = Number.isFinite(storedHeight)
+    ? Math.min(MAX_PANEL_HEIGHT, Math.max(MIN_PANEL_HEIGHT, storedHeight))
+    : DEFAULT_PANEL_HEIGHT;
+
+  // Drag the panel's top edge to resize: moving up grows the log. Same
+  // pointer pattern as the table column resize (issue #104).
+  const beginHeightResize = (e: ReactPointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startHeight = panelHeight;
+    const clamp = (px: number) =>
+      Math.round(Math.min(MAX_PANEL_HEIGHT, Math.max(MIN_PANEL_HEIGHT, px)));
+    const previousUserSelect = document.body.style.userSelect;
+    document.body.style.userSelect = "none";
+    const onMove = (ev: PointerEvent) => {
+      const next = clamp(startHeight + (startY - ev.clientY));
+      setStoredHeight((prev) => (prev === next ? prev : next));
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      document.body.style.userSelect = previousUserSelect;
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
 
   // Auto-scroll to bottom unless the user has scrolled up.
   useEffect(() => {
@@ -113,6 +152,11 @@ export function ExecutionPanel() {
 
   return (
     <div className={styles.deck}>
+      <div
+        className={styles.heightHandle}
+        aria-hidden="true"
+        onPointerDown={beginHeightResize}
+      />
       <div className={styles.deckInner}>
         <div className={styles.header}>
           <div className={styles.headerLeft}>
@@ -194,6 +238,7 @@ export function ExecutionPanel() {
           ref={logRef}
           onScroll={handleScroll}
           className={styles.log}
+          style={{ maxHeight: panelHeight }}
           data-testid="execution-log"
         >
           {state.lines.length === 0 && state.status === "idle" && (

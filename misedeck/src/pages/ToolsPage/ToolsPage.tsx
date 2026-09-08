@@ -689,6 +689,7 @@ export function ToolsPage() {
           columns={installedColumns}
           rows={installed.data ?? []}
           rowKey={(r) => `${installedQuery}@${r.version}`}
+          pageSizeKey="tools.installed"
           toolPlaceholder={t(I18N_KEYS.tools.queries.installed.toolPlaceholder)}
           runLabel={t(I18N_KEYS.tools.queries.installed.run)}
           clearLabel={t(I18N_KEYS.tools.queries.installed.clear)}
@@ -710,6 +711,7 @@ export function ToolsPage() {
           columns={remoteColumns}
           rows={remote.data ?? []}
           rowKey={(r) => `${remoteQuery}@${r.version}`}
+          pageSizeKey="tools.remote"
           toolPlaceholder={t(I18N_KEYS.tools.queries.remote.toolPlaceholder)}
           runLabel={t(I18N_KEYS.tools.queries.remote.run)}
           clearLabel={t(I18N_KEYS.tools.queries.remote.clear)}

@@ -1,4 +1,5 @@
 .deck {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -113,6 +114,33 @@
 .actionBtn:focus-visible {
   border-color: var(--line-strong);
   outline: none;
+}
+
+/* Top-edge drag handle for resizing the log height (issue #108), styled
+ * after the table column resize handle (issue #104). */
+.heightHandle {
+  position: absolute;
+  top: -4px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: row-resize;
+}
+
+.heightHandle::after {
+  content: "";
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  top: 4px;
+  height: 1px;
+  background: var(--line-strong);
+  opacity: 0;
+  transition: opacity var(--motion-state-change) ease;
+}
+
+.heightHandle:hover::after {
+  opacity: 1;
 }
 
 .log {
