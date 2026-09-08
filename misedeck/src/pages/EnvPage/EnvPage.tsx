@@ -27,12 +27,14 @@ import {
   EmptyState,
   PageShell,
   Table,
+  TableFilter,
   Tooltip,
   commandEcho,
   useRegisterPageRefresh,
   type TableColumn,
 } from "../../components";
 import { useParsedEnvList } from "../../hooks/useEnvList";
+import { useTableFilter } from "../../hooks/useTableFilter";
 import type { EnvSource } from "../../api/miseTools";
 
 import styles from "./EnvPage.module.css";
@@ -150,6 +152,12 @@ export function EnvPage() {
     }));
   }, [env.data]);
 
+  // Text filter over the full row set (issue #106), shared with the
+  // tools / tasks / settings tables via `useTableFilter`.
+  const filter = useTableFilter(envRows, (r) =>
+    [r.name, r.value, r.sourceDetail ?? "", r.sourcePath ?? ""].join("\n"),
+  );
+
   if (detect.isPending) {
     return <EnvLoading />;
   }
@@ -241,20 +249,37 @@ export function EnvPage() {
           )}
 
           {!envError && (
-            <Table<EnvRow>
-              columns={columns}
-              rows={envRows}
-              rowKey={(r) => r.id}
-              fixed
-              resizeKey="env"
-              className={styles.envTable}
-              empty={
-                <EmptyState
-                    title={t(I18N_KEYS.env.empty.title)}
-                  body={t(I18N_KEYS.env.empty.body)}
+            <>
+              <div className={styles.filterBar}>
+                <TableFilter
+                  value={filter.query}
+                  onChange={filter.setQuery}
+                  placeholder={t(I18N_KEYS.env.filterPlaceholder)}
+                  testId="env-filter"
                 />
-              }
-            />
+              </div>
+              <Table<EnvRow>
+                columns={columns}
+                rows={filter.rows}
+                rowKey={(r) => r.id}
+                fixed
+                resizeKey="env"
+                className={styles.envTable}
+                empty={
+                  filter.active ? (
+                    <EmptyState
+                      title={t(I18N_KEYS.common.filter.noMatchTitle)}
+                      body={t(I18N_KEYS.common.filter.noMatchBody)}
+                    />
+                  ) : (
+                    <EmptyState
+                      title={t(I18N_KEYS.env.empty.title)}
+                      body={t(I18N_KEYS.env.empty.body)}
+                    />
+                  )
+                }
+              />
+            </>
           )}
 
           <AddEnvForm onWrite={runWrite} disabled={isRunning} />

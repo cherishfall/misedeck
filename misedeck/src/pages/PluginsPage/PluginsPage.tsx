@@ -11,7 +11,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback } from "react";
 import { useNavigate } from "react-router";
 
 import { I18N_KEYS } from "../../i18n/keys";
@@ -23,11 +23,13 @@ import {
   EmptyState,
   PageShell,
   Table,
+  TableFilter,
   Tooltip,
   useRegisterPageRefresh,
   type TableColumn,
 } from "../../components";
 import { useParsedPluginsList, useParsedRegistry } from "../../hooks/useIssue29";
+import { useTableFilter } from "../../hooks/useTableFilter";
 import type { InstalledPlugin, RegistryItem } from "../../types/tauri";
 
 import styles from "./PluginsPage.module.css";
@@ -37,7 +39,6 @@ export function PluginsPage() {
   const { cwd } = useDirectory();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [query, setQuery] = useState("");
 
   const detect = useQuery({
     queryKey: ["mise", "detect"],
@@ -52,17 +53,12 @@ export function PluginsPage() {
   const pluginsError = plugins.error?.kind === "err" ? plugins.error.err : null;
   const registryError = registry.error?.kind === "err" ? registry.error.err : null;
 
-  const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!registry.data) return [];
-    if (q.length === 0) return registry.data;
-    return registry.data.filter((r) => {
-      if (r.short.toLowerCase().includes(q)) return true;
-      if (r.description?.toLowerCase().includes(q)) return true;
-      if (r.aliases?.some((a) => a.toLowerCase().includes(q))) return true;
-      return r.backends.some((b) => b.toLowerCase().includes(q));
-    });
-  }, [registry.data, query]);
+  // Registry search (issue #106): the shared table filter drives the
+  // registry table too — same interaction as the tools/env/tasks/
+  // settings filters, and the shared input carries the clear button.
+  const filter = useTableFilter(registry.data ?? [], (r) =>
+    [r.short, r.description ?? "", ...(r.aliases ?? []), ...r.backends].join("\n"),
+  );
 
   // Top-toolbar refresh (issue #98): one callback refreshes both the
   // Registry and the installed list.
@@ -222,14 +218,11 @@ export function PluginsPage() {
           </header>
 
           <div className={styles.toolbar}>
-            <input
-              type="text"
-              className={styles.search}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+            <TableFilter
+              value={filter.query}
+              onChange={filter.setQuery}
               placeholder={t(I18N_KEYS.plugins.searchPlaceholder)}
-              spellCheck={false}
-              autoComplete="off"
+              testId="plugins-registry-search"
             />
           </div>
 
@@ -246,12 +239,12 @@ export function PluginsPage() {
           {!registryError && (
             <Table<RegistryItem>
               columns={registryColumns}
-              rows={rows}
+              rows={filter.rows}
               rowKey={(r) => r.short}
               empty={
                 <EmptyState
-                  title={query.trim().length > 0 ? t(I18N_KEYS.plugins.empty.searchTitle) : t(I18N_KEYS.plugins.empty.title)}
-                  body={query.trim().length > 0 ? t(I18N_KEYS.plugins.empty.searchBody) : t(I18N_KEYS.plugins.empty.body)}
+                  title={filter.active ? t(I18N_KEYS.plugins.empty.searchTitle) : t(I18N_KEYS.plugins.empty.title)}
+                  body={filter.active ? t(I18N_KEYS.plugins.empty.searchBody) : t(I18N_KEYS.plugins.empty.body)}
                 />
               }
             />

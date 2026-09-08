@@ -56,28 +56,6 @@
   flex-wrap: wrap;
 }
 
-.search {
-  font-family: var(--font-mono);
-  font-size: var(--size-data);
-  color: var(--text);
-  background: color-mix(in srgb, var(--hull) 60%, transparent);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 6px 10px;
-  min-width: 0;
-  flex: 1 1 260px;
-  transition: border-color var(--motion-state-change) ease;
-}
-
-.search::placeholder {
-  color: var(--dim);
-}
-
-.search:focus {
-  outline: none;
-  border-color: var(--line-strong);
-}
-
 /* ---------- Sections ---------- */
 
 .section {

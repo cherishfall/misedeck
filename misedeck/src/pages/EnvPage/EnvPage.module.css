@@ -92,6 +92,13 @@
   margin: 0;
 }
 
+/* Filter row above the table (issue #106): input right-aligned, matching
+ * the page-toolbar convention (hint left, actions right). */
+.filterBar {
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* ---------- Error state ---------- */
 
 .errorState {

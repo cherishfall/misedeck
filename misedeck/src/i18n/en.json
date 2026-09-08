@@ -11,7 +11,12 @@
     "error": "Error",
     "retry": "Retry",
     "back": "Back",
-    "next": "Next"
+    "next": "Next",
+    "clear": "Clear",
+    "filter": {
+      "noMatchTitle": "No matching rows",
+      "noMatchBody": "No rows match the current filter. Edit or clear the filter to bring the full list back."
+    }
   },
   "directory": {
     "eyebrow": "CURRENT DIRECTORY",
@@ -95,6 +100,7 @@
       "body": "`mise ls --json` did not return. Stderr is preserved in the execution panel."
     },
     "noOutdated": "All installed tools are up to date.",
+    "filterPlaceholder": "Filter tools…",
     "actions": {
       "install": "Install",
       "uninstall": "Uninstall",
@@ -221,6 +227,7 @@
     "commandHint": "mise env --json-extended · mise set · mise unset",
     "nav": "Env",
     "listTitle": "Resolved env vars",
+    "filterPlaceholder": "Filter env vars…",
     "scope": {
       "global": "Global",
       "project": "This directory"
@@ -269,6 +276,7 @@
     "eyebrow": "MISE / TASKS",
     "title": "Tasks",
     "subtitle": "List, run, and edit the mise tasks for the active directory. Writes go through `mise tasks add` and stream into the panel.",
+    "filterPlaceholder": "Filter tasks…",
     "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit --path",
     "nav": "Tasks",
     "columns": {
@@ -335,6 +343,7 @@
     "keyPlaceholder": "setting name",
     "valuePlaceholder": "value",
     "showAll": "Show all (`--all`)",
+    "filterPlaceholder": "Filter settings…",
     "guard": {
       "untrustedBody": "Trust this directory before mutating its settings."
     }

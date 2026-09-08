@@ -38,6 +38,7 @@ import {
   useParsedToolsList,
   useReadIntoCache,
 } from "../../hooks/useToolsList";
+import { useTableFilter } from "../../hooks/useTableFilter";
 import { VersionQuerySection } from "./VersionQuerySection";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -48,6 +49,7 @@ import {
   MiseMissingState,
   PageShell,
   Table,
+  TableFilter,
   Tooltip,
   useRegisterPageRefresh,
   type TableColumn,
@@ -460,6 +462,12 @@ export function ToolsPage() {
     return out;
   }, [tools.data, outdated.data]);
 
+  // Text filter over the full row set (issue #106); sorting applies to
+  // the filtered rows inside the Table.
+  const filter = useTableFilter(rows, (r) =>
+    [r.tool, r.version, r.requested, r.backend ?? "", r.source, r.latest].join("\n"),
+  );
+
   // Mise-missing state.
   if (detect.isPending) {
     return <ToolsLoading />;
@@ -610,6 +618,12 @@ export function ToolsPage() {
                 ? t(I18N_KEYS.tools.outdatedBadge) + ` (${outdated.data.length})`
                 : t(I18N_KEYS.tools.noOutdated)}
           </span>
+          <TableFilter
+            value={filter.query}
+            onChange={filter.setQuery}
+            placeholder={t(I18N_KEYS.tools.filterPlaceholder)}
+            testId="tools-filter"
+          />
         </div>
 
 
@@ -626,16 +640,23 @@ export function ToolsPage() {
         {!toolsError && (
           <Table<ToolRow>
             columns={columns}
-            rows={rows}
+            rows={filter.rows}
             rowKey={(r) => r.id}
             fixed
             resizeKey="tools"
             className={styles.toolsTable}
             empty={
-              <EmptyState
-                title={t(I18N_KEYS.tools.empty.title)}
-                body={t(I18N_KEYS.tools.empty.body)}
-              />
+              filter.active ? (
+                <EmptyState
+                  title={t(I18N_KEYS.common.filter.noMatchTitle)}
+                  body={t(I18N_KEYS.common.filter.noMatchBody)}
+                />
+              ) : (
+                <EmptyState
+                  title={t(I18N_KEYS.tools.empty.title)}
+                  body={t(I18N_KEYS.tools.empty.body)}
+                />
+              )
             }
           />
         )}

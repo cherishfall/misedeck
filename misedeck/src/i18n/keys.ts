@@ -32,6 +32,11 @@ export const I18N_KEYS = {
     retry: "common.retry",
     back: "common.back",
     next: "common.next",
+    clear: "common.clear",
+    filter: {
+      noMatchTitle: "common.filter.noMatchTitle",
+      noMatchBody: "common.filter.noMatchBody",
+    },
   },
   directory: {
     eyebrow: "directory.eyebrow",
@@ -149,6 +154,7 @@ export const I18N_KEYS = {
       body: "tools.error.body",
     },
     noOutdated: "tools.noOutdated",
+    filterPlaceholder: "tools.filterPlaceholder",
     actions: {
       install: "tools.actions.install",
       uninstall: "tools.actions.uninstall",
@@ -275,6 +281,7 @@ export const I18N_KEYS = {
     commandHint: "env.commandHint",
     nav: "env.nav",
     listTitle: "env.listTitle",
+    filterPlaceholder: "env.filterPlaceholder",
     scope: {
       global: "env.scope.global",
       project: "env.scope.project",
@@ -325,6 +332,7 @@ export const I18N_KEYS = {
     subtitle: "tasks.subtitle",
     commandHint: "tasks.commandHint",
     nav: "tasks.nav",
+    filterPlaceholder: "tasks.filterPlaceholder",
     columns: {
       name: "tasks.columns.name",
       run: "tasks.columns.run",
@@ -389,6 +397,7 @@ export const I18N_KEYS = {
     keyPlaceholder: "settings.keyPlaceholder",
     valuePlaceholder: "settings.valuePlaceholder",
     showAll: "settings.showAll",
+    filterPlaceholder: "settings.filterPlaceholder",
     guard: {
       untrustedBody: "settings.guard.untrustedBody",
     },

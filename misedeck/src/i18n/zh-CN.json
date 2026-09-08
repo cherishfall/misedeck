@@ -11,7 +11,12 @@
     "error": "错误",
     "retry": "重试",
     "back": "返回",
-    "next": "下一步"
+    "next": "下一步",
+    "clear": "清除",
+    "filter": {
+      "noMatchTitle": "无匹配行",
+      "noMatchBody": "当前过滤条件没有匹配任何行。修改或清除过滤条件即可恢复完整列表。"
+    }
   },
   "directory": {
     "eyebrow": "当前目录",
@@ -95,6 +100,7 @@
       "body": "`mise ls --json` 未返回结果。stderr 已在执行面板中保留。"
     },
     "noOutdated": "所有已安装工具均为最新版本。",
+    "filterPlaceholder": "过滤工具…",
     "actions": {
       "install": "安装",
       "uninstall": "卸载",
@@ -221,6 +227,7 @@
     "commandHint": "mise env --json-extended · mise set · mise unset",
     "nav": "环境变量",
     "listTitle": "已解析的环境变量",
+    "filterPlaceholder": "过滤环境变量…",
     "scope": {
       "global": "全局",
       "project": "本目录"
@@ -269,6 +276,7 @@
     "eyebrow": "MISE / 任务",
     "title": "任务",
     "subtitle": "列出、运行并编辑当前目录的 mise 任务。写入通过 `mise tasks add`，并在执行面板中实时显示。",
+    "filterPlaceholder": "过滤任务…",
     "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit --path",
     "nav": "任务",
     "columns": {
@@ -335,6 +343,7 @@
     "keyPlaceholder": "设置名",
     "valuePlaceholder": "值",
     "showAll": "显示全部（`--all`）",
+    "filterPlaceholder": "过滤设置…",
     "guard": {
       "untrustedBody": "在修改此目录的设置之前，请先信任它。"
     }

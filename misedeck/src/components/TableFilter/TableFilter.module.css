@@ -1,0 +1,58 @@
+/* TableFilter — shared table text-filter input (issue #106). Styles
+ * follow the registry search input and the version-query clear button
+ * so the interaction looks identical everywhere. */
+
+.filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.input {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  background: color-mix(in srgb, var(--hull) 60%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 6px 10px;
+  /* Wide enough for the longest placeholder in both locales (registry
+   * search: "Search tools, backends, aliases…"); a cut-off placeholder
+   * is a bug. */
+  width: 260px;
+  transition: border-color var(--motion-state-change) ease;
+}
+
+.input::placeholder {
+  color: var(--dim);
+}
+
+.input:hover:not(:disabled) {
+  border-color: var(--line-strong);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--line-strong);
+}
+
+.clear {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  color: var(--ice);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease;
+}
+
+.clear:hover:not(:disabled),
+.clear:focus-visible {
+  color: var(--beam);
+  border-color: var(--line-strong);
+  outline: none;
+}

@@ -59,11 +59,13 @@ import {
   EmptyState,
   PageShell,
   Table,
+  TableFilter,
   Tooltip,
   useRegisterPageRefresh,
   type TableColumn,
 } from "../../components";
 import { useParsedTasksList } from "../../hooks/useTasksList";
+import { useTableFilter } from "../../hooks/useTableFilter";
 
 import type { MiseTask } from "../../types/tauri";
 
@@ -294,6 +296,12 @@ export function TasksPage() {
     }));
   }, [tasks.data]);
 
+  // Text filter over the full row set (issue #106), shared with the
+  // tools / env / settings tables via `useTableFilter`.
+  const filter = useTableFilter(taskRows, (r) =>
+    [r.name, r.run, r.description, r.depends.join(" ")].join("\n"),
+  );
+
   // Mise-missing state.
   if (detect.isPending) {
     return <TasksLoading />;
@@ -445,6 +453,12 @@ export function TasksPage() {
               ? `${tasks.data.length} ${t(I18N_KEYS.tasks.columns.name).toLowerCase()}`
               : t(I18N_KEYS.common.loading)}
           </span>
+          <TableFilter
+            value={filter.query}
+            onChange={filter.setQuery}
+            placeholder={t(I18N_KEYS.tasks.filterPlaceholder)}
+            testId="tasks-filter"
+          />
         </div>
 
 
@@ -485,16 +499,23 @@ export function TasksPage() {
           <>
             <Table<TaskRow>
               columns={columns}
-              rows={taskRows}
+              rows={filter.rows}
               rowKey={(r) => r.id}
               fixed
               resizeKey="tasks"
               className={styles.tasksTable}
               empty={
-                <EmptyState
+                filter.active ? (
+                  <EmptyState
+                    title={t(I18N_KEYS.common.filter.noMatchTitle)}
+                    body={t(I18N_KEYS.common.filter.noMatchBody)}
+                  />
+                ) : (
+                  <EmptyState
                     title={t(I18N_KEYS.tasks.empty.title)}
-                  body={t(I18N_KEYS.tasks.empty.body)}
-                />
+                    body={t(I18N_KEYS.tasks.empty.body)}
+                  />
+                )
               }
             />
 

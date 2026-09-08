@@ -36,11 +36,13 @@ import {
   EmptyState,
   PageShell,
   Table,
+  TableFilter,
   Tooltip,
   useRegisterPageRefresh,
   type TableColumn,
 } from "../../components";
 import { useParsedSettingsList } from "../../hooks/useIssue29";
+import { useTableFilter } from "../../hooks/useTableFilter";
 import type { SettingsItem } from "../../types/tauri";
 
 import styles from "./SettingsPage.module.css";
@@ -127,6 +129,12 @@ export function SettingsPage() {
     [guard.allowed, focusTrustBanner, isRunning, run, cwd],
   );
 
+  // Text filter over the full row set (issue #106), shared with the
+  // tools / env / tasks tables via `useTableFilter`.
+  const filter = useTableFilter(settings.data ?? [], (r) =>
+    [r.key, formatValue(r.value), r.type ?? "", r.source ?? ""].join("\n"),
+  );
+
   if (detect.isPending) {
     return <SettingsLoading />;
   }
@@ -204,6 +212,12 @@ export function SettingsPage() {
               : t(I18N_KEYS.common.loading)}
           </span>
           <div className={styles.toolbarActions}>
+            <TableFilter
+              value={filter.query}
+              onChange={filter.setQuery}
+              placeholder={t(I18N_KEYS.settings.filterPlaceholder)}
+              testId="settings-filter"
+            />
             <label className={styles.showAll}>
               <input
                 type="checkbox"
@@ -241,16 +255,23 @@ export function SettingsPage() {
           <>
             <Table<SettingsItem>
               columns={columns}
-              rows={settings.data ?? []}
+              rows={filter.rows}
               rowKey={(r) => r.key}
               fixed
               resizeKey="settings"
               className={styles.settingsTable}
               empty={
-                <EmptyState
-                  title={t(I18N_KEYS.settings.empty.title)}
-                  body={t(I18N_KEYS.settings.empty.body)}
-                />
+                filter.active ? (
+                  <EmptyState
+                    title={t(I18N_KEYS.common.filter.noMatchTitle)}
+                    body={t(I18N_KEYS.common.filter.noMatchBody)}
+                  />
+                ) : (
+                  <EmptyState
+                    title={t(I18N_KEYS.settings.empty.title)}
+                    body={t(I18N_KEYS.settings.empty.body)}
+                  />
+                )
               }
             />
             <AddSettingForm
