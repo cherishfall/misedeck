@@ -5,7 +5,7 @@
 [mise](https://mise.jdx.dev) 的开源桌面 GUI 客户端。Tauri 2 + React/TypeScript，跨平台（macOS 优先打磨，Windows/Linux 为 beta）。产品原则：
 
 1. **CLI 的 GUI 版**：MiseDeck 是 mise CLI 的 GUI 形态——用 GUI 应当能慢慢学会用 CLI，而不是把 CLI 藏起来。
-2. **贴合 CLI 的交互**：遵循 mise CLI 的使用逻辑和交互逻辑，不发明 CLI 里没有的产品/交互花样。
+2. **贴合 CLI 的交互**：遵循 mise CLI 的使用逻辑和交互逻辑。禁止的是发明 mise 没有的概念、词汇或功能——而不是 GUI 层的交互能力。让 GUI 好用的呈现与交互能力（列宽调整、复制路径、安装前检查等）与 CLI 功能正交，允许且鼓励（ADR-0007）。
 3. **只用 CLI 的词汇**：不发明 mise 没有的新概念和新名词（ADR-0004），用 mise 原有的概念和名词构建产品。
 
 ## 动手写代码前
