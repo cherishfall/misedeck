@@ -178,3 +178,24 @@
 | 规则沉淀 | ui-ux-rules 新增：**刷新是页面级能力，统一由顶部工具栏提供；页面/区块内不再各自放刷新按钮**（双语，同一反馈周期内固化） |
 | 拟定 issue | labels: enhancement, v1 |
 
+---
+
+## Issue 8【功能裁剪 + 一致性】: 移除「全部升级」+ 安装按钮 variant 统一
+
+**用户原话**: 「工具页面的全部升级按钮去掉，不保留全部升级功能，还有工具页面的安装按钮和插件页面的安装按钮为什么样式不统一呢，这些个按钮样式还是要统一的吧，查看一下其他页面是否有同样的问题呢」
+
+**代码调查结论**:
+
+1. **全部升级**：`ToolsPage.tsx:597-611`（primary sm，禁用原因走 native `title`）。删除面：按钮、`onUpgradeAll`、i18n `tools.actions.upgradeAll` / `tools.noOutdated`（双语 + keys.ts）。`mise outdated` 数据仍供「最新」列使用。规则 A8（数量进标签）保留——功能虽删，规则对其他场景仍有效。
+2. **安装按钮不一致属实**：工具页行内 `:313` 与表单 `:906` 为 `primary`；插件页 Registry `PluginsPage.tsx:139` 为 `secondary`。规则文档 variant 映射表明文 install = primary → 插件页违规。
+3. **全站扫描发现的模糊地带**：「选择目录」在映射表里是 secondary，但概览空状态 `:371` 与 DirectoryIndicator「选择其他目录」为 primary。
+
+**定稿（2026-09-08，用户确认推荐）**:
+
+| 项 | 定稿 |
+|---|---|
+| 全部升级 | 功能整块移除（按钮 + 逻辑 + i18n key） |
+| 插件页安装 | `secondary` → `primary`，与映射表一致 |
+| 选择目录例外条款 | 映射表补例外（双语，已固化）：空状态/缺态下页面唯一出路可为 primary；工具栏多按钮并存时「选择其他目录」降为 secondary |
+| 拟定 issue | ① 移除全部升级（enhancement）；② 按钮 variant 统一（bug） |
+

@@ -64,6 +64,7 @@ One vocabulary, four variants (color/type semantics owned by `visual-language.md
 | `ghost` | Dismissive or low-frequency | cancel, open in editor |
 
 - One global action, one visual role: an action that appears on several surfaces (e.g. "choose directory") renders the same variant from the same shared component everywhere. A bespoke re-implementation of an existing button style is a bug.
+- Exception: when an action is the page's only way forward in an empty/missing state, it may be `primary` there even if the mapping table lists it as `secondary` (e.g. "choose directory" in an empty state); when several buttons share a toolbar, it falls back to its table variant (beta8).
 - Page-level primary buttons are right-aligned (toolbar convention: hint left, actions right, via `justify-content: space-between` or `margin-left: auto`) and always `size="sm"`; `md` is reserved for non-page-toolbar contexts.
 - Known exception, intentional: the execution panel keeps monospace controls — it is the app's terminal context. Do not "unify" its buttons onto the UI-font Button.
 
