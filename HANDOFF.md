@@ -2,7 +2,9 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-08, updated 3)
+## CURRENT STATE (2026-09-08, updated 4)
+
+**v1.0.0-beta.9 RELEASED.** Version bumped in all 6 places, annotated tag `v1.0.0-beta.9` pushed, `release.yml` matrix running (watch run `34242665624`; when published, spot-check SHA256SUMS per `docs/agents/ci.md`). Remaining owner actions: manual visual verification of the beta8/beta9 batches, then close SPEC parent issues #97/#86/#74/#65/#61/#45. Known-leftover list is now empty (UNTRUSTED code dropped + trust fallbacks i18n'd in `157d333`).
 
 **Pre-beta9 cleanup/slimming done** (two audit subagents → two fix subagents; not ticketed, one-shot maintenance commits):
 
