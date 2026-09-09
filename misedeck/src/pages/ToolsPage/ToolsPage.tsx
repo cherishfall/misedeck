@@ -44,6 +44,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Badge,
   Button,
+  CommandHint,
   ConfirmDialog,
   EmptyState,
   KeyForm,
@@ -52,10 +53,10 @@ import {
   PageShell,
   Suggestions,
   Table,
+  type TableColumn,
   TableFilter,
   Tooltip,
   useRegisterPageRefresh,
-  type TableColumn,
 } from "../../components";
 import {
   commandEcho,
@@ -658,7 +659,7 @@ export function ToolsPage() {
       <div className={styles.page}>
         <header className={styles.head}>
           <h1 className={styles.title}>{t(I18N_KEYS.tools.title)}</h1>
-          <p className={styles.commandHint}>{t(I18N_KEYS.tools.commandHint)}</p>
+          <CommandHint>{t(I18N_KEYS.tools.commandHint)}</CommandHint>
           <p className={styles.hint}>{t(I18N_KEYS.tools.hint)}</p>
         </header>
 

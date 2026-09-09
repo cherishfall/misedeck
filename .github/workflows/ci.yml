@@ -67,6 +67,10 @@ jobs:
         working-directory: misedeck
         run: npm run lint:css-font-size
 
+      - name: Command-hint guard
+        working-directory: misedeck
+        run: npm run lint:command-hint
+
       - name: Frontend production build
         working-directory: misedeck
         run: npm run build

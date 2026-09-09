@@ -33,15 +33,16 @@ import {
   Badge,
   Banner,
   Button,
+  CommandHint,
   EmptyState,
   KeyForm,
   PageShell,
   Suggestions,
   Table,
+  type TableColumn,
   TableFilter,
   Tooltip,
   useRegisterPageRefresh,
-  type TableColumn,
 } from "../../components";
 import { useParsedSettingsList } from "../../hooks/useIssue29";
 import { useTableFilter } from "../../hooks/useTableFilter";
@@ -201,7 +202,7 @@ export function SettingsPage() {
       <div className={styles.page}>
         <header className={styles.head}>
           <h1 className={styles.title}>{t(I18N_KEYS.settings.title)}</h1>
-          <p className={styles.commandHint}>{t(I18N_KEYS.settings.commandHint)}</p>
+          <CommandHint>{t(I18N_KEYS.settings.commandHint)}</CommandHint>
           <p className={styles.hint}>{t(I18N_KEYS.settings.hint)}</p>
           <ScopeBadge cwd={cwd} />
         </header>

@@ -56,15 +56,16 @@ import {
 import {
   Banner,
   Button,
+  CommandHint,
   EmptyState,
   KeyForm,
   PageShell,
   Suggestions,
   Table,
+  type TableColumn,
   TableFilter,
   Tooltip,
   useRegisterPageRefresh,
-  type TableColumn,
 } from "../../components";
 import { useParsedTasksList } from "../../hooks/useTasksList";
 import { useTableFilter } from "../../hooks/useTableFilter";
@@ -494,7 +495,7 @@ export function TasksPage() {
       <div className={styles.page}>
         <header className={styles.head}>
           <h1 className={styles.title}>{t(I18N_KEYS.tasks.title)}</h1>
-          <p className={styles.commandHint}>{t(I18N_KEYS.tasks.commandHint)}</p>
+          <CommandHint>{t(I18N_KEYS.tasks.commandHint)}</CommandHint>
           <p className={styles.hint}>{t(I18N_KEYS.tasks.subtitle)}</p>
         </header>
 

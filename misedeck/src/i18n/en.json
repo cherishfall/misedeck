@@ -216,7 +216,7 @@
   "env": {
     "title": "Env",
     "hint": "Resolved environment variables for the current directory. Add, edit, or remove vars; every write goes through `mise set` / `mise unset` and streams into the panel.",
-    "commandHint": "mise env --json-extended · mise set · mise unset",
+    "commandHint": "mise env · mise set · mise unset",
     "listTitle": "Resolved env vars",
     "filterPlaceholder": "Filter env vars…",
     "scope": {
@@ -269,7 +269,7 @@
     "subtitle": "List, run, and edit the mise tasks for the active directory. Writes go through `mise tasks add` and stream into the panel.",
     "filterPlaceholder": "Filter tasks…",
     "count": "{{count}} tasks",
-    "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit --path",
+    "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit",
     "columns": {
       "name": "Name",
       "run": "Run",
@@ -302,7 +302,7 @@
     },
     "openEditorError": {
       "title": "Could not open the config file",
-      "body": "`mise tasks edit --path` did not return a usable path. Stderr is preserved in the execution panel."
+      "body": "`mise tasks edit` did not return a usable path. Stderr is preserved in the execution panel."
     },
     "openConfigError": {
       "body": "`mise config ls --json` did not return a config file to open. Stderr is preserved in the execution panel."

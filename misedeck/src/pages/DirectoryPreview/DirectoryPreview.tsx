@@ -54,13 +54,14 @@ import {
   Badge,
   Banner,
   Button,
+  CommandHint,
   EmptyState,
   OutdatedHint,
   PageShell,
   Table,
+  type TableColumn,
   Tooltip,
   useRegisterPageRefresh,
-  type TableColumn,
 } from "../../components";
 
 import styles from "./DirectoryPreview.module.css";
@@ -342,7 +343,7 @@ export function DirectoryPreview() {
       <div className={styles.page}>
         <header className={styles.head}>
           <h1 className={styles.title}>{t(I18N_KEYS.preview.title)}</h1>
-          <p className={styles.commandHint}>{t(I18N_KEYS.preview.commandHint)}</p>
+          <CommandHint>{t(I18N_KEYS.preview.commandHint)}</CommandHint>
           <p className={styles.hint}>{t(I18N_KEYS.preview.hint)}</p>
         </header>
 

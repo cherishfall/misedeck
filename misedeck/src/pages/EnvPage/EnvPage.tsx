@@ -23,17 +23,18 @@ import {
   Badge,
   Banner,
   Button,
+  commandEcho,
+  CommandHint,
   ConfirmDialog,
   EmptyState,
   KeyForm,
   PageShell,
   Suggestions,
   Table,
+  type TableColumn,
   TableFilter,
   Tooltip,
-  commandEcho,
   useRegisterPageRefresh,
-  type TableColumn,
 } from "../../components";
 import { useParsedEnvList } from "../../hooks/useEnvList";
 import { useTableFilter } from "../../hooks/useTableFilter";
@@ -222,7 +223,7 @@ export function EnvPage() {
       <div className={styles.page}>
         <header className={styles.head}>
           <h1 className={styles.title}>{t(I18N_KEYS.env.title)}</h1>
-          <p className={styles.commandHint}>{t(I18N_KEYS.env.commandHint)}</p>
+          <CommandHint>{t(I18N_KEYS.env.commandHint)}</CommandHint>
           <p className={styles.hint}>{t(I18N_KEYS.env.hint)}</p>
           <ScopeBadge cwd={cwd} />
         </header>

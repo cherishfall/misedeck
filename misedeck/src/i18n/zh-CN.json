@@ -216,7 +216,7 @@
   "env": {
     "title": "环境变量",
     "hint": "当前目录已解析的环境变量。添加、编辑或移除变量；所有写入都通过 `mise set` / `mise unset` 并在执行面板中实时显示。",
-    "commandHint": "mise env --json-extended · mise set · mise unset",
+    "commandHint": "mise env · mise set · mise unset",
     "listTitle": "已解析的环境变量",
     "filterPlaceholder": "过滤环境变量…",
     "scope": {
@@ -269,7 +269,7 @@
     "subtitle": "列出、运行并编辑当前目录的 mise 任务。写入通过 `mise tasks add`，并在执行面板中实时显示。",
     "filterPlaceholder": "过滤任务…",
     "count": "{{count}} 个任务",
-    "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit --path",
+    "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit",
     "columns": {
       "name": "名称",
       "run": "运行",
@@ -302,7 +302,7 @@
     },
     "openEditorError": {
       "title": "无法打开配置文件",
-      "body": "`mise tasks edit --path` 没有返回可用路径。stderr 已在执行面板中保留。"
+      "body": "`mise tasks edit` 没有返回可用路径。stderr 已在执行面板中保留。"
     },
     "openConfigError": {
       "body": "`mise config ls --json` 没有返回可打开的配置文件。stderr 已在执行面板中保留。"

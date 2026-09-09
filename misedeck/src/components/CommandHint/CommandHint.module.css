@@ -1,0 +1,20 @@
+/* CommandHint — the only command-hint styling in the app. Pages delete
+ * their per-page `.commandHint` copies; the 60ch cap and the nowrap
+ * command units live here alone (docs/design/ui-ux-rules.md → command
+ * hint). */
+
+.commandHint {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--ice);
+  margin: 0;
+  max-width: 60ch;
+}
+
+.command {
+  white-space: nowrap;
+}
+
+.separator {
+  color: var(--dim);
+}

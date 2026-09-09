@@ -6,6 +6,7 @@ export { ActivationBanner } from "./ActivationBanner/ActivationBanner";
 export { Badge } from "./Badge/Badge";
 export { Banner } from "./Banner/Banner";
 export { Button } from "./Button/Button";
+export { CommandHint } from "./CommandHint/CommandHint";
 export { ConfirmDialog } from "./ConfirmDialog/ConfirmDialog";
 export { CopyButton } from "./CopyButton/CopyButton";
 export { DataRow } from "./DataRow/DataRow";
