@@ -26,6 +26,17 @@
   font-size: var(--size-label);
 }
 
+/* Inline size: badges that share a line with 12px+ text (scope badges,
+ * Doctor status rows) render at --size-data; quietness comes from color,
+ * never a smaller size. In-cell chips keep the base 10px. */
+.inline {
+  font-size: var(--size-data);
+}
+
+.inline .affix {
+  font-size: var(--size-data);
+}
+
 /* Variants — text + border from the tinted tokens. Background stays
  * subtle so badges never compete with a panel fill. */
 .variant-default {

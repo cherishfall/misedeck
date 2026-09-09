@@ -197,7 +197,7 @@
     },
     "toolSource": {
       "global": "Global",
-      "project": "This directory"
+      "project": "Current directory"
     },
     "env": {
       "emptyTitle": "No env vars",
@@ -225,7 +225,7 @@
     "filterPlaceholder": "Filter env vars…",
     "scope": {
       "global": "Global",
-      "project": "This directory"
+      "project": "Current directory"
     },
     "columns": {
       "name": "Name",
@@ -297,7 +297,7 @@
       "runPlaceholder": "e.g. npm run build",
       "dependsLabel": "Depends on (comma-separated)",
       "dependsPlaceholder": "lint, test",
-      "dependsHelp": "Each name is a task in this directory's `mise.toml`. Separate with commas.",
+      "dependsHelp": "Each name is a task in the current directory's `mise.toml`. Separate with commas.",
       "saveButton": "Save",
       "cancelButton": "Cancel",
       "runRequired": "A run command is required"

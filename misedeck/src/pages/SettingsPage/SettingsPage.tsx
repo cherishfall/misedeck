@@ -307,7 +307,7 @@ function ScopeBadge({ cwd }: { cwd: string | null }) {
   const isGlobal = cwd === null;
   return (
     <div className={styles.scopeRow}>
-      <Badge variant={isGlobal ? "default" : "info"}>
+      <Badge variant={isGlobal ? "default" : "info"} size="inline">
         {isGlobal
           ? t(I18N_KEYS.env.scope.global)
           : t(I18N_KEYS.env.scope.project)}

@@ -125,7 +125,7 @@
 
 .inactiveNote {
   font-family: var(--font-ui);
-  font-size: var(--size-label);
+  font-size: var(--size-data);
   color: var(--dim);
 }
 

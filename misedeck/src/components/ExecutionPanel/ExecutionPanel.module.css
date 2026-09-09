@@ -52,7 +52,7 @@
 
 .label {
   color: var(--dim);
-  font-size: var(--size-label);
+  font-size: var(--size-data);
 }
 
 .command {

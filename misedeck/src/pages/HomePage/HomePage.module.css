@@ -109,7 +109,7 @@
 
 .fallback {
   font-family: var(--font-mono);
-  font-size: var(--size-label);
+  font-size: var(--size-data);
   color: var(--ice);
   text-decoration: none;
   border-bottom: 1px solid transparent;

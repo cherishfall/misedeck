@@ -193,6 +193,7 @@ function DoctorContent({
         <StatusRow label={t(I18N_KEYS.doctor.summary.status)}>
           <Badge
             variant={status.variant}
+            size="inline"
             leading={<span className={styles.statusDot} data-tone={status.dotTone} />}
           >
             {t(status.labelKey)}
@@ -216,7 +217,7 @@ function DoctorContent({
           {rcActivated === null ? (
             <span className={styles.muted}>—</span>
           ) : (
-            <Badge variant={rcActivated ? "success" : "warning"}>
+            <Badge variant={rcActivated ? "success" : "warning"} size="inline">
               {rcActivated ? t(I18N_KEYS.common.ok) : t(I18N_KEYS.doctor.summary.notActivated)}
             </Badge>
           )}

@@ -197,7 +197,7 @@
     },
     "toolSource": {
       "global": "全局",
-      "project": "本目录"
+      "project": "当前目录"
     },
     "env": {
       "emptyTitle": "没有环境变量",
@@ -225,7 +225,7 @@
     "filterPlaceholder": "过滤环境变量…",
     "scope": {
       "global": "全局",
-      "project": "本目录"
+      "project": "当前目录"
     },
     "columns": {
       "name": "名称",
@@ -297,7 +297,7 @@
       "runPlaceholder": "例如 npm run build",
       "dependsLabel": "依赖（逗号分隔）",
       "dependsPlaceholder": "lint, test",
-      "dependsHelp": "每个名称是本目录 `mise.toml` 中的一个任务，使用逗号分隔。",
+      "dependsHelp": "每个名称是当前目录 `mise.toml` 中的一个任务，使用逗号分隔。",
       "saveButton": "保存",
       "cancelButton": "取消",
       "runRequired": "必须填写运行命令"

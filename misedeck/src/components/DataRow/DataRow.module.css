@@ -15,7 +15,7 @@
 .label {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: var(--size-label);
+  font-size: var(--size-data);
   color: var(--ice);
 }
 

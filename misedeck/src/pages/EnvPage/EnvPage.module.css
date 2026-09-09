@@ -250,7 +250,7 @@
 
 .addLabel {
   font-family: var(--font-mono);
-  font-size: var(--size-label);
+  font-size: var(--size-data);
   color: var(--dim);
   margin-right: var(--space-2);
 }
