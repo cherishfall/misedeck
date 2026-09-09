@@ -54,6 +54,11 @@ export const I18N_KEYS = {
     guidedInstallButton: "miseManagement.guidedInstallButton",
     selfUpdateButton: "miseManagement.selfUpdateButton",
     releaseNotesLink: "miseManagement.releaseNotesLink",
+    confirmSelfUpdate: {
+      title: "miseManagement.confirmSelfUpdate.title",
+      bodyWithLatest: "miseManagement.confirmSelfUpdate.bodyWithLatest",
+      bodyUnknownLatest: "miseManagement.confirmSelfUpdate.bodyUnknownLatest",
+    },
   },
   execution: {
     title: "execution.title",

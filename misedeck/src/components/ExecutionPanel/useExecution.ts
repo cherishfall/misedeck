@@ -389,11 +389,11 @@ export function useExecution() {
     await runMiseInternal("install_mise", "install", {}, request);
   }, [runMiseInternal]);
 
-  /** Run `mise self-update` via the cached mise binary. */
+  /** Run `mise self-update --yes` via the cached mise binary. */
   const runSelfUpdate = useCallback(async () => {
     const request: RunRequest = {
       cwd: null,
-      args: ["self-update"],
+      args: ["self-update", "--yes"],
     };
     await runMiseInternal("mise_self_update", "selfUpdate", {}, request);
   }, [runMiseInternal]);

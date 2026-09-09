@@ -50,7 +50,9 @@ export function commandEcho(
   if (kind === "selfUpdate") {
     const parts: string[] = ["mise"];
     if (cwd) parts.push("-C", cwd);
-    parts.push("self-update");
+    // `--yes` is what the runner really passes (issue #125): the CLI's
+    // own `[Y/n]` prompt is bypassed, the GUI confirms first instead.
+    parts.push("self-update", "--yes");
     return parts.join(" ");
   }
   const parts: string[] = ["mise"];

@@ -27,7 +27,7 @@ interface ExecutionContextValue {
   run: (request: RunRequest, options?: RunOptions) => Promise<RunCommandResult>;
   /** Run the official install script. Streams into the panel. */
   runInstall: () => Promise<void>;
-  /** Run `mise self-update`. Streams into the panel. */
+  /** Run `mise self-update --yes`. Streams into the panel. */
   runSelfUpdate: () => Promise<void>;
   /** Run `mise trust` for the given directory. Streams into the panel. */
   runTrust: (cwd: string | null) => Promise<void>;

@@ -228,6 +228,15 @@ pub struct SelfUpdateOutcome {
     pub new_version: Option<String>,
 }
 
+/// argv for `mise self-update`. The `--yes` flag is load-bearing
+/// (issue #125): the runner never wires stdin, so mise's interactive
+/// `[Y/n]` confirmation prompt would read EOF and abort with exit 1
+/// every time. `--yes` bypasses the CLI-side confirmation — the GUI
+/// replaces it with a ConfirmDialog before dispatching.
+pub fn mise_self_update_argv() -> Vec<String> {
+    vec!["self-update".to_string(), "--yes".to_string()]
+}
+
 /// Run `mise self-update` via the existing runner, streaming the same
 /// `RunEvent` line the panel already knows. On success, re-runs
 /// `mise version --json` to capture the post-update version string.
@@ -235,7 +244,7 @@ pub fn run_self_update<F>(mise_path: &Path, mut on_event: F) -> Result<SelfUpdat
 where
     F: FnMut(RunEvent) + Send + 'static,
 {
-    let req = RunRequest::new(vec!["self-update".to_string()]);
+    let req = RunRequest::new(mise_self_update_argv());
     let outcome = run_mise(mise_path, &req, move |e| on_event(e))?;
 
     if outcome.timed_out {

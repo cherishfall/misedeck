@@ -33,7 +33,12 @@
   "miseManagement": {
     "guidedInstallButton": "Guided install",
     "selfUpdateButton": "Update",
-    "releaseNotesLink": "View release notes"
+    "releaseNotesLink": "View release notes",
+    "confirmSelfUpdate": {
+      "title": "Update mise?",
+      "bodyWithLatest": "This will run the exact command below. It upgrades mise from {{current}} to {{latest}} and replaces the installed binary.",
+      "bodyUnknownLatest": "This will run the exact command below. It upgrades mise from {{current}} to the latest release and replaces the installed binary."
+    }
   },
   "nav": {
     "home": "Home",

@@ -33,7 +33,12 @@
   "miseManagement": {
     "guidedInstallButton": "引导式安装",
     "selfUpdateButton": "更新版本",
-    "releaseNotesLink": "查看发布说明"
+    "releaseNotesLink": "查看发布说明",
+    "confirmSelfUpdate": {
+      "title": "更新 mise？",
+      "bodyWithLatest": "将运行下面的确切命令，把 mise 从 {{current}} 升级到 {{latest}}，并替换已安装的二进制文件。",
+      "bodyUnknownLatest": "将运行下面的确切命令，把 mise 从 {{current}} 升级到最新版本，并替换已安装的二进制文件。"
+    }
   },
   "nav": {
     "home": "首页",

@@ -6,7 +6,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 import { detectMise } from "../../api/mise";
 import { I18N_KEYS } from "../../i18n/keys";
@@ -17,6 +17,7 @@ import { compareVersions } from "../../utils/versions";
 import {
   Button,
   CommandHint,
+  ConfirmDialog,
   CopyButton,
   DataRow,
   PageShell,
@@ -24,7 +25,7 @@ import {
   ProgressDot,
   useRegisterPageRefresh,
 } from "../../components";
-import { useExecutionContext } from "../../components/ExecutionPanel";
+import { commandEcho, useExecutionContext } from "../../components/ExecutionPanel";
 
 import styles from "./HomePage.module.css";
 
@@ -65,6 +66,15 @@ export function HomePage() {
   const { t } = useTranslation();
   const { runInstall, runSelfUpdate } = useExecutionContext();
   const queryClient = useQueryClient();
+
+  // Self-update confirmation (issue #125): the runner passes `--yes`,
+  // so mise's own `[Y/n]` prompt is bypassed — the GUI confirms first.
+  // `latest` is only known in the ready state; the too-old gate knows
+  // the found version but not the newest release.
+  const [pendingSelfUpdate, setPendingSelfUpdate] = useState<{
+    current: string;
+    latest?: string;
+  } | null>(null);
 
   const query = useQuery({
     queryKey: ["mise", "detect"],
@@ -177,7 +187,12 @@ export function HomePage() {
                   variant="primary"
                   size="sm"
                   onClick={() => {
-                    void runSelfUpdate().then(onSelfUpdateOk);
+                    if (view.ok) {
+                      setPendingSelfUpdate({
+                        current: view.ok.versionDate,
+                        latest,
+                      });
+                    }
                   }}
                   data-testid="ready-self-update"
                 >
@@ -242,7 +257,8 @@ export function HomePage() {
                 variant="primary"
                 size="sm"
                 onClick={() => {
-                  void runSelfUpdate().then(onSelfUpdateOk);
+                  const { params } = parseAppErrorMessage(view.err?.message ?? "");
+                  setPendingSelfUpdate({ current: params.found ?? "—" });
                 }}
                 data-testid="too-old-self-update"
               >
@@ -293,6 +309,34 @@ export function HomePage() {
             </div>
           </Panel>
         )}
+
+        <ConfirmDialog
+          open={pendingSelfUpdate !== null}
+          title={
+            pendingSelfUpdate ? t(I18N_KEYS.miseManagement.confirmSelfUpdate.title) : ""
+          }
+          body={
+            pendingSelfUpdate
+              ? pendingSelfUpdate.latest
+                ? t(I18N_KEYS.miseManagement.confirmSelfUpdate.bodyWithLatest, {
+                    current: pendingSelfUpdate.current,
+                    latest: pendingSelfUpdate.latest,
+                  })
+                : t(I18N_KEYS.miseManagement.confirmSelfUpdate.bodyUnknownLatest, {
+                    current: pendingSelfUpdate.current,
+                  })
+              : ""
+          }
+          command={commandEcho("selfUpdate", null, [])}
+          confirmLabel={t(I18N_KEYS.miseManagement.selfUpdateButton)}
+          cancelLabel={t(I18N_KEYS.common.cancel)}
+          danger={false}
+          onConfirm={() => {
+            setPendingSelfUpdate(null);
+            void runSelfUpdate().then(onSelfUpdateOk);
+          }}
+          onCancel={() => setPendingSelfUpdate(null)}
+        />
       </div>
     </PageShell>
   );
