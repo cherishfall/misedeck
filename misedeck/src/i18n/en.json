@@ -58,13 +58,11 @@
     "error": "Could not trust the directory. Check the execution panel for details."
   },
   "home": {
-    "eyebrow": "MISE / STATUS",
     "title": "Home",
     "hint": "Is mise installed and new enough for MiseDeck? Guided install and self-update live here; every action streams through the execution panel.",
     "commandHint": "mise version · mise self-update"
   },
   "tools": {
-    "eyebrow": "MISE / TOOLS",
     "title": "Tools",
     "hint": "Tools installed and active for the current directory. Switch versions, install, uninstall, or upgrade from the table; every mutation streams through the execution panel.",
     "commandHint": "mise ls · mise outdated · mise use · mise upgrade · mise uninstall · mise install · mise link · mise ls-remote",
@@ -158,11 +156,10 @@
     }
   },
   "preview": {
-    "eyebrow": "MISE / OVERVIEW",
     "title": "Directory overview",
     "hint": "Resolved tools, env, config files, and lockfile for the current directory.",
     "commandHint": "mise -C <dir> ls · mise outdated · mise trust · mise env · mise config · mise.lock",
-    "nav": "Overview",
+    "nav": "Directory overview",
     "empty": {
       "body": "The env, config, and lockfile sections already show the global resolution; this list is directory-scoped. Choose a directory to see what `mise -C <dir> ls` reports there.",
       "action": "Choose directory"
@@ -217,7 +214,6 @@
     }
   },
   "env": {
-    "eyebrow": "MISE / ENV",
     "title": "Env",
     "hint": "Resolved environment variables for the current directory. Add, edit, or remove vars; every write goes through `mise set` / `mise unset` and streams into the panel.",
     "commandHint": "mise env --json-extended · mise set · mise unset",
@@ -269,7 +265,6 @@
     }
   },
   "tasks": {
-    "eyebrow": "MISE / TASKS",
     "title": "Tasks",
     "subtitle": "List, run, and edit the mise tasks for the active directory. Writes go through `mise tasks add` and stream into the panel.",
     "filterPlaceholder": "Filter tasks…",
@@ -318,7 +313,6 @@
     }
   },
   "settings": {
-    "eyebrow": "MISE / SETTINGS",
     "title": "Settings",
     "hint": "View and edit mise settings for the current directory. Writes go through `mise settings set` / `mise settings unset` and stream into the panel.",
     "commandHint": "mise settings ls · mise settings set · mise settings unset",
@@ -351,7 +345,6 @@
     }
   },
   "doctor": {
-    "eyebrow": "MISE / DOCTOR",
     "title": "Doctor",
     "hint": "A health check for the current directory's mise setup. When `--json` is unavailable, the raw doctor output is rendered with row tinting.",
     "commandHint": "mise doctor",
@@ -397,7 +390,6 @@
     }
   },
   "plugins": {
-    "eyebrow": "MISE / PLUGINS",
     "title": "Plugins",
     "hint": "Installed plugins and the built-in registry of tool shorthands, backends, and aliases.",
     "commandHint": "mise plugins ls · mise registry",

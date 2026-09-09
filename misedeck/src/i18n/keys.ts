@@ -98,7 +98,6 @@ export const I18N_KEYS = {
     bottomGroupLabel: "nav.bottomGroupLabel",
   },
   home: {
-    eyebrow: "home.eyebrow",
     title: "home.title",
     hint: "home.hint",
     commandHint: "home.commandHint",
@@ -114,7 +113,6 @@ export const I18N_KEYS = {
     error: "trust.error",
   },
   tools: {
-    eyebrow: "tools.eyebrow",
     title: "tools.title",
     hint: "tools.hint",
     commandHint: "tools.commandHint",
@@ -208,7 +206,6 @@ export const I18N_KEYS = {
     },
   },
   preview: {
-    eyebrow: "preview.eyebrow",
     title: "preview.title",
     hint: "preview.hint",
     commandHint: "preview.commandHint",
@@ -267,7 +264,6 @@ export const I18N_KEYS = {
     },
   },
   env: {
-    eyebrow: "env.eyebrow",
     title: "env.title",
     hint: "env.hint",
     commandHint: "env.commandHint",
@@ -319,7 +315,6 @@ export const I18N_KEYS = {
     },
   },
   tasks: {
-    eyebrow: "tasks.eyebrow",
     title: "tasks.title",
     subtitle: "tasks.subtitle",
     commandHint: "tasks.commandHint",
@@ -368,7 +363,6 @@ export const I18N_KEYS = {
     },
   },
   settings: {
-    eyebrow: "settings.eyebrow",
     title: "settings.title",
     hint: "settings.hint",
     commandHint: "settings.commandHint",
@@ -401,7 +395,6 @@ export const I18N_KEYS = {
     },
   },
   doctor: {
-    eyebrow: "doctor.eyebrow",
     title: "doctor.title",
     hint: "doctor.hint",
     commandHint: "doctor.commandHint",
@@ -447,7 +440,6 @@ export const I18N_KEYS = {
     },
   },
   plugins: {
-    eyebrow: "plugins.eyebrow",
     title: "plugins.title",
     hint: "plugins.hint",
     commandHint: "plugins.commandHint",

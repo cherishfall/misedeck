@@ -58,13 +58,11 @@
     "error": "无法信任该目录。请查看执行面板了解详情。"
   },
   "home": {
-    "eyebrow": "MISE / 状态",
     "title": "首页",
     "hint": "检测 mise 是否已安装且版本满足 MiseDeck 的要求；引导安装与自更新都在这里进行，所有操作都通过执行面板实时显示。",
     "commandHint": "mise version · mise self-update"
   },
   "tools": {
-    "eyebrow": "MISE / 工具",
     "title": "工具",
     "hint": "当前目录中已安装并处于活动状态的工具。在表格中切换版本、安装、卸载或升级；所有变更都通过执行面板实时显示。",
     "commandHint": "mise ls · mise outdated · mise use · mise upgrade · mise uninstall · mise install · mise link · mise ls-remote",
@@ -158,11 +156,10 @@
     }
   },
   "preview": {
-    "eyebrow": "MISE / 概览",
     "title": "目录概览",
     "hint": "当前目录解析出的工具、环境变量、配置文件与 lockfile。",
     "commandHint": "mise -C <dir> ls · mise outdated · mise trust · mise env · mise config · mise.lock",
-    "nav": "概览",
+    "nav": "目录概览",
     "empty": {
       "body": "环境变量、配置文件与 lockfile 各节已展示全局解析结果；此列表按目录解析。选择一个目录，查看 `mise -C <dir> ls` 在该目录的结果。",
       "action": "选择目录"
@@ -217,7 +214,6 @@
     }
   },
   "env": {
-    "eyebrow": "MISE / 环境变量",
     "title": "环境变量",
     "hint": "当前目录已解析的环境变量。添加、编辑或移除变量；所有写入都通过 `mise set` / `mise unset` 并在执行面板中实时显示。",
     "commandHint": "mise env --json-extended · mise set · mise unset",
@@ -269,7 +265,6 @@
     }
   },
   "tasks": {
-    "eyebrow": "MISE / 任务",
     "title": "任务",
     "subtitle": "列出、运行并编辑当前目录的 mise 任务。写入通过 `mise tasks add`，并在执行面板中实时显示。",
     "filterPlaceholder": "过滤任务…",
@@ -318,7 +313,6 @@
     }
   },
   "settings": {
-    "eyebrow": "MISE / 设置",
     "title": "设置",
     "hint": "查看并编辑当前目录的 mise 设置。写入通过 `mise settings set` / `mise settings unset` 并在执行面板中实时显示。",
     "commandHint": "mise settings ls · mise settings set · mise settings unset",
@@ -351,7 +345,6 @@
     }
   },
   "doctor": {
-    "eyebrow": "MISE / 诊断",
     "title": "诊断",
     "hint": "当前目录的 mise 健康检查。当 `--json` 不可用时，原始 doctor 输出会以行级色调渲染。",
     "commandHint": "mise doctor",
@@ -397,7 +390,6 @@
     }
   },
   "plugins": {
-    "eyebrow": "MISE / PLUGINS",
     "title": "插件",
     "hint": "已安装插件，以及内置 registry 中的工具别名、后端与别名信息。",
     "commandHint": "mise plugins ls · mise registry",

@@ -18,14 +18,6 @@
   gap: var(--space-2);
 }
 
-.eyebrow {
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--ice);
-}
-
 .title {
   font-family: var(--font-display);
   font-weight: 600;

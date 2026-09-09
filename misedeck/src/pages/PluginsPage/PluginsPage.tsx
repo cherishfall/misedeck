@@ -233,7 +233,6 @@ export function PluginsPage() {
     <PageShell>
       <div className={styles.page}>
         <header className={styles.head}>
-          <div className={styles.eyebrow}>{t(I18N_KEYS.plugins.eyebrow)}</div>
           <h1 className={styles.title}>{t(I18N_KEYS.plugins.title)}</h1>
           <p className={styles.commandHint}>{t(I18N_KEYS.plugins.commandHint)}</p>
           <p className={styles.hint}>{t(I18N_KEYS.plugins.hint)}</p>

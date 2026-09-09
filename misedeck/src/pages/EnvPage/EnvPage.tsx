@@ -221,7 +221,6 @@ export function EnvPage() {
     <PageShell>
       <div className={styles.page}>
         <header className={styles.head}>
-          <div className={styles.eyebrow}>{t(I18N_KEYS.env.eyebrow)}</div>
           <h1 className={styles.title}>{t(I18N_KEYS.env.title)}</h1>
           <p className={styles.commandHint}>{t(I18N_KEYS.env.commandHint)}</p>
           <p className={styles.hint}>{t(I18N_KEYS.env.hint)}</p>

@@ -1,14 +1,14 @@
-// EmptyState — eyebrow + title + body + optional CTA. Used when a page
-// or panel has nothing to show yet (no tools installed, no tasks
-// defined, no plugins registered). The eyebrow follows the
-// `MISE / SECTION` convention so the empty context is clear.
+// EmptyState — optional eyebrow + title + body + optional CTA. Used
+// when a page or panel has nothing to show yet (no tools installed,
+// no tasks defined, no plugins registered). The eyebrow is standalone
+// decoration naming the empty context (visual-language.md).
 
 import type { ReactNode } from "react";
 
 import styles from "./EmptyState.module.css";
 
 interface EmptyStateProps {
-  /** Tracked eyebrow, e.g. "MISE / TOOLS". Optional — omit when the page header already carries the eyebrow. */
+  /** Small eyebrow label above the title (e.g. the section name). Optional. */
   eyebrow?: ReactNode;
   /** Display title, e.g. "No tools installed". */
   title: ReactNode;

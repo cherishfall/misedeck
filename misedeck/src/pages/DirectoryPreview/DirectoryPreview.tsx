@@ -341,7 +341,6 @@ export function DirectoryPreview() {
     <PageShell>
       <div className={styles.page}>
         <header className={styles.head}>
-          <div className={styles.eyebrow}>{t(I18N_KEYS.preview.eyebrow)}</div>
           <h1 className={styles.title}>{t(I18N_KEYS.preview.title)}</h1>
           <p className={styles.commandHint}>{t(I18N_KEYS.preview.commandHint)}</p>
           <p className={styles.hint}>{t(I18N_KEYS.preview.hint)}</p>

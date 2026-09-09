@@ -6,8 +6,8 @@
 // the same screen in different contexts.
 //
 // Empty state follows the EmptyState pattern (eyebrow / title / body
-// + optional CTA); the eyebrow uses the MISE / SECTION
-// convention.
+// + optional CTA). The panel replaces the page header entirely, so the
+// eyebrow slot carries the panel's title text.
 
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
