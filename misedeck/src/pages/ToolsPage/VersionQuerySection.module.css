@@ -71,7 +71,7 @@
 
 .clear {
   font-family: var(--font-mono);
-  font-size: var(--size-label);
+  font-size: var(--size-data);
   color: var(--ice);
   background: transparent;
   border: 1px solid var(--line);
