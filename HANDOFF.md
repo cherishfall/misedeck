@@ -2,7 +2,28 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-09)
+## CURRENT STATE (2026-09-09, evening)
+
+**v1.0.0-beta.10 released** (commit `96449b2`, tag pushed + verified on remote, release run `34371860413`). Carries the beta9 batch.
+
+**Beta9 batch fully implemented and closed.** Tickets **#120–#127** all closed in one autonomous run; SPEC parent **#119 stays open** pending owner visual verification (commented with the beta.10 tag/run).
+
+| Ticket | Commit | Notes |
+| --- | --- | --- |
+| #120 toolbar mode label 12px + zh tracking | `843b322` | `.eyebrow`→`.modeLabel`; `:lang(zh)` override anchored by `document.documentElement.lang` |
+| #121 visual-balance floor ×12 + Badge inline + 当前目录 | `c776b9b` | Badge `size="inline"`; no lint (class ruled not mechanically decidable) |
+| #122 choose-directory primary + drop "…" labels | `c6e11d7` | new `lint:i18n-ellipsis` guard |
+| #123 page-eyebrow removal + nav 目录概览 | `b766ba6` | 8 pages; 8 eyebrow i18n keys deleted |
+| #124 shared CommandHint + drop internal flags | `614d71f` | new `lint:command-hint` guard; no component test (no test runner) |
+| #125 self-update `--yes` + GUI ConfirmDialog | `c05cb99` | root cause: stdin EOF on `[Y/n]` prompt; new Rust test suite `tests/install.rs` |
+| #126 spacing tokens + check-css-spacing | `5692f50` | 23 literals (ticket said 24); 4 half-step `--space-*` tokens added; **two 7px→6px judgment calls (Badge, DoctorPage warningDot) — 1px visual shift, owner to eyeball** |
+| #127 closing sweep | `ab5b5b0` | fixed 4 same-class small-text residue sites; full clean-check report on the issue; **flagged (unticketed): 2 untokenized letter-spacing literals (Button 0.04em, ConfirmDialog 0.02em) — no tracking-token rule exists** |
+
+**Open SPEC parents awaiting owner visual verification:** #45, #61, #65, #74, #86, #97, **#119** (new — verify against beta.10).
+
+**Owner's standing meta-directives:** proactive-sweep reporting enforced (report clean checks too); NO agent-side visual verification ever unless asked; owner has paused visual nitpicking — function work resumes after this batch is verified.
+
+**Previous state (2026-09-09, morning):**
 
 **Beta9 feedback round collected, specced, ticketed — awaiting implementation in a fresh session.** SPEC parent **#119**; tickets **#120–#127** (all `ready-for-agent`; #127 closing sweep is natively blocked by #120–#126). Source of truth for every settlement: `docs/feedback/beta9-feedback-scratch.md` (owner's verbatim quotes + per-class sweeps + 定稿). Mapping: #120 toolbar mode label 12px/zh-CN tracking, #121 inline 12px floor ×13 + Badge inline size + 本目录→当前目录, #122 choose-directory primary everywhere + drop "…" labels, #123 page-eyebrow row removal + nav 目录概览, #124 shared CommandHint + drop internal flags, #125 self-update `--yes` + GUI ConfirmDialog, #126 spacing literals → tokens + `check-css-spacing` lint, #127 closing sweep.
 
