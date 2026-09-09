@@ -21,14 +21,21 @@
   min-width: 0;
 }
 
-.eyebrow {
+.modeLabel {
   flex: none;
   font-family: var(--font-mono);
-  font-size: var(--size-label);
+  font-size: var(--size-data);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--ice);
   white-space: nowrap;
+}
+
+/* zh-CN: CJK has no uppercase and wide tracking scatters Han glyphs
+ * (visual-language.md eyebrow note). */
+.modeLabel:lang(zh) {
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .path {

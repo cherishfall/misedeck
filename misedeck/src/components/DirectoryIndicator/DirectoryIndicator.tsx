@@ -100,7 +100,7 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
         aria-label={t(I18N_KEYS.directory.globalButton)}
       >
         <div className={styles.row}>
-          <span className={styles.eyebrow}>{t(I18N_KEYS.directory.globalMode)}</span>
+          <span className={styles.modeLabel}>{t(I18N_KEYS.directory.globalMode)}</span>
           <div className={styles.actions}>
             {pageRefresh && (
               <Button
@@ -134,7 +134,7 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
   return (
     <div className={styles.strip} role="region" aria-label={t(I18N_KEYS.directory.regionLabel)}>
       <div className={styles.row}>
-        <span className={styles.eyebrow}>{t(I18N_KEYS.directory.eyebrow)}</span>
+        <span className={styles.modeLabel}>{t(I18N_KEYS.directory.eyebrow)}</span>
         <Tooltip text={path}>
           <span className={styles.path} data-testid="directory-indicator-path">{path}</span>
         </Tooltip>

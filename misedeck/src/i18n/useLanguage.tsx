@@ -94,6 +94,12 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     [language, setLanguage],
   );
 
+  // Reflect the active language on <html lang> so locale-scoped CSS
+  // (`:lang(zh)` — e.g. zh-CN tracking overrides) can key off it.
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 

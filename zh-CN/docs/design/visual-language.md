@@ -65,8 +65,8 @@ MiseDeck 界面的设计系统基础。在 issue #37 中重写：首个设计冲
 
 - 衬线 display 字体是 mise.jdx.dev 的编辑式签名 —— 只花在标题与 wordmark 上，绝不用于数据或控件。
 - zh-CN：display 文本回退到 `Songti SC` / `SimSun`（中文衬线），UI 文本回退到 `PingFang SC` / `system-ui`；Latin 数据保持 JetBrains Mono。
-- 基准字号 14px（`--size-base`），数据恰好 12px（`--size-data`——单一值，不是区间），眉签 10px（`--size-label`），display 26px（`--size-display`）。无流式字号；桌面应用密度。
-- 页面 header 眉签（display 标题上方的 `MISE / X`）已退役（beta9）：侧栏已高亮当前页、display 标题已命名页面，那行眉签是纯重复——mise 官网的眉签是给一个长页面内部的区块命名的，这个角色在 MiseDeck 已由每页独立标题承担。眉签仅以小型模式/区块标签的形式存活（工具栏的「当前目录 / Global mode」）。zh-CN 眉签用 `letter-spacing: normal`——CJK 没有大写，宽字距会把汉字撑散；等宽字体、`--ice` 与小字号已足以承载眉签角色。
+- 基准字号 14px（`--size-base`），数据恰好 12px（`--size-data`——单一值，不是区间），眉签作为独立装饰时 10px（`--size-label`），display 26px（`--size-display`）。无流式字号；桌面应用密度。
+- 页面 header 眉签（display 标题上方的 `MISE / X`）已退役（beta9）：侧栏已高亮当前页、display 标题已命名页面，那行眉签是纯重复——mise 官网的眉签是给一个长页面内部的区块命名的，这个角色在 MiseDeck 已由每页独立标题承担。眉签以工具栏模式标签（「当前目录 / Global mode」）与独立装饰（空态）的形式存活；工具栏标签与 12px 控件共享基线，因此渲染为 `--size-data`——仍是眉签样式（等宽、`--ice`、拉丁文大写 + 字距），但不低于共享行字号下限（`ui-ux-rules.md` 视觉平衡）。zh-CN 眉签用 `letter-spacing: normal`——CJK 没有大写，宽字距会把汉字撑散；等宽字体与 `--ice` 已足以承载眉签角色。
 - 区块标签只为一个区块命名一次：绝不在该页的卡片内重复同名标签，绝不在同一页面上堆叠相同的标签。
 
 ## 布局
