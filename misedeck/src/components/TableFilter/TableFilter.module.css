@@ -15,7 +15,7 @@
   background: color-mix(in srgb, var(--hull) 60%, transparent);
   border: 1px solid var(--line);
   border-radius: 4px;
-  padding: 6px 10px;
+  padding: var(--space-1-5) var(--space-2-5);
   /* Wide enough for the longest placeholder in both locales (registry
    * search: "Search tools, backends, aliases…"); a cut-off placeholder
    * is a bug. */
@@ -43,7 +43,7 @@
   background: transparent;
   border: 1px solid var(--line);
   border-radius: 4px;
-  padding: 4px 10px;
+  padding: var(--space-1) var(--space-2-5);
   cursor: pointer;
   transition:
     color var(--motion-state-change) ease,

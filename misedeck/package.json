@@ -13,9 +13,10 @@
     "lint:css-font-size": "tsx scripts/check-css-font-size.ts",
     "lint:i18n-ellipsis": "tsx scripts/check-i18n-ellipsis.ts",
     "lint:command-hint": "tsx scripts/check-command-hint.ts",
-    "ci": "npm run typecheck && npm run lint:i18n && npm run lint:i18n-concat && npm run lint:css-tokens && npm run lint:css-font-size && npm run lint:i18n-ellipsis && npm run lint:command-hint && npm run build",
+    "ci": "npm run typecheck && npm run lint:i18n && npm run lint:i18n-concat && npm run lint:css-tokens && npm run lint:css-font-size && npm run lint:css-spacing && npm run lint:i18n-ellipsis && npm run lint:command-hint && npm run build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "lint:css-spacing": "tsx scripts/check-css-spacing.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",

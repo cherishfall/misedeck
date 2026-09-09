@@ -74,7 +74,7 @@ Semantic discipline:
 The chrome (sidebar, directory indicator, execution panel placement) is owned by `docs/design/product-logic.md`; this document owns the surfaces inside it.
 
 - Panels: solid `--panel` fill, 1px `--line` border, 8px radius. No backdrop blur, no corner ornament.
-- Spacing comes from the `--space-*` scale (4 / 8 / 12 / 16 / 22 / 26px) — the scale is the source of truth; there is no arithmetic grid beneath it.
+- Spacing comes from the `--space-*` scale (2 / 4 / 6 / 8 / 10 / 12 / 14 / 16 / 22 / 26px; half-step indices slot between base steps, e.g. `--space-1-5` = 6px) — the scale is the source of truth; there is no arithmetic grid beneath it. Hardcoded px paddings/margins/gaps are rejected by `npm run lint:css-spacing`.
 - No background decoration: the app background is a flat `--void`. Elevation (popovers) is a single quiet shadow derived from `--void`.
 
 ## Motion

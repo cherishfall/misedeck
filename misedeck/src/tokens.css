@@ -85,11 +85,20 @@
   --tracking-wordmark: 0.01em; /* wordmark — near-natural */
   --tracking-label: 0.18em; /* section eyebrows only */
 
-  /* ---------- 3. Spacing (4px grid) ---------- */
+  /* ---------- 3. Spacing ----------
+   * The scale is the source of truth; there is no arithmetic grid
+   * beneath it (docs/design/visual-language.md). Half-step indices
+   * slot between the base steps: --space-1-5 sits between 1 and 2.
+   * Component CSS never hardcodes px paddings/margins/gaps
+   * (guarded by `npm run lint:css-spacing`, issue #126). */
 
+  --space-0-5: 2px;
   --space-1: 4px;
+  --space-1-5: 6px;
   --space-2: 8px;
+  --space-2-5: 10px;
   --space-3: 12px;
+  --space-3-5: 14px;
   --space-4: 16px;
   --space-5: 22px;
   --space-6: 26px;

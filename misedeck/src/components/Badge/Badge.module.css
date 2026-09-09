@@ -7,7 +7,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 2px 7px;
+  padding: var(--space-0-5) var(--space-1-5);
   border: 1px solid var(--line);
   border-radius: 4px;
   background: transparent;
