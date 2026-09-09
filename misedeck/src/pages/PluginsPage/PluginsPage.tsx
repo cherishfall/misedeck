@@ -8,7 +8,7 @@
 //                               then runs through the execution panel
 //                               (issue #112)
 //
-// The registry row's "Install…" action hands the tool name to the
+// The registry row's "Install" action hands the tool name to the
 // Tools page install section, where the mutation runs through the
 // execution panel.
 

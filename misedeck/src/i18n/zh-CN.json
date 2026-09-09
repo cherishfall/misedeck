@@ -165,7 +165,7 @@
     "nav": "概览",
     "empty": {
       "body": "环境变量、配置文件与 lockfile 各节已展示全局解析结果；此列表按目录解析。选择一个目录，查看 `mise -C <dir> ls` 在该目录的结果。",
-      "action": "选择目录…"
+      "action": "选择目录"
     },
     "sections": {
       "tools": "已解析的工具",
@@ -416,7 +416,7 @@
       "actions": "操作"
     },
     "actions": {
-      "install": "安装…",
+      "install": "安装",
       "uninstall": "卸载"
     },
     "confirm": {

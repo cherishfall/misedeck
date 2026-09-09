@@ -935,7 +935,7 @@ function RowActions({
 
 interface InstallToolFormProps {
   /** Tool name handed over by another page (the Plugins page registry
-   *  "Install…" action, issue #51). Pre-fills the tool input. */
+   *  "Install" action, issue #51). Pre-fills the tool input. */
   prefillTool: string;
   onInstall: (tool: string, version: string) => void;
   disabled: boolean;
@@ -1129,7 +1129,7 @@ function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
           </span>
         </Tooltip>
         <Button
-          variant="secondary"
+          variant="primary"
           size="sm"
           onClick={pickDirectory}
           disabled={disabled}

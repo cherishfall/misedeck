@@ -28,7 +28,7 @@
 // Global context: the env / config / lockfile sections render the
 // globally resolved data (matching `mise env` / `mise config` in the
 // home directory), and only the resolved-tools section falls back to
-// an EmptyState — which carries the "Choose directory…" entry point
+// an EmptyState — which carries the "Choose directory" entry point
 // (the same Tauri dialog picker the directory indicator uses).
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -183,7 +183,7 @@ export function DirectoryPreview() {
   }, [queryClient, cwd]);
   useRegisterPageRefresh(onRefresh);
 
-  // The "Choose directory…" action (issue #48): the same Tauri
+  // The "Choose directory" action (issue #48): the same Tauri
   // dialog picker the directory indicator uses, shared via
   // `directory/pickDirectory.ts` so the two call sites cannot drift.
   // A successful pick switches the app-level directory context, which
@@ -203,7 +203,7 @@ export function DirectoryPreview() {
 
   // Tool rows: pick the active version per tool, badge by source.
   // Directory-scoped only — the Global context renders the
-  // "Choose directory…" empty state instead (the global tools list
+  // "Choose directory" empty state instead (the global tools list
   // already lives at /tools).
   const toolRows: ToolRow[] = useMemo(() => {
     if (!tools.data || cwd === null) return [];

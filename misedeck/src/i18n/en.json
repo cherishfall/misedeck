@@ -165,7 +165,7 @@
     "nav": "Overview",
     "empty": {
       "body": "The env, config, and lockfile sections already show the global resolution; this list is directory-scoped. Choose a directory to see what `mise -C <dir> ls` reports there.",
-      "action": "Choose directory…"
+      "action": "Choose directory"
     },
     "sections": {
       "tools": "Resolved tools",
@@ -416,7 +416,7 @@
       "actions": "Actions"
     },
     "actions": {
-      "install": "Install…",
+      "install": "Install",
       "uninstall": "Uninstall"
     },
     "confirm": {
