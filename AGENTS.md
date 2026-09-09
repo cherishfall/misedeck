@@ -27,9 +27,10 @@ An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + Re
 
 ## Non-negotiables
 
-- The maintainer is a product owner, not a code reviewer. Self-verify every change: build, run, and look at the running app before claiming done. Leave no red tests and no broken build. UI changes default to the economical verification in `docs/design/ui-ux-rules.md` (build + run + static self-audit; screenshots only for layout restructures or on request); if nothing visual was checked, mark the issue "not visually verified". Never claim visual verification you did not perform.
-- Every mise invocation goes through the execution panel — mutations and read queries alike (ADR-0005): show the exact mise command and its live logs. Only the reads a page issues for itself run in the background, off the transcript.
-- All UI strings go through i18n (en + zh-CN); no hardcoded copy.
+- The maintainer is a product owner, not a code reviewer; the Definition of done and verification loop live in `docs/agents/conventions.md` — verification is static-first, and agent-side visual verification (launching the app, screenshots, click-throughs) is off the table unless the owner asks (beta9). Unviewed UI is marked "not visually verified".
+- Every mise invocation goes through the execution panel (ADR-0005); its behavior rules live in `docs/design/ui-ux-rules.md` → Execution panel.
+- All UI strings go through i18n (en + zh-CN); no hardcoded copy. Behavior rules: `docs/design/ui-ux-rules.md` → Copy; engineering: `docs/agents/i18n.md`.
+- One rule, one home: every rule has exactly one canonical doc; other docs — this file included — link instead of restating. New rules go into their home doc; a restated rule is drift waiting to happen (beta9).
 - Cross-platform from day one: paths and process spawning via Tauri/Rust APIs only.
 - Read `docs/agents/architecture.md` before creating or modifying any Tauri command, and `docs/agents/conventions.md` before invoking mise, handling errors, or writing tests.
 - When the owner reports a visual or interaction error, evaluate whether it generalizes into a rule. If yes, fix the instance *and* codify the rule into `docs/design/ui-ux-rules.md` (and/or `visual-language.md`) in both locales as part of the same feedback cycle — the class of bug should be caught at generation time, not re-surface in later betas.

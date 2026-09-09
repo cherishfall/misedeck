@@ -27,9 +27,10 @@
 
 ## 不可妥协项
 
-- 维护者是产品角色，不是代码审查者。每个改动都要自验证：构建、运行，并在声称完成之前查看运行中的应用。不留红的测试，不留坏的构建。UI 改动默认按 `docs/design/ui-ux-rules.md` 的经济验收（构建 + 运行 + 静态自查；仅布局结构改动或人类要求时才截图）；没做过视觉检查就在 issue 上标注「未经视觉验证」。绝不允许虚报没做过的视觉验证。
-- 每一次 mise 调用都走执行面板——变更操作和只读查询一视同仁（ADR-0005）：展示真实的 mise 命令和实时日志。只有页面自己发起的读会以后台方式运行，不进 transcript。
-- 所有 UI 文案走 i18n（en + zh-CN）；禁止硬编码文案。
+- 维护者是产品角色，不是代码审查者；Definition of done 和验收循环归 `docs/agents/conventions.md` 所有——验收静态优先，代理侧不做视觉验证（启动应用、截图、点验），除非维护者主动要求（beta9）。没看过渲染结果的 UI 标注「未经视觉验证」。
+- 每一次 mise 调用都走执行面板（ADR-0005）；其行为规则归 `docs/design/ui-ux-rules.md` → 执行面板。
+- 所有 UI 文案走 i18n（en + zh-CN）；禁止硬编码文案。行为规则：`docs/design/ui-ux-rules.md` → 文案；工程细节：`docs/agents/i18n.md`。
+- 一处一规则：每条规则只有一个权威文档；其他文档——包括本文件——只链接不复述。新规则写进其归属文档；复述的规则就是等待发生的漂移（beta9）。
 - 从第一天起跨平台：路径与进程创建只走 Tauri/Rust 的 API。
 - 新建或修改任何 Tauri command 前读 `docs/agents/architecture.md`；调用 mise、处理错误、写测试前读 `docs/agents/conventions.md`。
 - 维护者报告视觉或交互错误时，评估它是否能泛化为规则。能泛化就在修该实例的同时，把规则固化进 `docs/design/ui-ux-rules.md`（和/或 `visual-language.md`）的两种语言版本，作为同一反馈周期的一部分——让这一类 bug 在生成时就被拦住，而不是在后面的 beta 里反复出现。

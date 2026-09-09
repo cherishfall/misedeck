@@ -20,7 +20,7 @@ Before shipping any screen, ask: **could a mise CLI user predict what this scree
 - Every mutating action shows the exact mise command — including confirmations. A confirmation is a teaching moment: "This will run `mise uninstall go@1.27.0`."
 - Empty states guide inside the GUI: show the button or the resolved global data. An empty state that tells the user to go run a CLI command has failed its job.
 - Long result lists (queries, logs, versions) are clearable and paginate past ~10 rows: render the first page of 10 and show a pager (prev / page X of Y · N total / next / jump-to-page) instead of folding behind a "show all N" button. Page size is a free numeric input floored at 10.
-- A page's command hint lists exactly the mise commands that page can run — no more (invented commands are bugs), no less (adding a feature without updating the hint is a bug). Order follows the page's top-to-bottom layout. Cap the hint at `max-width: 60ch` and let it wrap naturally.
+- A page's command hint lists exactly the mise commands that page can run — no more (invented commands are bugs), no less (adding a feature without updating the hint is a bug). Only user-facing commands: internal fetch flags the GUI passes for its own plumbing (`--json`, `--json-extended`, `--path`, …) never appear in a hint. Order follows the page's top-to-bottom layout. Hints render through the shared `CommandHint` component — one implementation, no per-page copies — which caps the hint at `max-width: 60ch` and treats each command as an unbreakable unit: wrapping happens only between commands, never mid-command (beta9).
 
 ## Interaction integrity
 
@@ -39,7 +39,7 @@ Before shipping any screen, ask: **could a mise CLI user predict what this scree
 - Status reads as `label: value badge` on one line, badge adjacent to the item it describes. No loose two-column grids where a badge's ownership is ambiguous.
 - zh-CN copy: no orphan characters on a trailing line; inline code spans are `nowrap`.
 - Both languages get the same visual treatment — if English is a styled banner, Chinese is the same banner, not a plain sentence.
-- Elements sharing one toolbar row must be visually balanced: text-sized action buttons match the adjacent data text (`--size-data` 12px, `--text`); the 10px uppercase eyebrow is the only allowed small element in a row. Controls paired in one chrome row are the same height; the row is width-checked in both locales, with `max-width` + ellipsis defending against longer future strings.
+- Elements sharing a visual line must be visually balanced: any text sharing a line or baseline with 12px+ content renders at `--size-data` or larger — quietness and hierarchy come from color and weight (`--ice`), never from a smaller size. `--size-label` (10px) is reserved for standalone decoration that shares no baseline with body or data text: table headers, chips inside cells, empty-state and loading labels. Controls paired in one row are the same height; the row is width-checked in both locales, with `max-width` + ellipsis defending against longer future strings. (beta9: generalized from the toolbar-row rule to every shared line; the toolbar-eyebrow and small-label exceptions are retired — the goal is visual balance, the size floor is just its enforcement.)
 - Every flex action row declares its alignment — no bare `display: flex` without `justify-content` / `margin-left: auto`. Page-toolbar convention: hint left, actions right.
 - Color, font-size, tracking, and spacing values come from tokens, never literals — a literal that happens to equal a token today is drift waiting to happen. Only the documented conventions (1px borders, 4px small-element radius) are exempt, as noted in the file header.
 
@@ -58,13 +58,13 @@ One vocabulary, four variants (color/type semantics owned by `visual-language.md
 
 | Variant | Meaning | Examples |
 | --- | --- | --- |
-| `primary` | The row's main action, when no higher-priority action competes | run, install, add, save |
-| `secondary` | Routine actions | switch, edit, choose directory |
+| `primary` | The row's main action, when no higher-priority action competes | run, install, add, save, choose directory |
+| `secondary` | Routine actions | switch, edit |
 | `danger` | Destructive / sensitive | uninstall, remove |
 | `ghost` | Dismissive or low-frequency | cancel, open in editor |
 
 - One global action, one visual role: an action that appears on several surfaces (e.g. "choose directory") renders the same variant from the same shared component everywhere. A bespoke re-implementation of an existing button style is a bug.
-- Exception: when an action is the page's only way forward in an empty/missing state, it may be `primary` there even if the mapping table lists it as `secondary` (e.g. "choose directory" in an empty state); when several buttons share a toolbar, it falls back to its table variant (beta8).
+- "Choose directory" renders `primary` everywhere — toolbar, empty state, forms (beta9 supersedes the beta8 toolbar-fallback/empty-state exception: a split presentation of one action read as two different buttons, which was worse than a loud one).
 - Page-level primary buttons are right-aligned (toolbar convention: hint left, actions right, via `justify-content: space-between` or `margin-left: auto`) and always `size="sm"`; `md` is reserved for non-page-toolbar contexts.
 - Known exception, intentional: the execution panel keeps monospace controls — it is the app's terminal context. Do not "unify" its buttons onto the UI-font Button.
 
@@ -128,9 +128,9 @@ floating layer is a bug.
 - No entrance animation. `visual-language.md` permits only two ambient
   motions; a popover fading or sliding in is a bug.
 
-## Verify economically
+## Verification
 
-Default verification for a UI change is cheap: build, run the page you touched once, and self-audit the diff mechanically — data cells carry `nowrap`/`min-width: 0`, colors and sizes come from tokens, strings are i18n keys, no hardcoded glyph literals in JSX, no unapproved caret/decorative glyphs, retired vocabulary is absent, contrast is sound by token values. Reach for screenshots or a manual click-through only when the change restructures layout, or a human asks. If nobody saw the rendered result, mark the issue "not visually verified" and move on. Never claim visual verification you did not perform.
+Verification rules live in `docs/agents/conventions.md` (Definition of done / Verification loop) — one rule, one home; this document does not restate them (beta9 consolidation).
 
 ## Retired vocabulary (hard guardrails)
 

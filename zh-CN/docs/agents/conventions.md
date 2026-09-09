@@ -48,16 +48,19 @@ MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  TIMEOUT  TERMINAL_NO
 
 1. `cargo check` 和前端 typecheck 通过；所有测试通过。
 2. ticket 中的每条验收标准都被确实满足。
-3. 改动的流程已按 `docs/design/ui-ux-rules.md` 的「经济地验收」完成验证：`npm run ci` 全绿，外加对 diff 的机械静态自查——默认不截图、不用 computer-use 驱动、不运行应用。如果没人看过渲染结果，在 issue 上标注「未经视觉验证」。
+3. 改动的流程已通过下文的 Verification loop；如果没人看过渲染结果，在 issue 上标注「未经视觉验证」。
 4. 所有新增 UI 文案同时存在于 `en.json` 和 `zh-CN.json`。
 5. 如果改动了文档，其在 `zh-CN/` 下的镜像对应文档已在同一次改动中更新。
 6. 收尾评论说明验证了什么、如何验证的。
 
 ## Verification loop (replaces human code review)
 
+验收静态优先；代理侧不做视觉验证，除非维护者主动要求：启动应用、截图、点验既慢又费 token，还会占用维护者的电脑（维护者决定，beta9）。
+
 1. 构建：`npm run ci`（前端 typecheck + lint 守卫 + 构建）和 `cargo check` 必须通过。
-2. 按 `docs/design/ui-ux-rules.md` 的「经济地验收」对 diff 做机械自查。仅当改动涉及布局结构、或人类要求时，才动用截图或手动点验。
-3. 在 PR/总结中说明验证了什么、如何验证的；没做过视觉检查就在 issue 上标注「未经视觉验证」。
+2. 对 diff 做机械自查：数据单元格带 `nowrap`/`min-width: 0`、颜色与字号来自 token、文案是 i18n key、JSX 中无硬编码字形字面量、无未经批准的 caret/装饰字形、无已退休词汇、对比度按 token 取值推算成立。
+3. 代理侧视觉验证的替代方案是生成时拦截：每个被报告的视觉/交互问题，只要机械可检查，必须在同一 ticket 里把 lint 守卫接进 `npm run ci`。渲染结果的确认归维护者的 beta 验收门。
+4. 在 PR/总结中说明验证了什么、如何验证的；没做过视觉检查就在 issue 上标注「未经视觉验证」。绝不允许虚报没做过的视觉验证。
 
 ## Cross-platform
 

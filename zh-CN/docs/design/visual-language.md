@@ -36,7 +36,7 @@ MiseDeck 界面的设计系统基础。在 issue #37 中重写：首个设计冲
 
 派生色（由上述 token 通过 `color-mix` 计算，绝不硬编码）：
 
-- `--panel` 不再作为 `--hull` 的别名。它是独立的暖色抬升值，在两个主题下都落在 `--void` 与 `--hull` *之间*（浅色 `#F8F0E2`，深色 `#221C1A`）。层级由投影（抬升）与可辨的暖色调（识别）双层承载：被抬起的表面必须既不同于页面、也不同于框架色，既不并入 void、也不沉入侧边栏。由 FloatingMenu（弹层）、ConfirmDialog、Banner、Panel 以及 Tasks/Doctor/Tools 卡片消费。
+- `--panel` 是独立于 `--hull` 的暖色抬升值，在两个主题下都落在 `--void` 与 `--hull` *之间*（浅色 `#F8F0E2`，深色 `#221C1A`）。层级由投影（抬升）与可辨的暖色调（识别）双层承载：被抬起的表面必须既不同于页面、也不同于框架色，既不并入 void、也不沉入侧边栏。由 FloatingMenu（弹层）、ConfirmDialog、Banner、Panel 以及 Tasks/Doctor/Tools 卡片消费。
 - 框架表面构成三层暖色层级，全部派生自 mise 的暖羊皮纸 / 暖炭黑家族：
   - `--hull` —— 侧边栏（中间权重）。
   - `--hull-soft` —— 顶工具栏，最浅的框架色（mise `bg-alt` 角色）。
@@ -61,20 +61,20 @@ MiseDeck 界面的设计系统基础。在 issue #37 中重写：首个设计冲
 | Display | Cormorant Garamond 500–600，正常大小写，无字距 | 页面标题、wordmark（斜体） |
 | UI / 导航 | Space Grotesk 400–600 | 导航项、按钮、正文 |
 | 数据 | JetBrains Mono 400–600 | 版本、路径、命令、日志、徽章 |
-| 眉签 | JetBrains Mono 400–600，大写，字距 ≈ .18em，`--ice` | 仅限小节眉签（`MISE / TOOLS`） |
+| 眉签 | JetBrains Mono 400–600，大写，字距 ≈ .18em，`--ice` | 仅限模式/区块标签（工具栏模式指示器）；仅拉丁文——zh-CN 眉签不取大写与字距 |
 
 - 衬线 display 字体是 mise.jdx.dev 的编辑式签名 —— 只花在标题与 wordmark 上，绝不用于数据或控件。
 - zh-CN：display 文本回退到 `Songti SC` / `SimSun`（中文衬线），UI 文本回退到 `PingFang SC` / `system-ui`；Latin 数据保持 JetBrains Mono。
-- 基准字号 14px，数据 11–13px，眉签 10px，display 26px。无流式字号；桌面应用密度。
-- 小节眉签写作 `MISE / TOOLS` —— 等宽、大写、带字距、`--ice`，不带 prompt 符号。**眉签是整个系统中唯一的大写元素。** 这与 mise.jdx.dev 对齐：官网只有顶级眉签（`01 THE ESSENTIALS`）大写；其余一切标签的正常大小写执行规则由 `ui-ux-rules.md` 约束。
-- 眉签只为一个区块命名一次：绝不在该页的卡片内重复页面眉签，绝不在同一页面上堆叠相同的眉签。
+- 基准字号 14px（`--size-base`），数据恰好 12px（`--size-data`——单一值，不是区间），眉签 10px（`--size-label`），display 26px（`--size-display`）。无流式字号；桌面应用密度。
+- 页面 header 眉签（display 标题上方的 `MISE / X`）已退役（beta9）：侧栏已高亮当前页、display 标题已命名页面，那行眉签是纯重复——mise 官网的眉签是给一个长页面内部的区块命名的，这个角色在 MiseDeck 已由每页独立标题承担。眉签仅以小型模式/区块标签的形式存活（工具栏的「当前目录 / Global mode」）。zh-CN 眉签用 `letter-spacing: normal`——CJK 没有大写，宽字距会把汉字撑散；等宽字体、`--ice` 与小字号已足以承载眉签角色。
+- 区块标签只为一个区块命名一次：绝不在该页的卡片内重复同名标签，绝不在同一页面上堆叠相同的标签。
 
 ## 布局
 
 界面框架（侧边栏、目录指示条、执行面板的位置）由 `docs/design/product-logic.md` 管辖；本文档管辖框架内部的表面。
 
 - 面板：实心 `--panel` 填充，1px `--line` 边框，8px 圆角。无背景模糊，无角落装饰。
-- 间距基于 4px 网格；常用间距 14 / 16 / 22 / 26px。
+- 间距取自 `--space-*` 标尺（4 / 8 / 12 / 16 / 22 / 26px）——标尺是唯一依据，底下没有算术网格。
 - 无背景装饰：应用背景是平坦的 `--void`。层级（弹层）只用一道派生自 `--void` 的安静投影表达。
 
 ## 动效

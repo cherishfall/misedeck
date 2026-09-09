@@ -36,7 +36,7 @@ All color is CSS custom properties; components consume semantic names only. The 
 
 Derived (computed via `color-mix` from the tokens above, never hardcoded):
 
-- `--panel` is NO LONGER an alias of `--hull`. It is its own warm elevated value, sitting *between* `--void` and `--hull` in both themes (light `#F8F0E2`, dark `#221C1A`). Elevation is carried by both shadow (the lift) and a distinguishable warm tint (the identity): a raised surface must read as separate from both the page and the chrome, so it neither merges into the void nor sinks into the sidebar. Consumed by FloatingMenu (popover), ConfirmDialog, Banner, Panel, and the Tasks/Doctor/Tools cards.
+- `--panel` is its own warm elevated value, distinct from `--hull`, sitting *between* `--void` and `--hull` in both themes (light `#F8F0E2`, dark `#221C1A`). Elevation is carried by both shadow (the lift) and a distinguishable warm tint (the identity): a raised surface must read as separate from both the page and the chrome, so it neither merges into the void nor sinks into the sidebar. Consumed by FloatingMenu (popover), ConfirmDialog, Banner, Panel, and the Tasks/Doctor/Tools cards.
 - The chrome surfaces form a three-level warm hierarchy, all derived from mise's warm parchment / charcoal family:
   - `--hull` — sidebar (the middle weight).
   - `--hull-soft` — top toolbar, the lightest chrome (mise `bg-alt` role).
@@ -61,20 +61,20 @@ Semantic discipline:
 | Display | Cormorant Garamond 500–600, normal case, no tracking | page titles, the wordmark (italic) |
 | UI / nav | Space Grotesk 400–600 | nav items, buttons, prose |
 | Data | JetBrains Mono 400–600 | versions, paths, commands, logs, badges |
-| Eyebrow | JetBrains Mono 400–600, uppercase, letter-spacing ≈ .18em, `--ice` | section eyebrows only (`MISE / TOOLS`) |
+| Eyebrow | JetBrains Mono 400–600, uppercase, letter-spacing ≈ .18em, `--ice` | mode/section labels only (the toolbar mode indicator); Latin-only — zh-CN eyebrows drop uppercase and tracking |
 
 - The serif display face is the editorial signature of mise.jdx.dev — it is spent on titles and the wordmark only, never on data or controls.
 - zh-CN: display text falls back to `Songti SC` / `SimSun` (Chinese serifs), UI text to `PingFang SC` / `system-ui`; Latin data keeps JetBrains Mono.
-- Base size 14px, data 11–13px, eyebrows 10px, display 26px. No fluid type; desktop-app density.
-- Section eyebrows read `MISE / TOOLS` — mono, uppercase, tracked, `--ice`, no prompt glyph. **The eyebrow is the only uppercase element in the system.** This matches mise.jdx.dev, where only the top eyebrow (`01 THE ESSENTIALS`) is uppercase; normal-case enforcement for every other label is bound in `ui-ux-rules.md`.
-- An eyebrow names a section once: never repeat the page eyebrow inside that page's cards, never stack identical eyebrows down one page.
+- Base size 14px (`--size-base`), data exactly 12px (`--size-data` — a single value, not a range), eyebrows 10px (`--size-label`), display 26px (`--size-display`). No fluid type; desktop-app density.
+- Page-header eyebrows (`MISE / X` above the display title) are retired (beta9): the sidebar already marks the current page and the display title names it, so the row was pure duplication — mise.jdx.dev's eyebrow names a section inside one long page, a role MiseDeck's per-page titles already fill. The eyebrow survives only as a small mode/section label (the toolbar's `当前目录 / Global mode`). zh-CN eyebrows render with `letter-spacing: normal` — CJK has no uppercase and wide tracking scatters Han glyphs; the mono face, `--ice`, and small size carry the role there.
+- A section label names a section once: never repeat a label inside that page's cards, never stack identical labels down one page.
 
 ## Layout
 
 The chrome (sidebar, directory indicator, execution panel placement) is owned by `docs/design/product-logic.md`; this document owns the surfaces inside it.
 
 - Panels: solid `--panel` fill, 1px `--line` border, 8px radius. No backdrop blur, no corner ornament.
-- Spacing on a 4px grid; common gaps 14 / 16 / 22 / 26px.
+- Spacing comes from the `--space-*` scale (4 / 8 / 12 / 16 / 22 / 26px) — the scale is the source of truth; there is no arithmetic grid beneath it.
 - No background decoration: the app background is a flat `--void`. Elevation (popovers) is a single quiet shadow derived from `--void`.
 
 ## Motion
