@@ -49,6 +49,7 @@ import { useTranslation } from "react-i18next";
 
 import { trustCheck } from "../api/mise";
 import { useExecutionContext } from "../components/ExecutionPanel";
+import type { RunCommandResult } from "../components/ExecutionPanel/useExecution";
 import { I18N_KEYS } from "../i18n/keys";
 import { useDirectory } from "./directoryContext";
 import type { TrustSource, TrustStatus } from "../types/tauri";
@@ -175,54 +176,66 @@ interface TrustAction {
 export function useTrustAction(): TrustAction {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
-  const { state: execState, runTrust } = useExecutionContext();
+  const { runTrust } = useExecutionContext();
   const queryClient = useQueryClient();
-  // `lastResult` / `lastError` are React state (not refs) so the
-  // banner re-renders when the streaming run terminates. Refs
-  // would update the value but not schedule a re-render.
+  // `running` / `lastResult` / `lastError` are React state (not refs)
+  // so the banner re-renders when the run terminates. Refs would
+  // update the value but not schedule a re-render.
+  const [running, setRunning] = useState(false);
   const [lastResult, setLastResult] = useState<"ok" | "error" | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
-  // Track the most recent terminal status so we can detect the
-  // running → terminal transition without owning the IPC promise.
-  // A ref keeps the value out of the render path; the effect uses
-  // it only as a marker.
-  const wasRunningRef = useRef(false);
-
-  const running =
-    execState.status === "running" &&
-    execState.kind === "mise" &&
-    execState.request?.cwd === cwd &&
-    execState.request?.args[0] === "trust";
-
+  // Guards against setState after unmount: a trust run outlives the
+  // banner when the user navigates away mid-run.
+  const mountedRef = useRef(true);
   useEffect(() => {
-    if (running) {
-      wasRunningRef.current = true;
-      // Clear stale terminal flags at the start of a new run.
-      setLastResult(null);
-      setLastError(null);
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // The result is read from the promise this call owns, never from
+  // the panel's active-run projection: runs are concurrent (#138),
+  // so by the time a trust run finishes another run may own the
+  // panel's `state`, and reading it would report the wrong outcome.
+  const run = useCallback(async () => {
+    setRunning(true);
+    // Clear stale terminal flags at the start of a new run.
+    setLastResult(null);
+    setLastError(null);
+    let result: RunCommandResult;
+    try {
+      result = await runTrust(cwd);
+    } finally {
+      if (mountedRef.current) setRunning(false);
+    }
+    if (result.kind === "err") {
+      if (!mountedRef.current) return;
+      setLastResult("error");
+      setLastError(resolveAppErrorMessage(result.err.message, t));
       return;
     }
-    if (wasRunningRef.current && !running) {
-      wasRunningRef.current = false;
-      if (execState.status === "ok") {
-        setLastResult("ok");
-        setLastError(null);
-        // Re-probe trust so the banner re-evaluates.
-        void queryClient.invalidateQueries({ queryKey: ["mise", "trust", cwd] });
-      } else if (execState.status === "failed") {
-        setLastResult("error");
-        setLastError(
-          execState.error
-            ? resolveAppErrorMessage(execState.error.message, t)
-            : t(I18N_KEYS.errors.unknown),
-        );
-      }
+    if (result.outcome.timedOut || result.outcome.exitCode !== 0) {
+      if (!mountedRef.current) return;
+      setLastResult("error");
+      // Same message convention as `toJsonResult`: only the run this
+      // call owns can produce it, so it can never describe another run.
+      setLastError(
+        resolveAppErrorMessage(
+          result.outcome.timedOut
+            ? "mise timed out"
+            : `mise exited with code ${result.outcome.exitCode}`,
+          t,
+        ),
+      );
+      return;
     }
-  }, [running, execState.status, execState.error, cwd, queryClient, t]);
-
-  const run = useCallback(async () => {
-    await runTrust(cwd);
-  }, [runTrust, cwd]);
+    if (!mountedRef.current) return;
+    setLastResult("ok");
+    setLastError(null);
+    // Re-probe trust so the banner re-evaluates.
+    void queryClient.invalidateQueries({ queryKey: ["mise", "trust", cwd] });
+  }, [runTrust, cwd, queryClient, t]);
 
   return {
     running,

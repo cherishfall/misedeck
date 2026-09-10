@@ -42,8 +42,10 @@ interface ExecutionContextValue {
   runInstall: () => Promise<void>;
   /** Run `mise self-update --yes`. Streams into the panel. */
   runSelfUpdate: () => Promise<void>;
-  /** Run `mise trust` for the given directory. Streams into the panel. */
-  runTrust: (cwd: string | null) => Promise<void>;
+  /** Run `mise trust` for the given directory. Streams into the panel
+   *  and returns the structured result — with concurrent runs (#138)
+   *  the caller cannot rely on the panel's active-run projection. */
+  runTrust: (cwd: string | null) => Promise<RunCommandResult>;
   cancel: () => void;
   /** Hide the panel while preserving history. */
   dismiss: () => void;

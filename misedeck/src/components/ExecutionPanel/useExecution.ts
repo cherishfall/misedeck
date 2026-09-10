@@ -482,15 +482,19 @@ export function useExecution() {
   }, [runMiseInternal]);
 
   /** Run `mise trust` for the given directory. Streams into the
-   *  panel. The trust cache is the caller's responsibility to
-   *  invalidate — see `useTrustAction()` which does it on Ok. */
+   *  panel and returns the structured result. Because runs are
+   *  concurrent (#138), the caller must read *this* result and not
+   *  the panel's active-run projection — another run may be active
+   *  by the time this one finishes. The trust cache is the
+   *  caller's responsibility to invalidate — see
+   *  `useTrustAction()` which does it on Ok. */
   const runTrust = useCallback(
-    async (cwd: string | null) => {
+    (cwd: string | null): Promise<RunCommandResult> => {
       const request: RunRequest = {
         cwd,
         args: ["trust"],
       };
-      await runMiseInternal("mise_trust", "mise", { cwd }, request);
+      return runMiseInternal("mise_trust", "mise", { cwd }, request);
     },
     [runMiseInternal],
   );
