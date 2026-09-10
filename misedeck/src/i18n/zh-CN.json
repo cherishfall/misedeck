@@ -116,6 +116,9 @@
       "noPath": "未选择目录",
       "duplicateVersion": "{{tool}}@{{version}} 已存在，无法重复链接。请先删除此版本，再重新链接。"
     },
+    "advanced": {
+      "title": "高级"
+    },
     "queries": {
       "pagination": {
         "total": "共 {{count}} 条",

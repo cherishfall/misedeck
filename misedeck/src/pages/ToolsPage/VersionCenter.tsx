@@ -59,7 +59,9 @@ interface VersionCenterProps {
   /** The tool's installed versions from the page's `mise ls --json`
    *  read — no extra call is needed for the installed sub-list. */
   installed: MiseLsItem[];
-  /** True while a foreground command runs; every action is disabled. */
+  /** True while a foreground command runs; the command-firing buttons
+   *  (Use / Install only / Uninstall) are disabled. Browsing — the
+   *  filter and pager — is never run-locked (issue #135). */
   disabled: boolean;
   onUse: (version: string) => void;
   onInstallOnly: (version: string) => void;

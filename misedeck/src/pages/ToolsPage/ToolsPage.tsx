@@ -205,9 +205,9 @@ export function ToolsPage() {
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
 
   // The expanded row's tool (issue #133): one row at a time. Expanding
-  // is blocked while a foreground command runs (collapsing is always
-  // allowed) so a mutation can't swap the list out from under the
-  // center's actions.
+  // and collapsing are browsing of loaded data, so they stay enabled
+  // while a command runs (issue #135); only the version center's
+  // command-firing buttons lock.
   const [expandedTool, setExpandedTool] = useState<string | null>(null);
 
   // The tool the top add-tool entry just submitted (issue #134): when
@@ -218,6 +218,11 @@ export function ToolsPage() {
   // Friendly message from the most recent link run (issue #71). Null
   // unless the last `mise link` failed with a recognized conflict.
   const [linkConflict, setLinkConflict] = useState<string | null>(null);
+
+  // The Link form (`mise link`) is an advanced low-frequency flow, so it
+  // lives in a collapsed "Advanced" section off the first screen
+  // (issue #135); the form inside is unchanged.
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   // First check: is mise even available? If not, render the missing
   // state and don't even try the tools queries.
@@ -240,9 +245,8 @@ export function ToolsPage() {
   }, [cwd]);
 
   // Clicking a tool name toggles the row's inline version center
-  // (issue #133). Expanding while a foreground command runs is blocked —
-  // a no-op-looking click reads as broken, so the trigger disables
-  // instead (see the tool column).
+  // (issue #133). Toggling is browsing, so it is never run-locked
+  // (issue #135); the center's own command buttons carry the lock.
   const onToggleExpand = (tool: string) => {
     setExpandedTool((current) => (current === tool ? null : tool));
   };
@@ -314,8 +318,9 @@ export function ToolsPage() {
   }, [execState.status, execState.request, execState.error, t]);
 
   // The execution panel reducer is the single source of truth for
-  // "is a mutation in flight". A single `running` flag feeds every
-  // action button so the user can't fire two mutations at once.
+  // "is a mutation in flight". The `running` flag feeds only
+  // command-firing controls (issue #135) — browsing loaded data
+  // (expanding rows, filtering, sorting, paginating) stays enabled.
   const isRunning = execState.status === "running";
 
   // Run a mutation. Every entry point checks the trust guard first;
@@ -464,16 +469,15 @@ export function ToolsPage() {
         <span className={styles.cellTool}>
           <Tooltip text={r.tool}>
             {/* Clicking the tool name toggles the row's inline version
-                center (issue #133). Expanding is blocked while a
-                foreground command runs, so a mutation can't swap the
-                list mid-action; collapsing always works. No caret glyph
-                — expandability is shown by interaction (beta8). */}
+                center (issue #133). Toggling is browsing of loaded data,
+                so it stays enabled while a command runs (issue #135).
+                No caret glyph — expandability is shown by interaction
+                (beta8). */}
             <button
               type="button"
               className={`${styles.toolName} ${styles.toolNameButton}`}
               onClick={() => onToggleExpand(r.tool)}
               aria-expanded={expandedTool === r.tool}
-              disabled={isRunning && expandedTool !== r.tool}
               data-testid={`tools-expand-${r.tool}`}
             >
               {r.tool}
@@ -657,11 +661,29 @@ export function ToolsPage() {
           />
         )}
 
-        <LinkToolForm
-          onLink={onLink}
-          disabled={isRunning}
-          conflict={linkConflict}
-        />
+        {/* The Link form (`mise link`, issue #71) is an advanced
+            low-frequency flow: it lives in a collapsed "Advanced"
+            section (issue #135). The toggle is browsing and never
+            run-locked; no caret glyph — expandability is shown by
+            interaction. */}
+        <section className={styles.advanced} data-testid="tools-advanced">
+          <button
+            type="button"
+            className={styles.advancedToggle}
+            onClick={() => setAdvancedOpen((open) => !open)}
+            aria-expanded={advancedOpen}
+            data-testid="tools-advanced-toggle"
+          >
+            {t(I18N_KEYS.tools.advanced.title)}
+          </button>
+          {advancedOpen && (
+            <LinkToolForm
+              onLink={onLink}
+              disabled={isRunning}
+              conflict={linkConflict}
+            />
+          )}
+        </section>
 
         <ConfirmDialog
           open={pendingRemoval !== null}

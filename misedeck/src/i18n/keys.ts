@@ -180,6 +180,9 @@ export const I18N_KEYS = {
       noPath: "tools.linkForm.noPath",
       duplicateVersion: "tools.linkForm.duplicateVersion",
     },
+    advanced: {
+      title: "tools.advanced.title",
+    },
     queries: {
       pagination: {
         total: "tools.queries.pagination.total",

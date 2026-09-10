@@ -445,6 +445,32 @@
   line-height: 1.5;
 }
 
+/* ---------- Advanced section (issue #135) ---------- */
+
+/* The collapsed section holding the low-frequency Link form. The toggle
+ * is a plain text button styled like a form title — no caret glyph. */
+.advanced {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.advancedToggle {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--size-base);
+  color: var(--dim);
+}
+
+.advancedToggle:hover {
+  color: var(--text);
+}
+
 /* The link form's directory path is read-only text: it comes only from
  * the native directory picker (issue #87), never from typing. Display
  * follows the DirectoryIndicator path pattern — mono, truncating with an

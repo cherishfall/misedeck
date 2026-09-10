@@ -116,6 +116,9 @@
       "noPath": "No directory picked",
       "duplicateVersion": "{{tool}}@{{version}} already exists. Uninstall it first, then link again."
     },
+    "advanced": {
+      "title": "Advanced"
+    },
     "queries": {
       "pagination": {
         "total": "{{count}} total",
