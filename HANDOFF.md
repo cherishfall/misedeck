@@ -2,13 +2,13 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-10, blocked on quota)
+## CURRENT STATE (2026-09-10 — no open implementation work)
+
+**The quota blocker is resolved: #138 (execution-panel concurrency) is implemented and closed.** All code work on the frontier is done; what remains is the owner's manual visual verification of the open SPEC parents, then a beta.11 release decision.
 
 **SPEC #128 fully done — all nine tickets #129–#137 implemented and closed.** Owner decisions this round: #136 approved per professional recommendation; #137 resolved by the owner-committed final icon assets (`f3d9d8b`, verified against `tauri.conf.json` bundle.icon entries); the three flagged small decisions all settled per professional recommendation. Everything committed to master and pushed; every ticket `npm run ci` green (cargo where touched), **NOT visually verified — owner verifies manually**.
 
 **Owner-approved follow-up work completed before the quota block:** ConfirmDialog is execution-aware (`cce57d2`); old findings were handled in separate commits: #91 too-old parameter parsing deduplicated and made graceful (`002c088`), #92 dead Doctor fields removed and Doctor hooks made unconditional (`f839a55`), and #90's table-scroll wording was verified already resolved in both locales (no churn commit). The app-wide draft/run-lock sweep is in `eee5330`.
-
-**CURRENT BLOCKER:** the owner then authorized replacing the accidental global single-flight execution rule with concurrent execution. A dedicated subagent was started to implement per-run execution-panel transcript isolation, revise remaining cross-control run locks, and amend ADR-0005 plus both ui-ux-rules locales. It could not start/continue because the model provider returned a 403 weekly (7-day) usage-limit error, including on resume. No concurrency code or docs have been changed yet. Resume this exact task when quota is available; do not claim it is implemented.
 
 **#138 implemented (2026-09-10):** the accidental global single-flight rule is replaced with concurrent execution. `useExecution` now keeps an isolated `RunEntry[]` per run with its own transcript and a compact run switcher in `ExecutionPanel`; run no longer rejects. Run-locking is per-action via `useOwnRun()` across Settings/Tasks/Plugins/Tools/Env; `ConfirmDialog` narrows to a `confirmBusy` prop (its own command only, Cancel always enabled). ADR-0005, ui-ux-rules, and runner.md are amended in both locales stating the single-flight was an accidental global lock. `npm run ci` green (cargo untouched). **NOT visually verified — owner verifies manually.**
 
@@ -26,7 +26,7 @@ This document is a continuation marker between autonomous driver sessions.
 
 **Owner-approved follow-up commits (no ticket):** `f3dbd36` TasksPage edit-draft unlock + run-lock rule clarification; `eee5330` app-wide same-class sweep; `cce57d2` ConfirmDialog consumes execution state, disables Confirm while a command is running, and unlocks all confirm-dialog openers (Env Remove, Tools Unuse, VersionCenter Uninstall, Plugins Uninstall). The later concurrency redesign should re-evaluate this global Confirm lock.
 
-**First actions next session:** resume the blocked execution-panel concurrency redesign once quota is available. After it lands, run the required `npm run ci` and review the revised ADR-0005/run-lock docs. Then owner can visually verify the batch and decide on a beta.11 release (release procedure below).
+**First actions next session:** there is no open `ready-for-agent` ticket — the frontier is empty. The owner's move is to build/run and visually verify the beta11 batch (**#128**, plus #45, #61, #65, #74, #86, #97, #119), with #138's behavior in scope: two commands can now run at once, the panel's run switcher shows them, and a control freezes only while *its own* command is in flight. Then decide on a beta.11 release (release procedure below). If new feedback arrives, open a new SPEC parent + tickets rather than reopening closed ones.
 
 **Open SPEC parents awaiting owner visual verification:** #45, #61, #65, #74, #86, #97, #119 (older batches) + **#128** (this batch, verify against next build).
 
