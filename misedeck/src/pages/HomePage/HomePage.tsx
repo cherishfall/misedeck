@@ -112,6 +112,15 @@ export function HomePage() {
     latest !== undefined &&
     compareVersions(latest, view.ok?.versionDate ?? "") > 0;
 
+  // The too-old gate's found/minimum ride the `key|param=value` wire
+  // format (docs/agents/conventions.md), parsed once here via the shared
+  // parser rather than hand-split at each render site. A missing param
+  // degrades to "—" — the gate never breaks on a malformed payload.
+  const tooOldParams =
+    view.status === "tooOld" && view.err
+      ? parseAppErrorMessage(view.err.message).params
+      : undefined;
+
   return (
     <PageShell>
       <div className={styles.page}>
@@ -244,21 +253,17 @@ export function HomePage() {
               <span className={styles.stateLabel}>{t(I18N_KEYS.states.tooOld.title)}</span>
             </div>
             <p className={styles.stateBody}>
-              {(() => {
-                const { params } = parseAppErrorMessage(view.err.message);
-                return t(I18N_KEYS.states.tooOld.body, {
-                  found: params.found ?? "—",
-                  minimum: params.minimum ?? "—",
-                });
-              })()}
+              {t(I18N_KEYS.states.tooOld.body, {
+                found: tooOldParams?.found ?? "—",
+                minimum: tooOldParams?.minimum ?? "—",
+              })}
             </p>
             <div className={styles.stateActions}>
               <Button
                 variant="primary"
                 size="sm"
                 onClick={() => {
-                  const { params } = parseAppErrorMessage(view.err?.message ?? "");
-                  setPendingSelfUpdate({ current: params.found ?? "—" });
+                  setPendingSelfUpdate({ current: tooOldParams?.found ?? "—" });
                 }}
                 data-testid="too-old-self-update"
               >
