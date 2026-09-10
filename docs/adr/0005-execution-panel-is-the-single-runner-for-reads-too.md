@@ -20,8 +20,14 @@ The panel is also now the home of **copy command**. It is the command history, s
 ## Consequences
 
 - `useExecutionContext().run(request, options?)` returns `RunCommandResult`; `toJsonResult()` reduces a run to the `JsonResult` union the read hooks cache, mapping timeout / non-zero exit / unparsable stdout to the error branch with mise's stderr verbatim.
-- Reads are subject to the panel's single-flight rule: while a foreground command runs, Run is disabled — the same guard mutations already had.
+- Reads share the foreground run UX (command echo, streaming, exit reporting) and the 30-minute ceiling below. The old "single-flight" rule that disabled every Run while any command ran was an accidental global lock, not a designed consequence; issue #138 replaced it with per-run isolation and per-action locking — see the Amendment.
 - Reads inherit the streaming runner's 30-minute ceiling rather than the 120-second read timeout. Acceptable: the user can see the run and cancel it, which was never true of a silent read.
 - Switching the directory context clears a committed version query instead of silently refetching it: a query with no fetcher cannot refetch, and a spinner that never resolves would be a lie. The typed tool name stays, so re-running against the new directory is one click.
 - `tools_ls`, `tools_ls_tool`, and `tools_ls_remote` keep their Tauri commands and runner functions (typed contract and Rust tests unchanged) but the UI no longer calls them; the frontend wrappers are gone so the bypass cannot be reintroduced by accident.
 - Reads that do not belong to the `ls` family (`outdated`, `env`, `config ls`, lockfile, tasks, plugins) still use their own commands. They are not exempt in principle — this ticket's scope was the three queries the owner hit. New read surfaces should route through the runner.
+
+## Amendment — the single-flight rule was an accidental global lock (issue #138)
+
+ADR-0005's original consequence read: *"Reads are subject to the panel's single-flight rule: while a foreground command runs, Run is disabled."* That single-flight was **not** a designed consequence — it was an accidental global lock inherited from the panel owning one shared busy/seq ref. It serialized every command across the whole app: starting any foreground run disabled Run (and, in practice, command-firing controls) everywhere, even on unrelated pages.
+
+Issue #138 removes it. The runner no longer rejects or serializes commands. Each `run()` gets its own isolated `RunEntry` with its own transcript, so concurrent mise invocations coexist and their logs never interleave. Run-locking is now per-action: a control disables only while the specific command **it** dispatched is in flight (via `useOwnRun()`), not because some other command is running. The panel surfaces concurrent runs through a compact run switcher, and `ConfirmDialog` disables its Confirm only while the command **it** opened for is in flight. Nothing in this ADR's visibility guarantee changes — every run still echoes its command and streams its output — only the accidental exclusivity is gone.

@@ -75,6 +75,8 @@ export const I18N_KEYS = {
     emptyHint: "execution.emptyHint",
     reopen: "execution.reopen",
     reopenRunning: "execution.reopenRunning",
+    runsRunning: "execution.runsRunning",
+    runsRecent: "execution.runsRecent",
   },
   tooltip: {
     copy: "tooltip.copy",

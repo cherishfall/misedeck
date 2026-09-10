@@ -13,7 +13,7 @@ The runner is the layer between the Tauri commands and the mise CLI. It lives in
 
 ## Streaming
 
-The runner uses background reader threads (one per pipe) to split lines and forward them through a bounded `mpsc::channel`. The main loop non-blocking-drains the channel between `try_wait` polls so the panel sees output in real time. The runner auto-kills the process at `STREAMING_TIMEOUT` (30 minutes, per the conventions). Cancellation from the UI is a soft cancel: the Rust runner exposes no kill handle to the JS side, so `cancel` marks the panel as cancelled and frees the single-flight slot while the process itself is reaped only by the timeout auto-kill.
+The runner uses background reader threads (one per pipe) to split lines and forward them through a bounded `mpsc::channel`. The main loop non-blocking-drains the channel between `try_wait` polls so the panel sees output in real time. The runner auto-kills the process at `STREAMING_TIMEOUT` (30 minutes, per the conventions). Cancellation from the UI is a soft cancel: the Rust runner exposes no kill handle to the JS side, so `cancel` marks that run as cancelled (freeing only its own UI slot) while the process itself is reaped only by the timeout auto-kill. There is no app-wide single-flight slot to free — runs are isolated per `RunEntry` (issue #138).
 
 ## Captured mode
 

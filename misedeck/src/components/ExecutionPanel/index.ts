@@ -5,6 +5,7 @@ export { ExecutionPanelAffordance } from "./ExecutionPanelAffordance";
 export {
   ExecutionProvider,
   useExecutionContext,
+  useOwnRun,
 } from "./ExecutionContext";
 export {
   useExecution,
@@ -17,4 +18,5 @@ export {
   type ExecutionStatus,
   type ExecutionState,
   type ExecutionKind,
+  type RunEntry,
 } from "./useExecution";

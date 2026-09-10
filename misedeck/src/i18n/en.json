@@ -479,7 +479,9 @@
     "dismiss": "Dismiss",
     "emptyHint": "No command has been run yet.",
     "reopen": "Execution",
-    "reopenRunning": "Execution · running"
+    "reopenRunning": "Execution · running",
+    "runsRunning": "{{count}} running",
+    "runsRecent": "{{count}} recent"
   },
   "tooltip": {
     "copy": "Copy",

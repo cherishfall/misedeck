@@ -76,6 +76,11 @@ export function HomePage() {
     latest?: string;
   } | null>(null);
 
+  // Per-command run-lock for the self-update confirm (issue #138): the
+  // Confirm button locks only while *this* command is in flight, not for
+  // any unrelated command running elsewhere.
+  const [selfUpdateRunning, setSelfUpdateRunning] = useState(false);
+
   const query = useQuery({
     queryKey: ["mise", "detect"],
     queryFn: detectMise,
@@ -336,9 +341,13 @@ export function HomePage() {
           confirmLabel={t(I18N_KEYS.miseManagement.selfUpdateButton)}
           cancelLabel={t(I18N_KEYS.common.cancel)}
           danger={false}
+          confirmBusy={selfUpdateRunning}
           onConfirm={() => {
             setPendingSelfUpdate(null);
-            void runSelfUpdate().then(onSelfUpdateOk);
+            setSelfUpdateRunning(true);
+            void runSelfUpdate()
+              .then(onSelfUpdateOk)
+              .finally(() => setSelfUpdateRunning(false));
           }}
           onCancel={() => setPendingSelfUpdate(null)}
         />

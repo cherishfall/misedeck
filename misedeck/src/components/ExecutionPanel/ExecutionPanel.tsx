@@ -19,6 +19,7 @@ import { I18N_KEYS } from "../../i18n/keys";
 import { usePersistentState } from "../../hooks/usePersistentState";
 import { writeClipboard } from "../../utils/clipboard";
 import { useExecutionContext } from "./ExecutionContext";
+import type { ExecutionStatus } from "./useExecution";
 import styles from "./ExecutionPanel.module.css";
 
 /** localStorage key for the persisted panel height (issue #108). */
@@ -67,9 +68,25 @@ export function commandEcho(
   return parts.join(" ");
 }
 
+/** Map a run's status to the status-dot tone used by the run switcher. */
+function runTone(status: ExecutionStatus): "beam" | "ok" | "fail" | "dim" {
+  switch (status) {
+    case "running":
+      return "beam";
+    case "ok":
+      return "ok";
+    case "failed":
+      return "fail";
+    case "cancelled":
+      return "dim";
+    default:
+      return "dim";
+  }
+}
+
 export function ExecutionPanel() {
   const { t } = useTranslation();
-  const { state, cancel, dismiss } = useExecutionContext();
+  const { state, runs, activeRunId, selectRun, cancel, dismiss } = useExecutionContext();
   const logRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
   // Transient "Copied" acknowledgement for the copy affordance.
@@ -152,6 +169,9 @@ export function ExecutionPanel() {
 
   if (!state.isOpen) return null;
 
+  const showSwitcher = runs.length > 1;
+  const runningCount = runs.filter((r) => r.status === "running").length;
+
   return (
     <div className={styles.deck}>
       <div
@@ -160,6 +180,38 @@ export function ExecutionPanel() {
         onPointerDown={beginHeightResize}
       />
       <div className={styles.deckInner}>
+        {showSwitcher && (
+          <div
+            className={styles.switcher}
+            role="tablist"
+            aria-label={t(I18N_KEYS.execution.title)}
+          >
+            <span className={styles.switcherCount}>
+              {runningCount > 0
+                ? t(I18N_KEYS.execution.runsRunning, { count: runningCount })
+                : t(I18N_KEYS.execution.runsRecent, { count: runs.length })}
+            </span>
+            {runs.map((r) => {
+              const echo = commandEcho(r.kind, r.request.cwd, r.request.args);
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  role="tab"
+                  className={styles.runChip}
+                  data-active={r.id === activeRunId}
+                  aria-selected={r.id === activeRunId}
+                  onClick={() => selectRun(r.id)}
+                  title={echo}
+                  data-testid="execution-run-chip"
+                >
+                  <span className={styles.statusDot} data-tone={runTone(r.status)} />
+                  <span className={styles.runChipLabel}>{echo}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
             <span className={styles.label}>{t(I18N_KEYS.execution.title)}</span>

@@ -17,8 +17,7 @@ import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
 import { useTrust, useTrustAction, useTrustGuard } from "../../state/trustContext";
 import { detectMise, isAppError } from "../../api/mise";
-import { useExecutionContext } from "../../components/ExecutionPanel";
-import type { ExecutionStatus } from "../../components/ExecutionPanel";
+import { useOwnRun } from "../../components/ExecutionPanel";
 import {
   Badge,
   Banner,
@@ -75,7 +74,6 @@ export function EnvPage() {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
   const queryClient = useQueryClient();
-  const { state: execState, run } = useExecutionContext();
   const { state: trust } = useTrust();
   const trustAction = useTrustAction();
   const guard = useTrustGuard();
@@ -97,26 +95,7 @@ export function EnvPage() {
   });
 
   const env = useParsedEnvList();
-
-  // After a successful env write, refresh both the active context and
-  // the global context (so switching contexts doesn't show stale data),
-  // plus the preview page's env query.
-  const lastWriteStatusRef = useRef<ExecutionStatus>("idle");
-  useEffect(() => {
-    const prev = lastWriteStatusRef.current;
-    lastWriteStatusRef.current = execState.status;
-    if (prev === "running" && execState.status === "ok") {
-      void queryClient.invalidateQueries({ queryKey: ["env", "ls", cwd] });
-      void queryClient.invalidateQueries({ queryKey: ["env", "ls", null] });
-      void queryClient.invalidateQueries({ queryKey: ["tools", "env", cwd] });
-      void queryClient.invalidateQueries({ queryKey: ["tools", "env", null] });
-      // Active env queries must refetch immediately so the table updates
-      // visibly after a mutation; invalidateQueries alone is not enough
-      // when the query is still within staleTime (issue #41).
-      void queryClient.refetchQueries({ queryKey: ["env", "ls", cwd], type: "active" });
-      void queryClient.refetchQueries({ queryKey: ["env", "ls", null], type: "active" });
-    }
-  }, [execState.status, cwd, queryClient]);
+  const envWrite = useOwnRun();
 
   // Top-toolbar refresh (issue #98): invalidate both the active and the
   // global env queries, plus the preview page's env query.
@@ -128,19 +107,30 @@ export function EnvPage() {
   }, [queryClient, cwd]);
   useRegisterPageRefresh(onRefresh);
 
-  const isRunning = execState.status === "running";
-
+  // Per-action run-lock (issue #138): `runWrite` wraps the panel runner and
+  // its in-flight flag is true only while the command *this* callback
+  // dispatched is running. On this run's own success, refresh both the
+  // active and global env queries (so switching contexts shows fresh
+  // data) plus the preview page's env query; active queries refetch
+  // immediately so the table updates visibly (issue #41).
   const runWrite = useCallback(
     async (builder: (cwd: string | null) => string[]) => {
       if (!guard.allowed) {
         focusTrustBanner();
         return;
       }
-      if (isRunning) return;
-      const args = builder(cwd);
-      await run({ cwd, args });
+      if (envWrite.isRunning) return;
+      const res = await envWrite.run({ cwd, args: builder(cwd) });
+      if (res.kind === "ok") {
+        void queryClient.invalidateQueries({ queryKey: ["env", "ls", cwd] });
+        void queryClient.invalidateQueries({ queryKey: ["env", "ls", null] });
+        void queryClient.invalidateQueries({ queryKey: ["tools", "env", cwd] });
+        void queryClient.invalidateQueries({ queryKey: ["tools", "env", null] });
+        void queryClient.refetchQueries({ queryKey: ["env", "ls", cwd], type: "active" });
+        void queryClient.refetchQueries({ queryKey: ["env", "ls", null], type: "active" });
+      }
     },
-    [guard.allowed, focusTrustBanner, isRunning, run, cwd],
+    [guard.allowed, focusTrustBanner, envWrite.isRunning, envWrite.run, cwd, queryClient],
   );
 
   const envRows: EnvRow[] = useMemo(() => {
@@ -212,7 +202,7 @@ export function EnvPage() {
       key: "actions",
       header: t(I18N_KEYS.env.columns.actions),
       cell: (r) => (
-        <EnvRowActions row={r} cwd={cwd} onWrite={runWrite} disabled={isRunning} />
+        <EnvRowActions row={r} cwd={cwd} onWrite={runWrite} disabled={envWrite.isRunning} />
       ),
       width: "360px",
     },
@@ -284,7 +274,7 @@ export function EnvPage() {
             </>
           )}
 
-          <AddEnvForm onWrite={runWrite} disabled={isRunning} />
+          <AddEnvForm onWrite={runWrite} disabled={envWrite.isRunning} />
 
           {/* Existing keys, referenced as completion by both var-name
               inputs' datalist (issue #109). Rendered once for the page. */}
@@ -517,6 +507,7 @@ function EnvRowActions({
           the tools page uses for uninstall. */}
       <ConfirmDialog
         open={confirmingRemove}
+        confirmBusy={disabled}
         title={t(I18N_KEYS.env.confirm.remove.title, { name: row.name })}
         body={t(I18N_KEYS.env.confirm.remove.body)}
         command={commandEcho("mise", cwd, miseEnvUnsetArgs(row.name, cwd))}

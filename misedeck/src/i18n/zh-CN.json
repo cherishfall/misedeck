@@ -479,7 +479,9 @@
     "dismiss": "关闭",
     "emptyHint": "尚未执行任何命令。",
     "reopen": "执行面板",
-    "reopenRunning": "执行面板 · 运行中"
+    "reopenRunning": "执行面板 · 运行中",
+    "runsRunning": "{{count}} 运行中",
+    "runsRecent": "{{count}} 条历史"
   },
   "tooltip": {
     "copy": "复制",

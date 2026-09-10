@@ -71,9 +71,8 @@ import {
 } from "../../components";
 import {
   commandEcho,
-  useExecutionContext,
+  useOwnRun,
 } from "../../components/ExecutionPanel";
-import type { ExecutionStatus } from "../../components/ExecutionPanel";
 import { FloatingMenu } from "../../components/FloatingMenu";
 
 import styles from "./ToolsPage.module.css";
@@ -193,7 +192,6 @@ export function ToolsPage() {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
   const queryClient = useQueryClient();
-  const { state: execState, run } = useExecutionContext();
   const guard = useTrustGuard();
 
   // The removal confirmation (issues #56 + #131): clicking 卸载 / Unuse
@@ -209,11 +207,6 @@ export function ToolsPage() {
   // while a command runs (issue #135); only the version center's
   // command-firing buttons lock.
   const [expandedTool, setExpandedTool] = useState<string | null>(null);
-
-  // The tool the top add-tool entry just submitted (issue #134): when
-  // its `mise use` run succeeds, the refreshed table expands that
-  // tool's row so the user sees it active.
-  const [pendingAddedTool, setPendingAddedTool] = useState<string | null>(null);
 
   // Friendly message from the most recent link run (issue #71). Null
   // unless the last `mise link` failed with a recognized conflict.
@@ -251,89 +244,25 @@ export function ToolsPage() {
     setExpandedTool((current) => (current === tool ? null : tool));
   };
 
-  // After a successful mutation, the read queries become stale.
-  // Observe the running → ok transition (the same transition the
-  // env page and the trust action use) and invalidate the
-  // dependent queries so the table refreshes. The version center's
-  // installed sub-list derives from this same read, and its remote
-  // sub-list's installed markers are computed from it, so the single
-  // invalidation refreshes everything except the remote list itself
-  // (which a mutation does not change). A successful add-tool `mise use`
-  // (issue #134) also expands the new tool's row once the table
-  // refreshes; a failed or cancelled run drops the pending expansion.
-  const lastWriteStatusRef = useRef<ExecutionStatus>("idle");
-  useEffect(() => {
-    const prev = lastWriteStatusRef.current;
-    lastWriteStatusRef.current = execState.status;
-    if (prev === "running" && execState.status === "ok") {
-      void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
-      void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
-      if (pendingAddedTool !== null) {
-        setExpandedTool(pendingAddedTool);
-        setPendingAddedTool(null);
-      }
-    } else if (
-      prev === "running" &&
-      (execState.status === "failed" || execState.status === "cancelled")
-    ) {
-      setPendingAddedTool(null);
-    }
-  }, [execState.status, cwd, queryClient, pendingAddedTool]);
-
-  // Link-conflict detection (issue #71). The frontend cannot pre-check
-  // installed versions — that list is only loaded when the user runs a
-  // query — so we submit and then match mise's stderr. `already exists`
-  // / `already installed` → friendly duplicate message; `does not exist`
-  // → directory-not-found message. Any other stderr falls through with no
-  // friendly message, and the raw stderr always stays visible in the
-  // execution panel (data-honesty rule — never swallow the real error).
-  const prevLinkStatusRef = useRef<ExecutionStatus>("idle");
-  useEffect(() => {
-    const prev = prevLinkStatusRef.current;
-    prevLinkStatusRef.current = execState.status;
-    if (prev !== "running" || execState.status !== "failed") return;
-    const req = execState.request;
-    if (!req || req.args[0] !== "link") {
-      // A non-link mutation failed; don't let a stale link hint linger.
-      setLinkConflict(null);
-      return;
-    }
-    const target = req.args[1] ?? "";
-    const at = target.indexOf("@");
-    const tool = at > 0 ? target.slice(0, at) : target;
-    const version = at > 0 ? target.slice(at + 1) : "";
-    const path = req.args[2] ?? "";
-    const stderr = execState.error?.stderr ?? "";
-    if (/already exists|already installed/i.test(stderr)) {
-      setLinkConflict(
-        t(I18N_KEYS.tools.linkForm.duplicateVersion, { tool, version }),
-      );
-    } else if (/does not exist/i.test(stderr)) {
-      setLinkConflict(
-        t(I18N_KEYS.tools.confirm.link.directoryNotFound, { path }),
-      );
-    } else {
-      setLinkConflict(null);
-    }
-  }, [execState.status, execState.request, execState.error, t]);
-
-  // The execution panel reducer is the single source of truth for
-  // "is a mutation in flight". The `running` flag feeds only
-  // command-firing controls (issue #135) — browsing loaded data
-  // (expanding rows, filtering, sorting, paginating) stays enabled.
-  const isRunning = execState.status === "running";
-
-  // Run a mutation. Every entry point checks the trust guard first;
-  // on block, return without running. (Global context has no config
-  // to trust, so the guard always allows, but the pattern is the
-  // same one the config / tasks pages use.)
-  const runMutation = useCallback(
+  // Per-action run-lock (issue #138): the tools page funnels every mise
+  // mutation through one `mutation` hook, so a command-firing control
+  // freezes only while *this page's* mutation is in flight — never
+  // because some unrelated command elsewhere is running. A successful
+  // mutation refreshes the tools + outdated reads (the version center's
+  // installed sub-list derives from the same read).
+  const mutation = useOwnRun();
+  const fireMutation = useCallback(
     async (builder: (cwd: string | null) => string[]) => {
       if (!guard.allowed) return;
-      if (isRunning) return;
-      await run({ cwd, args: builder(cwd) });
+      if (mutation.isRunning) return;
+      const res = await mutation.run({ cwd, args: builder(cwd) });
+      if (res.kind === "ok") {
+        void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
+        void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
+      }
+      return res;
     },
-    [guard.allowed, isRunning, run, cwd],
+    [guard.allowed, mutation.isRunning, mutation.run, cwd, queryClient],
   );
 
   const onRefresh = useCallback(() => {
@@ -344,16 +273,31 @@ export function ToolsPage() {
   useRegisterPageRefresh(onRefresh);
 
   // Link a local directory as a tool version (issue #71). Routes through
-  // the shared mutation runner so the trust gate and single-flight guard
-  // apply unchanged. The conflict message, if any, is derived from the
-  // panel's stderr by the effect above — we just clear it here before the
-  // next run so a stale hint can't linger.
+  // the shared mutation runner so the trust gate applies unchanged. The
+  // conflict message is derived from the run's own stderr (issue #138):
+  // `already exists` / `already installed` → friendly duplicate message;
+  // `does not exist` → directory-not-found message. Any other stderr
+  // falls through with no friendly message, and the raw stderr always
+  // stays visible in the execution panel (data-honesty rule — never
+  // swallow the real error).
   const onLink = useCallback(
-    (tool: string, version: string, path: string) => {
+    async (tool: string, version: string, path: string) => {
       setLinkConflict(null);
-      void runMutation(() => miseLinkArgs(tool, version, path));
+      const res = await fireMutation(() => miseLinkArgs(tool, version, path));
+      if (res && res.kind === "err") {
+        const stderr = res.err.stderr;
+        if (/already exists|already installed/i.test(stderr)) {
+          setLinkConflict(t(I18N_KEYS.tools.linkForm.duplicateVersion, { tool, version }));
+        } else if (/does not exist/i.test(stderr)) {
+          setLinkConflict(t(I18N_KEYS.tools.confirm.link.directoryNotFound, { path }));
+        } else {
+          setLinkConflict(null);
+        }
+      } else {
+        setLinkConflict(null);
+      }
     },
-    [runMutation],
+    [fireMutation, t],
   );
 
   const rows = useMemo<ToolRow[]>(() => {
@@ -545,10 +489,10 @@ export function ToolsPage() {
       cell: (r) => (
         <UseVersionCell
           row={r}
-          disabled={isRunning}
+          disabled={mutation.isRunning}
           versions={versionsByTool.get(r.tool) ?? []}
           onUse={(version) =>
-            void runMutation((cwd) => miseUseArgs(r.tool, version, cwd))
+            void fireMutation((cwd) => miseUseArgs(r.tool, version, cwd))
           }
         />
       ),
@@ -560,12 +504,12 @@ export function ToolsPage() {
       cell: (r) => (
         <RowActions
           row={r}
-          disabled={isRunning}
+          disabled={mutation.isRunning}
           onUnuse={() =>
             setPendingRemoval({ kind: "unuse", tool: r.tool, orphan: r.orphan })
           }
           onUpgrade={() =>
-            void runMutation(() => miseUpgradeArgs(r.tool))
+            void fireMutation(() => miseUpgradeArgs(r.tool))
           }
         />
       ),
@@ -584,16 +528,15 @@ export function ToolsPage() {
         {/* The single add-tool entry (issue #134): registry search +
             version (default `latest`) + one Use action running
             `mise use <tool>@<version>` — install and activate in one
-            step. On success the new tool's row expands (see the
-            pendingAddedTool effect). */}
+            step. On success the new tool's row expands. */}
         <AddToolEntry
-          disabled={isRunning}
-          onUse={(tool, version) => {
-            // Mirror runMutation's gates so a blocked run never leaves
+          disabled={mutation.isRunning}
+          onUse={async (tool, version) => {
+            // Mirror fireMutation's gates so a blocked run never leaves
             // a stale pending expansion behind.
-            if (!guard.allowed || isRunning) return;
-            setPendingAddedTool(tool);
-            void runMutation((cwd) => miseUseArgs(tool, version, cwd));
+            if (!guard.allowed || mutation.isRunning) return;
+            const res = await fireMutation((cwd) => miseUseArgs(tool, version, cwd));
+            if (res?.kind === "ok") setExpandedTool(tool);
           }}
         />
 
@@ -633,12 +576,12 @@ export function ToolsPage() {
               <VersionCenter
                 tool={r.tool}
                 installed={itemsByTool.get(r.tool) ?? []}
-                disabled={isRunning}
+                disabled={mutation.isRunning}
                 onUse={(version) =>
-                  void runMutation((cwd) => miseUseArgs(r.tool, version, cwd))
+                  void fireMutation((cwd) => miseUseArgs(r.tool, version, cwd))
                 }
                 onInstallOnly={(version) =>
-                  void runMutation(() => miseInstallArgs(r.tool, version))
+                  void fireMutation(() => miseInstallArgs(r.tool, version))
                 }
                 onUninstall={(version) =>
                   setPendingRemoval({ kind: "uninstall", tool: r.tool, version })
@@ -679,7 +622,7 @@ export function ToolsPage() {
           {advancedOpen && (
             <LinkToolForm
               onLink={onLink}
-              disabled={isRunning}
+              disabled={mutation.isRunning}
               conflict={linkConflict}
             />
           )}
@@ -687,6 +630,7 @@ export function ToolsPage() {
 
         <ConfirmDialog
           open={pendingRemoval !== null}
+          confirmBusy={mutation.isRunning}
           title={
             pendingRemoval?.kind === "unuse"
               ? t(I18N_KEYS.tools.confirm.unuse.title, { tool: pendingRemoval.tool })
@@ -723,9 +667,9 @@ export function ToolsPage() {
             const target = pendingRemoval;
             setPendingRemoval(null);
             if (target?.kind === "unuse") {
-              void runMutation(() => miseUnuseArgs(target.tool, target.orphan));
+              void fireMutation(() => miseUnuseArgs(target.tool, target.orphan));
             } else if (target?.kind === "uninstall") {
-              void runMutation(() => miseUninstallArgs(target.tool, target.version));
+              void fireMutation(() => miseUninstallArgs(target.tool, target.version));
             }
           }}
           onCancel={() => setPendingRemoval(null)}

@@ -5,6 +5,14 @@
 // through `run()` exactly like mutations do, and `run()` returns the
 // structured result so a read's caller can feed the query cache without
 // invoking mise a second time.
+//
+// Concurrent execution (issue #138): the panel runs more than one command
+// at a time. Each foreground run gets its own `RunEntry` with an isolated
+// transcript; the `Channel` callback closes over the run id so run B's
+// stdout can never land in run A's log. There is no global single-flight
+// guard — `run()` never rejects because another command is running. A
+// background run (`RunOptions.background`) shares the runner but owns no
+// transcript, no auto-open, and no switcher entry.
 
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { Channel, invoke } from "@tauri-apps/api/core";
@@ -16,6 +24,10 @@ import { loadPersistent, savePersistent } from "../../hooks/usePersistentState";
 /** localStorage key for the panel's persisted open state (issue #108). */
 const PANEL_OPEN_KEY = "misedeck.panelOpen.v1";
 
+/** Most finished runs to keep in history so an idle app does not grow
+ *  logs forever (issue #138). Running runs are never pruned. */
+const MAX_FINISHED_RUNS = 5;
+
 export interface RunRequest {
   cwd: string | null;
   args: string[];
@@ -25,14 +37,13 @@ export interface RunRequest {
 export interface RunOptions {
   /**
    * Use the panel's runner without claiming its transcript: no echo
-   * swap, no streamed lines, no auto-open, and no single-flight
-   * rejection.
+   * swap, no streamed lines, no auto-open, and no switcher entry.
    *
    * Reads the app issues on its own behalf (the tools table's initial
    * load, its post-mutation refresh) pass this so an automatic refresh
    * can never yank the transcript the user is reading. Everything the
    * user asked for — mutations and reads alike — runs in the foreground
-   * and is transcribed.
+   * and is transcribed in its own run entry.
    */
   background?: boolean;
 }
@@ -50,6 +61,28 @@ export type ExecutionStatus = "idle" | "running" | "ok" | "failed" | "cancelled"
  *  the IPC command and the displayed echo differ. */
 export type ExecutionKind = "mise" | "install" | "selfUpdate";
 
+/** A single run, isolated from every other run (issue #138). A
+ *  foreground run owns its own transcript; a background run never
+ *  becomes a `RunEntry`. */
+export interface RunEntry {
+  id: string;
+  kind: ExecutionKind;
+  request: RunRequest;
+  lines: LogLine[];
+  status: ExecutionStatus;
+  exitCode: number | null;
+  durationMs: number;
+  error: AppError | null;
+  /** Post-update version string when `kind === "selfUpdate"`. */
+  newVersion: string | null;
+  /** Epoch ms when the run started, for history ordering. */
+  startedAt: number;
+}
+
+/** Projected view of the active run, kept so existing consumers
+ *  (ExecutionPanel, ExecutionPanelAffordance) keep compiling. A background
+ *  run never becomes the active run, so this always reflects a foreground
+ *  run or the idle empty state. */
 export interface ExecutionState {
   status: ExecutionStatus;
   kind: ExecutionKind;
@@ -66,13 +99,19 @@ export interface ExecutionState {
   /** Panel visibility. Hidden by default and stays closed when a command
    *  starts (so foreground runs no longer yank the user's attention) —
    *  the reopen affordance surfaces the activity instead. The one
-   *  exception: when a command fails while the panel is closed, it opens
+   *  exception: when a run fails while the panel is closed, it opens
    *  once so the error and its logs are visible. The panel can be
    *  dismissed at any time without clearing its history. */
   isOpen: boolean;
 }
 
-const initial: ExecutionState = {
+interface ExecState {
+  runs: RunEntry[];
+  activeRunId: string | null;
+  isOpen: boolean;
+}
+
+const idleState: ExecutionState = {
   status: "idle",
   kind: "mise",
   request: null,
@@ -84,24 +123,52 @@ const initial: ExecutionState = {
   isOpen: false,
 };
 
+function pruneRuns(runs: RunEntry[], maxFinished: number): RunEntry[] {
+  const finished = runs.filter((r) => r.status !== "running");
+  if (finished.length <= maxFinished) return runs;
+  const drop = new Set(
+    finished.slice(0, finished.length - maxFinished).map((r) => r.id),
+  );
+  return runs.filter((r) => !drop.has(r.id));
+}
+
 type Action =
-  | { type: "start"; kind: ExecutionKind; request: RunRequest }
-  | { type: "line"; stream: "stdout" | "stderr"; text: string }
-  | { type: "exit"; exitCode: number; durationMs: number }
-  | { type: "complete"; newVersion: string | null }
-  | { type: "fail"; error: AppError }
-  | { type: "cancel" }
+  | { type: "start"; id: string; kind: ExecutionKind; request: RunRequest }
+  | { type: "line"; id: string; stream: "stdout" | "stderr"; text: string }
+  | { type: "exit"; id: string; exitCode: number; durationMs: number }
+  | { type: "complete"; id: string; newVersion: string | null }
+  | { type: "fail"; id: string; error: AppError }
+  | { type: "cancel"; id: string }
+  | { type: "select"; id: string }
   | { type: "close" }
   | { type: "open" };
 
-function reducer(state: ExecutionState, action: Action): ExecutionState {
+function reducer(state: ExecState, action: Action): ExecState {
   switch (action.type) {
     case "start":
       return {
-        ...initial,
-        kind: action.kind,
-        status: "running",
-        request: action.request,
+        ...state,
+        runs: pruneRuns(
+          [
+            ...state.runs,
+            {
+              id: action.id,
+              kind: action.kind,
+              request: action.request,
+              lines: [],
+              status: "running",
+              exitCode: null,
+              durationMs: 0,
+              error: null,
+              newVersion: null,
+              startedAt: Date.now(),
+            },
+          ],
+          MAX_FINISHED_RUNS,
+        ),
+        // A new foreground run becomes the active one and claims the
+        // panel's transcript; it never resets another entry's lines.
+        activeRunId: action.id,
         // Preserve the current visibility rather than forcing the panel
         // open: a command starting must not yank the user's attention. A
         // closed panel stays closed (the reopen affordance surfaces the
@@ -113,14 +180,25 @@ function reducer(state: ExecutionState, action: Action): ExecutionState {
     case "line":
       return {
         ...state,
-        lines: [...state.lines, { stream: action.stream, text: action.text }],
+        runs: state.runs.map((r) =>
+          r.id === action.id
+            ? { ...r, lines: [...r.lines, { stream: action.stream, text: action.text }] }
+            : r,
+        ),
       };
     case "exit":
       return {
         ...state,
-        status: action.exitCode === 0 ? "ok" : "failed",
-        exitCode: action.exitCode,
-        durationMs: action.durationMs,
+        runs: state.runs.map((r) =>
+          r.id === action.id
+            ? {
+                ...r,
+                status: action.exitCode === 0 ? "ok" : "failed",
+                exitCode: action.exitCode,
+                durationMs: action.durationMs,
+              }
+            : r,
+        ),
         // Auto-open once on failure if the panel is closed, so the error
         // and its logs are immediately visible (failure exception to the
         // "no auto-open on start" rule). Success never auto-opens, so we
@@ -131,21 +209,33 @@ function reducer(state: ExecutionState, action: Action): ExecutionState {
         isOpen: action.exitCode === 0 ? state.isOpen : true,
       };
     case "complete":
-      return { ...state, newVersion: action.newVersion };
+      return {
+        ...state,
+        runs: state.runs.map((r) =>
+          r.id === action.id ? { ...r, newVersion: action.newVersion } : r,
+        ),
+      };
     case "fail":
       return {
         ...state,
-        status: "failed",
-        error: action.error,
-        // Same "open once on failure" rule as the `exit` case above: a
-        // failed run whose panel is closed pops open so the error is
-        // visible; an already-open panel (or one the user closed) is
-        // left untouched. A run that fails via this path issues a single
-        // `fail` action, so it can never fight the user with a loop.
+        runs: state.runs.map((r) =>
+          r.id === action.id ? { ...r, status: "failed", error: action.error } : r,
+        ),
+        // A failed run whose panel is closed pops open so the error is
+        // visible; an already-open panel (or one the user closed) is left
+        // untouched. A run that fails via this path issues a single `fail`
+        // action, so it can never fight the user with a loop.
         isOpen: true,
       };
     case "cancel":
-      return { ...state, status: "cancelled" };
+      return {
+        ...state,
+        runs: state.runs.map((r) =>
+          r.id === action.id ? { ...r, status: "cancelled" } : r,
+        ),
+      };
+    case "select":
+      return { ...state, activeRunId: action.id };
     case "close":
       return { ...state, isOpen: false };
     case "open":
@@ -229,18 +319,22 @@ export function toJsonResult(result: RunCommandResult): JsonResult {
 
 function makeChannel(
   dispatch: React.Dispatch<Action>,
+  id: string,
 ): Channel<unknown> {
   return new Channel<unknown>((msg) => {
-    // The Rust side emits RunEvent with a `kind` tag.
+    // The Rust side emits RunEvent with a `kind` tag. Each event is
+    // dispatched into the run whose id this channel closed over, so a
+    // run's stdout can never land in another run's transcript (#138).
     if (!msg || typeof msg !== "object") return;
     const m = msg as { kind?: string; line?: string; exitCode?: number; durationMs?: number };
     if (m.kind === "stdout" && typeof m.line === "string") {
-      dispatch({ type: "line", stream: "stdout", text: m.line });
+      dispatch({ type: "line", id, stream: "stdout", text: m.line });
     } else if (m.kind === "stderr" && typeof m.line === "string") {
-      dispatch({ type: "line", stream: "stderr", text: m.line });
+      dispatch({ type: "line", id, stream: "stderr", text: m.line });
     } else if (m.kind === "exit") {
       dispatch({
         type: "exit",
+        id,
         exitCode: m.exitCode ?? -1,
         durationMs: m.durationMs ?? 0,
       });
@@ -256,14 +350,6 @@ function unexpectedIpcResponse(): AppError {
   };
 }
 
-function panelBusy(): AppError {
-  return {
-    code: "COMMAND_FAILED",
-    message: "another mise command is already running",
-    stderr: "",
-  };
-}
-
 /** A background run still has to hand the IPC boundary a channel (the
  *  Rust signature requires one); this one drops every event. */
 function discardingChannel(): Channel<unknown> {
@@ -271,23 +357,22 @@ function discardingChannel(): Channel<unknown> {
 }
 
 export function useExecution() {
-  const [state, dispatch] = useReducer(reducer, {
-    ...initial,
-    // Open state restores across restarts (issue #108).
-    isOpen: loadPersistent(PANEL_OPEN_KEY, initial.isOpen),
-  });
+  const [state, dispatch] = useReducer(reducer, undefined, () => ({
+    runs: [],
+    activeRunId: null,
+    isOpen: loadPersistent(PANEL_OPEN_KEY, false),
+  }));
   useEffect(() => {
     savePersistent(PANEL_OPEN_KEY, state.isOpen);
   }, [state.isOpen]);
-  // We keep the most recent cancel handle on a ref so the cancel button
-  // can find it without re-rendering.
-  const cancelRef = useRef<(() => void) | null>(null);
-  // Single-flight for foreground runs, tracked on a ref rather than
-  // `state.status` so every `run*` callback stays referentially stable:
-  // the read hooks close over `run` inside React Query query functions
-  // and must not be re-created on every panel state change.
-  const foregroundBusyRef = useRef(false);
-  const foregroundSeqRef = useRef(0);
+  // Per-run cancel handles, keyed by run id (issue #138). The cancel
+  // button always finds the active run's handle without re-rendering.
+  const cancelRefs = useRef<Map<string, () => void>>(new Map());
+  // Monotonic id source for runs; kept on a ref so `run*` callbacks stay
+  // referentially stable (the read hooks close over `run` inside React
+  // Query query functions and must not be re-created on every panel
+  // state change).
+  const idSeqRef = useRef(0);
 
   const runMiseInternal = useCallback(
     async (
@@ -298,31 +383,29 @@ export function useExecution() {
       options?: RunOptions,
     ): Promise<RunCommandResult> => {
       const background = options?.background === true;
-      let seq = 0;
+      const id = `run-${++idSeqRef.current}`;
+      // Foreground runs never reject: concurrency is allowed, so there is
+      // no single-flight slot to claim. A new foreground run simply adds
+      // its own entry and becomes the active one.
       if (!background) {
-        if (foregroundBusyRef.current) {
-          return { kind: "err", err: panelBusy() };
-        }
-        foregroundBusyRef.current = true;
-        seq = ++foregroundSeqRef.current;
-        dispatch({ type: "start", kind, request });
+        dispatch({ type: "start", id, kind, request });
       }
-      const channel = background ? discardingChannel() : makeChannel(dispatch);
+      const channel = background ? discardingChannel() : makeChannel(dispatch, id);
       let cancelled = false;
       if (!background) {
-        cancelRef.current = () => {
+        cancelRefs.current.set(id, () => {
           cancelled = true;
-          // The Rust runner doesn't expose a kill handle from the JS side yet;
-          // for now `cancel` just marks the panel as cancelled and frees the
-          // single-flight slot so the user can dispatch again immediately.
-          foregroundBusyRef.current = false;
-          dispatch({ type: "cancel" });
-        };
+          // The Rust runner doesn't expose a kill handle from the JS side
+          // yet (soft cancel, see runner.md); the run is marked cancelled
+          // and its handle is released so the user can dispatch again.
+          dispatch({ type: "cancel", id });
+          cancelRefs.current.delete(id);
+        });
       }
       /** Report a failure: the panel only hears about foreground runs it
        *  still owns; the caller always gets the structured error. */
       const fail = (err: AppError): RunCommandResult => {
-        if (!background && !cancelled) dispatch({ type: "fail", error: err });
+        if (!background && !cancelled) dispatch({ type: "fail", id, error: err });
         return { kind: "err", err };
       };
       try {
@@ -339,10 +422,11 @@ export function useExecution() {
           // For self-update, surface the post-update version.
           dispatch({
             type: "complete",
+            id,
             newVersion: typeof result.newVersion === "string" ? result.newVersion : null,
           });
         } else {
-          dispatch({ type: "fail", error: result.err });
+          dispatch({ type: "fail", id, error: result.err });
         }
         return result;
       } catch (e) {
@@ -352,12 +436,7 @@ export function useExecution() {
           stderr: "",
         });
       } finally {
-        // Only release the slot if a later foreground run has not already
-        // claimed it (possible after a cancel, which frees it early).
-        if (!background && foregroundSeqRef.current === seq) {
-          cancelRef.current = null;
-          foregroundBusyRef.current = false;
-        }
+        cancelRefs.current.delete(id);
       }
     },
     [],
@@ -366,7 +445,8 @@ export function useExecution() {
   /**
    * Run an arbitrary `mise ...` command and return its structured
    * result. Reads use the return value to feed the React Query cache so
-   * no command is ever executed twice (ADR-0005).
+   * no command is ever executed twice (ADR-0005). Never rejects because
+   * another command is running (#138).
    */
   const run = useCallback(
     (request: RunRequest, options?: RunOptions): Promise<RunCommandResult> =>
@@ -416,7 +496,13 @@ export function useExecution() {
   );
 
   const cancel = useCallback(() => {
-    cancelRef.current?.();
+    if (state.activeRunId) cancelRefs.current.get(state.activeRunId)?.();
+  }, [state.activeRunId]);
+
+  /** Select which run the panel transcribes (issue #138). Background runs
+   *  are never selectable; this only switches the foreground view. */
+  const selectRun = useCallback((id: string) => {
+    dispatch({ type: "select", id });
   }, []);
 
   /** Hide the panel without clearing its history. The next run does NOT
@@ -432,6 +518,32 @@ export function useExecution() {
     dispatch({ type: "open" });
   }, []);
 
-  return { state, run, runInstall, runSelfUpdate, runTrust, cancel, dismiss, openPanel };
-}
+  const activeRun = state.runs.find((r) => r.id === state.activeRunId) ?? null;
+  const projected: ExecutionState = activeRun
+    ? {
+        status: activeRun.status,
+        kind: activeRun.kind,
+        request: activeRun.request,
+        lines: activeRun.lines,
+        exitCode: activeRun.exitCode,
+        durationMs: activeRun.durationMs,
+        error: activeRun.error,
+        newVersion: activeRun.newVersion,
+        isOpen: state.isOpen,
+      }
+    : { ...idleState, isOpen: state.isOpen };
 
+  return {
+    state: projected,
+    runs: state.runs,
+    activeRunId: state.activeRunId,
+    selectRun,
+    run,
+    runInstall,
+    runSelfUpdate,
+    runTrust,
+    cancel,
+    dismiss,
+    openPanel,
+  };
+}

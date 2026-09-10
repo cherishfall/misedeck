@@ -9,13 +9,12 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
 import { detectMise, isAppError } from "../../api/mise";
-import { useExecutionContext } from "../../components/ExecutionPanel";
-import type { ExecutionStatus } from "../../components/ExecutionPanel";
+import { useOwnRun } from "../../components/ExecutionPanel";
 import {
   Button,
   commandEcho,
@@ -58,28 +57,22 @@ export function PluginsPage() {
   // runs through the execution panel. Plugins are global mise state
   // — the directory trust guard does not apply, unlike the tasks /
   // settings pages that write the cwd's config file.
-  const { state: execState, run } = useExecutionContext();
-  const isRunning = execState.status === "running";
+  const uninstall = useOwnRun();
   const [pendingUninstall, setPendingUninstall] = useState<string | null>(null);
 
-  // After a successful uninstall the read query is stale; observe the
-  // running → ok transition (same pattern as tools/tasks) and
-  // invalidate the installed list.
-  const lastWriteStatusRef = useRef<ExecutionStatus>("idle");
-  useEffect(() => {
-    const prev = lastWriteStatusRef.current;
-    lastWriteStatusRef.current = execState.status;
-    if (prev === "running" && execState.status === "ok") {
-      void queryClient.invalidateQueries({ queryKey: ["plugins", "ls", cwd] });
-    }
-  }, [execState.status, cwd, queryClient]);
-
+  // Per-action run-lock (issue #138): `uninstall` wraps the panel runner and
+  // its in-flight flag is true only while *this* uninstall is running, so a
+  // long install elsewhere never disables this page. The read query
+  // refreshes on this run's own success.
   const uninstallPlugin = useCallback(
     async (name: string) => {
-      if (isRunning) return;
-      await run({ cwd, args: misePluginsUninstallArgs(name) });
+      if (uninstall.isRunning) return;
+      const res = await uninstall.run({ cwd, args: misePluginsUninstallArgs(name) });
+      if (res.kind === "ok") {
+        void queryClient.invalidateQueries({ queryKey: ["plugins", "ls", cwd] });
+      }
     },
-    [isRunning, run, cwd],
+    [uninstall.isRunning, uninstall.run, cwd, queryClient],
   );
 
   const pluginsError = plugins.error?.kind === "err" ? plugins.error.err : null;
@@ -186,6 +179,7 @@ export function PluginsPage() {
 
         <ConfirmDialog
           open={pendingUninstall !== null}
+          confirmBusy={uninstall.isRunning}
           title={
             pendingUninstall
               ? t(I18N_KEYS.plugins.confirm.uninstall.title, { name: pendingUninstall })

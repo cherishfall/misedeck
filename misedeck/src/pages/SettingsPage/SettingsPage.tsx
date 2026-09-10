@@ -27,8 +27,7 @@ import {
   useTrustGuard,
 } from "../../state/trustContext";
 import { detectMise, isAppError } from "../../api/mise";
-import { useExecutionContext } from "../../components/ExecutionPanel";
-import type { ExecutionStatus } from "../../components/ExecutionPanel";
+import { useOwnRun } from "../../components/ExecutionPanel";
 import {
   Badge,
   Banner,
@@ -72,7 +71,6 @@ export function SettingsPage() {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
   const queryClient = useQueryClient();
-  const { state: execState, run } = useExecutionContext();
   const { state: trust } = useTrust();
   const trustAction = useTrustAction();
   const guard = useTrustGuard();
@@ -101,14 +99,7 @@ export function SettingsPage() {
   const allSettings = useParsedSettingsList(true);
   const settings = showAll ? allSettings : explicitSettings;
 
-  const lastWriteStatusRef = useRef<ExecutionStatus>("idle");
-  useEffect(() => {
-    const prev = lastWriteStatusRef.current;
-    lastWriteStatusRef.current = execState.status;
-    if (prev === "running" && execState.status === "ok") {
-      void queryClient.invalidateQueries({ queryKey: ["settings", "ls", cwd] });
-    }
-  }, [execState.status, cwd, queryClient]);
+  const writeRun = useOwnRun();
 
   // Top-toolbar refresh (issue #98): the prefix key covers both the
   // explicit and the `--all` settings queries.
@@ -117,19 +108,24 @@ export function SettingsPage() {
   }, [queryClient, cwd]);
   useRegisterPageRefresh(onRefresh);
 
-  const isRunning = execState.status === "running";
-
+  // Per-action run-lock (issue #138): `writeRun` wraps the panel runner and
+  // its in-flight flag is true only while the command *this* callback
+  // dispatched is running, so a long install elsewhere never disables
+  // this page's Save / Add. The read query refreshes on this run's own
+  // success (not on a global status transition).
   const runWrite = useCallback(
     async (builder: (cwd: string | null) => string[]) => {
       if (!guard.allowed) {
         focusTrustBanner();
         return;
       }
-      if (isRunning) return;
-      const args = builder(cwd);
-      await run({ cwd, args });
+      if (writeRun.isRunning) return;
+      const res = await writeRun.run({ cwd, args: builder(cwd) });
+      if (res.kind === "ok") {
+        void queryClient.invalidateQueries({ queryKey: ["settings", "ls", cwd] });
+      }
     },
-    [guard.allowed, focusTrustBanner, isRunning, run, cwd],
+    [guard.allowed, focusTrustBanner, writeRun.isRunning, writeRun.run, cwd, queryClient],
   );
 
   // Text filter over the full row set (issue #106), shared with the
@@ -193,7 +189,7 @@ export function SettingsPage() {
       key: "actions",
       header: t(I18N_KEYS.settings.columns.actions),
       width: "210px",
-      cell: (r) => <RowEditor row={r} onWrite={runWrite} disabled={isRunning} />,
+      cell: (r) => <RowEditor row={r} onWrite={runWrite} disabled={writeRun.isRunning} />,
     },
   ];
 
@@ -278,7 +274,7 @@ export function SettingsPage() {
             />
             <AddSettingForm
               onWrite={runWrite}
-              disabled={isRunning}
+              disabled={writeRun.isRunning}
               keySuggestions={allSettings.data?.map((r) => r.key) ?? []}
             />
           </>

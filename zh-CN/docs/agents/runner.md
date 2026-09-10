@@ -13,7 +13,7 @@ Runner 层位于 Tauri command 与 mise CLI 之间，代码在 `misedeck/src-tau
 
 ## Streaming
 
-Runner 用后台读线程（每个 pipe 一个）按行切分，通过有界 `mpsc::channel` 转发。主循环在两次 `try_wait` 之间非阻塞排空 channel，面板就能看到实时输出。`STREAMING_TIMEOUT`（30 分钟）到点自动 kill 进程。来自 UI 的取消是软取消：Rust runner 没有向 JS 侧暴露 kill handle，所以 `cancel` 只是把面板标记为已取消并释放单飞槽位，进程本身只靠超时自动 kill 回收。
+Runner 用后台读线程（每个 pipe 一个）按行切分，通过有界 `mpsc::channel` 转发。主循环在两次 `try_wait` 之间非阻塞排空 channel，面板就能看到实时输出。`STREAMING_TIMEOUT`（30 分钟）到点自动 kill 进程。来自 UI 的取消是软取消：Rust runner 没有向 JS 侧暴露 kill handle，所以 `cancel` 只把该次运行标记为已取消（只释放它自己的 UI 槽位），进程本身只靠超时自动 kill 回收。并不存在全应用级的单飞槽位——运行按 `RunEntry` 隔离（issue #138）。
 
 ## Captured 模式
 

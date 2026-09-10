@@ -47,8 +47,7 @@ import {
   useTrustGuard,
 } from "../../state/trustContext";
 import { detectMise, isAppError } from "../../api/mise";
-import { useExecutionContext } from "../../components/ExecutionPanel";
-import type { ExecutionStatus } from "../../components/ExecutionPanel";
+import { useOwnRun } from "../../components/ExecutionPanel";
 import {
   taskRunDisplay,
   parseDependsInput,
@@ -144,7 +143,6 @@ export function TasksPage() {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
   const queryClient = useQueryClient();
-  const { state: execState, run } = useExecutionContext();
   const { state: trust } = useTrust();
   const trustAction = useTrustAction();
   const guard = useTrustGuard();
@@ -174,32 +172,19 @@ export function TasksPage() {
 
   const tasks = useParsedTasksList();
 
-  // After a successful task write, the read query becomes stale.
-  // Observe the running → ok transition (the same transition the
-  // env page and the trust action use) and invalidate the
-  // task list so the table refreshes with the new shape.
-  const lastWriteStatusRef = useRef<ExecutionStatus>("idle");
-  useEffect(() => {
-    const prev = lastWriteStatusRef.current;
-    lastWriteStatusRef.current = execState.status;
-    if (prev === "running" && execState.status === "ok") {
-      void queryClient.invalidateQueries({ queryKey: ["tasks", "ls", cwd] });
-    }
-  }, [execState.status, cwd, queryClient]);
-
-  // The execution panel reducer is the single source of truth
-  // for "is a command in flight". Run-locking (issue #135) covers
-  // only command-firing controls — Run, Open in editor, and the
-  // edit form's Save. Browsing and drafting never lock: the row
-  // Edit button opens an inline draft, and the draft's inputs and
-  // Cancel stay editable through a running command.
-  const isRunning = execState.status === "running";
-
   // Top-toolbar refresh (issue #98).
   const onRefresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["tasks", "ls", cwd] });
   }, [queryClient, cwd]);
   useRegisterPageRefresh(onRefresh);
+
+  // Per-action run-locking (issue #138): each command-firing action gets
+  // its own hook, so a control freezes only while *its* command is in
+  // flight. Browsing and drafting never lock (issue #135).
+  const taskRun = useOwnRun();
+  const saveRun = useOwnRun();
+  const editorRun = useOwnRun();
+  const configRun = useOwnRun();
 
   // Run a task via the panel. The trust guard is checked first
   // (running a task in an untrusted directory would also fail
@@ -211,28 +196,33 @@ export function TasksPage() {
         focusTrustBanner();
         return;
       }
-      if (isRunning) return;
-      await run({ cwd, args: miseRunTaskArgs(name) });
+      if (taskRun.isRunning) return;
+      await taskRun.run({ cwd, args: miseRunTaskArgs(name) });
     },
-    [guard.allowed, focusTrustBanner, isRunning, run, cwd],
+    [guard.allowed, focusTrustBanner, taskRun.isRunning, taskRun.run, cwd],
   );
 
-  // Save a task edit via the panel. Same trust-guard pattern.
+  // Save a task edit via the panel. Same trust-guard pattern. On this
+  // run's own success, refresh the task list so the table shows the new
+  // shape.
   const saveTask = useCallback(
     async (name: string, runCmd: string, depends: string[]) => {
       if (!guard.allowed) {
         focusTrustBanner();
         return;
       }
-      if (isRunning) return;
+      if (saveRun.isRunning) return;
       if (runCmd.trim().length === 0) {
         // mise's `tasks add -- <empty>` is rejected. Refuse here
         // so the panel doesn't fill with a wasted failed run.
         return;
       }
-      await run({ cwd, args: miseTasksAddArgs(name, runCmd, depends) });
+      const res = await saveRun.run({ cwd, args: miseTasksAddArgs(name, runCmd, depends) });
+      if (res.kind === "ok") {
+        void queryClient.invalidateQueries({ queryKey: ["tasks", "ls", cwd] });
+      }
     },
-    [guard.allowed, focusTrustBanner, isRunning, run, cwd],
+    [guard.allowed, focusTrustBanner, saveRun.isRunning, saveRun.run, cwd, queryClient],
   );
 
   // Open the file that defines the task in the OS default editor.
@@ -248,8 +238,8 @@ export function TasksPage() {
         focusTrustBanner();
         return;
       }
-      if (isRunning) return;
-      const res = await run({ cwd, args: miseTasksEditPathArgs(name) });
+      if (editorRun.isRunning) return;
+      const res = await editorRun.run({ cwd, args: miseTasksEditPathArgs(name) });
       if (res.kind === "err") {
         // The failed run auto-opens the panel with stderr; the
         // page-level message explains what the attempt was for.
@@ -272,7 +262,7 @@ export function TasksPage() {
         setEditorError(t(I18N_KEYS.tasks.openEditorError.body));
       }
     },
-    [guard.allowed, focusTrustBanner, isRunning, run, cwd, t],
+    [guard.allowed, focusTrustBanner, editorRun.isRunning, editorRun.run, cwd, t],
   );
 
   // Track the open-in-editor error so the user can see why
@@ -293,8 +283,8 @@ export function TasksPage() {
         focusTrustBanner();
         return;
       }
-      if (isRunning) return;
-      const res = await run({ cwd, args: miseConfigLsArgs() });
+      if (configRun.isRunning) return;
+      const res = await configRun.run({ cwd, args: miseConfigLsArgs() });
       if (res.kind === "err" || res.outcome.exitCode !== 0) {
         setEditorError(t(I18N_KEYS.tasks.openConfigError.body));
         return;
@@ -322,7 +312,7 @@ export function TasksPage() {
         setEditorError(t(I18N_KEYS.tasks.openConfigError.body));
       }
     },
-    [guard.allowed, focusTrustBanner, isRunning, run, cwd, t],
+    [guard.allowed, focusTrustBanner, configRun.isRunning, configRun.run, cwd, t],
   );
 
   // The edit form is per-row; `editingName === row.name` opens
@@ -456,7 +446,7 @@ export function TasksPage() {
             variant="primary"
             size="sm"
             onClick={() => void runTask(r.name)}
-            disabled={isRunning}
+            disabled={taskRun.isRunning}
             data-testid={`tasks-run-${r.name}`}
           >
             {t(I18N_KEYS.tasks.runButton)}
@@ -473,7 +463,7 @@ export function TasksPage() {
             variant="ghost"
             size="sm"
             onClick={() => void openInEditor(r.name)}
-            disabled={isRunning}
+            disabled={editorRun.isRunning}
             data-testid={`tasks-open-${r.name}`}
           >
             {t(I18N_KEYS.tasks.openInEditorButton)}
@@ -572,7 +562,7 @@ export function TasksPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => void openConfigInEditor()}
-                        disabled={isRunning}
+                        disabled={configRun.isRunning}
                         data-testid="tasks-open-config"
                       >
                         {t(I18N_KEYS.tasks.empty.openConfig)}
@@ -593,7 +583,7 @@ export function TasksPage() {
                   onEditSaved();
                 }}
                 onCancel={cancelEdit}
-                disabled={isRunning}
+                disabled={saveRun.isRunning}
               />
             )}
 

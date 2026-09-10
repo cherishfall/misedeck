@@ -10,6 +10,8 @@ This document is a continuation marker between autonomous driver sessions.
 
 **CURRENT BLOCKER:** the owner then authorized replacing the accidental global single-flight execution rule with concurrent execution. A dedicated subagent was started to implement per-run execution-panel transcript isolation, revise remaining cross-control run locks, and amend ADR-0005 plus both ui-ux-rules locales. It could not start/continue because the model provider returned a 403 weekly (7-day) usage-limit error, including on resume. No concurrency code or docs have been changed yet. Resume this exact task when quota is available; do not claim it is implemented.
 
+**#138 implemented (2026-09-10):** the accidental global single-flight rule is replaced with concurrent execution. `useExecution` now keeps an isolated `RunEntry[]` per run with its own transcript and a compact run switcher in `ExecutionPanel`; run no longer rejects. Run-locking is per-action via `useOwnRun()` across Settings/Tasks/Plugins/Tools/Env; `ConfirmDialog` narrows to a `confirmBusy` prop (its own command only, Cancel always enabled). ADR-0005, ui-ux-rules, and runner.md are amended in both locales stating the single-flight was an accidental global lock. `npm run ci` green (cargo untouched). **NOT visually verified — owner verifies manually.**
+
 | Ticket | Commit | Notes |
 | --- | --- | --- |
 | #129 panel fail-on-success wire-shape | `d651a3c` | removed `#[serde(flatten)]` from `InstallCommandResult` + `rename_all_fields="camelCase"` (bonus fix: `newVersion` never reached UI); new Rust contract suite `tests/wire_shapes.rs` (18 tests); fail path no longer shows stale exit code (`exitCode: number \| null`, new i18n `execution.statusFailedNoCode`); drift-guard rule in architecture.md both locales |

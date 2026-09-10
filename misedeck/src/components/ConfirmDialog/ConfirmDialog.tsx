@@ -12,17 +12,20 @@
 // window, per the popover rule). Escape and a backdrop click cancel;
 // the confirm button autofocuses on open for keyboard-first operation.
 //
-// The dialog is run-aware (issue #135): it reads the execution context
-// itself, and while a foreground command runs its Confirm button locks —
-// confirming would only hit the runner's single-flight guard as a silent
-// no-op. Cancel (button, Escape, backdrop) always stays enabled. Because
-// the lock lives here, the buttons that merely *open* a confirm dialog
-// are not command-firing controls and never run-lock.
+// The dialog is run-aware (issue #135 / #138): the caller passes
+// `confirmBusy` — true only while the *specific* command this dialog
+// dispatches is in flight. Confirm locks while `confirmBusy`, so a second
+// confirm can't double-fire that command; Cancel (button, Escape,
+// backdrop) always stays enabled. The lock is per-command, not global:
+// a confirm dialog never locks because some unrelated command is running
+// elsewhere (the single-flight rule from ADR-0005 was an accidental
+// global lock and is dropped by issue #138). Because the lock lives
+// here, the buttons that merely *open* a confirm dialog are not
+// command-firing controls and never run-lock.
 
 import { useEffect, type ReactNode } from "react";
 
 import { Button } from "../Button/Button";
-import { useExecutionContext } from "../ExecutionPanel";
 import styles from "./ConfirmDialog.module.css";
 
 export interface ConfirmDialogProps {
@@ -40,6 +43,8 @@ export interface ConfirmDialogProps {
   cancelLabel: string;
   /** Use the danger variant for confirm when true (default). */
   danger?: boolean;
+  /** True only while the specific command this dialog dispatches runs. */
+  confirmBusy: boolean;
   onConfirm: () => void;
   onCancel: () => void;
   /** Optional extra node rendered under the command (e.g. a warning). */
@@ -54,12 +59,11 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel,
   danger = true,
+  confirmBusy,
   onConfirm,
   onCancel,
   children,
 }: ConfirmDialogProps) {
-  const { state: execState } = useExecutionContext();
-  const running = execState.status === "running";
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -101,7 +105,7 @@ export function ConfirmDialog({
             variant={danger ? "danger" : "primary"}
             size="sm"
             autoFocus
-            disabled={running}
+            disabled={confirmBusy}
             onClick={onConfirm}
             data-testid="confirm-dialog-confirm"
           >
