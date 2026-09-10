@@ -2,9 +2,25 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-10)
+## CURRENT STATE (2026-09-10, evening)
 
-**Owner verified beta10 visually (passes); focus shifts to function/bugs. Tools-page lifecycle redesign grilled out, specced, ticketed — awaiting implementation in a fresh session.** SPEC parent **#128**; tickets **#129–#137**, all `ready-for-agent`, native blocked-by edges set. Frontier: **#129** (bug: panel reports failure on successful self-update/guided install — `#[serde(flatten)]` wire-shape mismatch vs TS `outcome` contract; also clears stale exit code on fail path; add Rust serialization contract test) and **#130** (bug: toolbar refresh button never renders — PageRefresh provider lives inside PageShell, below its consumers; lift it above the router). Then the chain: **#131** unuse/uninstall semantics (ADR-0008) → **#132** version dropdown → **#133** expandable row version center → **#134** registry search add-tool entry → **#135** narrow run-locking + link form collapse → **#136** plugins registry table removal (**owner-gated** on #134's effect). **#137** app icon is independent (**owner taste gate**: agent proposes 2–3 directions, owner picks, then assets).
+**Tools-page lifecycle chain #129–#135 fully implemented in one autonomous run.** All seven tickets closed, each its own subagent, committed to master and pushed. **#136** (plugins registry table removal) is **owner-gated** on his verdict on #134's effect; **#137** (app icon) is an **owner taste gate** — next session should propose 2–3 icon directions for him to pick, then produce assets. Note: an unreviewed owner-side commit `f3d9d8b` ("icon", binary icon assets) was already on master and pushed before this run — possibly early #137 work.
+
+| Ticket | Commit | Notes |
+| --- | --- | --- |
+| #129 panel fail-on-success wire-shape | `d651a3c` | removed `#[serde(flatten)]` from `InstallCommandResult`; new Rust contract suite `tests/wire_shapes.rs` (18 tests, every `*Result` variant); fail path no longer shows stale exit code (`exitCode: number \| null`); drift-guard rule in architecture.md both locales |
+| #130 toolbar refresh never renders | `9e1e657` | `PageRefreshProvider` lifted above the router in `main.tsx`; rule codified (chrome-level contexts can't be consumed by the page rendering their PageShell) |
+| #131 unuse/uninstall semantics | `bc464ec` | row danger = 卸载/Unuse (`mise unuse`; orphans → `uninstall --all`); per-version 删除此版本/Uninstall on non-active rows only; argv builders + fixtures in Rust tests; vocabulary rule in ui-ux-rules both locales |
+| #132 version dropdown | `3830608` | `UseVersionCell` dropdown of installed versions replaces free-text switch; Use/使用 + Install only/仅安装 naming landed (ADR-0008); rule: version switching never free-typed |
+| #133 expandable row version center | `264759b` | new `VersionCenter` (installed + available sub-lists, cached `ls-remote`, client filter/paginate ≥10, version-desc sort, installed markers); Table gained `expandedKey`/`renderExpanded`; both `VersionQuerySection`s + datalists deleted; rules codified |
+| #134 registry search add-tool entry | `b82d58a` | `AddToolEntry` combobox at top of ToolsPage; bottom install form + `?install=` round trip gone; **Plugins registry Install button REMOVED** (registry is browse-only until #136) |
+| #135 narrow run-lock + Advanced link form | `505a165` | row-expand no longer locked; `LinkToolForm` in collapsed Advanced section; run-lock rule codified (command-firing controls only) |
+
+**Flagged for the owner (from closing comments):** (1) TasksPage row Edit button is disabled while a command runs although it only opens an inline form — borderline under the new run-lock rule, needs his call; (2) #134's suggestion list is a hand-rolled combobox, not FloatingMenu (menu-button pattern breaks typing) — documented in component comment; (3) free-text tool names (`backend:name`) stay submittable in AddToolEntry by design. All tickets: `npm run ci` green, cargo green where touched, **NOT visually verified — owner verifies manually**.
+
+**First actions next session:** ask owner for his #136 verdict and his #137 icon-direction pick. If #136 approved, implement it; for #137, prepare 2–3 directions first.
+
+**Open SPEC parents awaiting owner visual verification:** #45, #61, #65, #74, #86, #97, #119 (older batches) + **#128** (this batch, verify against next build).
 
 **Design decisions settled with the owner (3 grilling rounds, 2026-09-10):** verb vocabulary per **ADR-0008** (使用/Use, 仅安装/Install only, 删除此版本/Uninstall, 卸载/Unuse — zh 卸载 maps to `mise unuse`, not `uninstall`); inline row expansion over side panel; remote version lists = one cached `ls-remote` call + client-side filter/pagination (java-scale); row switch cell = dropdown of installed versions only; run-locking narrows to command-firing controls (panel single-flight, ADR-0005, unchanged); top registry search replaces the bottom install form and the `/plugins → /tools?install=` round trip; link form becomes a collapsed Advanced section.
 
