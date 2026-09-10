@@ -1,7 +1,7 @@
 // TableFilter — the shared text-filter input for data tables (issue
 // #106). Pairs with `useTableFilter`: the page owns the hook, this
 // component renders the input. A Clear button appears once the field
-// has text, following the version-query sections' clear pattern.
+// has text, following the version-center filter's clear pattern.
 
 import { useTranslation } from "react-i18next";
 

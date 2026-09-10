@@ -69,7 +69,7 @@
   },
   "tools": {
     "title": "工具",
-    "hint": "当前目录中已安装并处于活动状态的工具。在表格中使用已安装版本、仅安装、卸载或升级；所有变更都通过执行面板实时显示。",
+    "hint": "当前目录中已安装并处于活动状态的工具。展开某一行进入版本中心——使用已安装版本、仅安装、删除此版本、卸载或升级；所有变更都通过执行面板实时显示。",
     "commandHint": "mise ls · mise outdated · mise use · mise upgrade · mise unuse · mise install · mise link · mise uninstall · mise ls-remote",
     "columns": {
       "tool": "工具",
@@ -117,26 +117,6 @@
       "duplicateVersion": "{{tool}}@{{version}} 已存在，无法重复链接。请先删除此版本，再重新链接。"
     },
     "queries": {
-      "installed": {
-        "title": "已安装版本",
-        "toolPlaceholder": "工具名（如 node）",
-        "run": "运行",
-        "clear": "清除",
-        "emptyTitle": "没有已安装版本",
-        "emptyBody": "`mise ls <tool>` 会列出每个已安装版本——无论是否处于活动状态。在上方运行即可查询某个工具。",
-        "active": "活动",
-        "inactive": "未激活",
-        "activeColumn": "活动"
-      },
-      "remote": {
-        "title": "远程版本",
-        "toolPlaceholder": "工具名（如 node）",
-        "run": "运行",
-        "clear": "清除",
-        "emptyTitle": "没有远程版本",
-        "emptyBody": "`mise ls-remote <tool>` 会列出上游可用的版本。在上方运行即可查询某个工具。",
-        "created": "发布时间"
-      },
       "pagination": {
         "total": "共 {{count}} 条",
         "pageOf": "第 {{current}} / {{total}} 页",
@@ -147,6 +127,18 @@
         "jumpTo": "跳转到",
         "jump": "前往"
       }
+    },
+    "versionCenter": {
+      "installedTitle": "已安装版本",
+      "availableTitle": "可安装版本",
+      "activeBadge": "活动",
+      "installedBadge": "已安装",
+      "created": "发布时间",
+      "filterPlaceholder": "过滤版本…",
+      "emptyInstalledTitle": "没有已安装版本",
+      "emptyInstalledBody": "`mise ls {{tool}}` 没有报告 {{tool}} 的任何已安装版本。",
+      "emptyAvailableTitle": "没有可安装版本",
+      "emptyAvailableBody": "`mise ls-remote {{tool}}` 没有返回任何版本。"
     },
     "confirm": {
       "uninstall": {

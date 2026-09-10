@@ -7,7 +7,8 @@
 //
 // Composition: filtering applies to the FULL row set, before sorting
 // (Table's `sortRows`, issue #105) and before any client-side
-// pagination — the same ordering VersionQuerySection uses for sorting.
+// pagination — the same ordering the Tools page version center uses
+// for its available-versions sub-list.
 // A paginated consumer resets its page when `query` changes (the
 // current fixed tables render all rows, so there is no page to reset).
 

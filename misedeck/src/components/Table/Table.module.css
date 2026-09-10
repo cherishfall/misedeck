@@ -150,9 +150,26 @@ th.sorted .sortButton {
   color: var(--ice);
 }
 
+/* Inline row expansion (issue #133): the expanded row's cell spans every
+ * column and hosts the row's detail surface (the tools page's version
+ * center). The source row keeps its hover background while expanded so
+ * the pair reads as one unit. */
+.rowExpanded,
+.rowExpanded:hover {
+  background: color-mix(in srgb, var(--beam) 6%, transparent);
+}
+
+.expandedCell {
+  /* The detail surface is UI, not mono table data — reset to the UI font
+   * and let the nested content own its typography. */
+  font-family: var(--font-ui);
+  white-space: normal;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .row,
   .rowClickable,
+  .rowExpanded,
   .resizeHandle::after {
     transition: none;
   }

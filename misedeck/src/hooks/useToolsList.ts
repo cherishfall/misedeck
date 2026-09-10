@@ -65,9 +65,10 @@ function usePanelRead(): (
 
 /**
  * Same as `usePanelRead`, plus writing the result into a query cache
- * entry. Used by the queries whose fetch *is* the panel run (the two
- * version-query sections): their `useQuery` has no query function, so
- * the command's result is what populates the cache.
+ * entry. Used by the queries whose fetch *is* the panel run (the Tools
+ * page version center's `ls-remote` read, issue #133): their `useQuery`
+ * has no query function, so the command's result is what populates the
+ * cache.
  */
 export function useReadIntoCache(): (
   queryKey: QueryKey,
@@ -126,11 +127,11 @@ export function useOutdatedTools(): UseQueryResult<JsonResult> {
  * Upstream versions for a single tool (`mise ls-remote --json <tool>`).
  * Cache key is `["tools", "ls-remote", cwd, tool]`.
  *
- * The query has no fetcher of its own: the user's Run button dispatches
- * `mise ls-remote --json <tool>` through the execution panel and writes
- * the result here via `useReadIntoCache` (ADR-0005). Until then the
- * query reports `isPending`, which is what drives the section's loading
- * row.
+ * The query has no fetcher of its own: expanding a Tools page row
+ * dispatches `mise ls-remote --json <tool>` through the execution
+ * panel's runner (background) and writes the result here via
+ * `useReadIntoCache` (ADR-0005, issue #133). Until then the query
+ * reports `isPending`, which is what drives the sub-list's loading row.
  */
 export function useLsRemote(
   tool: string,
@@ -216,51 +217,6 @@ export function useParsedLsRemote(
     return { isPending: false, data: null, error: q.data ?? null };
   }
   return { isPending: false, data: parseLsRemotePayload(q.data.value), error: null };
-}
-
-/**
- * Installed versions for a single tool (`mise ls --json <tool>`). Cache
- * key is `["tools", "ls-tool", cwd, tool]`. The result carries every
- * installed version, active or not (issue #55).
- *
- * Like `useLsRemote`, the fetch is the panel run the user triggers — see
- * `useReadIntoCache` (ADR-0005). Nothing here ever runs a half-formed
- * argv, because no command runs until the caller dispatches one.
- */
-export function useLsTool(
-  tool: string,
-): UseQueryResult<JsonResult> {
-  const { cwd } = useDirectory();
-  return useQuery<JsonResult>({
-    queryKey: ["tools", "ls-tool", cwd, tool],
-    queryFn: skipToken,
-  });
-}
-
-/** Same convenience for `useLsTool`. The single-tool payload is a bare
- *  array of items (`[items...]`), which `parseLsPayload` normalises
- *  into one group; the groups are flattened into a `MiseLsItem[]`. */
-export function useParsedLsTool(
-  tool: string,
-): {
-  isPending: boolean;
-  data: MiseLsItem[] | null;
-  error: JsonResult | null;
-} {
-  const q = useLsTool(tool);
-  if (q.isPending) {
-    return { isPending: true, data: null, error: null };
-  }
-  if (q.error) {
-    return { isPending: false, data: null, error: toErr(q.error) };
-  }
-  if (!q.data || q.data.kind === "err") {
-    return { isPending: false, data: null, error: q.data ?? null };
-  }
-  const groups = parseLsPayload(q.data.value);
-  const items: MiseLsItem[] = [];
-  for (const group of groups) items.push(...group.items);
-  return { isPending: false, data: items, error: null };
 }
 
 /**

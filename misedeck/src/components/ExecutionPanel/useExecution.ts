@@ -31,8 +31,8 @@ export interface RunOptions {
    * Reads the app issues on its own behalf (the tools table's initial
    * load, its post-mutation refresh) pass this so an automatic refresh
    * can never yank the transcript the user is reading. Everything the
-   * user asked for — mutations and the query sections' Run buttons —
-   * runs in the foreground and is transcribed.
+   * user asked for — mutations and reads alike — runs in the foreground
+   * and is transcribed.
    */
   background?: boolean;
 }

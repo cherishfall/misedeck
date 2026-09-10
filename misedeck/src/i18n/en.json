@@ -69,7 +69,7 @@
   },
   "tools": {
     "title": "Tools",
-    "hint": "Tools installed and active for the current directory. Use an installed version, install only, unuse, or upgrade from the table; every mutation streams through the execution panel.",
+    "hint": "Tools installed and active for the current directory. Expand a row for its version center — use an installed version, install only, uninstall a version, unuse, or upgrade; every mutation streams through the execution panel.",
     "commandHint": "mise ls · mise outdated · mise use · mise upgrade · mise unuse · mise install · mise link · mise uninstall · mise ls-remote",
     "columns": {
       "tool": "Tool",
@@ -117,26 +117,6 @@
       "duplicateVersion": "{{tool}}@{{version}} already exists. Uninstall it first, then link again."
     },
     "queries": {
-      "installed": {
-        "title": "Installed versions",
-        "toolPlaceholder": "tool (e.g. node)",
-        "run": "Run",
-        "clear": "Clear",
-        "emptyTitle": "No installed versions",
-        "emptyBody": "`mise ls <tool>` lists every installed version — active and inactive. Run it above to query a tool.",
-        "active": "active",
-        "inactive": "inactive",
-        "activeColumn": "Active"
-      },
-      "remote": {
-        "title": "Remote versions",
-        "toolPlaceholder": "tool (e.g. node)",
-        "run": "Run",
-        "clear": "Clear",
-        "emptyTitle": "No remote versions",
-        "emptyBody": "`mise ls-remote <tool>` lists versions available upstream. Run it above to query a tool.",
-        "created": "Created"
-      },
       "pagination": {
         "total": "{{count}} total",
         "pageOf": "Page {{current}} of {{total}}",
@@ -147,6 +127,18 @@
         "jumpTo": "Jump to",
         "jump": "Go"
       }
+    },
+    "versionCenter": {
+      "installedTitle": "Installed versions",
+      "availableTitle": "Available versions",
+      "activeBadge": "active",
+      "installedBadge": "Installed",
+      "created": "Created",
+      "filterPlaceholder": "Filter versions…",
+      "emptyInstalledTitle": "No installed versions",
+      "emptyInstalledBody": "`mise ls {{tool}}` reports no installed versions for {{tool}}.",
+      "emptyAvailableTitle": "No available versions",
+      "emptyAvailableBody": "`mise ls-remote {{tool}}` returned no versions."
     },
     "confirm": {
       "uninstall": {

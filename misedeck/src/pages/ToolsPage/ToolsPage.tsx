@@ -10,8 +10,12 @@
 //                              orphans run `mise uninstall --all` (ADR-0008)
 //   * mise uninstall         → delete one non-active version's files
 //   * mise upgrade --bump    → upgrade all or one outdated tool
+//   * mise ls-remote --json  → the expanded row's available-versions
+//                              sub-list (version center, #133)
 //
-// Every invocation — mutations and the version queries alike — routes
+// Clicking a tool name expands its row inline into the version center
+// (installed + available versions, one row at a time, #133). Every
+// invocation — mutations and the remote-version read alike — routes
 // through the execution panel so the exact command and live logs are
 // visible (ADR-0005). The list refreshes when a run exits successfully;
 // failures surface stderr and leave state unchanged.
@@ -28,20 +32,17 @@ import {
 } from "react";
 
 import { I18N_KEYS } from "../../i18n/keys";
-import type { MiseLsItem, MiseLsRemoteItem } from "../../types/tauri";
+import type { MiseLsItem } from "../../types/tauri";
 import { useDirectory } from "../../state/directoryContext";
 import { useTrustGuard } from "../../state/trustContext";
 import { detectMise, isAppError } from "../../api/mise";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
-  useParsedLsRemote,
-  useParsedLsTool,
   useParsedOutdatedTools,
   useParsedToolsList,
-  useReadIntoCache,
 } from "../../hooks/useToolsList";
 import { useTableFilter } from "../../hooks/useTableFilter";
-import { VersionQuerySection } from "./VersionQuerySection";
+import { VersionCenter } from "./VersionCenter";
 import { useQuery } from "@tanstack/react-query";
 import {
   Badge,
@@ -53,7 +54,6 @@ import {
   MiseMissingState,
   OutdatedHint,
   PageShell,
-  Suggestions,
   Table,
   type TableColumn,
   TableFilter,
@@ -100,7 +100,7 @@ interface ToolRow {
  *  or `mise uninstall --all <tool>` when the tool is an orphan (no Config
  *  file requests it — `unuse` would error). `uninstall` is the
  *  per-version file deletion offered only on non-active versions; the
- *  installed-versions section supplies its own tool name. */
+ *  expanded row's version center (issue #133) supplies its tool name. */
 type PendingRemoval =
   | { kind: "unuse"; tool: string; orphan: boolean }
   | { kind: "uninstall"; tool: string; version: string };
@@ -194,9 +194,16 @@ export function ToolsPage() {
   // The removal confirmation (issues #56 + #131): clicking 卸载 / Unuse
   // or 删除此版本 / Uninstall opens a dialog showing the exact command
   // that will run; the mutation only dispatches after the user confirms.
-  // No removal runs without this confirmation. The installed-versions
-  // section (issue #70) feeds the same dialog with its own tool name.
+  // No removal runs without this confirmation. The expanded row's
+  // version center (issue #133) feeds the same dialog with its own
+  // version targets.
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
+
+  // The expanded row's tool (issue #133): one row at a time. Expanding
+  // is blocked while a foreground command runs (collapsing is always
+  // allowed) so a mutation can't swap the list out from under the
+  // center's actions.
+  const [expandedTool, setExpandedTool] = useState<string | null>(null);
 
   // Friendly message from the most recent link run (issue #71). Null
   // unless the last `mise link` failed with a recognized conflict.
@@ -214,179 +221,30 @@ export function ToolsPage() {
   const tools = useParsedToolsList();
   const outdated = useParsedOutdatedTools();
 
-  // Query sections (issue #55): installed + remote versions for a named
-  // tool. The committed tool (`*Query`) gates the read query; the input
-  // (`*Input`) is the live text field. Clear resets both.
-  const [installedInput, setInstalledInput] = useState("");
-  const [installedQuery, setInstalledQuery] = useState("");
-  const installed = useParsedLsTool(installedQuery);
-
-  const [remoteInput, setRemoteInput] = useState("");
-  const [remoteQuery, setRemoteQuery] = useState("");
-  const remote = useParsedLsRemote(remoteQuery);
-
-  // Both query sections dispatch their read through the execution panel
-  // (ADR-0005): clicking Run echoes the exact `mise ls --json <tool>` /
-  // `mise ls-remote --json <tool>` and streams its output, and the same
-  // run's result is what fills the section's table.
-  const readIntoCache = useReadIntoCache();
-
-  // Both sections are directory-scoped reads with no fetcher of their own
-  // (ADR-0005), so switching the directory context cannot silently
-  // refetch them. Drop the committed query instead of leaving a spinner
-  // that would never resolve; the typed tool name stays, so re-running
-  // the query against the new directory is one click.
+  // The version center's reads are directory-scoped with no fetcher of
+  // their own (ADR-0005), so switching the directory context cannot
+  // silently refetch them. Collapse the expanded row instead of leaving
+  // a center showing the previous context's cache key.
   useEffect(() => {
-    setInstalledQuery("");
-    setRemoteQuery("");
+    setExpandedTool(null);
   }, [cwd]);
 
-  const onInstalledRun = () => {
-    const tool = installedInput.trim();
-    if (tool.length === 0) return;
-    setInstalledQuery(tool);
-    void readIntoCache(["tools", "ls-tool", cwd, tool], cwd, ["ls", "--json", tool]);
+  // Clicking a tool name toggles the row's inline version center
+  // (issue #133). Expanding while a foreground command runs is blocked —
+  // a no-op-looking click reads as broken, so the trigger disables
+  // instead (see the tool column).
+  const onToggleExpand = (tool: string) => {
+    setExpandedTool((current) => (current === tool ? null : tool));
   };
-  // Clicking a tool name in the table prefills the installed-versions
-  // query and runs it immediately (issue #111).
-  const onToolQuery = (tool: string) => {
-    setInstalledInput(tool);
-    setInstalledQuery(tool);
-    void readIntoCache(["tools", "ls-tool", cwd, tool], cwd, ["ls", "--json", tool]);
-  };
-  const onInstalledClear = () => {
-    setInstalledInput("");
-    setInstalledQuery("");
-  };
-
-  const onRemoteInstall = (version: string) => {
-    if (remoteQuery.length === 0) return;
-    void runMutation(() => miseInstallArgs(remoteQuery, version));
-  };
-  const onRemoteRun = () => {
-    const tool = remoteInput.trim();
-    if (tool.length === 0) return;
-    setRemoteQuery(tool);
-    void readIntoCache(["tools", "ls-remote", cwd, tool], cwd, ["ls-remote", "--json", tool]);
-  };
-  const onRemoteClear = () => {
-    setRemoteInput("");
-    setRemoteQuery("");
-  };
-
-  const installedColumns: TableColumn<MiseLsItem>[] = [
-    {
-      key: "version",
-      header: t(I18N_KEYS.tools.columns.version),
-      sortValue: (r) => r.version,
-      sortVersion: true,
-      // Inactive versions dim and carry a small「未激活」note — no new
-      // badge concept (issue #110).
-      cell: (r) =>
-        r.active ? (
-          <span className={styles.cellVersion}>{r.version}</span>
-        ) : (
-          <span className={styles.cellVersionInactive}>
-            {r.version}{" "}
-            <span className={styles.inactiveNote}>
-              {t(I18N_KEYS.tools.queries.installed.inactive)}
-            </span>
-          </span>
-        ),
-    },
-    {
-      key: "requested",
-      header: t(I18N_KEYS.tools.columns.requested),
-      sortValue: (r) => r.requestedVersion ?? "",
-      cell: (r) => <span className={styles.cellRequested}>{r.requestedVersion ?? "—"}</span>,
-    },
-    {
-      key: "active",
-      header: t(I18N_KEYS.tools.queries.installed.activeColumn),
-      cell: (r) =>
-        r.active ? (
-          <Badge variant="success">{t(I18N_KEYS.tools.queries.installed.active)}</Badge>
-        ) : (
-          <span className={styles.dim}>—</span>
-        ),
-    },
-    {
-      key: "source",
-      header: t(I18N_KEYS.tools.columns.source),
-      sortValue: (r) => r.source?.path ?? r.source?.type ?? "",
-      cell: (r) => (
-        <Tooltip text={r.source?.path ?? r.source?.type ?? "—"}>
-          <span className={styles.cellSource}>{r.source?.path ?? r.source?.type ?? "—"}</span>
-        </Tooltip>
-      ),
-    },
-    {
-      // Per-version file deletion (ADR-0008, issue #131): offered only
-      // on non-active versions — deleting the active version's files
-      // invites an immediate reinstall; tool-level Unuse is the way out
-      // of an active version. Reuses the top table's confirm +
-      // runMutation flow so the trust gate and single-flight guard
-      // apply unchanged.
-      key: "actions",
-      header: t(I18N_KEYS.tools.columns.actions),
-      cell: (r) =>
-        r.active ? (
-          <span className={styles.dim}>—</span>
-        ) : (
-          <Button
-            variant="danger"
-            size="sm"
-            disabled={isRunning}
-            onClick={() =>
-              setPendingRemoval({ kind: "uninstall", tool: installedQuery, version: r.version })
-            }
-            data-testid={`versions-installed-uninstall-${r.version}`}
-          >
-            {t(I18N_KEYS.tools.actions.uninstall)}
-          </Button>
-        ),
-    },
-  ];
-
-  const remoteColumns: TableColumn<MiseLsRemoteItem>[] = [
-    {
-      key: "version",
-      header: t(I18N_KEYS.tools.columns.version),
-      sortValue: (r) => r.version,
-      sortVersion: true,
-      cell: (r) => <span className={styles.cellVersion}>{r.version}</span>,
-    },
-    {
-      key: "created",
-      header: t(I18N_KEYS.tools.queries.remote.created),
-      sortValue: (r) => r.createdAt ?? "",
-      cell: (r) => (
-        <Tooltip text={r.createdAt ?? "—"}>
-          <span className={styles.cellSource}>{r.createdAt ?? "—"}</span>
-        </Tooltip>
-      ),
-    },
-    {
-      key: "actions",
-      header: t(I18N_KEYS.tools.columns.actions),
-      cell: (r) => (
-        <Button
-          variant="primary"
-          size="sm"
-          disabled={isRunning}
-          onClick={() => onRemoteInstall(r.version)}
-          data-testid={`versions-remote-install-${r.version}`}
-        >
-          {t(I18N_KEYS.tools.actions.install)}
-        </Button>
-      ),
-    },
-  ];
 
   // After a successful mutation, the read queries become stale.
   // Observe the running → ok transition (the same transition the
   // env page and the trust action use) and invalidate the
-  // dependent queries so the table refreshes.
+  // dependent queries so the table refreshes. The version center's
+  // installed sub-list derives from this same read, and its remote
+  // sub-list's installed markers are computed from it, so the single
+  // invalidation refreshes everything except the remote list itself
+  // (which a mutation does not change).
   const lastWriteStatusRef = useRef<ExecutionStatus>("idle");
   useEffect(() => {
     const prev = lastWriteStatusRef.current;
@@ -394,21 +252,8 @@ export function ToolsPage() {
     if (prev === "running" && execState.status === "ok") {
       void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
       void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
-      // The installed-versions section (issue #70) reads its own query;
-      // an uninstall must drop the row so the pager can step back. That
-      // query has no fetcher of its own (ADR-0005: the panel run *is*
-      // the fetch), so re-dispatch it — in the background, so the
-      // mutation the user just ran keeps the panel's transcript.
-      if (installedQuery.length > 0) {
-        void readIntoCache(
-          ["tools", "ls-tool", cwd, installedQuery],
-          cwd,
-          ["ls", "--json", installedQuery],
-          { background: true },
-        );
-      }
     }
-  }, [execState.status, cwd, queryClient, installedQuery, readIntoCache]);
+  }, [execState.status, cwd, queryClient]);
 
   // Link-conflict detection (issue #71). The frontend cannot pre-check
   // installed versions — that list is only loaded when the user runs a
@@ -530,7 +375,24 @@ export function ToolsPage() {
     }
     return map;
   }, [tools.data]);
-  const toolNames = useMemo(() => rows.map((r) => r.tool), [rows]);
+  // The expanded row's version center (issue #133) needs the full
+  // installed items (active flags, requested versions, sources), not
+  // just the version strings.
+  const itemsByTool = useMemo(() => {
+    const map = new Map<string, MiseLsItem[]>();
+    for (const { tool, items } of tools.data ?? []) {
+      map.set(tool, items);
+    }
+    return map;
+  }, [tools.data]);
+
+  // The expanded row is tracked by tool (stable across a successful
+  // `mise use`, which changes the row's id); the Table matches on the
+  // row key, so resolve it here.
+  const expandedKey = useMemo(
+    () => rows.find((r) => r.tool === expandedTool)?.id ?? null,
+    [rows, expandedTool],
+  );
 
   // Mise-missing state.
   if (detect.isPending) {
@@ -580,11 +442,18 @@ export function ToolsPage() {
       cell: (r) => (
         <span className={styles.cellTool}>
           <Tooltip text={r.tool}>
+            {/* Clicking the tool name toggles the row's inline version
+                center (issue #133). Expanding is blocked while a
+                foreground command runs, so a mutation can't swap the
+                list mid-action; collapsing always works. No caret glyph
+                — expandability is shown by interaction (beta8). */}
             <button
               type="button"
               className={`${styles.toolName} ${styles.toolNameButton}`}
-              onClick={() => onToolQuery(r.tool)}
-              data-testid={`tools-query-${r.tool}`}
+              onClick={() => onToggleExpand(r.tool)}
+              aria-expanded={expandedTool === r.tool}
+              disabled={isRunning && expandedTool !== r.tool}
+              data-testid={`tools-expand-${r.tool}`}
             >
               {r.tool}
             </button>
@@ -718,6 +587,23 @@ export function ToolsPage() {
             fixed
             resizeKey="tools"
             className={styles.toolsTable}
+            expandedKey={expandedKey}
+            renderExpanded={(r) => (
+              <VersionCenter
+                tool={r.tool}
+                installed={itemsByTool.get(r.tool) ?? []}
+                disabled={isRunning}
+                onUse={(version) =>
+                  void runMutation((cwd) => miseUseArgs(r.tool, version, cwd))
+                }
+                onInstallOnly={(version) =>
+                  void runMutation(() => miseInstallArgs(r.tool, version))
+                }
+                onUninstall={(version) =>
+                  setPendingRemoval({ kind: "uninstall", tool: r.tool, version })
+                }
+              />
+            )}
             empty={
               filter.active ? (
                 <EmptyState
@@ -747,58 +633,6 @@ export function ToolsPage() {
           disabled={isRunning}
           conflict={linkConflict}
         />
-
-        <VersionQuerySection<MiseLsItem>
-          title={t(I18N_KEYS.tools.queries.installed.title)}
-          command={`mise ls ${installedInput.trim() || "<tool>"}`}
-          hasQuery={installedQuery.length > 0}
-          inputValue={installedInput}
-          onInputChange={setInstalledInput}
-          onRun={onInstalledRun}
-          onClear={onInstalledClear}
-          onRevertInput={() => setInstalledInput(installedQuery)}
-          toolListId="tools-name-suggestions"
-          canRun={installedInput.trim().length > 0}
-          isPending={installed.isPending}
-          error={installed.error}
-          columns={installedColumns}
-          rows={installed.data ?? []}
-          rowKey={(r) => `${installedQuery}@${r.version}`}
-          pageSizeKey="tools.installed"
-          toolPlaceholder={t(I18N_KEYS.tools.queries.installed.toolPlaceholder)}
-          runLabel={t(I18N_KEYS.tools.queries.installed.run)}
-          clearLabel={t(I18N_KEYS.tools.queries.installed.clear)}
-          emptyTitle={t(I18N_KEYS.tools.queries.installed.emptyTitle)}
-          emptyBody={t(I18N_KEYS.tools.queries.installed.emptyBody)}
-        />
-
-        <VersionQuerySection<MiseLsRemoteItem>
-          title={t(I18N_KEYS.tools.queries.remote.title)}
-          command={`mise ls-remote ${remoteInput.trim() || "<tool>"}`}
-          hasQuery={remoteQuery.length > 0}
-          inputValue={remoteInput}
-          onInputChange={setRemoteInput}
-          onRun={onRemoteRun}
-          onClear={onRemoteClear}
-          onRevertInput={() => setRemoteInput(remoteQuery)}
-          toolListId="tools-name-suggestions"
-          canRun={remoteInput.trim().length > 0}
-          isPending={remote.isPending}
-          error={remote.error}
-          columns={remoteColumns}
-          rows={remote.data ?? []}
-          rowKey={(r) => `${remoteQuery}@${r.version}`}
-          pageSizeKey="tools.remote"
-          toolPlaceholder={t(I18N_KEYS.tools.queries.remote.toolPlaceholder)}
-          runLabel={t(I18N_KEYS.tools.queries.remote.run)}
-          clearLabel={t(I18N_KEYS.tools.queries.remote.clear)}
-          emptyTitle={t(I18N_KEYS.tools.queries.remote.emptyTitle)}
-          emptyBody={t(I18N_KEYS.tools.queries.remote.emptyBody)}
-        />
-
-        {/* Known tool names, referenced by both query inputs' datalist
-            (issue #109). Rendered once for the page. */}
-        <Suggestions id="tools-name-suggestions" options={toolNames} />
 
         <ConfirmDialog
           open={pendingRemoval !== null}
@@ -879,7 +713,7 @@ interface UseVersionCellProps {
  * the tool's installed versions, dispatching `mise use [-g]
  * <tool>@<version>` on selection. No typing, no datalist — a version
  * that does not exist on disk can never be submitted; installing a new
- * version is the version-query sections' job (#133). The current
+ * version is the expanded row's version center's job (#133). The current
  * version is marked (`aria-current`) and disabled, since re-selecting
  * it would be a no-op. Rendered through the shared FloatingMenu
  * primitive, so the menu portals out of the table's scroller and

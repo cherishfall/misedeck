@@ -8,7 +8,7 @@
 // issue #105); version columns set `sortVersion` for segment-wise
 // numeric comparison.
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import type {
   HTMLAttributes,
   PointerEvent as ReactPointerEvent,
@@ -126,7 +126,7 @@ interface TableProps<T> {
   fixed?: boolean;
   /** Controlled sort state (issue #105). Pass together with
    * `onSortChange` when the caller must sort before further processing —
-   * e.g. VersionQuerySection sorts the full result set, then paginates. */
+   * e.g. a paginated consumer sorts the full result set, then paginates. */
   sort?: SortState | null;
   onSortChange?: (sort: SortState) => void;
   /** Caption / table summary, rendered above the rows. */
@@ -137,6 +137,12 @@ interface TableProps<T> {
   tableProps?: HTMLAttributes<HTMLTableElement>;
   /** Optional hover/active state — used by selection lists. */
   onRowClick?: (row: T) => void;
+  /** Inline row expansion (issue #133): when `expandedKey` matches a
+   *  row's `rowKey`, an extra full-width row rendering
+   *  `renderExpanded(row)` appears directly below it. The caller owns
+   *  which row is expanded (one at a time). */
+  expandedKey?: string | null;
+  renderExpanded?: (row: T) => ReactNode;
   /** Optional element rendered when rows is empty. */
   empty?: ReactNode;
 }
@@ -150,6 +156,8 @@ export function Table<T>({
   footer,
   tableProps,
   onRowClick,
+  expandedKey,
+  renderExpanded,
   empty,
   fixed,
   resizeKey,
@@ -288,18 +296,29 @@ export function Table<T>({
           ) : (
             sortedRows.map((row, index) => {
               const rowClass = onRowClick ? styles.rowClickable : styles.row;
+              const key = rowKey(row, index);
+              const expanded =
+                renderExpanded !== undefined && expandedKey !== undefined && expandedKey === key;
               return (
-                <tr
-                  key={rowKey(row, index)}
-                  className={rowClass}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
-                >
-                  {columns.map((c) => {
-                    const tdProps: TdHTMLAttributes<HTMLTableCellElement> = {};
-                    if (c.numeric) tdProps.className = styles.numeric;
-                    return <td key={c.key} {...tdProps}>{c.cell(row)}</td>;
-                  })}
-                </tr>
+                <Fragment key={key}>
+                  <tr
+                    className={expanded ? styles.rowExpanded : rowClass}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  >
+                    {columns.map((c) => {
+                      const tdProps: TdHTMLAttributes<HTMLTableCellElement> = {};
+                      if (c.numeric) tdProps.className = styles.numeric;
+                      return <td key={c.key} {...tdProps}>{c.cell(row)}</td>;
+                    })}
+                  </tr>
+                  {expanded && (
+                    <tr className={styles.expandedRow}>
+                      <td className={styles.expandedCell} colSpan={columns.length}>
+                        {renderExpanded(row)}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               );
             })
           )}
