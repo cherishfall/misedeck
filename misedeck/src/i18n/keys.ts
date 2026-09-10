@@ -152,6 +152,7 @@ export const I18N_KEYS = {
     actions: {
       install: "tools.actions.install",
       uninstall: "tools.actions.uninstall",
+      unuse: "tools.actions.unuse",
       upgrade: "tools.actions.upgrade",
       switch: "tools.actions.switch",
       link: "tools.actions.link",
@@ -160,6 +161,10 @@ export const I18N_KEYS = {
       uninstall: {
         title: "tools.confirm.uninstall.title",
         body: "tools.confirm.uninstall.body",
+      },
+      unuse: {
+        title: "tools.confirm.unuse.title",
+        body: "tools.confirm.unuse.body",
       },
       link: {
         directoryNotFound: "tools.confirm.link.directoryNotFound",

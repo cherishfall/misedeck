@@ -70,7 +70,7 @@
   "tools": {
     "title": "工具",
     "hint": "当前目录中已安装并处于活动状态的工具。在表格中切换版本、安装、卸载或升级；所有变更都通过执行面板实时显示。",
-    "commandHint": "mise ls · mise outdated · mise use · mise upgrade · mise uninstall · mise install · mise link · mise ls-remote",
+    "commandHint": "mise ls · mise outdated · mise use · mise upgrade · mise unuse · mise install · mise link · mise uninstall · mise ls-remote",
     "columns": {
       "tool": "工具",
       "version": "版本",
@@ -100,7 +100,8 @@
     },
     "actions": {
       "install": "安装",
-      "uninstall": "卸载",
+      "uninstall": "删除此版本",
+      "unuse": "卸载",
       "upgrade": "升级",
       "switch": "切换",
       "link": "链接"
@@ -116,7 +117,7 @@
       "toolPlaceholder": "工具名（如 node）",
       "versionPlaceholder": "版本（如 22.11.0）",
       "noPath": "未选择目录",
-      "duplicateVersion": "{{tool}}@{{version}} 已存在，无法重复链接。请先卸载该版本，再重新链接。"
+      "duplicateVersion": "{{tool}}@{{version}} 已存在，无法重复链接。请先删除此版本，再重新链接。"
     },
     "queries": {
       "installed": {
@@ -152,8 +153,12 @@
     },
     "confirm": {
       "uninstall": {
+        "title": "删除 {{tool}}@{{version}}？",
+        "body": "将运行以下确切命令。该命令仅删除此版本的文件——Config 文件中的请求保持不变，因此仍被请求的版本会在下次安装时被重新装回。此操作无法撤销。"
+      },
+      "unuse": {
         "title": "卸载 {{tool}}？",
-        "body": "将运行以下确切命令。所选版本会被移除，此操作无法撤销。"
+        "body": "将运行以下确切命令。该命令会将此工具从 Config 文件中移除并清理其安装；对于孤立安装（没有任何 Config 文件请求它），则改为删除其全部已安装版本。此操作无法撤销。"
       },
       "link": {
         "directoryNotFound": "目录路径不存在：{{path}}。请检查后重新选择。"

@@ -6,7 +6,9 @@
 //                              path on the rows that appear in the map
 //   * mise use -g            → switch a tool's requested version
 //   * mise install -g        → install a new tool/version
-//   * mise uninstall -g      → remove an installed tool
+//   * mise unuse             → remove a tool (config request + installs);
+//                              orphans run `mise uninstall --all` (ADR-0008)
+//   * mise uninstall         → delete one non-active version's files
 //   * mise upgrade --bump    → upgrade all or one outdated tool
 //
 // Every invocation — mutations and the version queries alike — routes
@@ -83,28 +85,36 @@ interface ToolRow {
   outdated: boolean;
   /** The latest version from the outdated map (empty when up to date). */
   latest: string;
+  /** True when no Config file requests this tool (an orphan
+   *  installation, e.g. from a manual CLI `mise install`) — its Unuse
+   *  action runs `mise uninstall --all` instead of `mise unuse`
+   *  (ADR-0008). */
+  orphan: boolean;
   /** Stable key. */
   id: string;
 }
 
-/** A tool + version pair to be uninstalled (issues #56 + #70). The
- *  installed-versions section supplies its own tool name; the top table
- *  supplies the row's tool. Both resolve to `mise uninstall <tool>@<version>`. */
-interface UninstallTarget {
-  tool: string;
-  version: string;
-}
+/** The pending removal behind the confirmation dialog (ADR-0008, issue
+ *  #131). `unuse` is the tool-level removal: it runs `mise unuse <tool>`,
+ *  or `mise uninstall --all <tool>` when the tool is an orphan (no Config
+ *  file requests it — `unuse` would error). `uninstall` is the
+ *  per-version file deletion offered only on non-active versions; the
+ *  installed-versions section supplies its own tool name. */
+type PendingRemoval =
+  | { kind: "unuse"; tool: string; orphan: boolean }
+  | { kind: "uninstall"; tool: string; version: string };
 
 // ---------- Args builders (mirror the Rust helpers) ----------
 //
 // The Rust side defines `mise_install_argv`, `mise_uninstall_argv`,
-// `mise_upgrade_argv`, and the existing `mise_use_argv` in pure form.
+// `mise_unuse_argv`, `mise_uninstall_all_argv`, `mise_upgrade_argv`,
+// and the existing `mise_use_argv` in pure form.
 // The JS side duplicates the shape so the page is self-contained — the
 // only Rust call is `useExecutionContext().run({cwd, args})`. Keep the
 // two in lockstep with the Rust `tests/tool_mutations.rs` assertions.
 //
-// Only `mise use` accepts a `-g` flag; `install`, `uninstall`, and
-// `upgrade` operate on the active directory context. The runner adds
+// Only `mise use` accepts a `-g` flag; `install`, `uninstall`,
+// `unuse`, and `upgrade` operate on the active directory context. The runner adds
 // `-C <dir>` when cwd !== null, so the global context naturally targets
 // the global config without extra flags for those three commands.
 
@@ -120,6 +130,16 @@ function miseUninstallArgs(tool: string, version: string): string[] {
   // the command `mise uninstall <tool>@<version>`, so the dispatched
   // command must match what is shown.
   return ["uninstall", `${tool}@${version}`];
+}
+
+// Tool-level removal (ADR-0008, issue #131): `mise unuse <tool>` drops
+// the tool from the Config file and prunes its installations. Orphan
+// installations (no Config file requests the tool) have no request for
+// `unuse` to remove, so the same action runs `mise uninstall --all
+// <tool>` instead — the confirmation dialog shows the exact argv either
+// way.
+function miseUnuseArgs(tool: string, orphan: boolean): string[] {
+  return orphan ? ["uninstall", "--all", tool] : ["unuse", tool];
 }
 
 /**
@@ -170,12 +190,12 @@ export function ToolsPage() {
   const [searchParams] = useSearchParams();
   const prefillTool = searchParams.get("install") ?? "";
 
-  // The uninstall confirmation (issue #56): clicking "Uninstall" opens a
-  // dialog showing the exact `mise uninstall <tool>@<version>` command;
-  // the mutation only dispatches after the user confirms. No uninstall
-  // runs without this confirmation. The installed-versions section
-  // (issue #70) feeds the same dialog with its own tool name.
-  const [pendingUninstall, setPendingUninstall] = useState<UninstallTarget | null>(null);
+  // The removal confirmation (issues #56 + #131): clicking 卸载 / Unuse
+  // or 删除此版本 / Uninstall opens a dialog showing the exact command
+  // that will run; the mutation only dispatches after the user confirms.
+  // No removal runs without this confirmation. The installed-versions
+  // section (issue #70) feeds the same dialog with its own tool name.
+  const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
 
   // Friendly message from the most recent link run (issue #71). Null
   // unless the last `mise link` failed with a recognized conflict.
@@ -300,22 +320,30 @@ export function ToolsPage() {
       ),
     },
     {
-      // Uninstall this exact installed version (issue #70). Reuses the
-      // top table's confirm + runMutation flow so the trust gate and
-      // single-flight guard apply unchanged.
+      // Per-version file deletion (ADR-0008, issue #131): offered only
+      // on non-active versions — deleting the active version's files
+      // invites an immediate reinstall; tool-level Unuse is the way out
+      // of an active version. Reuses the top table's confirm +
+      // runMutation flow so the trust gate and single-flight guard
+      // apply unchanged.
       key: "actions",
       header: t(I18N_KEYS.tools.columns.actions),
-      cell: (r) => (
-        <Button
-          variant="danger"
-          size="sm"
-          disabled={isRunning}
-          onClick={() => setPendingUninstall({ tool: installedQuery, version: r.version })}
-          data-testid={`versions-installed-uninstall-${r.version}`}
-        >
-          {t(I18N_KEYS.tools.actions.uninstall)}
-        </Button>
-      ),
+      cell: (r) =>
+        r.active ? (
+          <span className={styles.dim}>—</span>
+        ) : (
+          <Button
+            variant="danger"
+            size="sm"
+            disabled={isRunning}
+            onClick={() =>
+              setPendingRemoval({ kind: "uninstall", tool: installedQuery, version: r.version })
+            }
+            data-testid={`versions-installed-uninstall-${r.version}`}
+          >
+            {t(I18N_KEYS.tools.actions.uninstall)}
+          </Button>
+        ),
     },
   ];
 
@@ -479,6 +507,7 @@ export function ToolsPage() {
         source: active.source?.path ?? (active.source?.type ?? "—"),
         outdated: outdatedEntry !== undefined,
         latest: outdatedEntry?.latest ?? "",
+        orphan: active.requestedVersion == null,
       });
     }
     return out;
@@ -645,7 +674,9 @@ export function ToolsPage() {
         <RowActions
           row={r}
           disabled={isRunning}
-          onUninstall={() => setPendingUninstall({ tool: r.tool, version: r.version })}
+          onUnuse={() =>
+            setPendingRemoval({ kind: "unuse", tool: r.tool, orphan: r.orphan })
+          }
           onUpgrade={() =>
             void runMutation(() => miseUpgradeArgs(r.tool))
           }
@@ -777,32 +808,49 @@ export function ToolsPage() {
         <Suggestions id="tools-name-suggestions" options={toolNames} />
 
         <ConfirmDialog
-          open={pendingUninstall !== null}
+          open={pendingRemoval !== null}
           title={
-            pendingUninstall
-              ? t(I18N_KEYS.tools.confirm.uninstall.title, { tool: pendingUninstall.tool })
-              : ""
+            pendingRemoval?.kind === "unuse"
+              ? t(I18N_KEYS.tools.confirm.unuse.title, { tool: pendingRemoval.tool })
+              : pendingRemoval?.kind === "uninstall"
+                ? t(I18N_KEYS.tools.confirm.uninstall.title, {
+                    tool: pendingRemoval.tool,
+                    version: pendingRemoval.version,
+                  })
+                : ""
           }
-          body={t(I18N_KEYS.tools.confirm.uninstall.body)}
+          body={
+            pendingRemoval?.kind === "unuse"
+              ? t(I18N_KEYS.tools.confirm.unuse.body)
+              : t(I18N_KEYS.tools.confirm.uninstall.body)
+          }
           command={
-            pendingUninstall
+            pendingRemoval
               ? commandEcho(
                   "mise",
                   cwd,
-                  miseUninstallArgs(pendingUninstall.tool, pendingUninstall.version),
+                  pendingRemoval.kind === "unuse"
+                    ? miseUnuseArgs(pendingRemoval.tool, pendingRemoval.orphan)
+                    : miseUninstallArgs(pendingRemoval.tool, pendingRemoval.version),
                 )
               : ""
           }
-          confirmLabel={t(I18N_KEYS.tools.actions.uninstall)}
+          confirmLabel={
+            pendingRemoval?.kind === "unuse"
+              ? t(I18N_KEYS.tools.actions.unuse)
+              : t(I18N_KEYS.tools.actions.uninstall)
+          }
           cancelLabel={t(I18N_KEYS.common.cancel)}
           onConfirm={() => {
-            const row = pendingUninstall;
-            setPendingUninstall(null);
-            if (row) {
-              void runMutation(() => miseUninstallArgs(row.tool, row.version));
+            const target = pendingRemoval;
+            setPendingRemoval(null);
+            if (target?.kind === "unuse") {
+              void runMutation(() => miseUnuseArgs(target.tool, target.orphan));
+            } else if (target?.kind === "uninstall") {
+              void runMutation(() => miseUninstallArgs(target.tool, target.version));
             }
           }}
-          onCancel={() => setPendingUninstall(null)}
+          onCancel={() => setPendingRemoval(null)}
         />
       </div>
     </PageShell>
@@ -888,20 +936,22 @@ function SwitchVersionCell({ row, disabled, versionSuggestions, onSwitch }: Swit
 interface RowActionsProps {
   row: ToolRow;
   disabled: boolean;
-  onUninstall: () => void;
+  onUnuse: () => void;
   onUpgrade: () => void;
 }
 
 /**
  * The mutation buttons for one tool row. An outdated row gets an
- * Upgrade button (`mise upgrade --bump <tool>`); Uninstall dispatches
- * `mise uninstall <tool>`. Version switching lives in its own column
+ * Upgrade button (`mise upgrade --bump <tool>`); Unuse (ADR-0008,
+ * issue #131) dispatches `mise unuse <tool>` — or `mise uninstall
+ * --all <tool>` for an orphan installation — via the confirmation
+ * dialog. Version switching lives in its own column
  * (SwitchVersionCell, issue #57).
  */
 function RowActions({
   row,
   disabled,
-  onUninstall,
+  onUnuse,
   onUpgrade,
 }: RowActionsProps) {
   const { t } = useTranslation();
@@ -921,11 +971,11 @@ function RowActions({
       <Button
         variant="danger"
         size="sm"
-        onClick={onUninstall}
+        onClick={onUnuse}
         disabled={disabled}
-        data-testid={`tools-uninstall-${row.tool}`}
+        data-testid={`tools-unuse-${row.tool}`}
       >
-        {t(I18N_KEYS.tools.actions.uninstall)}
+        {t(I18N_KEYS.tools.actions.unuse)}
       </Button>
     </span>
   );

@@ -84,6 +84,7 @@ One vocabulary, four variants (color/type semantics owned by `visual-language.md
 ## Copy
 
 - All strings through i18n — glyphs included: no hardcoded glyph literals in JSX; trailing glyphs go through the Button `trailing` prop; menu/popover triggers carry no caret glyph at all. One i18n key = one semantic role: the same word used as a state label and as an action trigger gets two keys — labels and actions evolve differently per locale. Vocabulary comes from `CONTEXT.md` only. Retired from UI copy: "Context/上下文" and "project/项目" — say "current directory/当前目录".
+- Removal vocabulary splits by scope (ADR-0008): tool-level removal is Unuse / 卸载 and runs `mise unuse <tool>` — or `mise uninstall --all <tool>` for an orphan installation, with the confirmation dialog showing the exact argv either way; per-version file deletion is Uninstall / 删除此版本 (`mise uninstall <tool>@<version>`) and is offered only on non-active versions. Never pair the label 卸载 with `mise uninstall` — that pairing is the bug ADR-0008 retired.
 - Button labels never end in "…" — the trailing ellipsis is the retired "opens a dialog" convention; buttons read as plain verbs (beta9). The ellipsis stays only where the semantics differ: input placeholders and in-progress copy (loading / busy). Guarded by `npm run lint:i18n-ellipsis`.
 - Outdated versions render as the upgrade path: `2026.8.14 → 2026.9.0`, never as raw CLI prose, never as color alone.
 - Popovers and menus render inside the app window; never as separate overlay windows.

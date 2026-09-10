@@ -69,8 +69,8 @@
   },
   "tools": {
     "title": "Tools",
-    "hint": "Tools installed and active for the current directory. Switch versions, install, uninstall, or upgrade from the table; every mutation streams through the execution panel.",
-    "commandHint": "mise ls · mise outdated · mise use · mise upgrade · mise uninstall · mise install · mise link · mise ls-remote",
+    "hint": "Tools installed and active for the current directory. Switch versions, install, unuse, or upgrade from the table; every mutation streams through the execution panel.",
+    "commandHint": "mise ls · mise outdated · mise use · mise upgrade · mise unuse · mise install · mise link · mise uninstall · mise ls-remote",
     "columns": {
       "tool": "Tool",
       "version": "Version",
@@ -101,6 +101,7 @@
     "actions": {
       "install": "Install",
       "uninstall": "Uninstall",
+      "unuse": "Unuse",
       "upgrade": "Upgrade",
       "switch": "Switch",
       "link": "Link"
@@ -152,8 +153,12 @@
     },
     "confirm": {
       "uninstall": {
-        "title": "Uninstall {{tool}}?",
-        "body": "This will run the exact command below. The selected version will be removed and this cannot be undone."
+        "title": "Uninstall {{tool}}@{{version}}?",
+        "body": "This will run the exact command below. It deletes this version's files only — the Config file keeps its request, so a still-requested version is reinstalled on the next install. This cannot be undone."
+      },
+      "unuse": {
+        "title": "Unuse {{tool}}?",
+        "body": "This will run the exact command below. It removes the tool from the Config file and prunes its installations; for an orphan installation (requested by no Config file) it deletes every installed version instead. This cannot be undone."
       },
       "link": {
         "directoryNotFound": "Directory not found: {{path}}. Pick again."
