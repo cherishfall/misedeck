@@ -880,7 +880,9 @@ function RowActions({
 const ADD_TOOL_SUGGESTION_CAP = 10;
 
 interface AddToolEntryProps {
-  /** True while a foreground command runs; submit is disabled. */
+  /** True while a foreground command runs; locks only the Use submit
+   *  (run-locking, issue #135) — drafting the search/version inputs
+   *  never locks. */
   disabled: boolean;
   /** Dispatch `mise use [-g] <tool>@<version>` through the panel. */
   onUse: (tool: string, version: string) => void;
@@ -1012,7 +1014,6 @@ function AddToolEntry({ disabled, onUse }: AddToolEntryProps) {
               open && suggestions.length > 0 ? `${listId}-${activeIndex}` : undefined
             }
             aria-autocomplete="list"
-            disabled={disabled}
             data-testid="tools-add-tool-search"
             spellCheck={false}
             autoComplete="off"
@@ -1061,7 +1062,6 @@ function AddToolEntry({ disabled, onUse }: AddToolEntryProps) {
           onChange={(e) => setVersion(e.target.value)}
           placeholder={t(I18N_KEYS.tools.addTool.versionPlaceholder)}
           aria-label={t(I18N_KEYS.tools.columns.version)}
-          disabled={disabled}
           data-testid="tools-add-tool-version"
           spellCheck={false}
           autoComplete="off"
@@ -1085,6 +1085,9 @@ function AddToolEntry({ disabled, onUse }: AddToolEntryProps) {
 interface LinkToolFormProps {
   /** Dispatch `mise link <tool>@<version> <path>` through the panel. */
   onLink: (tool: string, version: string, path: string) => void;
+  /** True while a foreground command runs; locks only the Link submit
+   *  (run-locking, issue #135) — drafting the inputs and picking the
+   *  directory never lock. */
   disabled: boolean;
   /** Friendly conflict message from the last link run, or null. The raw
    *  stderr always remains in the execution panel; this is only the hint. */
@@ -1158,7 +1161,6 @@ function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
           value={tool}
           onChange={(e) => setTool(e.target.value)}
           placeholder={t(I18N_KEYS.tools.linkForm.toolPlaceholder)}
-          disabled={disabled}
           data-testid="tools-link-tool"
           spellCheck={false}
           autoComplete="off"
@@ -1169,7 +1171,6 @@ function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
           value={version}
           onChange={(e) => setVersion(e.target.value)}
           placeholder={t(I18N_KEYS.tools.linkForm.versionPlaceholder)}
-          disabled={disabled}
           data-testid="tools-link-version"
           spellCheck={false}
           autoComplete="off"
@@ -1186,7 +1187,6 @@ function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
           variant="primary"
           size="sm"
           onClick={pickDirectory}
-          disabled={disabled}
           data-testid="tools-link-pick"
         >
           {t(I18N_KEYS.directory.pickerLabel)}

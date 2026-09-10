@@ -397,6 +397,10 @@ function EnvRowActions({
   row: EnvRow;
   cwd: string | null;
   onWrite: (builder: (cwd: string | null) => string[]) => void | Promise<void>;
+  /** True while a foreground command runs. Run-locking (issue #135)
+   *  gates only command-firing controls — the draft's Save / submit
+   *  and the Remove button that leads to `mise unset`. Opening and
+   *  editing the draft (Edit, inputs, Cancel) never locks. */
   disabled: boolean;
 }) {
   const { t } = useTranslation();
@@ -452,7 +456,6 @@ function EnvRowActions({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={t(I18N_KEYS.env.namePlaceholder)}
-          disabled={disabled}
           data-testid={`env-name-${row.name}`}
           spellCheck={false}
           autoComplete="off"
@@ -464,7 +467,6 @@ function EnvRowActions({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={t(I18N_KEYS.env.valuePlaceholder)}
-          disabled={disabled}
           data-testid={`env-value-${row.name}`}
           spellCheck={false}
           autoComplete="off"
@@ -482,7 +484,6 @@ function EnvRowActions({
           variant="ghost"
           size="sm"
           onClick={cancelEdit}
-          disabled={disabled}
           data-testid={`env-cancel-${row.name}`}
         >
           {t(I18N_KEYS.common.cancel)}
@@ -497,7 +498,6 @@ function EnvRowActions({
         variant="secondary"
         size="sm"
         onClick={startEdit}
-        disabled={disabled}
         data-testid={`env-edit-${row.name}`}
       >
         {t(I18N_KEYS.env.editButton)}
@@ -539,6 +539,8 @@ function AddEnvForm({
   disabled,
 }: {
   onWrite: (builder: (cwd: string | null) => string[]) => void | Promise<void>;
+  /** True while a foreground command runs; locks only the Add submit
+   *  (run-locking, issue #135) — drafting the inputs never locks. */
   disabled: boolean;
 }) {
   const { t } = useTranslation();
@@ -567,7 +569,6 @@ function AddEnvForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder={t(I18N_KEYS.env.namePlaceholder)}
-        disabled={disabled}
         data-testid="env-add-name"
         spellCheck={false}
         autoComplete="off"
@@ -579,7 +580,6 @@ function AddEnvForm({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={t(I18N_KEYS.env.valuePlaceholder)}
-        disabled={disabled}
         data-testid="env-add-value"
         spellCheck={false}
         autoComplete="off"

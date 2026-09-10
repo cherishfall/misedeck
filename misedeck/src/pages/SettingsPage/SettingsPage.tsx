@@ -338,6 +338,9 @@ function RowEditor({
 }: {
   row: SettingsItem;
   onWrite: (builder: (cwd: string | null) => string[]) => void | Promise<void>;
+  /** True while a foreground command runs. Run-locking (issue #135)
+   *  gates only command-firing controls — Save / submit and Unset.
+   *  Editing the draft value never locks. */
   disabled: boolean;
 }) {
   const { t } = useTranslation();
@@ -375,7 +378,6 @@ function RowEditor({
           className={styles.boolToggle}
           checked={checked}
           onChange={(e) => setChecked(e.target.checked)}
-          disabled={disabled}
           aria-label={`${row.key}: ${formatValue(row.value)}`}
         />
       ) : (
@@ -385,7 +387,6 @@ function RowEditor({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={t(I18N_KEYS.settings.valuePlaceholder)}
-          disabled={disabled}
           spellCheck={false}
           autoComplete="off"
         />
@@ -420,6 +421,8 @@ function AddSettingForm({
   keySuggestions,
 }: {
   onWrite: (builder: (cwd: string | null) => string[]) => void | Promise<void>;
+  /** True while a foreground command runs; locks only the Add submit
+   *  (run-locking, issue #135) — drafting the inputs never locks. */
   disabled: boolean;
   /** Known setting keys from `mise settings ls --all`, offered as
    *  completion on the key field (issue #52). */
@@ -451,7 +454,6 @@ function AddSettingForm({
         value={key}
         onChange={(e) => setKey(e.target.value)}
         placeholder={t(I18N_KEYS.settings.keyPlaceholder)}
-        disabled={disabled}
         spellCheck={false}
         autoComplete="off"
         list="settings-key-suggestions"
@@ -463,7 +465,6 @@ function AddSettingForm({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={t(I18N_KEYS.settings.valuePlaceholder)}
-        disabled={disabled}
         spellCheck={false}
         autoComplete="off"
       />

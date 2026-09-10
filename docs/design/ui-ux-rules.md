@@ -76,7 +76,7 @@ One vocabulary, four variants (color/type semantics owned by `visual-language.md
 - The single exception: a run that **fails** while the panel is closed opens the panel once. Failure is too easy to miss in an affordance dot alone.
 - Success and cancellation while closed surface through the reopen affordance's tone dot.
 - Header order is status → copy command → close; close is a text button like copy, never a bare glyph.
-- Run-locking (issue #135): while a foreground command runs, only **command-firing controls** disable (the single-flight rule, ADR-0005, is unchanged — at most one command at a time). Browsing of already-loaded data never locks: expanding/collapsing rows, filtering, sorting, and paginating all keep working through a multi-minute install. Opening an edit draft is not command-firing either — a row's Edit button, and the draft's inputs and Cancel, stay enabled during a run; only the form's Save locks.
+- Run-locking (issue #135): while a foreground command runs, only **command-firing controls** disable (the single-flight rule, ADR-0005, is unchanged — at most one command at a time). Browsing of already-loaded data never locks: expanding/collapsing rows, filtering, sorting, and paginating all keep working through a multi-minute install. Opening an edit draft is not command-firing either — a row's Edit button, and the draft's inputs and Cancel, stay enabled during a run; only the form's Save locks. The same split holds for standing forms (add env var, add setting, add tool, link tool): their inputs and directory pickers stay editable, only the submit (Add / Use / Link) locks.
 
 ## Chrome & themes
 
