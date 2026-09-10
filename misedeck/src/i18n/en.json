@@ -69,8 +69,8 @@
   },
   "tools": {
     "title": "Tools",
-    "hint": "Tools installed and active for the current directory. Expand a row for its version center — use an installed version, install only, uninstall a version, unuse, or upgrade; every mutation streams through the execution panel.",
-    "commandHint": "mise ls · mise outdated · mise use · mise upgrade · mise unuse · mise install · mise link · mise uninstall · mise ls-remote",
+    "hint": "Tools installed and active for the current directory. Add a tool with the registry search below — Use installs and activates in one step. Expand a row for its version center — use an installed version, install only, uninstall a version, unuse, or upgrade; every mutation streams through the execution panel.",
+    "commandHint": "mise registry · mise use · mise ls · mise outdated · mise upgrade · mise unuse · mise ls-remote · mise install · mise uninstall · mise link",
     "columns": {
       "tool": "Tool",
       "version": "Version",
@@ -83,13 +83,12 @@
     },
     "empty": {
       "title": "No tools installed",
-      "body": "Install your first tool with the form below, or browse the Registry on the Plugins page."
+      "body": "Search the registry above and Use your first tool."
     },
     "missing": {
       "title": "Tools unavailable",
       "body": "MiseDeck needs the mise CLI to list installed tools. Go back and install mise to populate this page."
     },
-    "installHint": "Browse the Registry",
     "error": {
       "title": "Failed to load tools",
       "body": "`mise ls --json` did not return. Stderr is preserved in the execution panel."
@@ -103,10 +102,11 @@
       "use": "Use",
       "link": "Link"
     },
-    "installForm": {
-      "title": "Install a tool",
-      "toolPlaceholder": "tool (e.g. node)",
-      "versionPlaceholder": "version (empty = latest)"
+    "addTool": {
+      "title": "Add a tool",
+      "searchPlaceholder": "Search the registry (e.g. node)",
+      "versionPlaceholder": "latest",
+      "noMatches": "No registry matches — a full backend:name (e.g. npm:prettier) still works."
     },
     "linkForm": {
       "title": "Link a tool",
@@ -407,7 +407,6 @@
       "actions": "Actions"
     },
     "actions": {
-      "install": "Install",
       "uninstall": "Uninstall"
     },
     "confirm": {

@@ -3,19 +3,17 @@
 //
 //   * mise plugins ls --urls  → installed plugins (name, source), top
 //   * mise registry --json    → browsable registry of tool shorthands
-//                               → backends, with a search filter
+//                               → backends, with a search filter; a pure
+//                               reference since #134 moved add-tool to
+//                               the Tools page's top search (the table
+//                               itself leaves with #136)
 //   * mise plugins uninstall  → installed row action; confirms first,
 //                               then runs through the execution panel
 //                               (issue #112)
-//
-// The registry row's "Install" action hands the tool name to the
-// Tools page install section, where the mutation runs through the
-// execution panel.
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
@@ -52,7 +50,6 @@ export function PluginsPage() {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
 
   const detect = useQuery({
     queryKey: ["mise", "detect"],
@@ -110,12 +107,6 @@ export function PluginsPage() {
     void queryClient.invalidateQueries({ queryKey: ["registry", cwd] });
   }, [queryClient, cwd]);
   useRegisterPageRefresh(onRefresh);
-
-  // Hand the registry shorthand to the Tools page install section;
-  // the actual `mise install` runs there through the execution panel.
-  const onInstall = (short: string) => {
-    navigate(`/tools?install=${encodeURIComponent(short)}`);
-  };
 
   const installedColumns: TableColumn<InstalledPlugin>[] = [
     {
@@ -193,20 +184,6 @@ export function PluginsPage() {
         ) : (
           <span className={styles.dim}>—</span>
         ),
-    },
-    {
-      key: "actions",
-      header: t(I18N_KEYS.plugins.columns.actions),
-      cell: (r) => (
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => onInstall(r.short)}
-          data-testid={`plugins-install-${r.short}`}
-        >
-          {t(I18N_KEYS.plugins.actions.install)}
-        </Button>
-      ),
     },
   ];
 

@@ -140,7 +140,6 @@ export const I18N_KEYS = {
       title: "tools.missing.title",
       body: "tools.missing.body",
     },
-    installHint: "tools.installHint",
     error: {
       title: "tools.error.title",
       body: "tools.error.body",
@@ -167,10 +166,11 @@ export const I18N_KEYS = {
         directoryNotFound: "tools.confirm.link.directoryNotFound",
       },
     },
-    installForm: {
-      title: "tools.installForm.title",
-      toolPlaceholder: "tools.installForm.toolPlaceholder",
-      versionPlaceholder: "tools.installForm.versionPlaceholder",
+    addTool: {
+      title: "tools.addTool.title",
+      searchPlaceholder: "tools.addTool.searchPlaceholder",
+      versionPlaceholder: "tools.addTool.versionPlaceholder",
+      noMatches: "tools.addTool.noMatches",
     },
     linkForm: {
       title: "tools.linkForm.title",
@@ -458,7 +458,6 @@ export const I18N_KEYS = {
       actions: "plugins.columns.actions",
     },
     actions: {
-      install: "plugins.actions.install",
       uninstall: "plugins.actions.uninstall",
     },
     confirm: {

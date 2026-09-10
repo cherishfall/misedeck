@@ -345,15 +345,6 @@
   margin: 0;
 }
 
-/* Form header row: title left, low-frequency exit (browse Registry
- * ghost link) right (issue #111). */
-.installFormHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
 /* One-line explanation under a form title (the link form's `mise link`
  * description, issue #111). */
 .formNote {
@@ -370,6 +361,88 @@
   align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
+}
+
+/* ---------- Add-tool entry (issue #134) ---------- */
+
+/* The search box anchors its suggestion list; the wrapper stretches so
+ * the input and the list share a width. */
+.addToolSearch {
+  position: relative;
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.addToolSearchInput {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Combobox listbox (not a FloatingMenu — focus stays in the input).
+ * Same surface as the shared popover layer, anchored inline under the
+ * search input, above the table via --z-popover. */
+.addToolList {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  z-index: var(--z-popover);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-panel);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--void) 60%, transparent);
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.addToolOption,
+.addToolOptionActive {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: var(--size-data);
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.addToolOption:hover,
+.addToolOption:focus-visible,
+.addToolOptionActive {
+  background: color-mix(in srgb, var(--beam) 6%, transparent);
+  outline: none;
+}
+
+.addToolOptionName {
+  font-family: var(--font-mono);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.addToolOptionDescription {
+  font-family: var(--font-ui);
+  color: var(--ice);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.addToolEmpty {
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  color: var(--ice);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  line-height: 1.5;
 }
 
 /* The link form's directory path is read-only text: it comes only from
