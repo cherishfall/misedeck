@@ -2,7 +2,21 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-09, evening)
+## CURRENT STATE (2026-09-10)
+
+**Owner verified beta10 visually (passes); focus shifts to function/bugs. Tools-page lifecycle redesign grilled out, specced, ticketed — awaiting implementation in a fresh session.** SPEC parent **#128**; tickets **#129–#137**, all `ready-for-agent`, native blocked-by edges set. Frontier: **#129** (bug: panel reports failure on successful self-update/guided install — `#[serde(flatten)]` wire-shape mismatch vs TS `outcome` contract; also clears stale exit code on fail path; add Rust serialization contract test) and **#130** (bug: toolbar refresh button never renders — PageRefresh provider lives inside PageShell, below its consumers; lift it above the router). Then the chain: **#131** unuse/uninstall semantics (ADR-0008) → **#132** version dropdown → **#133** expandable row version center → **#134** registry search add-tool entry → **#135** narrow run-locking + link form collapse → **#136** plugins registry table removal (**owner-gated** on #134's effect). **#137** app icon is independent (**owner taste gate**: agent proposes 2–3 directions, owner picks, then assets).
+
+**Design decisions settled with the owner (3 grilling rounds, 2026-09-10):** verb vocabulary per **ADR-0008** (使用/Use, 仅安装/Install only, 删除此版本/Uninstall, 卸载/Unuse — zh 卸载 maps to `mise unuse`, not `uninstall`); inline row expansion over side panel; remote version lists = one cached `ls-remote` call + client-side filter/pagination (java-scale); row switch cell = dropdown of installed versions only; run-locking narrows to command-firing controls (panel single-flight, ADR-0005, unchanged); top registry search replaces the bottom install form and the `/plugins → /tools?install=` round trip; link form becomes a collapsed Advanced section.
+
+**Docs landed this session:** `CONTEXT.md` + zh-CN (Use/Unuse/Install/Uninstall entries), `docs/adr/0008` + zh-CN — committed `91ac671`, pushed.
+
+**Owner directives this round (binding):** (1) interaction/functionality may break current ui-ux-rules where professionally justified, but EVERY breakthrough is codified back into `docs/design/ui-ux-rules.md` (both locales) within the same ticket; (2) visual style stays on the current token base — any visual-style change must be flagged to the owner with rationale BEFORE implementing; (3) beta10 visual pass is done — opportunistic visual findings are reported for his confirmation, not fixed silently; (4) he is not deep on the tool/plugin domain — #136 waits for his verdict on #134.
+
+**First actions next session:** work #129 and #130 (independent, different layers — panel Rust/TS contract vs app-root provider), then the chain #131→#135 in order. One ticket per session/subagent; commit to master referencing the issue.
+
+**Open SPEC parents awaiting owner visual verification:** #45, #61, #65, #74, #86, #97, #119 (older batches) — #128 is the new active spec.
+
+## PREVIOUS STATE (2026-09-09, evening)
 
 **v1.0.0-beta.10 released** (commit `96449b2`, tag pushed + verified on remote, release run `34371860413`). Carries the beta9 batch.
 
