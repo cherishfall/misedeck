@@ -295,8 +295,6 @@ export interface DoctorLine {
  */
 export interface DoctorPayload {
   version?: string;
-  activated?: boolean;
-  shimsOnPath?: boolean;
   selfUpdateAvailable?: boolean;
   warnings?: string[];
   configFiles?: string[];

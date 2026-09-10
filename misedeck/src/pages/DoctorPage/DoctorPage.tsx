@@ -125,6 +125,22 @@ function DoctorContent({
   const rcActivated: boolean | null =
     activation.state.kind === "ok" ? activation.state.status.activated : null;
 
+  // Hooks stay unconditional (rules of hooks): this memo must run before
+  // the raw-text early return below, not after it.
+  const toolsetRows: ToolsetRow[] = useMemo(() => {
+    const toolset = data.toolset ?? {};
+    const out: ToolsetRow[] = [];
+    for (const [tool, items] of Object.entries(toolset)) {
+      if (!Array.isArray(items)) continue;
+      const first = items[0];
+      if (first && typeof first === "object" && "version" in first) {
+        out.push({ id: `${tool}-${String(first.version)}`, tool, version: String(first.version) });
+      }
+    }
+    out.sort((a, b) => a.tool.localeCompare(b.tool));
+    return out;
+  }, [data.toolset]);
+
   if (data.rawLines && data.rawLines.length > 0) {
     return (
       <section className={styles.section}>
@@ -156,20 +172,6 @@ function DoctorContent({
     ? warnings.filter((w) => w !== updateWarningText)
     : warnings;
   const status = doctorStatus(data, rcActivated);
-
-  const toolsetRows: ToolsetRow[] = useMemo(() => {
-    const toolset = data.toolset ?? {};
-    const out: ToolsetRow[] = [];
-    for (const [tool, items] of Object.entries(toolset)) {
-      if (!Array.isArray(items)) continue;
-      const first = items[0];
-      if (first && typeof first === "object" && "version" in first) {
-        out.push({ id: `${tool}-${String(first.version)}`, tool, version: String(first.version) });
-      }
-    }
-    out.sort((a, b) => a.tool.localeCompare(b.tool));
-    return out;
-  }, [data.toolset]);
 
   const toolsetColumns: TableColumn<ToolsetRow>[] = [
     {

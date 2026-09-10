@@ -468,16 +468,16 @@ export function parseSettingsPayload(value: unknown): SettingsItem[] {
 /** Parse the `mise doctor --json` payload. Tolerant: the fallback
  *  shape keeps the raw lines under `rawLines`. The real mise JSON uses
  *  snake_case keys, so the parser normalises the fields the UI reads
- *  to camelCase while preserving everything else. */
+ *  to camelCase while preserving everything else. doctor's own
+ *  `activated` / `shims_on_path` are deliberately NOT normalised: the
+ *  summary row answers activation from the rc-file probe instead
+ *  (issue #92), and nothing else reads them. */
 export function parseDoctorPayload(value: unknown): DoctorPayload {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
   const raw = value as Record<string, unknown>;
   const out: DoctorPayload = { ...raw };
-  if (raw.shims_on_path !== undefined) {
-    out.shimsOnPath = !!raw.shims_on_path;
-  }
   if (raw.self_update_available !== undefined) {
     out.selfUpdateAvailable = !!raw.self_update_available;
   }
@@ -492,9 +492,6 @@ export function parseDoctorPayload(value: unknown): DoctorPayload {
   }
   if (raw.shell !== null && typeof raw.shell === "object" && !Array.isArray(raw.shell)) {
     out.shell = raw.shell as { name?: string; version?: string };
-  }
-  if (typeof raw.activated === "boolean") {
-    out.activated = raw.activated;
   }
   if (typeof raw.version === "string") {
     out.version = raw.version;
