@@ -2,9 +2,13 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-10, late evening)
+## CURRENT STATE (2026-09-10, blocked on quota)
 
 **SPEC #128 fully done — all nine tickets #129–#137 implemented and closed.** Owner decisions this round: #136 approved per professional recommendation; #137 resolved by the owner-committed final icon assets (`f3d9d8b`, verified against `tauri.conf.json` bundle.icon entries); the three flagged small decisions all settled per professional recommendation. Everything committed to master and pushed; every ticket `npm run ci` green (cargo where touched), **NOT visually verified — owner verifies manually**.
+
+**Owner-approved follow-up work completed before the quota block:** ConfirmDialog is execution-aware (`cce57d2`); old findings were handled in separate commits: #91 too-old parameter parsing deduplicated and made graceful (`002c088`), #92 dead Doctor fields removed and Doctor hooks made unconditional (`f839a55`), and #90's table-scroll wording was verified already resolved in both locales (no churn commit). The app-wide draft/run-lock sweep is in `eee5330`.
+
+**CURRENT BLOCKER:** the owner then authorized replacing the accidental global single-flight execution rule with concurrent execution. A dedicated subagent was started to implement per-run execution-panel transcript isolation, revise remaining cross-control run locks, and amend ADR-0005 plus both ui-ux-rules locales. It could not start/continue because the model provider returned a 403 weekly (7-day) usage-limit error, including on resume. No concurrency code or docs have been changed yet. Resume this exact task when quota is available; do not claim it is implemented.
 
 | Ticket | Commit | Notes |
 | --- | --- | --- |
@@ -18,9 +22,9 @@ This document is a continuation marker between autonomous driver sessions.
 | #136 plugins registry table removal | `51d55a8` | registry section/filter/columns removed from PluginsPage; registry hooks kept (AddToolEntry uses them); no-dead-ends rule updated |
 | #137 app icon | `f3d9d8b` (owner) | owner-provided final assets; verified all `tauri.conf.json` bundle.icon entries present; closed |
 
-**Owner-approved follow-up commits (no ticket):** `f3dbd36` TasksPage edit-draft unlock + run-lock rule clarification (opening an edit draft is not command-firing; only Save locks); `eee5330` app-wide same-class sweep — EnvPage (edit draft + add-form inputs), SettingsPage (RowEditor + add-form inputs), ToolsPage (AddToolEntry + LinkToolForm inputs/pickers) unlocked during runs; destructive-confirm openers (Env Remove, Tools Unuse) deliberately stay locked because their ConfirmDialog Confirm isn't run-aware — **candidate future ticket: give ConfirmDialog a `running` prop so confirm-openers can unlock too**.
+**Owner-approved follow-up commits (no ticket):** `f3dbd36` TasksPage edit-draft unlock + run-lock rule clarification; `eee5330` app-wide same-class sweep; `cce57d2` ConfirmDialog consumes execution state, disables Confirm while a command is running, and unlocks all confirm-dialog openers (Env Remove, Tools Unuse, VersionCenter Uninstall, Plugins Uninstall). The later concurrency redesign should re-evaluate this global Confirm lock.
 
-**First actions next session:** nothing startable — all `ready-for-agent` tickets closed. Owner to visually verify the batch, then decide on a beta.11 release (release procedure below) and whether to ticket the ConfirmDialog `running` prop.
+**First actions next session:** resume the blocked execution-panel concurrency redesign once quota is available. After it lands, run the required `npm run ci` and review the revised ADR-0005/run-lock docs. Then owner can visually verify the batch and decide on a beta.11 release (release procedure below).
 
 **Open SPEC parents awaiting owner visual verification:** #45, #61, #65, #74, #86, #97, #119 (older batches) + **#128** (this batch, verify against next build).
 
