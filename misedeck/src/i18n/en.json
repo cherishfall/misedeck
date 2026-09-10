@@ -393,18 +393,12 @@
   },
   "plugins": {
     "title": "Plugins",
-    "hint": "Installed plugins and the built-in registry of tool shorthands, backends, and aliases.",
-    "commandHint": "mise plugins ls · mise registry",
-    "searchPlaceholder": "Search tools, backends, aliases…",
+    "hint": "Installed plugins — the asdf-style or vfox-style extensions that teach mise how to install tools.",
+    "commandHint": "mise plugins ls · mise plugins uninstall",
     "sections": {
-      "installed": "Installed plugins",
-      "registry": "Registry"
+      "installed": "Installed plugins"
     },
     "columns": {
-      "tool": "Tool",
-      "backends": "Backends",
-      "description": "Description",
-      "aliases": "Aliases",
       "name": "Name",
       "source": "Source",
       "actions": "Actions"
@@ -425,16 +419,6 @@
     "installedError": {
       "title": "Failed to load plugins",
       "body": "`mise plugins ls` did not return. Stderr is preserved in the execution panel."
-    },
-    "empty": {
-      "title": "No registry entries",
-      "body": "`mise registry --json` returned an empty list.",
-      "searchTitle": "No matches",
-      "searchBody": "No registry entry matches your search."
-    },
-    "error": {
-      "title": "Failed to load registry",
-      "body": "`mise registry --json` did not return. Stderr is preserved in the execution panel."
     }
   },
   "states": {

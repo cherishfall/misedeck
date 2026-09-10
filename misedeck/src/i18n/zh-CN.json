@@ -393,18 +393,12 @@
   },
   "plugins": {
     "title": "插件",
-    "hint": "已安装插件，以及内置 registry 中的工具别名、后端与别名信息。",
-    "commandHint": "mise plugins ls · mise registry",
-    "searchPlaceholder": "搜索工具、后端、别名…",
+    "hint": "已安装插件——教 mise 如何安装工具的 asdf 风格或 vfox 风格扩展。",
+    "commandHint": "mise plugins ls · mise plugins uninstall",
     "sections": {
-      "installed": "已安装插件",
-      "registry": "Registry"
+      "installed": "已安装插件"
     },
     "columns": {
-      "tool": "工具",
-      "backends": "后端",
-      "description": "说明",
-      "aliases": "别名",
       "name": "名称",
       "source": "来源",
       "actions": "操作"
@@ -425,16 +419,6 @@
     "installedError": {
       "title": "加载插件失败",
       "body": "`mise plugins ls` 未返回结果。stderr 已在执行面板中保留。"
-    },
-    "empty": {
-      "title": "没有 registry 条目",
-      "body": "`mise registry --json` 返回了空列表。",
-      "searchTitle": "无匹配",
-      "searchBody": "没有 registry 条目匹配你的搜索。"
-    },
-    "error": {
-      "title": "加载 registry 失败",
-      "body": "`mise registry --json` 未返回结果。stderr 已在执行面板中保留。"
     }
   },
   "states": {

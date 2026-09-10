@@ -446,16 +446,10 @@ export const I18N_KEYS = {
     title: "plugins.title",
     hint: "plugins.hint",
     commandHint: "plugins.commandHint",
-    searchPlaceholder: "plugins.searchPlaceholder",
     sections: {
       installed: "plugins.sections.installed",
-      registry: "plugins.sections.registry",
     },
     columns: {
-      tool: "plugins.columns.tool",
-      backends: "plugins.columns.backends",
-      description: "plugins.columns.description",
-      aliases: "plugins.columns.aliases",
       name: "plugins.columns.name",
       source: "plugins.columns.source",
       actions: "plugins.columns.actions",
@@ -476,16 +470,6 @@ export const I18N_KEYS = {
     installedError: {
       title: "plugins.installedError.title",
       body: "plugins.installedError.body",
-    },
-    empty: {
-      title: "plugins.empty.title",
-      body: "plugins.empty.body",
-      searchTitle: "plugins.empty.searchTitle",
-      searchBody: "plugins.empty.searchBody",
-    },
-    error: {
-      title: "plugins.error.title",
-      body: "plugins.error.body",
     },
   },
   states: {

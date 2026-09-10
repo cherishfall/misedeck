@@ -1,12 +1,8 @@
-// PluginsPage — the plugins surface matching its sidebar name
-// (issues #29 + #51):
+// PluginsPage — installed-plugin management (issues #29 + #51 + #112);
+// the registry table left with #136 — its browse-and-install role is
+// superseded by the Tools page's top search (#134).
 //
-//   * mise plugins ls --urls  → installed plugins (name, source), top
-//   * mise registry --json    → browsable registry of tool shorthands
-//                               → backends, with a search filter; a pure
-//                               reference since #134 moved add-tool to
-//                               the Tools page's top search (the table
-//                               itself leaves with #136)
+//   * mise plugins ls --urls  → installed plugins (name, source)
 //   * mise plugins uninstall  → installed row action; confirms first,
 //                               then runs through the execution panel
 //                               (issue #112)
@@ -21,7 +17,6 @@ import { detectMise, isAppError } from "../../api/mise";
 import { useExecutionContext } from "../../components/ExecutionPanel";
 import type { ExecutionStatus } from "../../components/ExecutionPanel";
 import {
-  Badge,
   Button,
   commandEcho,
   CommandHint,
@@ -30,13 +25,11 @@ import {
   PageShell,
   Table,
   type TableColumn,
-  TableFilter,
   Tooltip,
   useRegisterPageRefresh,
 } from "../../components";
-import { useParsedPluginsList, useParsedRegistry } from "../../hooks/useIssue29";
-import { useTableFilter } from "../../hooks/useTableFilter";
-import type { InstalledPlugin, RegistryItem } from "../../types/tauri";
+import { useParsedPluginsList } from "../../hooks/useIssue29";
+import type { InstalledPlugin } from "../../types/tauri";
 
 import styles from "./PluginsPage.module.css";
 
@@ -59,7 +52,6 @@ export function PluginsPage() {
   });
 
   const plugins = useParsedPluginsList();
-  const registry = useParsedRegistry();
 
   // Plugin uninstall (issue #112): a destructive mutation, so it
   // confirms first (the dialog teaches the exact command) and then
@@ -91,20 +83,11 @@ export function PluginsPage() {
   );
 
   const pluginsError = plugins.error?.kind === "err" ? plugins.error.err : null;
-  const registryError = registry.error?.kind === "err" ? registry.error.err : null;
 
-  // Registry search (issue #106): the shared table filter drives the
-  // registry table too — same interaction as the tools/env/tasks/
-  // settings filters, and the shared input carries the clear button.
-  const filter = useTableFilter(registry.data ?? [], (r) =>
-    [r.short, r.description ?? "", ...(r.aliases ?? []), ...r.backends].join("\n"),
-  );
-
-  // Top-toolbar refresh (issue #98): one callback refreshes both the
-  // Registry and the installed list.
+  // Top-toolbar refresh (issue #98): one callback refreshes the
+  // installed list.
   const onRefresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["plugins", "ls", cwd] });
-    void queryClient.invalidateQueries({ queryKey: ["registry", cwd] });
   }, [queryClient, cwd]);
   useRegisterPageRefresh(onRefresh);
 
@@ -140,50 +123,6 @@ export function PluginsPage() {
           {t(I18N_KEYS.plugins.actions.uninstall)}
         </Button>
       ),
-    },
-  ];
-
-  const registryColumns: TableColumn<RegistryItem>[] = [
-    {
-      key: "short",
-      header: t(I18N_KEYS.plugins.columns.tool),
-      sortValue: (r) => r.short,
-      cell: (r) => <span className={styles.cellTool}>{r.short}</span>,
-    },
-    {
-      key: "backends",
-      header: t(I18N_KEYS.plugins.columns.backends),
-      cell: (r) => (
-        <span className={styles.cellBackends}>
-          {r.backends.map((b, i) => (
-            <Badge key={`${b}-${i}`} variant="info" data>
-              {b}
-            </Badge>
-          ))}
-        </span>
-      ),
-    },
-    {
-      key: "description",
-      header: t(I18N_KEYS.plugins.columns.description),
-      sortValue: (r) => r.description ?? "",
-      cell: (r) => <span className={styles.cellDescription}>{r.description ?? "—"}</span>,
-    },
-    {
-      key: "aliases",
-      header: t(I18N_KEYS.plugins.columns.aliases),
-      cell: (r) =>
-        r.aliases && r.aliases.length > 0 ? (
-          <span className={styles.cellAliases}>
-            {r.aliases.map((a, i) => (
-              <Badge key={`${a}-${i}`} variant="info" data>
-                {a}
-              </Badge>
-            ))}
-          </span>
-        ) : (
-          <span className={styles.dim}>—</span>
-        ),
     },
   ];
 
@@ -240,45 +179,6 @@ export function PluginsPage() {
               empty={
                 <EmptyState                  title={t(I18N_KEYS.plugins.installedEmpty.title)}
                   body={t(I18N_KEYS.plugins.installedEmpty.body)}
-                />
-              }
-            />
-          )}
-        </section>
-
-        <section className={styles.section} data-testid="plugins-registry-section">
-          <header className={styles.sectionHead}>
-            <h2 className={styles.sectionTitle}>{t(I18N_KEYS.plugins.sections.registry)}</h2>
-          </header>
-
-          <div className={styles.toolbar}>
-            <TableFilter
-              value={filter.query}
-              onChange={filter.setQuery}
-              placeholder={t(I18N_KEYS.plugins.searchPlaceholder)}
-              testId="plugins-registry-search"
-            />
-          </div>
-
-          {registryError && (
-            <div className={styles.errorState} data-testid="plugins-read-error">
-              <div className={styles.errorLabel}>{t(I18N_KEYS.plugins.error.title)}</div>
-              <p className={styles.errorBody}>{t(I18N_KEYS.plugins.error.body)}</p>
-              {registryError.stderr && (
-                <pre className={styles.errorStderr}>{registryError.stderr}</pre>
-              )}
-            </div>
-          )}
-
-          {!registryError && (
-            <Table<RegistryItem>
-              columns={registryColumns}
-              rows={filter.rows}
-              rowKey={(r) => r.short}
-              empty={
-                <EmptyState
-                  title={filter.active ? t(I18N_KEYS.plugins.empty.searchTitle) : t(I18N_KEYS.plugins.empty.title)}
-                  body={filter.active ? t(I18N_KEYS.plugins.empty.searchBody) : t(I18N_KEYS.plugins.empty.body)}
                 />
               }
             />

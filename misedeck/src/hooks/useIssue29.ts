@@ -1,5 +1,5 @@
-// Hooks for the settings, doctor, registry, and plugins pages
-// (issues #29 + #51).
+// Hooks for the settings, doctor, and plugins pages plus the Tools
+// page's registry search (issues #29 + #51 + #134).
 //
 // Each hook is keyed by the directory context so switching Global ↔ a
 // directory refetches the data. The result is the typed JSON Result
