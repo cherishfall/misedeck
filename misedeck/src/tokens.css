@@ -83,6 +83,8 @@
 
   --tracking-display: 0; /* serif display type takes no tracking */
   --tracking-wordmark: 0.01em; /* wordmark — near-natural */
+  --tracking-title: 0.02em; /* dialog titles — semibold UI, slight tracking */
+  --tracking-button: 0.04em; /* buttons — semibold UI */
   --tracking-label: 0.18em; /* section eyebrows only */
 
   /* ---------- 3. Spacing ----------

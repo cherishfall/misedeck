@@ -71,6 +71,10 @@ jobs:
         working-directory: misedeck
         run: npm run lint:css-spacing
 
+      - name: CSS letter-spacing token check
+        working-directory: misedeck
+        run: npm run lint:css-tracking
+
       - name: Command-hint guard
         working-directory: misedeck
         run: npm run lint:command-hint

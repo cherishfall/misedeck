@@ -30,7 +30,7 @@
   font-family: var(--font-ui);
   font-size: var(--size-base);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--tracking-title);
   color: var(--text);
 }
 
