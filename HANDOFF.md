@@ -2,35 +2,27 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-10, evening)
+## CURRENT STATE (2026-09-10, late evening)
 
-**Tools-page lifecycle chain #129–#135 fully implemented in one autonomous run.** All seven tickets closed, each its own subagent, committed to master and pushed. **#136** (plugins registry table removal) is **owner-gated** on his verdict on #134's effect; **#137** (app icon) is an **owner taste gate** — next session should propose 2–3 icon directions for him to pick, then produce assets. Note: an unreviewed owner-side commit `f3d9d8b` ("icon", binary icon assets) was already on master and pushed before this run — possibly early #137 work.
+**SPEC #128 fully done — all nine tickets #129–#137 implemented and closed.** Owner decisions this round: #136 approved per professional recommendation; #137 resolved by the owner-committed final icon assets (`f3d9d8b`, verified against `tauri.conf.json` bundle.icon entries); the three flagged small decisions all settled per professional recommendation. Everything committed to master and pushed; every ticket `npm run ci` green (cargo where touched), **NOT visually verified — owner verifies manually**.
 
 | Ticket | Commit | Notes |
 | --- | --- | --- |
-| #129 panel fail-on-success wire-shape | `d651a3c` | removed `#[serde(flatten)]` from `InstallCommandResult`; new Rust contract suite `tests/wire_shapes.rs` (18 tests, every `*Result` variant); fail path no longer shows stale exit code (`exitCode: number \| null`); drift-guard rule in architecture.md both locales |
-| #130 toolbar refresh never renders | `9e1e657` | `PageRefreshProvider` lifted above the router in `main.tsx`; rule codified (chrome-level contexts can't be consumed by the page rendering their PageShell) |
-| #131 unuse/uninstall semantics | `bc464ec` | row danger = 卸载/Unuse (`mise unuse`; orphans → `uninstall --all`); per-version 删除此版本/Uninstall on non-active rows only; argv builders + fixtures in Rust tests; vocabulary rule in ui-ux-rules both locales |
-| #132 version dropdown | `3830608` | `UseVersionCell` dropdown of installed versions replaces free-text switch; Use/使用 + Install only/仅安装 naming landed (ADR-0008); rule: version switching never free-typed |
-| #133 expandable row version center | `264759b` | new `VersionCenter` (installed + available sub-lists, cached `ls-remote`, client filter/paginate ≥10, version-desc sort, installed markers); Table gained `expandedKey`/`renderExpanded`; both `VersionQuerySection`s + datalists deleted; rules codified |
-| #134 registry search add-tool entry | `b82d58a` | `AddToolEntry` combobox at top of ToolsPage; bottom install form + `?install=` round trip gone; **Plugins registry Install button REMOVED** (registry is browse-only until #136) |
-| #135 narrow run-lock + Advanced link form | `505a165` | row-expand no longer locked; `LinkToolForm` in collapsed Advanced section; run-lock rule codified (command-firing controls only) |
+| #129 panel fail-on-success wire-shape | `d651a3c` | removed `#[serde(flatten)]` from `InstallCommandResult` + `rename_all_fields="camelCase"` (bonus fix: `newVersion` never reached UI); new Rust contract suite `tests/wire_shapes.rs` (18 tests); fail path no longer shows stale exit code (`exitCode: number \| null`, new i18n `execution.statusFailedNoCode`); drift-guard rule in architecture.md both locales |
+| #130 toolbar refresh never renders | `9e1e657` | `PageRefreshProvider` lifted above the router in `main.tsx`; rule codified (page-registered capability providers live above the router) |
+| #131 unuse/uninstall semantics | `bc464ec` | row danger = 卸载/Unuse (`mise unuse`; orphans via `requestedVersion == null` → `uninstall --all`); per-version 删除此版本/Uninstall on non-active rows only; argv builders + fixtures in Rust tests; removal-vocabulary rule in ui-ux-rules both locales |
+| #132 version dropdown | `3830608` | `UseVersionCell` FloatingMenu dropdown of installed versions replaces free-text switch; Use/使用 + Install only/仅安装 naming landed (ADR-0008); rule: version switching never free-typed |
+| #133 expandable row version center | `264759b` | new `VersionCenter` (installed + available sub-lists, one cached background `ls-remote`, client filter/paginate ≥10, version-desc sort, installed markers, auto scroll-into-view); Table gained `expandedKey`/`renderExpanded`; both `VersionQuerySection`s + datalists deleted; rules codified |
+| #134 registry search add-tool entry | `b82d58a` | `AddToolEntry` combobox at top of ToolsPage (hand-rolled listbox — FloatingMenu's menu-button pattern breaks typing, documented); bottom install form + `?install=` round trip gone; free-text `backend:name` stays submittable by design |
+| #135 narrow run-lock + Advanced link form | `505a165` | row-expand unlocked; `LinkToolForm` in collapsed Advanced section; run-lock rule: command-firing controls only |
+| #136 plugins registry table removal | `51d55a8` | registry section/filter/columns removed from PluginsPage; registry hooks kept (AddToolEntry uses them); no-dead-ends rule updated |
+| #137 app icon | `f3d9d8b` (owner) | owner-provided final assets; verified all `tauri.conf.json` bundle.icon entries present; closed |
 
-**Flagged for the owner (from closing comments):** (1) TasksPage row Edit button is disabled while a command runs although it only opens an inline form — borderline under the new run-lock rule, needs his call; (2) #134's suggestion list is a hand-rolled combobox, not FloatingMenu (menu-button pattern breaks typing) — documented in component comment; (3) free-text tool names (`backend:name`) stay submittable in AddToolEntry by design. All tickets: `npm run ci` green, cargo green where touched, **NOT visually verified — owner verifies manually**.
+**Owner-approved follow-up commits (no ticket):** `f3dbd36` TasksPage edit-draft unlock + run-lock rule clarification (opening an edit draft is not command-firing; only Save locks); `eee5330` app-wide same-class sweep — EnvPage (edit draft + add-form inputs), SettingsPage (RowEditor + add-form inputs), ToolsPage (AddToolEntry + LinkToolForm inputs/pickers) unlocked during runs; destructive-confirm openers (Env Remove, Tools Unuse) deliberately stay locked because their ConfirmDialog Confirm isn't run-aware — **candidate future ticket: give ConfirmDialog a `running` prop so confirm-openers can unlock too**.
 
-**First actions next session:** ask owner for his #136 verdict and his #137 icon-direction pick. If #136 approved, implement it; for #137, prepare 2–3 directions first.
+**First actions next session:** nothing startable — all `ready-for-agent` tickets closed. Owner to visually verify the batch, then decide on a beta.11 release (release procedure below) and whether to ticket the ConfirmDialog `running` prop.
 
 **Open SPEC parents awaiting owner visual verification:** #45, #61, #65, #74, #86, #97, #119 (older batches) + **#128** (this batch, verify against next build).
-
-**Design decisions settled with the owner (3 grilling rounds, 2026-09-10):** verb vocabulary per **ADR-0008** (使用/Use, 仅安装/Install only, 删除此版本/Uninstall, 卸载/Unuse — zh 卸载 maps to `mise unuse`, not `uninstall`); inline row expansion over side panel; remote version lists = one cached `ls-remote` call + client-side filter/pagination (java-scale); row switch cell = dropdown of installed versions only; run-locking narrows to command-firing controls (panel single-flight, ADR-0005, unchanged); top registry search replaces the bottom install form and the `/plugins → /tools?install=` round trip; link form becomes a collapsed Advanced section.
-
-**Docs landed this session:** `CONTEXT.md` + zh-CN (Use/Unuse/Install/Uninstall entries), `docs/adr/0008` + zh-CN — committed `91ac671`, pushed.
-
-**Owner directives this round (binding):** (1) interaction/functionality may break current ui-ux-rules where professionally justified, but EVERY breakthrough is codified back into `docs/design/ui-ux-rules.md` (both locales) within the same ticket; (2) visual style stays on the current token base — any visual-style change must be flagged to the owner with rationale BEFORE implementing; (3) beta10 visual pass is done — opportunistic visual findings are reported for his confirmation, not fixed silently; (4) he is not deep on the tool/plugin domain — #136 waits for his verdict on #134.
-
-**First actions next session:** work #129 and #130 (independent, different layers — panel Rust/TS contract vs app-root provider), then the chain #131→#135 in order. One ticket per session/subagent; commit to master referencing the issue.
-
-**Open SPEC parents awaiting owner visual verification:** #45, #61, #65, #74, #86, #97, #119 (older batches) — #128 is the new active spec.
 
 ## PREVIOUS STATE (2026-09-09, evening)
 
