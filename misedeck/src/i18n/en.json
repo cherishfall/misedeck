@@ -69,7 +69,7 @@
   },
   "tools": {
     "title": "Tools",
-    "hint": "Tools installed and active for the current directory. Switch versions, install, unuse, or upgrade from the table; every mutation streams through the execution panel.",
+    "hint": "Tools installed and active for the current directory. Use an installed version, install only, unuse, or upgrade from the table; every mutation streams through the execution panel.",
     "commandHint": "mise ls · mise outdated · mise use · mise upgrade · mise unuse · mise install · mise link · mise uninstall · mise ls-remote",
     "columns": {
       "tool": "Tool",
@@ -78,7 +78,7 @@
       "backend": "Backend",
       "source": "Source",
       "latest": "Latest",
-      "switchToVersion": "Switch to version",
+      "use": "Use",
       "actions": "Actions"
     },
     "empty": {
@@ -95,15 +95,12 @@
       "body": "`mise ls --json` did not return. Stderr is preserved in the execution panel."
     },
     "filterPlaceholder": "Filter tools…",
-    "switchVersion": {
-      "placeholder": "22.11.0"
-    },
     "actions": {
-      "install": "Install",
+      "install": "Install only",
       "uninstall": "Uninstall",
       "unuse": "Unuse",
       "upgrade": "Upgrade",
-      "switch": "Switch",
+      "use": "Use",
       "link": "Link"
     },
     "installForm": {

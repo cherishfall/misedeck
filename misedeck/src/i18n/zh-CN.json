@@ -69,7 +69,7 @@
   },
   "tools": {
     "title": "工具",
-    "hint": "当前目录中已安装并处于活动状态的工具。在表格中切换版本、安装、卸载或升级；所有变更都通过执行面板实时显示。",
+    "hint": "当前目录中已安装并处于活动状态的工具。在表格中使用已安装版本、仅安装、卸载或升级；所有变更都通过执行面板实时显示。",
     "commandHint": "mise ls · mise outdated · mise use · mise upgrade · mise unuse · mise install · mise link · mise uninstall · mise ls-remote",
     "columns": {
       "tool": "工具",
@@ -78,7 +78,7 @@
       "backend": "后端",
       "source": "来源",
       "latest": "最新",
-      "switchToVersion": "切换到版本",
+      "use": "使用",
       "actions": "操作"
     },
     "empty": {
@@ -95,15 +95,12 @@
       "body": "`mise ls --json` 未返回结果。stderr 已在执行面板中保留。"
     },
     "filterPlaceholder": "过滤工具…",
-    "switchVersion": {
-      "placeholder": "22.11.0"
-    },
     "actions": {
-      "install": "安装",
+      "install": "仅安装",
       "uninstall": "删除此版本",
       "unuse": "卸载",
       "upgrade": "升级",
-      "switch": "切换",
+      "use": "使用",
       "link": "链接"
     },
     "installForm": {

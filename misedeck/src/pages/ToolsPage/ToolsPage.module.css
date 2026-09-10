@@ -45,11 +45,11 @@
 /* ---------- Table cells ---------- */
 
 /* min-width = sum of declared column widths (160 tool + 96 version + 120
- * requested + 120 backend (conditional) + 100 source + 150 latest + 200
- * switchToVersion + 220 actions): below this the shared scroller scrolls
+ * requested + 120 backend (conditional) + 100 source + 150 latest + 140
+ * use + 220 actions): below this the shared scroller scrolls
  * horizontally instead of crushing columns (issues #90, #103). */
 .toolsTable {
-  min-width: 1166px;
+  min-width: 1106px;
 }
 
 .cellTool {
@@ -157,19 +157,87 @@
   color: var(--dim);
 }
 
-.cellSwitch {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
+/* The per-row Use dropdown (issue #132): the trigger echoes the current
+ * version in mono and reads as a compact control; the menu lists the
+ * tool's installed versions, current one marked. Tokens only; no caret
+ * glyph on the trigger (beta8). */
+.useTrigger {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: var(--space-1) var(--space-2);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-state-change) ease,
+    box-shadow var(--motion-state-change) ease;
 }
 
-/* The per-row version input stays narrow and reads as editable:
- * a fixed ch width instead of a stretched field, and a hover border
- * that signals interactivity (issue #57). */
-.cellSwitch .input {
-  width: 12ch;
-  min-width: 0;
+.useTrigger:hover:not(:disabled),
+.useTrigger:focus-visible {
+  outline: none;
+  border-color: var(--line-strong);
+}
+
+.useTrigger:focus-visible {
+  border-color: var(--beam);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--beam) 25%, transparent);
+}
+
+.useTrigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.useMenu {
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.useOption,
+.useOptionCurrent {
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color var(--motion-state-change) ease,
+    background var(--motion-state-change) ease;
+}
+
+.useOption:hover,
+.useOption:focus-visible,
+.useOptionCurrent {
+  color: var(--beam);
+  background: color-mix(in srgb, var(--beam) 6%, transparent);
+  outline: none;
+}
+
+.useOptionCurrent {
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .useTrigger,
+  .useOption,
+  .useOptionCurrent {
+    transition: none;
+  }
 }
 
 .cellActions {

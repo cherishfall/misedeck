@@ -129,7 +129,7 @@ export const I18N_KEYS = {
       backend: "tools.columns.backend",
       source: "tools.columns.source",
       latest: "tools.columns.latest",
-      switchToVersion: "tools.columns.switchToVersion",
+      use: "tools.columns.use",
       actions: "tools.columns.actions",
     },
     empty: {
@@ -146,15 +146,12 @@ export const I18N_KEYS = {
       body: "tools.error.body",
     },
     filterPlaceholder: "tools.filterPlaceholder",
-    switchVersion: {
-      placeholder: "tools.switchVersion.placeholder",
-    },
     actions: {
       install: "tools.actions.install",
       uninstall: "tools.actions.uninstall",
       unuse: "tools.actions.unuse",
       upgrade: "tools.actions.upgrade",
-      switch: "tools.actions.switch",
+      use: "tools.actions.use",
       link: "tools.actions.link",
     },
     confirm: {

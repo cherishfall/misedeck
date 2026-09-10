@@ -4,7 +4,7 @@
 //                              backend, source, latest, actions)
 //   * mise outdated --json   → the Latest column's current → latest
 //                              path on the rows that appear in the map
-//   * mise use -g            → switch a tool's requested version
+//   * mise use -g            → use an installed version (dropdown, #132)
 //   * mise install -g        → install a new tool/version
 //   * mise unuse             → remove a tool (config request + installs);
 //                              orphans run `mise uninstall --all` (ADR-0008)
@@ -65,6 +65,7 @@ import {
   useExecutionContext,
 } from "../../components/ExecutionPanel";
 import type { ExecutionStatus } from "../../components/ExecutionPanel";
+import { FloatingMenu } from "../../components/FloatingMenu";
 
 import styles from "./ToolsPage.module.css";
 
@@ -519,10 +520,9 @@ export function ToolsPage() {
     [r.tool, r.version, r.requested, r.backend ?? "", r.source, r.latest].join("\n"),
   );
 
-  // Datalist data (issue #109): the switch-version inputs list the
-  // tool's installed versions + latest; the query inputs list the known
-  // tool names. Both come from the live `mise ls` / `mise outdated`
-  // reads already on the page.
+  // The use-version dropdown (issue #132) lists exactly the tool's
+  // installed versions from the live `mise ls` read — picking one runs
+  // `mise use`, and a version not on disk can never be submitted.
   const versionsByTool = useMemo(() => {
     const map = new Map<string, string[]>();
     for (const { tool, items } of tools.data ?? []) {
@@ -645,26 +645,19 @@ export function ToolsPage() {
         ),
     },
     {
-      key: "switchToVersion",
-      header: t(I18N_KEYS.tools.columns.switchToVersion),
-      width: "200px",
-      cell: (r) => {
-        const installed = versionsByTool.get(r.tool) ?? [];
-        const suggestions =
-          r.outdated && r.latest && !installed.includes(r.latest)
-            ? [...installed, r.latest]
-            : installed;
-        return (
-          <SwitchVersionCell
-            row={r}
-            disabled={isRunning}
-            versionSuggestions={suggestions}
-            onSwitch={(version) =>
-              void runMutation((cwd) => miseUseArgs(r.tool, version, cwd))
-            }
-          />
-        );
-      },
+      key: "use",
+      header: t(I18N_KEYS.tools.columns.use),
+      width: "140px",
+      cell: (r) => (
+        <UseVersionCell
+          row={r}
+          disabled={isRunning}
+          versions={versionsByTool.get(r.tool) ?? []}
+          onUse={(version) =>
+            void runMutation((cwd) => miseUseArgs(r.tool, version, cwd))
+          }
+        />
+      ),
     },
     {
       key: "actions",
@@ -873,63 +866,78 @@ function ToolsLoading() {
 
 // ---------- Row actions ----------
 
-interface SwitchVersionCellProps {
+interface UseVersionCellProps {
   row: ToolRow;
   disabled: boolean;
-  /** The tool's installed versions + latest, offered as completion on
-   *  the version input (issue #109). */
-  versionSuggestions: string[];
-  onSwitch: (version: string) => void;
+  /** The tool's installed versions, in the order `mise ls` reports them. */
+  versions: string[];
+  onUse: (version: string) => void;
 }
 
 /**
- * The per-row "switch to version" editor: a narrow version input +
- * Save-style Switch button dispatching `mise use [-g] <tool>@<version>`.
- * Lives in its own labeled column so the header sits exactly over the
- * input (issue #57). Enter submits via the shared KeyForm pattern and
- * Escape reverts the input to the row's current version (issue #109).
+ * The per-row Use control (issue #132): a FloatingMenu dropdown listing
+ * the tool's installed versions, dispatching `mise use [-g]
+ * <tool>@<version>` on selection. No typing, no datalist — a version
+ * that does not exist on disk can never be submitted; installing a new
+ * version is the version-query sections' job (#133). The current
+ * version is marked (`aria-current`) and disabled, since re-selecting
+ * it would be a no-op. Rendered through the shared FloatingMenu
+ * primitive, so the menu portals out of the table's scroller and
+ * follows the WAI-ARIA Menu Button Pattern. Menu triggers carry no
+ * caret glyph (beta8).
  */
-function SwitchVersionCell({ row, disabled, versionSuggestions, onSwitch }: SwitchVersionCellProps) {
+function UseVersionCell({ row, disabled, versions, onUse }: UseVersionCellProps) {
   const { t } = useTranslation();
-  const [version, setVersion] = useState(row.version);
-  // Reset local state when the row's underlying version changes
-  // (e.g. after a successful switch or a refetch).
-  useEffect(() => {
-    setVersion(row.version);
-  }, [row.version]);
-  const dirty = version !== row.version;
-  const listId = `tools-switch-versions-${row.tool}`;
-
+  const [open, setOpen] = useState(false);
   return (
-    <KeyForm
-      className={styles.cellSwitch}
-      onSubmit={() => onSwitch(version)}
-      onRevert={() => setVersion(row.version)}
-      submitDisabled={disabled || !dirty || version.length === 0}
+    <FloatingMenu
+      open={open}
+      onOpenChange={setOpen}
+      placement="down"
+      align="start"
+      aria-label={t(I18N_KEYS.tools.columns.use)}
+      trigger={(tp) => (
+        <Tooltip text={row.version}>
+          <button
+            type="button"
+            className={styles.useTrigger}
+            onClick={tp.onClick}
+            aria-haspopup={tp["aria-haspopup"]}
+            aria-expanded={tp["aria-expanded"]}
+            aria-controls={tp["aria-controls"]}
+            ref={tp.ref}
+            disabled={disabled}
+            data-testid={`tools-use-${row.tool}`}
+          >
+            {row.version}
+          </button>
+        </Tooltip>
+      )}
     >
-      <input
-        type="text"
-        className={styles.input}
-        value={version}
-        onChange={(e) => setVersion(e.target.value)}
-        placeholder={t(I18N_KEYS.tools.switchVersion.placeholder)}
-        disabled={disabled}
-        data-testid={`tools-switch-version-${row.tool}`}
-        spellCheck={false}
-        autoComplete="off"
-        list={listId}
-      />
-      <Suggestions id={listId} options={versionSuggestions} />
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={() => onSwitch(version)}
-        disabled={disabled || !dirty || version.length === 0}
-        data-testid={`tools-switch-${row.tool}`}
-      >
-        {t(I18N_KEYS.tools.actions.switch)}
-      </Button>
-    </KeyForm>
+      <div className={styles.useMenu}>
+        {versions.map((version) => {
+          const current = version === row.version;
+          return (
+            <button
+              key={version}
+              type="button"
+              className={current ? styles.useOptionCurrent : styles.useOption}
+              role="menuitem"
+              aria-current={current ? "true" : undefined}
+              disabled={current}
+              tabIndex={-1}
+              onClick={() => {
+                setOpen(false);
+                onUse(version);
+              }}
+              data-testid={`tools-use-${row.tool}-${version}`}
+            >
+              {version}
+            </button>
+          );
+        })}
+      </div>
+    </FloatingMenu>
   );
 }
 
@@ -945,8 +953,8 @@ interface RowActionsProps {
  * Upgrade button (`mise upgrade --bump <tool>`); Unuse (ADR-0008,
  * issue #131) dispatches `mise unuse <tool>` — or `mise uninstall
  * --all <tool>` for an orphan installation — via the confirmation
- * dialog. Version switching lives in its own column
- * (SwitchVersionCell, issue #57).
+ * dialog. Version selection lives in its own column
+ * (UseVersionCell, issue #132).
  */
 function RowActions({
   row,
