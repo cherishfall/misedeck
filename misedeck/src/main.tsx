@@ -11,6 +11,7 @@ import { DirectoryProvider } from "./state/directoryContext";
 import { TrustProvider } from "./state/trustContext";
 import { ActivationProvider } from "./state/activationContext";
 import { ExecutionProvider } from "./components/ExecutionPanel";
+import { PageRefreshProvider } from "./components/PageShell/pageRefresh";
 import { HomePage } from "./pages/HomePage/HomePage";
 import { ToolsPage } from "./pages/ToolsPage/ToolsPage";
 import { DirectoryPreview } from "./pages/DirectoryPreview/DirectoryPreview";
@@ -39,21 +40,27 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             <ActivationProvider>
               <ExecutionProvider>
                 <BrowserRouter>
-                  <Routes>
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/tools" element={<ToolsPage />} />
-                    <Route path="/tasks" element={<TasksPage />} />
-                    <Route path="/preview" element={<DirectoryPreview />} />
-                    <Route path="/env" element={<EnvPage />} />
-                    {/* The Config editor page is retired (#43): [tools]
-                        editing lives on Tools, [env] editing on Env, and
-                        config-file visibility on Preview. Redirect the old
-                        route for one release. */}
-                    <Route path="/config" element={<Navigate to="/preview" replace />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/doctor" element={<DoctorPage />} />
-                    <Route path="/plugins" element={<PluginsPage />} />
-                  </Routes>
+                  {/* PageRefreshProvider sits above the router because each
+                      page renders PageShell inside itself — a provider owned
+                      by PageShell would be a descendant of the page that
+                      registers (issue #130). */}
+                  <PageRefreshProvider>
+                    <Routes>
+                      <Route path="/" element={<HomePage />} />
+                      <Route path="/tools" element={<ToolsPage />} />
+                      <Route path="/tasks" element={<TasksPage />} />
+                      <Route path="/preview" element={<DirectoryPreview />} />
+                      <Route path="/env" element={<EnvPage />} />
+                      {/* The Config editor page is retired (#43): [tools]
+                          editing lives on Tools, [env] editing on Env, and
+                          config-file visibility on Preview. Redirect the old
+                          route for one release. */}
+                      <Route path="/config" element={<Navigate to="/preview" replace />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/doctor" element={<DoctorPage />} />
+                      <Route path="/plugins" element={<PluginsPage />} />
+                    </Routes>
+                  </PageRefreshProvider>
                 </BrowserRouter>
               </ExecutionProvider>
             </ActivationProvider>

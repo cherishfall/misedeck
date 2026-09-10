@@ -20,6 +20,7 @@ React UI (src/)
 - **Trust**（issue #6）：对不受信任目录的只读视图以 `MISE_SAFE=1` 运行；变更或求值环境变量的操作先检查信任状态，并把用户引导到信任横幅。
 - **i18n**：UI 文案存放在 en + zh-CN 资源文件中，按字符串 ID 索引；组件消费这些键。
 - **前端状态**：服务端状态（mise 数据）按目录上下文获取，并按 (context, query) 缓存；UI 状态（选中的标签页、面板开合）保持本地。除最近目录列表和用户偏好外不做持久化。
+- **Chrome 级 context**（issue #130）：每个页面都在自身内部渲染 `PageShell`，因此由 `PageShell` 持有的 React context 位于渲染它的页面组件*之下*，该页面永远消费不到它。面向页面注册能力的 provider（如工具栏刷新按钮的 `PageRefreshProvider`）放在应用根部、路由之上；`PageShell` 及其 chrome 只消费 context，绝不持有它。
 
 ## Data shapes
 

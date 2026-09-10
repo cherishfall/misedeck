@@ -20,6 +20,7 @@ React UI (src/)
 - **Trust** (issue #6): read-only views of untrusted directories run with `MISE_SAFE=1`; mutating or env-evaluating actions check trust first and route the user to the trust banner.
 - **i18n**: UI copy lives in en + zh-CN resource files keyed by string ID; components consume keys.
 - **Frontend state**: server state (mise data) is fetched per directory context and cached by (context, query); UI state (selected tab, panel open) stays local. No persistence beyond recent-directory list and user preferences.
+- **Chrome-level contexts** (issue #130): each page renders `PageShell` inside itself, so React context owned by `PageShell` sits *below* the page component that renders it and can never be consumed by that page. Providers for page-registered capabilities (e.g. `PageRefreshProvider` for the toolbar refresh button) live above the router in the app root; `PageShell` and its chrome consume the context, they never own it.
 
 ## Data shapes
 
