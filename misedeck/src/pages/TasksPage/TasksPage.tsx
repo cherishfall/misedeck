@@ -188,9 +188,11 @@ export function TasksPage() {
   }, [execState.status, cwd, queryClient]);
 
   // The execution panel reducer is the single source of truth
-  // for "is a write in flight". A single `running` flag feeds
-  // every action button so the user can't fire two mutations
-  // at once.
+  // for "is a command in flight". Run-locking (issue #135) covers
+  // only command-firing controls — Run, Open in editor, and the
+  // edit form's Save. Browsing and drafting never lock: the row
+  // Edit button opens an inline draft, and the draft's inputs and
+  // Cancel stay editable through a running command.
   const isRunning = execState.status === "running";
 
   // Top-toolbar refresh (issue #98).
@@ -463,7 +465,6 @@ export function TasksPage() {
             variant="secondary"
             size="sm"
             onClick={() => beginEdit(r.name)}
-            disabled={isRunning}
             data-testid={`tasks-edit-${r.name}`}
           >
             {t(I18N_KEYS.tasks.editButton)}
@@ -633,6 +634,11 @@ function TasksLoading() {
  * `mise tasks add <name> [--depends ...] -- <run>` through
  * the execution panel; the trust guard is applied by the
  * page's `saveTask` so the form is local state only.
+ *
+ * Run-locking (issue #135): `disabled` gates only the Save /
+ * submit control — the command-firing part. The draft inputs
+ * and Cancel stay editable through a running command because
+ * drafting is never locked.
  */
 function EditForm({
   task,
@@ -707,7 +713,6 @@ function EditForm({
           value={run}
           onChange={(e) => setRun(e.target.value)}
           placeholder={t(I18N_KEYS.tasks.editForm.runPlaceholder)}
-          disabled={disabled}
           spellCheck={false}
           autoComplete="off"
         />
@@ -725,7 +730,6 @@ function EditForm({
           value={dependsText}
           onChange={(e) => setDependsText(e.target.value)}
           placeholder={t(I18N_KEYS.tasks.editForm.dependsPlaceholder)}
-          disabled={disabled}
           spellCheck={false}
           autoComplete="off"
           list={dependsListId}
@@ -746,7 +750,6 @@ function EditForm({
           variant="ghost"
           size="sm"
           onClick={onCancel}
-          disabled={disabled}
           data-testid={`tasks-edit-cancel-${task.name}`}
         >
           {t(I18N_KEYS.tasks.editForm.cancelButton)}
