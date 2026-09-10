@@ -17,7 +17,7 @@ This document is a continuation marker between autonomous driver sessions.
 | #124 shared CommandHint + drop internal flags | `614d71f` | new `lint:command-hint` guard; no component test (no test runner) |
 | #125 self-update `--yes` + GUI ConfirmDialog | `c05cb99` | root cause: stdin EOF on `[Y/n]` prompt; new Rust test suite `tests/install.rs` |
 | #126 spacing tokens + check-css-spacing | `5692f50` | 23 literals (ticket said 24); 4 half-step `--space-*` tokens added; **two 7px→6px judgment calls (Badge, DoctorPage warningDot) — 1px visual shift, owner to eyeball** |
-| #127 closing sweep | `ab5b5b0` | fixed 4 same-class small-text residue sites; full clean-check report on the issue; **flagged (unticketed): 2 untokenized letter-spacing literals (Button 0.04em, ConfirmDialog 0.02em) — no tracking-token rule exists** |
+| #127 closing sweep | `ab5b5b0` | fixed 4 same-class small-text residue sites; full clean-check report on the issue; **flagged letter-spacing finding RESOLVED (`c1a017e`): `--tracking-button`/`--tracking-title` tokens + `lint:css-tracking` guard** |
 
 **Open SPEC parents awaiting owner visual verification:** #45, #61, #65, #74, #86, #97, **#119** (new — verify against beta.10).
 
