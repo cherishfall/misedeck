@@ -490,6 +490,7 @@
     "statusRunning": "运行中",
     "statusOk": "成功 · {{duration}}s",
     "statusFailed": "失败 ({{duration}}s, 退出码 {{code}})",
+    "statusFailedNoCode": "失败 ({{duration}}s)",
     "statusCancelled": "已取消",
     "copy": "复制命令",
     "copyHint": "复制确切命令到剪贴板",

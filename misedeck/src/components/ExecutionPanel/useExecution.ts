@@ -55,7 +55,10 @@ export interface ExecutionState {
   kind: ExecutionKind;
   request: RunRequest | null;
   lines: LogLine[];
-  exitCode: number;
+  /** Exit code reported by this run's Exit stream event; `null` until the
+   *  process actually exits, so a failure that never produced one (spawn
+   *  error, IPC validation failure) cannot display a stale code (#129). */
+  exitCode: number | null;
   durationMs: number;
   error: AppError | null;
   /** Post-update version string when `kind === "selfUpdate"`. */
@@ -74,7 +77,7 @@ const initial: ExecutionState = {
   kind: "mise",
   request: null,
   lines: [],
-  exitCode: 0,
+  exitCode: null,
   durationMs: 0,
   error: null,
   newVersion: null,

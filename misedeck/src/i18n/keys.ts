@@ -65,6 +65,7 @@ export const I18N_KEYS = {
     statusRunning: "execution.statusRunning",
     statusOk: "execution.statusOk",
     statusFailed: "execution.statusFailed",
+    statusFailedNoCode: "execution.statusFailedNoCode",
     statusCancelled: "execution.statusCancelled",
     copy: "execution.copy",
     copyHint: "execution.copyHint",

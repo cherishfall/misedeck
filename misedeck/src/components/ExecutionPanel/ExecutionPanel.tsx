@@ -186,10 +186,14 @@ export function ExecutionPanel() {
               <>
                 <span className={styles.statusDot} data-tone="fail" />
                 <span className={styles.statusLabel}>
-                  {t(I18N_KEYS.execution.statusFailed, {
-                    duration: (state.durationMs / 1000).toFixed(1),
-                    code: state.exitCode,
-                  })}
+                  {state.exitCode === null
+                    ? t(I18N_KEYS.execution.statusFailedNoCode, {
+                        duration: (state.durationMs / 1000).toFixed(1),
+                      })
+                    : t(I18N_KEYS.execution.statusFailed, {
+                        duration: (state.durationMs / 1000).toFixed(1),
+                        code: state.exitCode,
+                      })}
                 </span>
               </>
             )}

@@ -180,17 +180,17 @@ pub enum RunCommandResult {
 }
 
 /// Result of a streaming install / self-update run. The success variant
-/// carries the post-run outcome (the streaming events have already
-/// been delivered via the channel); the error variant carries the
-/// structured `AppError` for the UI to render. The success variant
-/// flattens the outcome fields so the JS side sees a single object
-/// with `stdout`, `stderr`, `exitCode`, `durationMs`, `timedOut` —
-/// the same shape `RunCommandResult` uses.
+/// carries the post-run `outcome` nested under its own key (the streaming
+/// events have already been delivered via the channel); the error variant
+/// carries the structured `AppError` for the UI to render. The wire shape
+/// is `{kind:"ok", outcome:{…}, newVersion?}` — exactly the
+/// `RunCommandResult::Ok` shape the frontend validator accepts, plus the
+/// optional post-update version (issue #129: an earlier `#[serde(flatten)]`
+/// here broke that contract and rendered successful runs as failures).
 #[derive(Debug, Serialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum InstallCommandResult {
     Ok {
-        #[serde(flatten)]
         outcome: InstallOutcome,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         new_version: Option<String>,

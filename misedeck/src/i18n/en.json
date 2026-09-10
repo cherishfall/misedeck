@@ -490,6 +490,7 @@
     "statusRunning": "running",
     "statusOk": "ok · {{duration}}s",
     "statusFailed": "failed ({{duration}}s, exit {{code}})",
+    "statusFailedNoCode": "failed ({{duration}}s)",
     "statusCancelled": "cancelled",
     "copy": "Copy command",
     "copyHint": "Copy the exact command to your clipboard",
