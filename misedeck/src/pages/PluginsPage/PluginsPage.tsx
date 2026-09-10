@@ -117,7 +117,6 @@ export function PluginsPage() {
           variant="danger"
           size="sm"
           onClick={() => setPendingUninstall(p.name)}
-          disabled={isRunning}
           data-testid={`plugins-uninstall-${p.name}`}
         >
           {t(I18N_KEYS.plugins.actions.uninstall)}

@@ -865,7 +865,6 @@ function RowActions({
         variant="danger"
         size="sm"
         onClick={onUnuse}
-        disabled={disabled}
         data-testid={`tools-unuse-${row.tool}`}
       >
         {t(I18N_KEYS.tools.actions.unuse)}

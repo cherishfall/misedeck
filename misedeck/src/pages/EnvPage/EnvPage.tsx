@@ -398,9 +398,10 @@ function EnvRowActions({
   cwd: string | null;
   onWrite: (builder: (cwd: string | null) => string[]) => void | Promise<void>;
   /** True while a foreground command runs. Run-locking (issue #135)
-   *  gates only command-firing controls — the draft's Save / submit
-   *  and the Remove button that leads to `mise unset`. Opening and
-   *  editing the draft (Edit, inputs, Cancel) never locks. */
+   *  gates only command-firing controls — the draft's Save / submit.
+   *  Opening and editing the draft (Edit, inputs, Cancel) never locks,
+   *  and neither does Remove: it only opens the confirm dialog, whose
+   *  own Confirm button is run-aware (see ConfirmDialog). */
   disabled: boolean;
 }) {
   const { t } = useTranslation();
@@ -506,7 +507,6 @@ function EnvRowActions({
         variant="danger"
         size="sm"
         onClick={() => setConfirmingRemove(true)}
-        disabled={disabled}
         data-testid={`env-remove-${row.name}`}
       >
         {t(I18N_KEYS.env.removeButton)}

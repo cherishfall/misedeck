@@ -60,8 +60,9 @@ interface VersionCenterProps {
    *  read — no extra call is needed for the installed sub-list. */
   installed: MiseLsItem[];
   /** True while a foreground command runs; the command-firing buttons
-   *  (Use / Install only / Uninstall) are disabled. Browsing — the
-   *  filter and pager — is never run-locked (issue #135). */
+   *  (Use / Install only) are disabled. Browsing — the filter and
+   *  pager — is never run-locked (issue #135), and neither is
+   *  Uninstall: it only opens the page's run-aware confirm dialog. */
   disabled: boolean;
   onUse: (version: string) => void;
   onInstallOnly: (version: string) => void;
@@ -167,7 +168,6 @@ export function VersionCenter({
             <Button
               variant="danger"
               size="sm"
-              disabled={disabled}
               onClick={() => onUninstall(r.version)}
               data-testid={`center-installed-uninstall-${r.version}`}
             >

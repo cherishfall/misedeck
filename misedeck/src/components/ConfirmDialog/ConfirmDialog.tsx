@@ -11,10 +11,18 @@
 // The overlay renders inside the app window (never as a separate OS
 // window, per the popover rule). Escape and a backdrop click cancel;
 // the confirm button autofocuses on open for keyboard-first operation.
+//
+// The dialog is run-aware (issue #135): it reads the execution context
+// itself, and while a foreground command runs its Confirm button locks —
+// confirming would only hit the runner's single-flight guard as a silent
+// no-op. Cancel (button, Escape, backdrop) always stays enabled. Because
+// the lock lives here, the buttons that merely *open* a confirm dialog
+// are not command-firing controls and never run-lock.
 
 import { useEffect, type ReactNode } from "react";
 
 import { Button } from "../Button/Button";
+import { useExecutionContext } from "../ExecutionPanel";
 import styles from "./ConfirmDialog.module.css";
 
 export interface ConfirmDialogProps {
@@ -50,6 +58,8 @@ export function ConfirmDialog({
   onCancel,
   children,
 }: ConfirmDialogProps) {
+  const { state: execState } = useExecutionContext();
+  const running = execState.status === "running";
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -91,6 +101,7 @@ export function ConfirmDialog({
             variant={danger ? "danger" : "primary"}
             size="sm"
             autoFocus
+            disabled={running}
             onClick={onConfirm}
             data-testid="confirm-dialog-confirm"
           >
