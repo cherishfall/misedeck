@@ -49,3 +49,19 @@ _Avoid_: project, workspace, scope switcher
 **Shims**（垫片）:
 `~/.local/share/mise/shims` 下的可执行文件 —— 适合 IDE、CI 和 GUI 启动的进程的激活模式，与交互式 shell 激活相对。
 _Avoid_: symlinks, wrappers
+
+**Use**（使用）:
+`mise use <tool>@<version>` —— 使用一个 Tool 版本：缺失则自动安装，并把请求写入 Config file。首要的写操作；只安装不使用是例外。UI 文案："Use" / 使用。
+_Avoid_: enable, activate, set as default
+
+**Unuse**（卸载）:
+`mise unuse <tool>` —— 将 Tool 从 Config file 移除，并清理不再被引用的安装。这是真正的工具级移除；`mise uninstall` 只删文件。见 ADR-0008。UI 文案："Unuse" / 卸载。
+_Avoid_: uninstall, remove, delete（工具级）
+
+**Install**（仅安装）:
+`mise install <tool>@<version>` —— 只下载 Tool 版本的文件；不写 Config file，因此仅此一步 Tool 不会出现在 PATH 上。UI 文案："Install only" / 仅安装。
+_Avoid_: setup
+
+**Uninstall**（删除此版本）:
+`mise uninstall <tool>@<version>` —— 只删除某个已安装 Tool 版本的文件；Config file 中的请求保留，因此仍被请求的版本会在下次 install 时被装回。UI 文案："Uninstall" / 删除此版本。
+_Avoid_: remove, delete（版本级）

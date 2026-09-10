@@ -49,3 +49,19 @@ _Avoid_: project, workspace, scope switcher
 **Shims**:
 `~/.local/share/mise/shims` executables — the activation mode suited to IDEs, CI, and GUI-spawned processes, as opposed to interactive shell activation.
 _Avoid_: symlinks, wrappers
+
+**Use**:
+`mise use <tool>@<version>` — activate a Tool version: installs it if missing and writes the request to the Config file. The primary mutation; installing without using is the exception. UI copy: "Use" / 使用.
+_Avoid_: enable, activate, set as default
+
+**Unuse**:
+`mise unuse <tool>` — remove a Tool from the Config file and prune installations no longer referenced. The real tool-level removal; `mise uninstall` only deletes files. See ADR-0008. UI copy: "Unuse" / 卸载.
+_Avoid_: uninstall, remove, delete (at tool level)
+
+**Install**:
+`mise install <tool>@<version>` — download a Tool version's files only; does not write the Config file, so the Tool is not on PATH from this alone. UI copy: "Install only" / 仅安装.
+_Avoid_: setup
+
+**Uninstall**:
+`mise uninstall <tool>@<version>` — delete one installed Tool version's files only; the Config file keeps its request, so a still-requested version will be reinstalled on the next install. UI copy: "Uninstall" / 删除此版本.
+_Avoid_: remove, delete (at version level)
