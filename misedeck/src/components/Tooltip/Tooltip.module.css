@@ -4,10 +4,18 @@
  * animation — visual-language.md permits only the two ambient motions. */
 
 .trigger {
-  /* Inline wrapper so the cell's ellipsis styles stay on the data span;
-   * min-width: 0 lets it shrink inside flex cells. */
-  display: inline;
+  /* Flex-safe wrapper (issue #142): inline-flex keeps the trigger in
+   * inline flow — its baseline is the wrapped content's baseline, so
+   * text sharing the line is unaffected — while inside a flex row it
+   * blockifies into a flex item. min-width: 0 + max-width: 100% let it
+   * shrink to fit instead of overflowing, and the wrapped span becomes
+   * a real flex item again, so its own flex/ellipsis constraints apply.
+   * A plain inline wrapper silently disabled those constraints: inline
+   * boxes ignore overflow, and the span never became the flex item the
+   * call-site CSS was written for. */
+  display: inline-flex;
   min-width: 0;
+  max-width: 100%;
 }
 
 .layer {
