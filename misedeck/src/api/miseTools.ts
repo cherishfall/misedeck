@@ -19,6 +19,8 @@ import type {
   SettingsItem,
 } from "../types/tauri";
 
+import { normalizePathForCompare } from "../utils/paths";
+
 function asString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
@@ -274,9 +276,11 @@ export function parseEnvPayload(value: unknown): EnvEntry[] {
 function isGlobalConfigPath(path: string): boolean {
   // mise's global config path is conventionally
   // `~/.config/mise/config.toml`; the extended source reports the
-  // absolute path. Match the tail so we don't depend on the user's
-  // home directory.
-  return path.endsWith(".config/mise/config.toml") || path.endsWith("/mise/config.toml");
+  // absolute path. Match the tail (separator-normalized so Windows
+  // backslash sources classify too, issue #159) so we don't depend on
+  // the user's home directory.
+  const normalized = normalizePathForCompare(path, { caseInsensitive: false });
+  return normalized.endsWith(".config/mise/config.toml") || normalized.endsWith("/mise/config.toml");
 }
 
 /**

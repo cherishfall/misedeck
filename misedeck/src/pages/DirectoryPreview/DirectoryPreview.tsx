@@ -48,6 +48,7 @@ import {
   useParsedToolsList,
   useLockfile,
 } from "../../hooks/useToolsList";
+import { isPathUnder } from "../../utils/paths";
 import {
   Badge,
   Button,
@@ -89,18 +90,16 @@ interface EnvRow {
  * global mise config, or from the project's mise.toml? We compare
  * `source.path` against the cwd: when the path is under the cwd, the
  * project is the source of truth; otherwise the global config (or
- * some other ancestor) is.
+ * some other ancestor) is. Separator- and case-normalized via the
+ * shared path util so Windows backslash paths classify correctly
+ * (issue #159).
  */
 function toolSourceKind(
   sourcePath: string | undefined,
   cwd: string,
 ): "global" | "project" {
   if (!sourcePath) return "global";
-  // A path is "project" if it lives under the cwd (or matches it
-  // exactly). Normalise the trailing slash so `/foo/bar/` matches
-  // `/foo/bar/mise.toml`.
-  const dir = cwd.endsWith("/") ? cwd : `${cwd}/`;
-  return sourcePath.startsWith(dir) ? "project" : "global";
+  return isPathUnder(cwd, sourcePath) ? "project" : "global";
 }
 
 /** Map a tool's source category to the badge variant. */
