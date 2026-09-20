@@ -182,7 +182,7 @@
     "title": "Directory Overview",
     "hint": "Resolved tools, env, config files, and lockfile for the current directory.",
     "hintGlobal": "Resolved env, config files, and lockfile for Global mode.",
-    "commandHint": "mise outdated · mise trust · mise -C <dir> ls · mise env · mise config",
+    "commandHint": "mise trust · mise -C <dir> ls · mise env · mise config",
     "nav": "Directory Overview",
     "empty": {
       "body": "The env, config, and lockfile sections already show the global resolution; this list is directory-scoped. Choose a directory to see what `mise -C <dir> ls` reports there.",

@@ -45,7 +45,6 @@ import {
   useConfigFiles,
   useParsedEnv,
   useParsedGlobalEnv,
-  useParsedOutdatedTools,
   useParsedToolsList,
   useLockfile,
 } from "../../hooks/useToolsList";
@@ -55,7 +54,6 @@ import {
   CommandHint,
   EmptyState,
   ListLoading,
-  OutdatedHint,
   PageShell,
   Table,
   type TableColumn,
@@ -153,7 +151,6 @@ export function DirectoryPreview() {
   });
 
   const tools = useParsedToolsList();
-  const outdated = useParsedOutdatedTools();
   const env = useParsedEnv();
   const globalEnv = useParsedGlobalEnv();
   const lockfile = useLockfile();
@@ -173,7 +170,6 @@ export function DirectoryPreview() {
   // stable across the detect / Global / directory states.
   const onRefresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
-    void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "env", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "lockfile", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "config", cwd] });
@@ -352,10 +348,6 @@ export function DirectoryPreview() {
             {t(cwd === null ? I18N_KEYS.preview.hintGlobal : I18N_KEYS.preview.hint)}
           </p>
         </header>
-
-        <div className={styles.toolbar}>
-          <OutdatedHint count={outdated.data == null ? null : outdated.data.length} />
-        </div>
 
         {/* Trust banner (issues #25 / #141) — shared component; the
             one-click Trust action routes through the execution

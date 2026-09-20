@@ -182,7 +182,7 @@
     "title": "目录概览",
     "hint": "当前目录解析出的工具、环境变量、配置文件与 lockfile。",
     "hintGlobal": "全局模式下解析出的环境变量、配置文件与 lockfile。",
-    "commandHint": "mise outdated · mise trust · mise -C <dir> ls · mise env · mise config",
+    "commandHint": "mise trust · mise -C <dir> ls · mise env · mise config",
     "nav": "目录概览",
     "empty": {
       "body": "环境变量、配置文件与 lockfile 各节已展示全局解析结果；此列表按目录解析。选择一个目录，查看 `mise -C <dir> ls` 在该目录的结果。",
