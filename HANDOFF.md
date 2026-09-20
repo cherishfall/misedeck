@@ -2,23 +2,44 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-20 — beta11 batch in progress, 3/27 tickets done)
+## CURRENT STATE (2026-09-21 — beta11 batch COMPLETE, all 26 work tickets closed)
 
-**A new feedback round landed and was fully settled by the owner on 2026-09-20**: SPEC parent **#139** (beta11 反馈周期修复 spec) + 27 work tickets **#140–#166**, all `ready-for-agent`, no inter-blockers. Source of truth: `docs/feedback/beta11-feedback-scratch.md` (committed `53a06e7`, all five issues 定稿). Driver mode: one ticket per subagent, commit to master referencing `#N`, push (proxy `git -c http.proxy=http://127.0.0.1:7890 push` when plain push 502s), close issue with "NOT visually verified" note. No visual verification by agents, ever.
+**SPEC parent #139 stays OPEN awaiting the owner's manual visual verification** (same protocol as previous betas). The beta11 batch — tickets **#140–#164, #166** (there is no #165) — is fully implemented, committed to master, and pushed. Every ticket: `npm run ci` green (cargo test green where Rust touched, incl. new frontend node:test baseline from #159), **NOT visually verified — owner verifies manually**; each issue closed with its manual-verify list.
 
-**Done so far this session (each `npm run ci` green, NOT visually verified):**
+**Driver mode this batch:** one ticket per subagent; commit to master referencing `#N`; push via proxy when plain push fails (`git -c http.proxy=http://127.0.0.1:7890 push origin master`); close issue with "NOT visually verified" note. A 5-hour usage-limit 403 interrupted #143 once; handoff was written per stop-condition and the user resumed — no work was lost.
 
 | Ticket | Commit | Notes |
 | --- | --- | --- |
-| #140 产品立场固化 | `397cfa9` | product-logic.md both locales: 「不引导追新动线」(batch upgrade rejected, dev-tools-stability stance) + 插件级更新 v1 不承接 |
-| #141 共享 TrustBanner | `bed82d4` | new `components/TrustBanner/` (owns useTrust/useTrustAction wiring + `useTrustBannerFocus`); 4 page copies deleted; ToolsPage mounts it (3-a Blocker fixed — blocked mutations focus banner); trustContext clears lastResult on cwd change (stale-note fix); TasksPage adopts shared boxed note style (owner eyeball) |
-| #142 Tooltip flex 安全模式 + 工具栏 | `25a05b4` | Tooltip `.trigger` inline→inline-flex (component-layer fix, 33 call sites audited, one CSS line); DirectoryIndicator `.row` flex-wrap; ui-ux-rules Chrome 条「actions 窄窗换行」双语 |
+| #140 产品立场固化 | `397cfa9` | product-logic.md both locales: 「不引导追新动线」+ 插件级更新 v1 不承接 |
+| #141 共享 TrustBanner | `bed82d4` | `components/TrustBanner/` (+`useTrustBannerFocus`); 4 copies deleted; ToolsPage mounts it (3-a fixed); cwd-change clears stale trust note |
+| #142 Tooltip flex + 工具栏 | `25a05b4` | Tooltip `.trigger` inline-flex (33 sites audited); `.row` flex-wrap; Chrome 条「actions 窄窗换行」双语 |
+| #143 ConfirmDialog 软折行 | `6182460` | `overflow-wrap: anywhere` one fix for 4 dialogs; panel header command gets full-text Tooltip; ui-ux-rules hint-vs-dialog 折行分场景条文双语 |
+| #144 成功确认条组件 | `cbc4f9c` | shared `SuccessBar` (Banner success tone, 4s auto-dismiss); ui-ux-rules :75-77 修订「成功页面内闭环、失败走面板」双语; ToolsPage 全部 mutation 接入 |
+| #145 确认条推广 | `682fb34` | Env/Tasks/Settings/Plugins/Home; `runSelfUpdate` returns result; TrustBanner 的 trust-ok note 换成 SuccessBar（修了毫秒级消失）；`trust.ok` key 退役 |
+| #146 列表级 loading 门 | `858c02e` | shared `ListLoading`（PageShell+ProgressDot+common.loading）；5 页统一门控；5 个 per-page Loading 组件删除；规则入 ui-ux-rules 双语 |
+| #147 假陈述扫改 | `075e9b4` | 12 keys（Settings 1 个按票留给 #162）；直接 invoke 页改「stderr 如下所示」；Tasks 两个 key 改条件式陈述；Doctor 一并扫（closing comment 注明） |
+| #148 操作列空白约定 | `aefa32a` | Env 只读行 dim "—"；操作列 360→220px；ui-ux-rules「空白操作格是 bug」条文双语 |
+| #149 分级排序+Enter 直提交 | `f3065fe` | tier 排序（exact>prefix>alias>description），slice 移到排序后；query==short 时 Enter 直接提交 |
+| #150 Registry 退役 | `a978d1d` | 4 处 UI 文案改「搜索工具」等；tools.hint 砍成一句；CONTEXT.md 词条加注（command/doc 词汇）；commandHint 的 `mise registry` 保留 |
+| #151 表格+版本中心列重构 | `340f1a0` | Version 单元格即 trigger（3-f 合并，owner 过目项）；最新列无 outdated 整列隐藏；请求版本列名；orphan 徽标+教学 Tooltip；active 行置灰删除按钮+Tooltip（2-f C）；CONTEXT.md orphan 词条 |
+| #152 per-action runners | `0f206f9` | 5 个 per-命令族 runner 替换页面级单飞锁；VersionCenter disabled 拆分；非派发控件全程可用 |
+| #153 Env/Settings 添加表单 | `6ecd3c7` | 成功清空；重名 ConfirmDialog；空值放开（`FOO=""`）；Env datalist 只留 config 键 |
+| #154 来源取值+Tooltip | `5ea4baa` | 当前目录/继承；Badge title→共享 Tooltip（Env+Preview）；Preview 补 isConfigSource |
+| #155 重命名竞态 | `5c0c723` | 双命令 ConfirmDialog（#155 起 ConfirmDialog 支持 `string[]`）；顺序执行（unset ok 才 set）；编辑名摘 datalist；值-only 保存也改成仅成功关闭 |
+| #156 sourcePath⇒可写 | `186e351` | parseEnvExtendedPayload 优先级翻转；徽标「当前目录 · rust」；tooltip 分纯注入/可覆盖两种真话；ui-ux-rules :35 修订双语；Preview flat 解析的限制 flagged 为后续票 |
+| #157 目录概览文案批次 | `043e2ab` | title/nav 改 "Directory Overview"；visual-language 标题层 Title Case 条文双语（修订 beta7）；mise.lock 出 hint、顺序按版面；Global 模式 hint 分开；configToggle 迁共享 Button；死 outdated 字段删 |
+| #158 outdated 整体移除 | `f886607` | Preview 的 outdated 查询/OutdatedHint/hint 条目全删；commandHint 同步；Tools 页不受影响 |
+| #159 Windows 路径比较 | `75003e3` | shared `utils/paths.ts`（normalize+isPathUnder，大小写折叠默认）；isGlobalConfigPath 同修；**新增前端测试基线**（`npm run test`，tsx+node:test，13 cases，进 ci；新增 devDep @types/node） |
+| #160 runner 护栏开口 | `09ba2ba` | `validate_run_args`：只拒含元字符的 flag token；run/set 值放行；新 tests/run_args.rs 9 cases（cargo 160 passed） |
+| #161 任务页新建+多行 run | `4f12a5b` | TaskForm 复用（create 可编辑名）；run textarea 按行 quote-aware 拆词（parseRunInput + 10 tests）；**顺带修复旧编辑每次抹掉 description 的 bug**；mise `shell_words::join` 上游限制（`&&` 会被引号化）已 flag owner |
+| #162 Settings 三修 | `86b70a1` | Unset danger+ConfirmDialog；范围感知（越出 unset→禁用+Tooltip，`--global` 在 CLI 不存在）；object 行只读；只读默认 Edit 展开迁移；settings ls 收编 runner（`settings_ls` 命令删除，ADR-0005 双语修订）；settings 的假陈述 key 一并修 |
+| #163 任务页修复批次 | `cc362c2` | useMemo 提前（rules-of-hooks）；hide 徽标死代码删；m2-m9 全修（复数、计数过滤口径、cellRun 省略、hint 加 config ls、只读名等）；「仅 ok 才关草稿」规则入 ui-ux-rules 双语；settings.count 同款复数缺口 flagged 未动 |
+| #164 插件页空态+安装入口 | `b40721b` | 空态「搜索工具」CTA；安装插件表单（name+git URL，live argv 预览，per-action 锁）；卸载弹窗补「工具文件保留在磁盘」；ADR-0008 补卸载作用域行双语；product-logic 两处漂移修双语 |
+| #166 诊断页+首页批次 | `631f992` | shell `activated: Option<bool>`（unknown→null，wire_shape 契约测试）；Doctor unknown 走 "—" 不出 Warn；CopyButton 迁移；Home：引导安装 run-lock+成功后 invalidate（不再叫用户重启）、RAW 默认折叠（disclosure）、死 #30 文案删；ui-ux-rules 新增两条数据诚实规则双语 |
 
-**Interrupted at:** #143 — subagent hit the 5-hour usage-limit 403 before touching anything (tree clean, HEAD `25a05b4` = remote). Handoff written per stop-condition; user resumed.
+**Owner's next moves:** (1) build & manually verify the whole beta11 batch against SPEC #139 (each closed issue carries its own manual-verify list; the notable eyeball items: #144/#145 SuccessBar look, #151 merged version-trigger + orphan badge placement, #157 config ghost button, #141 Tasks trust-note style, #162 Settings editor rest state, #161 textarea form); (2) close #139 when satisfied; (3) beta.12 release decision (procedure below — note #159 added a devDependency and `npm run test` step, both already in ci).
 
-**Remaining tickets (all unblocked, in order):** #143 ConfirmDialog 命令软折行（+ 执行面板头部命令 Tooltip 全文）→ #144 成功确认条组件 → #145 成功确认条推广 → #146 列表级 loading 门 → #147 假陈述文案全站扫改 → #148 操作列空白约定 → #149 候选分级排序+Enter 直提交 → #150 Registry 文案退役 → #151 工具表格与版本中心列重构 → #152 工具页 per-action runners → #153 Env/Settings 添加表单 → #154 Env/Preview 来源取值 → #155 Env 重命名竞态 → #156 Env sourcePath tooltip → #157 目录概览文案批次 → #158 目录概览 outdated 移除 → #159 Windows 路径比较 → #160 runner 护栏开口 → #161 任务页新建+多行 run → #162 Settings 三修 → #163 任务页修复批次 → #164 插件页空态+安装入口 → #165 诊断页修复批次 → #166 首页修复批次. SPEC #139 stays open for owner verification after all tickets close.
-
-**First action next session:** resume with #143 (`gh issue view 143` + scratch doc Issue 2-e), then continue down the list. Subagent briefing template: tell it to read AGENTS.md, docs/agents/{architecture,conventions,i18n}.md, docs/design/{ui-ux-rules,visual-language}.md, the issue body as spec, and the relevant scratch-doc section; ci = `npm run ci` only (cargo only if Rust touched); commit only ticket files; close issue with "NOT visually verified".
+**Follow-ups flagged on issues (not ticketed):** mise `tasks add` shell-words quoting blocks true `&&` chains/arrays upstream (#161); DirectoryPreview flat `mise env --json` can't distinguish config-requested tool vars — switching to `--json-extended` would make its tooltip truthful (#156); `settings.count` pluralization + filtered-count same class as #163 m5/m8; Settings row-editors' non-empty value ban (#153 Add-form-only by ticket); per-control-instance run locks vs per-command-family (#152 chose family, matches other pages).
 
 ---
 
