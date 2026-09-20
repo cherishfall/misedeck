@@ -303,7 +303,7 @@
   },
   "tasks": {
     "title": "Tasks",
-    "subtitle": "List, run, and edit the mise tasks for the active directory. Writes go through `mise tasks add` and stream into the panel.",
+    "subtitle": "List, run, create, and edit the mise tasks for the active directory. Writes go through `mise tasks add` and stream into the panel.",
     "filterPlaceholder": "Filter tasks…",
     "count": "{{count}} tasks",
     "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit",
@@ -317,7 +317,8 @@
     "empty": {
       "title": "No tasks",
       "body": "`mise tasks ls` returned no tasks here. Tasks come from the `[tasks]` table of a mise.toml in scope, or from executable files under `mise-tasks/`.",
-      "openConfig": "Open config file in editor"
+      "openConfig": "Open config file in editor",
+      "addTask": "Create task"
     },
     "runButton": "Run",
     "editButton": "Edit",
@@ -325,14 +326,18 @@
     "hiddenBadge": "hide",
     "editForm": {
       "title": "Edit task",
+      "addTitle": "New task",
+      "namePlaceholder": "task name",
       "runLabel": "Run command",
       "runPlaceholder": "e.g. npm run build",
+      "descriptionPlaceholder": "What this task does",
       "dependsLabel": "Depends on (comma-separated)",
       "dependsPlaceholder": "lint, test",
       "dependsHelp": "Each name is a task in the current directory's `mise.toml`. Separate with commas.",
       "saveButton": "Save",
       "cancelButton": "Cancel",
-      "runRequired": "A run command is required"
+      "runRequired": "A run command is required",
+      "nameRequired": "A task name is required"
     },
     "guard": {
       "untrustedBody": "Trust this directory before mutating its tasks."
@@ -349,7 +354,8 @@
       "body": "`mise tasks ls --json` did not return. Stderr is shown below."
     },
     "success": {
-      "saved": "Task {{name}} saved"
+      "saved": "Task {{name}} saved",
+      "added": "Task {{name}} added"
     }
   },
   "settings": {

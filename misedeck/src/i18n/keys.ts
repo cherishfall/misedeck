@@ -371,6 +371,7 @@ export const I18N_KEYS = {
       title: "tasks.empty.title",
       body: "tasks.empty.body",
       openConfig: "tasks.empty.openConfig",
+      addTask: "tasks.empty.addTask",
     },
     runButton: "tasks.runButton",
     editButton: "tasks.editButton",
@@ -378,14 +379,18 @@ export const I18N_KEYS = {
     hiddenBadge: "tasks.hiddenBadge",
     editForm: {
       title: "tasks.editForm.title",
+      addTitle: "tasks.editForm.addTitle",
+      namePlaceholder: "tasks.editForm.namePlaceholder",
       runLabel: "tasks.editForm.runLabel",
       runPlaceholder: "tasks.editForm.runPlaceholder",
+      descriptionPlaceholder: "tasks.editForm.descriptionPlaceholder",
       dependsLabel: "tasks.editForm.dependsLabel",
       dependsPlaceholder: "tasks.editForm.dependsPlaceholder",
       dependsHelp: "tasks.editForm.dependsHelp",
       saveButton: "tasks.editForm.saveButton",
       cancelButton: "tasks.editForm.cancelButton",
       runRequired: "tasks.editForm.runRequired",
+      nameRequired: "tasks.editForm.nameRequired",
     },
     guard: {
       untrustedBody: "tasks.guard.untrustedBody",
@@ -403,6 +408,7 @@ export const I18N_KEYS = {
     },
     success: {
       saved: "tasks.success.saved",
+      added: "tasks.success.added",
     },
   },
   settings: {

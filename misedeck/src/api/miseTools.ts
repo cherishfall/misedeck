@@ -450,6 +450,99 @@ export function parseDependsInput(text: string): string[] {
     .filter((s) => s.length > 0);
 }
 
+/** Split a multi-line run draft into shell words — the argv tokens
+ *  the `mise tasks add … -- <RUN>…` builder consumes (issue #161).
+ *  The form edits the task's `run` in a `<textarea>`, one command
+ *  per line; on save each line is split the way an interactive
+ *  shell would split it before launching a command (whitespace
+ *  separates words, single/double quotes group words and are
+ *  stripped, backslash escapes the next character). `mise tasks
+ *  add` re-quotes each word when it writes the TOML
+ *  (`shell_words::join`), so stripping quotes here still round-trips
+ *  the stored `run` string. Blank lines — including the trailing
+ *  newline a textarea accumulates — are dropped, and a line whose
+ *  quotes are unbalanced stays one literal word (mise quotes it
+ *  wholesale) rather than the save failing on a typo. */
+export function parseRunInput(text: string): string[] {
+  const words: string[] = [];
+  for (const line of text.split("\n")) {
+    words.push(...splitShellWords(line));
+  }
+  return words;
+}
+
+/** Split one line of a run draft into shell words. See
+ *  `parseRunInput` for the contract; this is the per-line state
+ *  machine so quote state never leaks across lines. An unbalanced
+ *  quote forfeits the split: the whole trimmed line comes back as
+ *  one literal word so no character the user typed is lost. */
+function splitShellWords(line: string): string[] {
+  const words: string[] = [];
+  let current = "";
+  let hasWord = false;
+  let quote: "'" | '"' | null = null;
+  let i = 0;
+  while (i < line.length) {
+    const ch = line[i];
+    if (quote === "'") {
+      if (ch === "'") quote = null;
+      else current += ch;
+      i += 1;
+      continue;
+    }
+    if (quote === '"') {
+      if (ch === '"') {
+        quote = null;
+        i += 1;
+        continue;
+      }
+      if (
+        ch === "\\" &&
+        i + 1 < line.length &&
+        ['$', "`", '"', "\\"].includes(line[i + 1])
+      ) {
+        current += line[i + 1];
+        i += 2;
+        continue;
+      }
+      current += ch;
+      i += 1;
+      continue;
+    }
+    if (ch === " " || ch === "\t" || ch === "\r") {
+      if (hasWord) {
+        words.push(current);
+        current = "";
+        hasWord = false;
+      }
+      i += 1;
+      continue;
+    }
+    if (ch === "'" || ch === '"') {
+      quote = ch;
+      hasWord = true;
+      i += 1;
+      continue;
+    }
+    if (ch === "\\" && i + 1 < line.length) {
+      current += line[i + 1];
+      hasWord = true;
+      i += 2;
+      continue;
+    }
+    current += ch;
+    hasWord = true;
+    i += 1;
+  }
+  if (quote !== null) {
+    // Unbalanced quote: keep the line verbatim as one word.
+    const trimmed = line.trim();
+    return trimmed.length > 0 ? [trimmed] : [];
+  }
+  if (hasWord) words.push(current);
+  return words;
+}
+
 // ---------- Settings / doctor / registry (issue #29) ----------
 
 /** Parse the `mise settings ls --json-extended` payload into typed

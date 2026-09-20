@@ -1410,11 +1410,18 @@ pub fn mise_upgrade_argv(tool: Option<&str>) -> Vec<String> {
 //                                              shape is used in
 //                                              `tests/tasks.rs`.
 //
-// `run` is split across multiple argv entries (one per shell
-// token) so mise receives the command exactly as the user typed
-// it. The runner entry check (issue #160) lets value tokens
-// through regardless, so this split is about argv fidelity, not
-// about the guardrail.
+// `run` is split across multiple argv entries — one per shell
+// word of the user's run draft — so mise receives the command
+// exactly as the user typed it. The GUI's run field is a
+// `<textarea>` edited one command per line; on save each line is
+// split into shell words (the same splitting an interactive shell
+// applies) and the words become the tokens after `--` (issue
+// #161). This matters because `mise tasks add` stores
+// `shell_words::join(RUN)` — a whole line passed as a single
+// token would be stored quoted and the task would not run. The
+// runner entry check (issue #160) lets value tokens through
+// regardless, so this split is about argv fidelity, not about the
+// guardrail.
 
 /// Build the argv for `mise run <name>`. Reused as the
 /// "Run" button on the tasks page; output streams through the
@@ -1426,12 +1433,20 @@ pub fn mise_run_task_argv(name: &str) -> Vec<String> {
 /// Build the argv for `mise tasks add <name> [--dep X]… -- <run…>`.
 ///
 /// When `run_tokens` is `Some` the run is emitted after `--` so
-/// mise preserves it. When `run_tokens` is `None` the call is
+/// mise preserves it. The slice is one **shell word** per element —
+/// the GUI splits each edited line of the run textarea into words
+/// (issue #161); blank lines are dropped before the builder. mise
+/// re-quotes the words when it writes the TOML (`shell_words::join`),
+/// so a word containing spaces or metacharacters must arrive here
+/// verbatim and is stored as a single quoted unit. When
+/// `run_tokens` is `None` the call is
 /// `mise tasks add <name> [--dep X]…` (no `--`) — useful for
 /// commands that only flip metadata, but **dangerous for editing
-/// an existing task**: mise drops the existing `run` key when
-/// the new argv lacks the `-- <run>` clause. Callers editing an
-/// existing task must always pass `run_tokens`.
+/// an existing task**: `mise tasks add` replaces the task's whole
+/// TOML table, so an argv without `-- <run>` drops the existing
+/// `run` key (and any field the argv does not name). Callers
+/// editing an existing task must always pass `run_tokens` and
+/// every other field the task has.
 ///
 /// `depends` is appended as a sequence of `--depends <name>` pairs;
 /// the `description` flag is appended when present. Both are

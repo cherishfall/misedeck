@@ -303,7 +303,7 @@
   },
   "tasks": {
     "title": "任务",
-    "subtitle": "列出、运行并编辑当前目录的 mise 任务。写入通过 `mise tasks add`，并在执行面板中实时显示。",
+    "subtitle": "列出、运行、创建并编辑当前目录的 mise 任务。写入通过 `mise tasks add`，并在执行面板中实时显示。",
     "filterPlaceholder": "过滤任务…",
     "count": "{{count}} 个任务",
     "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit",
@@ -317,7 +317,8 @@
     "empty": {
       "title": "没有任务",
       "body": "`mise tasks ls` 没有返回任务。任务来自作用域内 mise.toml 的 `[tasks]` 表，或 `mise-tasks/` 目录下的可执行文件。",
-      "openConfig": "在编辑器中打开配置文件"
+      "openConfig": "在编辑器中打开配置文件",
+      "addTask": "新建任务"
     },
     "runButton": "运行",
     "editButton": "编辑",
@@ -325,14 +326,18 @@
     "hiddenBadge": "hide",
     "editForm": {
       "title": "编辑任务",
+      "addTitle": "新建任务",
+      "namePlaceholder": "任务名称",
       "runLabel": "运行命令",
       "runPlaceholder": "例如 npm run build",
+      "descriptionPlaceholder": "这个任务的作用",
       "dependsLabel": "依赖（逗号分隔）",
       "dependsPlaceholder": "lint, test",
       "dependsHelp": "每个名称是当前目录 `mise.toml` 中的一个任务，使用逗号分隔。",
       "saveButton": "保存",
       "cancelButton": "取消",
-      "runRequired": "必须填写运行命令"
+      "runRequired": "必须填写运行命令",
+      "nameRequired": "必须填写任务名称"
     },
     "guard": {
       "untrustedBody": "在修改此目录的任务之前，请先信任它。"
@@ -349,7 +354,8 @@
       "body": "`mise tasks ls --json` 未返回结果。stderr 如下所示。"
     },
     "success": {
-      "saved": "任务 {{name}} 已保存"
+      "saved": "任务 {{name}} 已保存",
+      "added": "任务 {{name}} 已创建"
     }
   },
   "settings": {

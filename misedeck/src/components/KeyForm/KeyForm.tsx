@@ -1,8 +1,8 @@
 // KeyForm — the shared form keyboard pattern (issue #109).
 //
 // Every form site in the app (tools install/link/switch, the version
-// query inputs, env row editor + add form, the task edit form, settings
-// row editor + add form) wraps its inputs and action buttons in one of
+// query inputs, env row editor + add form, the task create/edit form,
+// settings row editor + add form) wraps its inputs and action buttons in one of
 // these instead of a bare <div>/<span>:
 //
 //   * Enter submits via a real <form onSubmit>. A visually hidden submit

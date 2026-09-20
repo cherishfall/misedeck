@@ -140,6 +140,92 @@ fn mise_tasks_add_argv_skips_empty_description() {
     );
 }
 
+#[test]
+fn mise_tasks_add_argv_multiline_run_one_token_per_shell_word() {
+    // Issue #161: the run field is a <textarea> edited one command
+    // per line; on save the page splits each line into shell words
+    // (the same splitting an interactive shell applies), so a
+    // two-line draft becomes a flat word sequence after `--`, in
+    // order. mise re-joins the words when it writes the TOML, so
+    // the stored `run` string round-trips for ordinary commands.
+    let run: Vec<String> = vec![
+        "npm".to_string(),
+        "ci".to_string(),
+        "npm".to_string(),
+        "run".to_string(),
+        "build".to_string(),
+    ];
+    let argv = mise_tasks_add_argv("deploy", Some("Deploy"), &[], Some(&run));
+    assert_eq!(
+        argv,
+        vec![
+            "tasks".to_string(),
+            "add".to_string(),
+            "--description".to_string(),
+            "Deploy".to_string(),
+            "deploy".to_string(),
+            "--".to_string(),
+            "npm".to_string(),
+            "ci".to_string(),
+            "npm".to_string(),
+            "run".to_string(),
+            "build".to_string(),
+        ]
+    );
+}
+
+#[test]
+fn mise_tasks_add_argv_preserves_metachar_words_verbatim() {
+    // Shell metacharacters inside a run word travel through the
+    // value-token path (issue #160) and must reach mise unchanged —
+    // the builder never quotes, splits, or drops them. Whether the
+    // stored task runs is mise's own `shell_words::join` semantics;
+    // the builder's contract is argv fidelity.
+    let run: Vec<String> = vec![
+        "npm".to_string(),
+        "run".to_string(),
+        "build".to_string(),
+        "&&".to_string(),
+        "npm".to_string(),
+        "test".to_string(),
+    ];
+    let argv = mise_tasks_add_argv("ci", None, &[], Some(&run));
+    let sep = argv
+        .iter()
+        .position(|a| a == "--")
+        .expect("argv must contain the `--` separator");
+    assert_eq!(
+        &argv[sep + 1..],
+        &run[..],
+        "run words after `--` must be verbatim, got {argv:?}"
+    );
+}
+
+#[test]
+fn mise_tasks_add_argv_passes_every_named_field() {
+    // `mise tasks add` replaces the task's whole TOML table, so an
+    // edit must name every field the task has — run, depends, and
+    // description together (issue #161's shared form shape).
+    let depends = vec!["lint".to_string()];
+    let run: Vec<String> = vec!["echo".to_string(), "done".to_string()];
+    let argv = mise_tasks_add_argv("build", Some("Build"), &depends, Some(&run));
+    assert_eq!(
+        argv,
+        vec![
+            "tasks".to_string(),
+            "add".to_string(),
+            "--description".to_string(),
+            "Build".to_string(),
+            "--depends".to_string(),
+            "lint".to_string(),
+            "build".to_string(),
+            "--".to_string(),
+            "echo".to_string(),
+            "done".to_string(),
+        ]
+    );
+}
+
 // ---------- tasks_ls (mise tasks ls --json) ----------
 
 #[test]
