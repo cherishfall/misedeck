@@ -62,6 +62,7 @@ import {
   ConfirmDialog,
   EmptyState,
   KeyForm,
+  ListLoading,
   MiseMissingState,
   OutdatedHint,
   PageShell,
@@ -392,9 +393,12 @@ export function ToolsPage() {
     [rows, expandedTool],
   );
 
-  // Mise-missing state.
-  if (detect.isPending) {
-    return <ToolsLoading />;
+  // Mise-missing or list-loading state. The list-level gate (issue
+  // #146) covers the `mise ls` read too: while it is pending — first
+  // load or a directory switch — the shared ListLoading renders
+  // instead of the table's "no data" empty state.
+  if (detect.isPending || tools.isPending) {
+    return <ListLoading />;
   }
   const detectValue = detect.data;
   if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
@@ -747,20 +751,6 @@ export function ToolsPage() {
           }}
           onCancel={() => setPendingRemoval(null)}
         />
-      </div>
-    </PageShell>
-  );
-}
-
-function ToolsLoading() {
-  const { t } = useTranslation();
-  return (
-    <PageShell>
-      <div className={styles.page}>
-        <div className={styles.loading}>
-          <span className={styles.dot} aria-hidden="true" />
-          <span className={styles.loadingLabel}>{t(I18N_KEYS.common.loading)}</span>
-        </div>
       </div>
     </PageShell>
   );

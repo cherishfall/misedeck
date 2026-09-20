@@ -54,6 +54,7 @@ import {
   Button,
   CommandHint,
   EmptyState,
+  ListLoading,
   OutdatedHint,
   PageShell,
   Table,
@@ -231,9 +232,14 @@ export function DirectoryPreview() {
     }));
   }, [envEntries]);
 
-  // Mise-missing state.
-  if (detect.isPending) {
-    return <PreviewLoading />;
+  // Mise-missing or list-loading state. The list-level gate (issue
+  // #146) covers the resolved-tools and resolved-env reads too: while
+  // either is pending — first load or a directory switch — the shared
+  // ListLoading renders instead of the sections' "no data" empty
+  // states. (The config-files section keeps its own inline loading
+  // line, which never renders an empty state.)
+  if (detect.isPending || tools.isPending || env.isPending) {
+    return <ListLoading />;
   }
   const detectValue = detect.data;
   if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
@@ -554,18 +560,3 @@ function ConfigFileRow({ file, rank }: { file: ConfigFile; rank: number }) {
     </li>
   );
 }
-
-function PreviewLoading() {
-  const { t } = useTranslation();
-  return (
-    <PageShell>
-      <div className={styles.page}>
-        <div className={styles.loading}>
-          <span className={styles.dot} aria-hidden="true" />
-          <span>{t(I18N_KEYS.common.loading)}</span>
-        </div>
-      </div>
-    </PageShell>
-  );
-}
-

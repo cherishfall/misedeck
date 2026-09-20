@@ -15,6 +15,10 @@ Before shipping any screen, ask: **could a mise CLI user predict what this scree
 - Missing data renders as `—` or the column is dropped. Never fill a column with a hardcoded or fabricated value — a wrong fact is worse than no fact.
 - When the GUI mirrors a CLI default (e.g. `mise settings ls` shows only explicitly-set keys), keep the CLI behavior as the default; any wider view is an explicit opt-in control labeled with its flag (`--all`).
 
+## Loading & empty states
+
+- A page whose content is a data list gates on its list query, not just on mise detection: while the list read is pending — first load or a directory switch — the page renders the shared `ListLoading` state (`ProgressDot` + `common.loading`), never the empty state. An empty state means the query finished with nothing; flashing it during pending teaches "no data" before the data arrives (beta11, issue #146). One implementation, no per-page copies.
+
 ## Teaching
 
 - Every mutating action shows the exact mise command — including confirmations. A confirmation is a teaching moment: "This will run `mise uninstall go@1.27.0`."

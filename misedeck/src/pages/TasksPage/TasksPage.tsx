@@ -50,6 +50,7 @@ import {
   CommandHint,
   EmptyState,
   KeyForm,
+  ListLoading,
   PageShell,
   SuccessBar,
   Suggestions,
@@ -337,9 +338,13 @@ export function TasksPage() {
     [r.name, r.run, r.description, r.depends.join(" ")].join("\n"),
   );
 
-  // Mise-missing state.
-  if (detect.isPending) {
-    return <TasksLoading />;
+  // Mise-missing or list-loading state. The list-level gate (issue
+  // #146) covers the `mise tasks ls` read too: while it is pending —
+  // first load or a directory switch — the shared ListLoading renders
+  // instead of the "no tasks" empty state (which the toolbar's
+  // "Loading…" count would otherwise contradict).
+  if (detect.isPending || tasks.isPending) {
+    return <ListLoading />;
   }
   const detectValue = detect.data;
   if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
@@ -589,20 +594,6 @@ export function TasksPage() {
             />
           </>
         )}
-      </div>
-    </PageShell>
-  );
-}
-
-function TasksLoading() {
-  const { t } = useTranslation();
-  return (
-    <PageShell>
-      <div className={styles.page}>
-        <div className={styles.loading}>
-          <span className={styles.dot} aria-hidden="true" />
-          <span>{t(I18N_KEYS.common.loading)}</span>
-        </div>
       </div>
     </PageShell>
   );

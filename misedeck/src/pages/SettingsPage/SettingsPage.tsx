@@ -24,6 +24,7 @@ import {
   CommandHint,
   EmptyState,
   KeyForm,
+  ListLoading,
   PageShell,
   SuccessBar,
   Suggestions,
@@ -125,8 +126,12 @@ export function SettingsPage() {
     [r.key, formatValue(r.value), r.type ?? "", r.source ?? ""].join("\n"),
   );
 
-  if (detect.isPending) {
-    return <SettingsLoading />;
+  // Mise-missing or list-loading state. The list-level gate (issue
+  // #146) covers the `mise settings ls` read too: while it is pending —
+  // first load or a directory switch — the shared ListLoading renders
+  // instead of the table's "no data" empty state.
+  if (detect.isPending || settings.isPending) {
+    return <ListLoading />;
   }
   const detectValue = detect.data;
   if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
@@ -274,20 +279,6 @@ export function SettingsPage() {
             />
           </>
         )}
-      </div>
-    </PageShell>
-  );
-}
-
-function SettingsLoading() {
-  const { t } = useTranslation();
-  return (
-    <PageShell>
-      <div className={styles.page}>
-        <div className={styles.loading}>
-          <span className={styles.dot} aria-hidden="true" />
-          <span>{t(I18N_KEYS.common.loading)}</span>
-        </div>
       </div>
     </PageShell>
   );
