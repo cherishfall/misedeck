@@ -129,6 +129,15 @@ function envSourceVariant(source: EnvSource): "default" | "info" | "warning" {
   }
 }
 
+/**
+ * Only config-file-sourced rows are settable via `mise set`; tool and
+ * host-inherited rows get the explanation Tooltip (same wording as the
+ * Env page — issue #154).
+ */
+function isConfigSource(source: EnvSource): boolean {
+  return source === "project" || source === "global";
+}
+
 // ---------- Page ----------
 
 export function DirectoryPreview() {
@@ -329,7 +338,15 @@ export function DirectoryPreview() {
                 detail: r.sourceDetail,
               })
             : t(I18N_KEYS.preview.source[r.source]);
-        return <Badge variant={envSourceVariant(r.source)}>{label}</Badge>;
+        // Same explanation as the Env page's source badge (issue #154);
+        // the wording lives in the env.* keys so both pages cannot drift.
+        const tooltip = !isConfigSource(r.source)
+          ? r.source === "tool" && r.sourceDetail
+            ? t(I18N_KEYS.env.tooltip.tool, { tool: r.sourceDetail })
+            : t(I18N_KEYS.env.tooltip.default)
+          : undefined;
+        const badge = <Badge variant={envSourceVariant(r.source)}>{label}</Badge>;
+        return tooltip ? <Tooltip text={tooltip}>{badge}</Tooltip> : badge;
       },
     },
   ];

@@ -210,10 +210,10 @@
     },
     "source": {
       "global": "Global",
-      "project": "Directory",
+      "project": "Current directory",
       "tool": "Tool",
       "toolDetail": "{{source}} · {{detail}}",
-      "default": "Default"
+      "default": "Inherited"
     },
     "toolSource": {
       "global": "Global",
@@ -254,10 +254,10 @@
     },
     "source": {
       "global": "Global",
-      "project": "Directory",
+      "project": "Current directory",
       "tool": "Tool",
       "toolDetail": "{{source}} · {{detail}}",
-      "default": "Default"
+      "default": "Inherited"
     },
     "empty": {
       "title": "No env vars",

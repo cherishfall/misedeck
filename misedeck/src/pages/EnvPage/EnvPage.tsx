@@ -376,16 +376,18 @@ function EnvSourceCell({ row }: { row: EnvRow }) {
       : t(I18N_KEYS.env.source[row.source]);
   // Tool-injected and host-inherited rows cannot be set via `mise set`;
   // the badge carries a CLI-terms tooltip explaining why (issue #58).
+  // The shared Tooltip is the only hover-detail layer (ui-ux-rules:
+  // layout/typography) — the badge's native `title` exception is
+  // retired (issue #154).
   const tooltip = !isConfigSource(row.source)
     ? row.source === "tool" && row.sourceDetail
       ? t(I18N_KEYS.env.tooltip.tool, { tool: row.sourceDetail })
       : t(I18N_KEYS.env.tooltip.default)
     : undefined;
+  const badge = <Badge variant={envSourceVariant(row.source)}>{label}</Badge>;
   return (
     <div className={styles.sourceCell}>
-      <Badge variant={envSourceVariant(row.source)} title={tooltip}>
-        {label}
-      </Badge>
+      {tooltip ? <Tooltip text={tooltip}>{badge}</Tooltip> : badge}
       {row.sourcePath && (
         <Tooltip text={row.sourcePath}>
           <span className={styles.sourcePath}>{row.sourcePath}</span>

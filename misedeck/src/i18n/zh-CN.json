@@ -210,10 +210,10 @@
     },
     "source": {
       "global": "全局",
-      "project": "目录",
+      "project": "当前目录",
       "tool": "工具",
       "toolDetail": "{{source}} · {{detail}}",
-      "default": "默认"
+      "default": "继承"
     },
     "toolSource": {
       "global": "全局",
@@ -254,10 +254,10 @@
     },
     "source": {
       "global": "全局",
-      "project": "目录",
+      "project": "当前目录",
       "tool": "工具",
       "toolDetail": "{{source}} · {{detail}}",
-      "default": "默认"
+      "default": "继承"
     },
     "empty": {
       "title": "没有环境变量",
