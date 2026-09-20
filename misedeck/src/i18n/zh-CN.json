@@ -94,7 +94,7 @@
     },
     "error": {
       "title": "加载工具列表失败",
-      "body": "`mise ls --json` 未返回结果。stderr 已在执行面板中保留。"
+      "body": "`mise ls --json` 未返回结果。stderr 如下所示。"
     },
     "filterPlaceholder": "过滤工具…",
     "actions": {
@@ -192,7 +192,7 @@
       "hide": "收起内容",
       "unreadable": "（无法读取此文件）",
       "errorTitle": "加载配置文件失败",
-      "errorBody": "`mise config ls --json` 未返回结果。stderr 已在执行面板中保留。"
+      "errorBody": "`mise config ls --json` 未返回结果。stderr 如下所示。"
     },
     "columns": {
       "tool": "工具",
@@ -216,17 +216,17 @@
       "emptyTitle": "没有环境变量",
       "emptyBody": "`mise env --json` 返回了空映射。在作用域内的 mise 配置文件中添加 [env] 表可在此处显示变量。",
       "errorTitle": "加载环境变量失败",
-      "errorBody": "`mise env --json` 未返回结果。stderr 已在执行面板中保留。"
+      "errorBody": "`mise env --json` 未返回结果。stderr 如下所示。"
     },
     "toolsError": {
       "title": "加载已解析工具失败",
-      "body": "`mise -C <dir> ls --json` 未返回结果。stderr 已在执行面板中保留。"
+      "body": "`mise -C <dir> ls --json` 未返回结果。stderr 如下所示。"
     },
     "lockfile": {
       "title": "mise.lock",
       "empty": "（空文件）",
       "errorTitle": "读取 lockfile 失败",
-      "errorBody": "MiseDeck 无法读取当前目录的 mise.lock。stderr 已在执行面板中保留。"
+      "errorBody": "MiseDeck 无法读取当前目录的 mise.lock。stderr 如下所示。"
     }
   },
   "env": {
@@ -258,7 +258,7 @@
     },
     "error": {
       "title": "加载环境变量失败",
-      "body": "`mise env --json-extended` 未返回结果。stderr 已在执行面板中保留。"
+      "body": "`mise env --json-extended` 未返回结果。stderr 如下所示。"
     },
     "addLabel": "添加环境变量",
     "addButton": "添加",
@@ -322,14 +322,14 @@
     },
     "openEditorError": {
       "title": "无法打开配置文件",
-      "body": "`mise tasks edit` 没有返回可用路径。stderr 已在执行面板中保留。"
+      "body": "`mise tasks edit` 没有返回可用路径。如果命令执行失败，stderr 会在执行面板中显示。"
     },
     "openConfigError": {
-      "body": "`mise config ls --json` 没有返回可打开的配置文件。stderr 已在执行面板中保留。"
+      "body": "`mise config ls --json` 没有返回可打开的配置文件。如果命令执行失败，stderr 会在执行面板中显示。"
     },
     "readError": {
       "title": "加载任务失败",
-      "body": "`mise tasks ls --json` 未返回结果。stderr 已在执行面板中保留。"
+      "body": "`mise tasks ls --json` 未返回结果。stderr 如下所示。"
     },
     "success": {
       "saved": "任务 {{name}} 已保存"
@@ -402,7 +402,7 @@
     "rawTitle": "原始 doctor 输出",
     "error": {
       "title": "加载诊断失败",
-      "body": "`mise doctor --json` 未返回结果。stderr 已在执行面板中保留。"
+      "body": "`mise doctor --json` 未返回结果。stderr 如下所示。"
     },
     "columns": {
       "tool": "工具",
@@ -443,7 +443,7 @@
     },
     "installedError": {
       "title": "加载插件失败",
-      "body": "`mise plugins ls` 未返回结果。stderr 已在执行面板中保留。"
+      "body": "`mise plugins ls` 未返回结果。stderr 如下所示。"
     },
     "success": {
       "uninstalled": "插件 {{name}} 已卸载"
@@ -463,7 +463,7 @@
     },
     "commandFailed": {
       "title": "mise 执行失败",
-      "body": "`mise version --json` 返回了非零状态码。stderr 已在执行面板中保留。"
+      "body": "`mise version --json` 返回了非零状态码。stderr 如下所示。"
     },
     "parseFailed": {
       "title": "无法解析 mise 响应",

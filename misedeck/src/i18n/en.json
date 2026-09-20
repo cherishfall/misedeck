@@ -94,7 +94,7 @@
     },
     "error": {
       "title": "Failed to load tools",
-      "body": "`mise ls --json` did not return. Stderr is preserved in the execution panel."
+      "body": "`mise ls --json` did not return. Stderr is shown below."
     },
     "filterPlaceholder": "Filter tools…",
     "actions": {
@@ -192,7 +192,7 @@
       "hide": "Hide content",
       "unreadable": "(could not read this file)",
       "errorTitle": "Failed to load config files",
-      "errorBody": "`mise config ls --json` did not return. Stderr is preserved in the execution panel."
+      "errorBody": "`mise config ls --json` did not return. Stderr is shown below."
     },
     "columns": {
       "tool": "Tool",
@@ -216,17 +216,17 @@
       "emptyTitle": "No env vars",
       "emptyBody": "`mise env --json` returned an empty map. Add an [env] table to a mise config file in scope to surface values here.",
       "errorTitle": "Failed to load env",
-      "errorBody": "`mise env --json` did not return. Stderr is preserved in the execution panel."
+      "errorBody": "`mise env --json` did not return. Stderr is shown below."
     },
     "toolsError": {
       "title": "Failed to load resolved tools",
-      "body": "`mise -C <dir> ls --json` did not return. Stderr is preserved in the execution panel."
+      "body": "`mise -C <dir> ls --json` did not return. Stderr is shown below."
     },
     "lockfile": {
       "title": "mise.lock",
       "empty": "(empty file)",
       "errorTitle": "Failed to read lockfile",
-      "errorBody": "MiseDeck could not read the current directory's mise.lock. Stderr is preserved in the execution panel."
+      "errorBody": "MiseDeck could not read the current directory's mise.lock. Stderr is shown below."
     }
   },
   "env": {
@@ -258,7 +258,7 @@
     },
     "error": {
       "title": "Failed to load env vars",
-      "body": "`mise env --json-extended` did not return. Stderr is preserved in the execution panel."
+      "body": "`mise env --json-extended` did not return. Stderr is shown below."
     },
     "addLabel": "Add an env var",
     "addButton": "Add",
@@ -322,14 +322,14 @@
     },
     "openEditorError": {
       "title": "Could not open the config file",
-      "body": "`mise tasks edit` did not return a usable path. Stderr is preserved in the execution panel."
+      "body": "`mise tasks edit` did not return a usable path. If the command failed, its stderr is in the execution panel."
     },
     "openConfigError": {
-      "body": "`mise config ls --json` did not return a config file to open. Stderr is preserved in the execution panel."
+      "body": "`mise config ls --json` did not return a config file to open. If the command failed, its stderr is in the execution panel."
     },
     "readError": {
       "title": "Failed to load tasks",
-      "body": "`mise tasks ls --json` did not return. Stderr is preserved in the execution panel."
+      "body": "`mise tasks ls --json` did not return. Stderr is shown below."
     },
     "success": {
       "saved": "Task {{name}} saved"
@@ -402,7 +402,7 @@
     "rawTitle": "Raw doctor output",
     "error": {
       "title": "Failed to load doctor",
-      "body": "`mise doctor --json` did not return. Stderr is preserved in the execution panel."
+      "body": "`mise doctor --json` did not return. Stderr is shown below."
     },
     "columns": {
       "tool": "Tool",
@@ -443,7 +443,7 @@
     },
     "installedError": {
       "title": "Failed to load plugins",
-      "body": "`mise plugins ls` did not return. Stderr is preserved in the execution panel."
+      "body": "`mise plugins ls` did not return. Stderr is shown below."
     },
     "success": {
       "uninstalled": "Plugin {{name}} uninstalled"
@@ -463,7 +463,7 @@
     },
     "commandFailed": {
       "title": "mise failed",
-      "body": "`mise version --json` exited with a non-zero status. Stderr is preserved in the execution panel."
+      "body": "`mise version --json` exited with a non-zero status. Stderr is shown below."
     },
     "parseFailed": {
       "title": "unrecognised mise response",
