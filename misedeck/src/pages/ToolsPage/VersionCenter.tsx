@@ -18,8 +18,8 @@
 //     usable.
 //
 // Mutations are the page's job: the center reports intent through
-// callbacks so the trust gate and the single-flight panel guard apply
-// unchanged.
+// callbacks so the trust gate and the per-action run-locks apply
+// unchanged (issues #138 + #152).
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -60,11 +60,14 @@ interface VersionCenterProps {
   /** The tool's installed versions from the page's `mise ls --json`
    *  read — no extra call is needed for the installed sub-list. */
   installed: MiseLsItem[];
-  /** True while a foreground command runs; the command-firing buttons
-   *  (Use / Install only) are disabled. Browsing — the filter and
-   *  pager — is never run-locked (issue #135), and neither is
-   *  Uninstall: it only opens the page's run-aware confirm dialog. */
-  disabled: boolean;
+  /** True while the page's own `mise use` runs; disables only the Use
+   *  buttons. Browsing — the filter and pager — is never run-locked
+   *  (issue #135), and neither is Uninstall: it only opens the page's
+   *  run-aware confirm dialog. */
+  useDisabled: boolean;
+  /** True while the page's own `mise install` runs; disables only the
+   *  remote sub-list's Install buttons (issues #138 + #152). */
+  installDisabled: boolean;
   onUse: (version: string) => void;
   onInstallOnly: (version: string) => void;
   /** Opens the page's removal confirmation (exact command shown). */
@@ -74,7 +77,8 @@ interface VersionCenterProps {
 export function VersionCenter({
   tool,
   installed,
-  disabled,
+  useDisabled,
+  installDisabled,
   onUse,
   onInstallOnly,
   onUninstall,
@@ -198,7 +202,7 @@ export function VersionCenter({
             <Button
               variant="primary"
               size="sm"
-              disabled={disabled}
+              disabled={useDisabled}
               onClick={() => onUse(r.version)}
               data-testid={`center-installed-use-${r.version}`}
             >
@@ -287,7 +291,7 @@ export function VersionCenter({
             <Button
               variant="primary"
               size="sm"
-              disabled={disabled}
+              disabled={useDisabled}
               onClick={() => onUse(r.version)}
               data-testid={`center-remote-use-${r.version}`}
             >
@@ -296,7 +300,7 @@ export function VersionCenter({
             <Button
               variant="secondary"
               size="sm"
-              disabled={disabled}
+              disabled={installDisabled}
               onClick={() => onInstallOnly(r.version)}
               data-testid={`center-remote-install-${r.version}`}
             >

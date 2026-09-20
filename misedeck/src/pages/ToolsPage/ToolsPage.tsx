@@ -263,15 +263,23 @@ export function ToolsPage() {
     setExpandedTool((current) => (current === tool ? null : tool));
   };
 
-  // Per-action run-lock (issue #138): the tools page funnels every mise
-  // mutation through one `mutation` hook, so a command-firing control
-  // freezes only while *this page's* mutation is in flight — never
-  // because some unrelated command elsewhere is running. A successful
-  // mutation refreshes the tools + outdated reads (the version center's
-  // installed sub-list derives from the same read).
-  const mutation = useOwnRun();
+  // Per-action run-lock (issues #138 + #152): every command family on
+  // this page gets its own `useOwnRun()` hook, so a control freezes only
+  // while the command *its own family* dispatched is in flight — a
+  // multi-minute install of one tool never disables another row's
+  // Use/Upgrade, the add-tool entry, or the link form. The families are
+  // the mise commands: use, install, upgrade, link, and removal
+  // (unuse/uninstall, dispatched only by the confirm dialog). A
+  // successful mutation refreshes the tools + outdated reads (the
+  // version center's installed sub-list derives from the same read).
+  const useRun = useOwnRun();
+  const installRun = useOwnRun();
+  const upgradeRun = useOwnRun();
+  const linkRun = useOwnRun();
+  const removalRun = useOwnRun();
   const fireMutation = useCallback(
     async (
+      runner: ReturnType<typeof useOwnRun>,
       builder: (cwd: string | null) => string[],
       successMessage?: string,
     ) => {
@@ -279,8 +287,8 @@ export function ToolsPage() {
         focusTrustBanner();
         return;
       }
-      if (mutation.isRunning) return;
-      const res = await mutation.run({ cwd, args: builder(cwd) });
+      if (runner.isRunning) return;
+      const res = await runner.run({ cwd, args: builder(cwd) });
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
         void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
@@ -290,7 +298,7 @@ export function ToolsPage() {
       }
       return res;
     },
-    [guard.allowed, focusTrustBanner, mutation.isRunning, mutation.run, cwd, queryClient],
+    [guard.allowed, focusTrustBanner, cwd, queryClient],
   );
 
   const onRefresh = useCallback(() => {
@@ -300,9 +308,10 @@ export function ToolsPage() {
   // Top-toolbar refresh (issue #98); the page keeps no local button.
   useRegisterPageRefresh(onRefresh);
 
-  // Link a local directory as a tool version (issue #71). Routes through
-  // the shared mutation runner so the trust gate applies unchanged. The
-  // conflict message is derived from the run's own stderr (issue #138):
+  // Link a local directory as a tool version (issue #71). Dispatches
+  // through the link family's runner so the trust gate applies
+  // unchanged. The conflict message is derived from the run's own
+  // stderr (issue #138):
   // `already exists` / `already installed` → friendly duplicate message;
   // `does not exist` → directory-not-found message. Any other stderr
   // falls through with no friendly message, and the raw stderr always
@@ -312,6 +321,7 @@ export function ToolsPage() {
     async (tool: string, version: string, path: string) => {
       setLinkConflict(null);
       const res = await fireMutation(
+        linkRun,
         () => miseLinkArgs(tool, version, path),
         t(I18N_KEYS.tools.success.linked, { tool, version }),
       );
@@ -328,7 +338,7 @@ export function ToolsPage() {
         setLinkConflict(null);
       }
     },
-    [fireMutation, t],
+    [fireMutation, linkRun, t],
   );
 
   const rows = useMemo<ToolRow[]>(() => {
@@ -507,10 +517,11 @@ export function ToolsPage() {
       cell: (r) => (
         <UseVersionCell
           row={r}
-          disabled={mutation.isRunning}
+          disabled={useRun.isRunning}
           versions={versionsByTool.get(r.tool) ?? []}
           onUse={(version) =>
             void fireMutation(
+              useRun,
               (cwd) => miseUseArgs(r.tool, version, cwd),
               t(I18N_KEYS.tools.success.used, { tool: r.tool, version }),
             )
@@ -558,12 +569,13 @@ export function ToolsPage() {
       cell: (r) => (
         <RowActions
           row={r}
-          disabled={mutation.isRunning}
+          disabled={upgradeRun.isRunning}
           onUnuse={() =>
             setPendingRemoval({ kind: "unuse", tool: r.tool, orphan: r.orphan })
           }
           onUpgrade={() =>
             void fireMutation(
+              upgradeRun,
               () => miseUpgradeArgs(r.tool),
               t(I18N_KEYS.tools.success.upgraded, { tool: r.tool }),
             )
@@ -603,7 +615,7 @@ export function ToolsPage() {
             `mise use <tool>@<version>` — install and activate in one
             step. On success the new tool's row expands. */}
         <AddToolEntry
-          disabled={mutation.isRunning}
+          disabled={useRun.isRunning}
           onUse={async (tool, version) => {
             // Mirror fireMutation's gates so a blocked run never leaves
             // a stale pending expansion behind; a trust-blocked run
@@ -612,8 +624,9 @@ export function ToolsPage() {
               focusTrustBanner();
               return;
             }
-            if (mutation.isRunning) return;
+            if (useRun.isRunning) return;
             const res = await fireMutation(
+              useRun,
               (cwd) => miseUseArgs(tool, version, cwd),
               t(I18N_KEYS.tools.success.used, { tool, version }),
             );
@@ -657,15 +670,18 @@ export function ToolsPage() {
               <VersionCenter
                 tool={r.tool}
                 installed={itemsByTool.get(r.tool) ?? []}
-                disabled={mutation.isRunning}
+                useDisabled={useRun.isRunning}
+                installDisabled={installRun.isRunning}
                 onUse={(version) =>
                   void fireMutation(
+                    useRun,
                     (cwd) => miseUseArgs(r.tool, version, cwd),
                     t(I18N_KEYS.tools.success.used, { tool: r.tool, version }),
                   )
                 }
                 onInstallOnly={(version) =>
                   void fireMutation(
+                    installRun,
                     () => miseInstallArgs(r.tool, version),
                     t(I18N_KEYS.tools.success.installed, { tool: r.tool, version }),
                   )
@@ -709,7 +725,7 @@ export function ToolsPage() {
           {advancedOpen && (
             <LinkToolForm
               onLink={onLink}
-              disabled={mutation.isRunning}
+              disabled={linkRun.isRunning}
               conflict={linkConflict}
             />
           )}
@@ -717,7 +733,7 @@ export function ToolsPage() {
 
         <ConfirmDialog
           open={pendingRemoval !== null}
-          confirmBusy={mutation.isRunning}
+          confirmBusy={removalRun.isRunning}
           title={
             pendingRemoval?.kind === "unuse"
               ? t(I18N_KEYS.tools.confirm.unuse.title, { tool: pendingRemoval.tool })
@@ -755,11 +771,13 @@ export function ToolsPage() {
             setPendingRemoval(null);
             if (target?.kind === "unuse") {
               void fireMutation(
+                removalRun,
                 () => miseUnuseArgs(target.tool, target.orphan),
                 t(I18N_KEYS.tools.success.unused, { tool: target.tool }),
               );
             } else if (target?.kind === "uninstall") {
               void fireMutation(
+                removalRun,
                 () => miseUninstallArgs(target.tool, target.version),
                 t(I18N_KEYS.tools.success.uninstalled, {
                   tool: target.tool,
