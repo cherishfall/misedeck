@@ -2,7 +2,27 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-10 — no open implementation work)
+## CURRENT STATE (2026-09-20 — beta11 batch in progress, 3/27 tickets done)
+
+**A new feedback round landed and was fully settled by the owner on 2026-09-20**: SPEC parent **#139** (beta11 反馈周期修复 spec) + 27 work tickets **#140–#166**, all `ready-for-agent`, no inter-blockers. Source of truth: `docs/feedback/beta11-feedback-scratch.md` (committed `53a06e7`, all five issues 定稿). Driver mode: one ticket per subagent, commit to master referencing `#N`, push (proxy `git -c http.proxy=http://127.0.0.1:7890 push` when plain push 502s), close issue with "NOT visually verified" note. No visual verification by agents, ever.
+
+**Done so far this session (each `npm run ci` green, NOT visually verified):**
+
+| Ticket | Commit | Notes |
+| --- | --- | --- |
+| #140 产品立场固化 | `397cfa9` | product-logic.md both locales: 「不引导追新动线」(batch upgrade rejected, dev-tools-stability stance) + 插件级更新 v1 不承接 |
+| #141 共享 TrustBanner | `bed82d4` | new `components/TrustBanner/` (owns useTrust/useTrustAction wiring + `useTrustBannerFocus`); 4 page copies deleted; ToolsPage mounts it (3-a Blocker fixed — blocked mutations focus banner); trustContext clears lastResult on cwd change (stale-note fix); TasksPage adopts shared boxed note style (owner eyeball) |
+| #142 Tooltip flex 安全模式 + 工具栏 | `25a05b4` | Tooltip `.trigger` inline→inline-flex (component-layer fix, 33 call sites audited, one CSS line); DirectoryIndicator `.row` flex-wrap; ui-ux-rules Chrome 条「actions 窄窗换行」双语 |
+
+**Interrupted at:** #143 — subagent hit the 5-hour usage-limit 403 before touching anything (tree clean, HEAD `25a05b4` = remote). Handoff written per stop-condition; user resumed.
+
+**Remaining tickets (all unblocked, in order):** #143 ConfirmDialog 命令软折行（+ 执行面板头部命令 Tooltip 全文）→ #144 成功确认条组件 → #145 成功确认条推广 → #146 列表级 loading 门 → #147 假陈述文案全站扫改 → #148 操作列空白约定 → #149 候选分级排序+Enter 直提交 → #150 Registry 文案退役 → #151 工具表格与版本中心列重构 → #152 工具页 per-action runners → #153 Env/Settings 添加表单 → #154 Env/Preview 来源取值 → #155 Env 重命名竞态 → #156 Env sourcePath tooltip → #157 目录概览文案批次 → #158 目录概览 outdated 移除 → #159 Windows 路径比较 → #160 runner 护栏开口 → #161 任务页新建+多行 run → #162 Settings 三修 → #163 任务页修复批次 → #164 插件页空态+安装入口 → #165 诊断页修复批次 → #166 首页修复批次. SPEC #139 stays open for owner verification after all tickets close.
+
+**First action next session:** resume with #143 (`gh issue view 143` + scratch doc Issue 2-e), then continue down the list. Subagent briefing template: tell it to read AGENTS.md, docs/agents/{architecture,conventions,i18n}.md, docs/design/{ui-ux-rules,visual-language}.md, the issue body as spec, and the relevant scratch-doc section; ci = `npm run ci` only (cargo only if Rust touched); commit only ticket files; close issue with "NOT visually verified".
+
+---
+
+## PREVIOUS STATE (2026-09-10 — frontier empty, pre-beta11)
 
 **The quota blocker is resolved: #138 (execution-panel concurrency) is implemented and closed.** All code work on the frontier is done; what remains is the owner's manual visual verification of the open SPEC parents, then a beta.11 release decision.
 
