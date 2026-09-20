@@ -460,7 +460,7 @@
   "plugins": {
     "title": "插件",
     "hint": "已安装插件——教 mise 如何安装工具的 asdf 风格或 vfox 风格扩展。",
-    "commandHint": "mise plugins ls · mise plugins uninstall",
+    "commandHint": "mise plugins install · mise plugins ls · mise plugins uninstall",
     "sections": {
       "installed": "已安装插件"
     },
@@ -470,24 +470,33 @@
       "actions": "操作"
     },
     "actions": {
-      "uninstall": "卸载"
+      "uninstall": "卸载",
+      "install": "安装"
+    },
+    "installForm": {
+      "title": "安装插件",
+      "explanation": "以 CLI 的方式添加自定义插件：名称加上插件的 git URL——这是没有内置短名的工具在 asdf 生态中的标准做法。",
+      "namePlaceholder": "插件名称",
+      "urlPlaceholder": "Git URL — https://github.com/<owner>/<repo>"
     },
     "confirm": {
       "uninstall": {
         "title": "卸载 {{name}}？",
-        "body": "这将运行下方所示的命令。该插件将被移除，且无法撤销。"
+        "body": "这将运行下方所示的命令。该插件将被移除，且无法撤销。通过该插件安装的工具文件将保留在磁盘上。"
       }
     },
     "installedEmpty": {
       "title": "未安装插件",
-      "body": "`mise plugins ls` 返回了空列表。"
+      "body": "大多数工具根本不需要插件——去工具页搜索即可安装。要添加自定义插件，请使用上方表单：名称加上其 git URL。",
+      "action": "搜索工具"
     },
     "installedError": {
       "title": "加载插件失败",
       "body": "`mise plugins ls` 未返回结果。stderr 如下所示。"
     },
     "success": {
-      "uninstalled": "插件 {{name}} 已卸载"
+      "uninstalled": "插件 {{name}} 已卸载",
+      "installed": "插件 {{name}} 已安装"
     }
   },
   "states": {

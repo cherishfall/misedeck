@@ -31,3 +31,7 @@
 - 孤儿安装可通过同一个"卸载"动作移除（经由 `mise uninstall --all`)；工具页上不存在删不掉的东西。
 - 工具页重构（可展开的版本中心、Registry 搜索入口）建立在该词表之上：远程行是 使用/仅安装，已装行是 使用/删除此版本，工具行是 卸载。
 - 工具页的命令提示（command hint）新增 `mise unuse`。
+
+## 追记（beta11，#164）
+
+plugin 级移除加入上表：插件页的「卸载」运行 `mise plugins uninstall <plugin>`（#112）。因此「卸载」涵盖两个层级——tool 级（`mise unuse <tool>`）与 plugin 级（`mise plugins uninstall <plugin>`）——而 version 级移除在任何位置都保持「Uninstall」/「删除此版本」（`mise uninstall <tool>@<version>`）。本 ADR 原始前提「两个移除动词在 UI 中从不共享作用域」描述的仅是工具页；插件卸载落地晚于本 ADR，在此以显式的作用域扩展追记，而非任其成为未记录的漂移。

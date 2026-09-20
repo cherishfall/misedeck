@@ -57,6 +57,7 @@ _Avoid_: enable, activate, set as default
 
 **Unuse**:
 `mise unuse <tool>` — remove a Tool from the Config file and prune installations no longer referenced. The real tool-level removal; `mise uninstall` only deletes files. See ADR-0008. UI copy: "Unuse" / 卸载.
+卸载 spans two scopes: tool level (`mise unuse <tool>`) and plugin level (`mise plugins uninstall <plugin>`); version-level removal is always "Uninstall" / 删除此版本 (`mise uninstall <tool>@<version>`).
 _Avoid_: uninstall, remove, delete (at tool level)
 
 **Install**:

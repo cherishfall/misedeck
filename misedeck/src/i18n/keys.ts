@@ -522,6 +522,13 @@ export const I18N_KEYS = {
     },
     actions: {
       uninstall: "plugins.actions.uninstall",
+      install: "plugins.actions.install",
+    },
+    installForm: {
+      title: "plugins.installForm.title",
+      explanation: "plugins.installForm.explanation",
+      namePlaceholder: "plugins.installForm.namePlaceholder",
+      urlPlaceholder: "plugins.installForm.urlPlaceholder",
     },
     confirm: {
       uninstall: {
@@ -532,6 +539,7 @@ export const I18N_KEYS = {
     installedEmpty: {
       title: "plugins.installedEmpty.title",
       body: "plugins.installedEmpty.body",
+      action: "plugins.installedEmpty.action",
     },
     installedError: {
       title: "plugins.installedError.title",
@@ -539,6 +547,7 @@ export const I18N_KEYS = {
     },
     success: {
       uninstalled: "plugins.success.uninstalled",
+      installed: "plugins.success.installed",
     },
   },
   states: {

@@ -31,3 +31,7 @@ The English copy keeps mise's native verbs because the confirmation dialog echoe
 - Orphan installations are removable through the same Unuse action (via `mise uninstall --all`); nothing on the Tools page is undeletable.
 - The Tools page redesign (expandable version center, registry search entry) builds on this vocabulary: 使用/仅安装 on remote rows, 使用/删除此版本 on installed rows, 卸载 on tool rows.
 - The command hint on the Tools page gains `mise unuse`.
+
+## Addendum (beta11, issue #164)
+
+Plugin-level removal joined the map: the Plugins page's Uninstall runs `mise plugins uninstall <plugin>` (issue #112). 卸载 therefore spans two scopes — tool level (`mise unuse <tool>`) and plugin level (`mise plugins uninstall <plugin>`) — while version-level removal stays "Uninstall" / 删除此版本 (`mise uninstall <tool>@<version>`) everywhere. The original premise that "the two removal verbs never share a scope in the UI" described the Tools page alone; the plugin uninstall shipped after this ADR and is recorded here as an explicit scope extension rather than left as undocumented drift.

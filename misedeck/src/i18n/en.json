@@ -460,7 +460,7 @@
   "plugins": {
     "title": "Plugins",
     "hint": "Installed plugins — the asdf-style or vfox-style extensions that teach mise how to install tools.",
-    "commandHint": "mise plugins ls · mise plugins uninstall",
+    "commandHint": "mise plugins install · mise plugins ls · mise plugins uninstall",
     "sections": {
       "installed": "Installed plugins"
     },
@@ -470,24 +470,33 @@
       "actions": "Actions"
     },
     "actions": {
-      "uninstall": "Uninstall"
+      "uninstall": "Uninstall",
+      "install": "Install"
+    },
+    "installForm": {
+      "title": "Install plugin",
+      "explanation": "Add a custom plugin the CLI way: a name plus the plugin's git URL — the asdf-ecosystem standard for tools with no built-in shorthand.",
+      "namePlaceholder": "Plugin name",
+      "urlPlaceholder": "Git URL — https://github.com/<owner>/<repo>"
     },
     "confirm": {
       "uninstall": {
         "title": "Uninstall {{name}}?",
-        "body": "This will run the exact command below. The plugin will be removed and this cannot be undone."
+        "body": "This will run the exact command below. The plugin will be removed and this cannot be undone. Tools installed through this plugin keep their files on disk."
       }
     },
     "installedEmpty": {
       "title": "No plugins installed",
-      "body": "`mise plugins ls` returned an empty list."
+      "body": "Most tools install with no plugin at all — search the Tools page to install one. To add a custom plugin, use the form above: a name plus its git URL.",
+      "action": "Search tools"
     },
     "installedError": {
       "title": "Failed to load plugins",
       "body": "`mise plugins ls` did not return. Stderr is shown below."
     },
     "success": {
-      "uninstalled": "Plugin {{name}} uninstalled"
+      "uninstalled": "Plugin {{name}} uninstalled",
+      "installed": "Plugin {{name}} installed"
     }
   },
   "states": {

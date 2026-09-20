@@ -1,4 +1,5 @@
-/* PluginsPage — installed plugins table (#136 removed the registry table). */
+/* PluginsPage — installed plugins table (#136 removed the registry table)
+ * plus the custom-plugin install form (issue #164). */
 
 .page {
   display: flex;
@@ -55,10 +56,85 @@
   margin: 0;
 }
 
-.muted {
+/* ---------- Install form (issue #164) ---------- */
+
+/* Same pattern as the Tools page link form (issue #111). */
+.installForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--panel) 50%, transparent);
+}
+
+.installFormTitle {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--size-base);
+  color: var(--text);
+  margin: 0;
+}
+
+/* One-line explanation under the form title. */
+.formNote {
   font-family: var(--font-ui);
   font-size: var(--size-base);
   color: var(--dim);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 60ch;
+}
+
+.installFormRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.input {
+  font-family: var(--font-mono);
+  font-size: var(--size-base);
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: var(--space-1) var(--space-2);
+  /* Wide enough for the full git-URL placeholder in both locales — a
+     cut-off hint is a bug (issue #109). */
+  min-width: 320px;
+  transition:
+    border-color var(--motion-state-change) ease,
+    box-shadow var(--motion-state-change) ease;
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--beam);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--beam) 25%, transparent);
+}
+
+.input:hover:not(:disabled) {
+  border-color: var(--line-strong);
+}
+
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* The exact `mise plugins install` argv the panel will echo, shown
+ * while both fields carry values — the form teaches the CLI before
+ * the submit. Long URLs soft-wrap (data honesty beats an unbreakable
+ * token), matching the confirm-dialog command rule. */
+.commandPreview {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--ice);
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 /* ---------- Table cells ---------- */
@@ -87,24 +163,7 @@
   color: var(--dim);
 }
 
-/* ---------- Loading / error ---------- */
-
-.loading {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-5);
-  color: var(--dim);
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--dim);
-}
+/* ---------- Error ---------- */
 
 .errorState {
   display: flex;

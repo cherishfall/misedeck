@@ -57,7 +57,7 @@ MiseDeck 是 **mise CLI 的 GUI 版**。它的目的不是取代终端，而是*
 | 工具 | `mise ls`、`mise ls-remote`、`mise use`、`mise install`、`mise uninstall`、`mise upgrade`、`mise outdated` | 已安装 ≠ 已激活；切换/安装/升级/卸载 |
 | 环境变量 | `mise env`、`mise set`、`mise unset` | 环境变量是一等公民，按目录或全局 |
 | 任务 | `mise tasks ls`、`mise run`、`mise tasks add/edit` | 列出、运行、轻编辑当前目录的任务 |
-| 插件 | `mise registry`、`mise plugins ls` | 浏览 shorthand → backend；已安装插件 |
+| 插件 | `mise plugins ls`、`mise plugins install`、`mise plugins uninstall` | 已安装插件；自定义插件可按名称 + git URL 安装 |
 | 诊断 | `mise doctor` | 健康检查 |
 | 设置 | `mise settings ls/set/unset` | 编辑 mise 设置 |
 
@@ -71,7 +71,7 @@ MiseDeck 是 **mise CLI 的 GUI 版**。它的目的不是取代终端，而是*
 
 ## 交互规则
 
-1. **执行面板按需出现。** 默认隐藏；用户运行命令时滑出（真实 argv + 实时日志），空闲时可收起，任何页面可重新打开。不派发任何命令的页面（诊断、预览的信任按钮之外、插件）永不出现执行面板。每一次调用都必须经过它 —— 变更操作与读查询一视同仁（ADR-0005）；只有页面替自己发起的读不进入执行记录，这样后台刷新就不会擦掉用户正在阅读的那次运行。复制命令也在这里，因为面板就是命令历史。
+1. **执行面板按需出现。** 默认隐藏；用户运行命令时滑出（真实 argv + 实时日志），空闲时可收起，任何页面可重新打开。不派发任何命令的页面（诊断、预览的信任按钮之外）永不出现执行面板。每一次调用都必须经过它 —— 变更操作与读查询一视同仁（ADR-0005）；只有页面替自己发起的读不进入执行记录，这样后台刷新就不会擦掉用户正在阅读的那次运行。复制命令也在这里，因为面板就是命令历史。
 2. **信任与激活横幅留在页内。** `mise trust` 和 `mise activate` 是 mise 自己的门槛；横幅在它们挡住用户的地方出现（预览/工具/环境变量/任务/设置；激活横幅全局但可关闭）。
 3. **窗口纪律。** body 永不横向滚动；天然很宽的内容（JSON、表格、日志）在各自容器内滚动。窗口有最小尺寸；默认尺寸和最小尺寸需内容感知——具体机制（运行时测量 vs 设计期常量）是开放问题，留给实现 ticket。
 4. **目录上下文只有一个来源。** 指示条是选择/展示目录的唯一位置；每个页面消费它（`mise -C <dir>`），任何页面不得硬编码目录（architecture.md）。

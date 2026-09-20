@@ -57,7 +57,7 @@ North-star feeling: *"I always know which mise command this screen is showing me
 | Tools | `mise ls`, `mise ls-remote`, `mise use`, `mise install`, `mise uninstall`, `mise upgrade`, `mise outdated` | installed ≠ active; switch/install/upgrade/uninstall |
 | Env | `mise env`, `mise set`, `mise unset` | env vars are first-class, per directory or global |
 | Tasks | `mise tasks ls`, `mise run`, `mise tasks add/edit` | list, run, light edit for the active directory |
-| Plugins | `mise registry`, `mise plugins ls` | browse shorthands → backends; installed plugins |
+| Plugins | `mise plugins ls`, `mise plugins install`, `mise plugins uninstall` | installed plugins; custom plugins installable by name + git URL |
 | Doctor | `mise doctor` | health check |
 | Settings | `mise settings ls/set/unset` | edit mise settings |
 
@@ -71,7 +71,7 @@ The `/config` route redirects to `/preview` for one release, then is removed.
 
 ## Interaction rules
 
-1. **Execution panel on demand.** Hidden by default. Slides up when the user runs a command (exact argv + live log), dismissible when idle, re-openable from anywhere. Pages that dispatch nothing (Doctor, Preview-aside-from-trust, Plugins) never show it. Every invocation goes through it — mutations and read queries both (ADR-0005); only the reads a page issues for itself stay off the transcript, so a background refresh cannot erase the run the user is reading. It is also where copy-command lives, because the panel is the command history.
+1. **Execution panel on demand.** Hidden by default. Slides up when the user runs a command (exact argv + live log), dismissible when idle, re-openable from anywhere. Pages that dispatch nothing (Doctor, Preview-aside-from-trust) never show it. Every invocation goes through it — mutations and read queries both (ADR-0005); only the reads a page issues for itself stay off the transcript, so a background refresh cannot erase the run the user is reading. It is also where copy-command lives, because the panel is the command history.
 2. **Trust and activation banners stay in-page.** `mise trust` and `mise activate` are mise's own gates; banners surface them where they bite (Preview/Tools/Env/Tasks/Settings; activation banner global but dismissible).
 3. **Window discipline.** Body never scrolls horizontally; naturally wide content (JSON, tables, logs) scrolls inside its own container. A minimum window size applies; default and minimum sizes are content-aware — the exact mechanism (runtime measurement vs design-time constants) is an open question deferred to the implementing ticket.
 4. **Directory context is one thing.** The strip is the only place the directory is chosen or shown; every page consumes it (`mise -C <dir>`), no page hardcodes a directory (architecture.md).
