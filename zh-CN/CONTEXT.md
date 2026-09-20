@@ -20,6 +20,7 @@ _Avoid_: extension, addon
 
 **Registry**（注册表）:
 mise 内置的 Tool 简写名到 Backend 的映射（`mise registry`）。
+_已从面向用户 UI 文案退役_（beta11，#150）——仅作命令/文档词汇。
 _Avoid_: catalog, index
 
 **Config file**（配置文件）:

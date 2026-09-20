@@ -20,6 +20,7 @@ _Avoid_: extension, addon
 
 **Registry**:
 mise's built-in mapping of Tool shorthands to Backends (`mise registry`).
+_Retired from user-facing UI copy_ (beta11, #150) — command/documentation vocabulary only.
 _Avoid_: catalog, index
 
 **Config file**:

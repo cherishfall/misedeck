@@ -72,7 +72,7 @@
   },
   "tools": {
     "title": "Tools",
-    "hint": "Tools installed and active for the current directory. Add a tool with the registry search below — Use installs and activates in one step. Expand a row for its version center — use an installed version, install only, uninstall a version, unuse, or upgrade; every mutation streams through the execution panel.",
+    "hint": "Tools installed and active for the current directory — add one with the search below; Use installs and activates in one step.",
     "commandHint": "mise registry · mise use · mise ls · mise outdated · mise upgrade · mise unuse · mise ls-remote · mise install · mise uninstall · mise link",
     "columns": {
       "tool": "Tool",
@@ -86,7 +86,7 @@
     },
     "empty": {
       "title": "No tools installed",
-      "body": "Search the registry above and Use your first tool."
+      "body": "Search above and Use your first tool."
     },
     "missing": {
       "title": "Tools unavailable",
@@ -107,9 +107,9 @@
     },
     "addTool": {
       "title": "Add a tool",
-      "searchPlaceholder": "Search the registry (e.g. node)",
+      "searchPlaceholder": "Search tools (e.g. node)",
       "versionPlaceholder": "latest",
-      "noMatches": "No registry matches — a full backend:name (e.g. npm:prettier) still works."
+      "noMatches": "No matches — a full backend:name (e.g. npm:prettier) still works."
     },
     "linkForm": {
       "title": "Link a tool",

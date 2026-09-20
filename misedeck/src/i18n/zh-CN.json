@@ -72,7 +72,7 @@
   },
   "tools": {
     "title": "工具",
-    "hint": "当前目录中已安装并处于活动状态的工具。用下方的 Registry 搜索添加工具——「使用」一步完成安装并启用。展开某一行进入版本中心——使用已安装版本、仅安装、删除此版本、卸载或升级；所有变更都通过执行面板实时显示。",
+    "hint": "当前目录中已安装并处于活动状态的工具——在下方搜索添加，「使用」一步完成安装并启用。",
     "commandHint": "mise registry · mise use · mise ls · mise outdated · mise upgrade · mise unuse · mise ls-remote · mise install · mise uninstall · mise link",
     "columns": {
       "tool": "工具",
@@ -86,7 +86,7 @@
     },
     "empty": {
       "title": "尚未安装任何工具",
-      "body": "在上方搜索 Registry，然后「使用」你的第一个工具。"
+      "body": "在上方搜索并「使用」你的第一个工具。"
     },
     "missing": {
       "title": "工具列表不可用",
@@ -107,9 +107,9 @@
     },
     "addTool": {
       "title": "添加工具",
-      "searchPlaceholder": "搜索 Registry（如 node）",
+      "searchPlaceholder": "搜索工具（如 node）",
       "versionPlaceholder": "latest",
-      "noMatches": "Registry 中没有匹配项——仍可直接输入完整的 backend:name（如 npm:prettier）。"
+      "noMatches": "没有匹配项——仍可直接输入 backend:name（如 npm:prettier）。"
     },
     "linkForm": {
       "title": "链接工具",
