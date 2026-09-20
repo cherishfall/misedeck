@@ -185,6 +185,11 @@
   flex-wrap: wrap;
 }
 
+/* No reachable action — the dim "—" placeholder (issue #148). */
+.dim {
+  color: var(--dim);
+}
+
 .inputName,
 .inputValue {
   font-family: var(--font-mono);

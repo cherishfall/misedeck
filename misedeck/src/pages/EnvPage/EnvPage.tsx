@@ -212,7 +212,9 @@ export function EnvPage() {
       cell: (r) => (
         <EnvRowActions row={r} cwd={cwd} onWrite={runWrite} disabled={envWrite.isRunning} />
       ),
-      width: "360px",
+      // Sized for the two rest-state buttons (Edit / Remove) — the
+      // inline editor wraps inside the cell (beta11, issue #148).
+      width: "220px",
     },
   ];
 
@@ -410,9 +412,12 @@ function EnvRowActions({
   }, [row.name, row.value, editing]);
 
   // Tool- and host-sourced rows are read-only: `mise set` / `mise unset`
-  // can only target config-file-sourced rows, so expose no actions.
+  // can only target config-file-sourced rows, so the action cell carries
+  // no buttons — a dim "—" placeholder instead of a blank cell (issue
+  // #148). Why the row is not writable is discoverable on the row's
+  // source-badge Tooltip (see EnvSourceCell).
   if (!isConfigSource(row.source)) {
-    return null;
+    return <span className={styles.dim}>—</span>;
   }
 
   const dirty = name !== row.name || value !== row.value;
