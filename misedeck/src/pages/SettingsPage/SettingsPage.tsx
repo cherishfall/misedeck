@@ -11,26 +11,15 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
-import {
-  useTrust,
-  useTrustAction,
-  useTrustGuard,
-} from "../../state/trustContext";
+import { useTrustGuard } from "../../state/trustContext";
 import { detectMise, isAppError } from "../../api/mise";
 import { useOwnRun } from "../../components/ExecutionPanel";
 import {
   Badge,
-  Banner,
   Button,
   CommandHint,
   EmptyState,
@@ -41,7 +30,9 @@ import {
   type TableColumn,
   TableFilter,
   Tooltip,
+  TrustBanner,
   useRegisterPageRefresh,
+  useTrustBannerFocus,
 } from "../../components";
 import { useParsedSettingsList } from "../../hooks/useIssue29";
 import { useTableFilter } from "../../hooks/useTableFilter";
@@ -71,18 +62,10 @@ export function SettingsPage() {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
   const queryClient = useQueryClient();
-  const { state: trust } = useTrust();
-  const trustAction = useTrustAction();
   const guard = useTrustGuard();
-  const bannerRef = useRef<HTMLDivElement | null>(null);
-  const focusTrustBanner = useCallback(() => {
-    const el = bannerRef.current;
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      const btn = el.querySelector<HTMLButtonElement>("button");
-      btn?.focus();
-    }
-  }, []);
+  // Guard-blocked writes focus the shared trust banner (issues
+  // #25 / #141) instead of running.
+  const { ref: bannerRef, focus: focusTrustBanner } = useTrustBannerFocus();
 
   const detect = useQuery({
     queryKey: ["mise", "detect"],
@@ -232,11 +215,7 @@ export function SettingsPage() {
 
         <TrustBanner
           ref={bannerRef}
-          trust={trust}
-          running={trustAction.running}
-          lastResult={trustAction.lastResult}
-          lastError={trustAction.lastError}
-          onTrust={trustAction.run}
+          body={I18N_KEYS.settings.guard.untrustedBody}
         />
 
         {settingsError && (
@@ -476,54 +455,3 @@ function AddSettingForm({
   );
 }
 
-// ---------- Trust banner ----------
-
-interface TrustBannerProps {
-  trust: ReturnType<typeof useTrust>["state"];
-  running: boolean;
-  lastResult: "ok" | "error" | null;
-  lastError: string | null;
-  onTrust: () => void;
-}
-
-const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(function TrustBanner(
-  { trust, running, lastResult, lastError, onTrust },
-  ref,
-) {
-  const { t } = useTranslation();
-  if (trust.kind !== "untrusted") return null;
-  return (
-    <div ref={ref} data-testid="settings-trust-banner">
-      <Banner
-        tone="warning"
-        label={t(I18N_KEYS.trust.banner.label)}
-        action={
-          <Button
-            variant="primary"
-            size="sm"
-            loading={running}
-            disabled={running}
-            onClick={onTrust}
-            data-testid="settings-trust-button"
-          >
-            {running ? t(I18N_KEYS.trust.busy) : t(I18N_KEYS.trust.banner.action)}
-          </Button>
-        }
-      >
-        {t(I18N_KEYS.settings.guard.untrustedBody)}
-        {trust.path ? <Tooltip text={trust.path}><span className={styles.trustPath}> · {trust.path}</span></Tooltip> : null}
-      </Banner>
-      {lastResult === "ok" && (
-        <div className={styles.trustNote} data-testid="settings-trust-ok">
-          {t(I18N_KEYS.trust.ok)}
-        </div>
-      )}
-      {lastResult === "error" && (
-        <div className={styles.trustNote} data-testid="settings-trust-error">
-          {t(I18N_KEYS.trust.error)}
-          {lastError ? <> · {lastError}</> : null}
-        </div>
-      )}
-    </div>
-  );
-});

@@ -155,6 +155,9 @@
       "link": {
         "directoryNotFound": "目录路径不存在：{{path}}。请检查后重新选择。"
       }
+    },
+    "guard": {
+      "untrustedBody": "在修改此目录的工具之前，请先信任它。"
     }
   },
   "preview": {

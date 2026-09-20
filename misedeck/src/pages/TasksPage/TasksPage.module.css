@@ -52,16 +52,6 @@
   max-width: 70ch;
 }
 
-.contextPath {
-  font-family: var(--font-mono);
-  font-size: var(--size-data);
-  color: var(--dim);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-
 /* min-width = sum of declared column widths (200 name + 260 run + 180
  * depends + 200 actions): narrow windows scroll horizontally instead of
  * crushing columns (issues #90, #103). */
@@ -263,13 +253,6 @@
 .editFormInput[name="name"] {
   color: var(--dim);
   cursor: not-allowed;
-}
-
-.editFormHelp {
-  font-family: var(--font-ui);
-  font-size: var(--size-label);
-  color: var(--dim);
-  margin: 0;
 }
 
 .editFormActions {

@@ -19,10 +19,9 @@
 // All mutations and the open-in-editor side-effect go through
 // `useTrustGuard()` — when the cwd's `mise.toml` is untrusted,
 // the click handlers focus the trust banner instead of
-// executing. The pattern is the same one the env page
-// (#41) uses; the trust banner lives on the preview page
-// (#25) and the JS side navigates to it via a `key` prefix
-// shared with the preview's banner.
+// executing. The banner itself is the shared `TrustBanner`
+// component (issues #25 / #141); the focus hook is the guard
+// contract's other half.
 
 import {
   useQuery,
@@ -31,21 +30,15 @@ import {
 import { useTranslation } from "react-i18next";
 import { openPath as openExternalPath } from "@tauri-apps/plugin-opener";
 import {
-  forwardRef,
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
-import {
-  useTrust,
-  useTrustAction,
-  useTrustGuard,
-} from "../../state/trustContext";
+import { useTrustGuard } from "../../state/trustContext";
 import { detectMise, isAppError } from "../../api/mise";
 import { useOwnRun } from "../../components/ExecutionPanel";
 import {
@@ -53,7 +46,6 @@ import {
   parseDependsInput,
 } from "../../api/miseTools";
 import {
-  Banner,
   Button,
   CommandHint,
   EmptyState,
@@ -64,7 +56,9 @@ import {
   type TableColumn,
   TableFilter,
   Tooltip,
+  TrustBanner,
   useRegisterPageRefresh,
+  useTrustBannerFocus,
 } from "../../components";
 import { useParsedTasksList } from "../../hooks/useTasksList";
 import { useTableFilter } from "../../hooks/useTableFilter";
@@ -143,22 +137,11 @@ export function TasksPage() {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
   const queryClient = useQueryClient();
-  const { state: trust } = useTrust();
-  const trustAction = useTrustAction();
   const guard = useTrustGuard();
-  // The trust banner is rendered by the page itself so the guard
-  // can scroll to it on a blocked mutation. The ref is forwarded
-  // to the banner; the focus function is what the mutation
-  // handlers call when the guard blocks.
-  const bannerRef = useRef<HTMLDivElement | null>(null);
-  const focusTrustBanner = useCallback(() => {
-    const el = bannerRef.current;
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      const btn = el.querySelector<HTMLButtonElement>("button");
-      btn?.focus();
-    }
-  }, []);
+  // The trust banner is the shared component; the focus hook is what
+  // the mutation handlers call when the guard blocks (issues
+  // #25 / #141).
+  const { ref: bannerRef, focus: focusTrustBanner } = useTrustBannerFocus();
 
   // First check: is mise available at all? Same gate every page
   // uses. When mise is missing, render the missing state — the
@@ -505,16 +488,12 @@ export function TasksPage() {
         </div>
 
 
-        {/* Trust banner (issue #25). Same forwardRef pattern
-            the config / preview pages use so the guard can focus
-            it on a blocked mutation. */}
+        {/* Trust banner (issues #25 / #141) — shared component; the
+            ref lets the guard scroll to and focus it on a blocked
+            mutation. */}
         <TrustBanner
           ref={bannerRef}
-          trust={trust}
-          running={trustAction.running}
-          lastResult={trustAction.lastResult}
-          lastError={trustAction.lastError}
-          onTrust={trustAction.run}
+          body={I18N_KEYS.tasks.guard.untrustedBody}
         />
 
         {editorError && (
@@ -754,65 +733,3 @@ function EditForm({
   );
 }
 
-// ---------- Trust banner (issue #25) ----------
-//
-// Same forwardRef pattern the config / preview pages use.
-// Renders nothing in every state except `untrusted`, so it is
-// safe to drop into the page unconditionally. The one-click
-// `Trust` action routes through the execution panel so the
-// `mise trust` attempt is visible alongside any other panel
-// activity; on success the trust query invalidates itself and
-// the banner disappears.
-
-interface TrustBannerProps {
-  trust: ReturnType<typeof useTrust>["state"];
-  running: boolean;
-  lastResult: "ok" | "error" | null;
-  lastError: string | null;
-  onTrust: () => void;
-}
-
-const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(
-  function TrustBanner({ trust, running, lastResult, lastError, onTrust }, ref) {
-    const { t } = useTranslation();
-    if (trust.kind !== "untrusted") return null;
-    return (
-      <div ref={ref} data-testid="tasks-trust-banner">
-        <Banner
-          tone="warning"
-          label={t(I18N_KEYS.trust.banner.label)}
-          action={
-            <Button
-              variant="primary"
-              size="sm"
-              loading={running}
-              disabled={running}
-              onClick={onTrust}
-              data-testid="tasks-trust-button"
-            >
-              {running
-                ? t(I18N_KEYS.trust.busy)
-                : t(I18N_KEYS.trust.banner.action)}
-            </Button>
-          }
-        >
-          {t(I18N_KEYS.tasks.guard.untrustedBody)}
-          {trust.path ? (
-            <Tooltip text={trust.path}><span className={styles.contextPath}> · {trust.path}</span></Tooltip>
-          ) : null}
-        </Banner>
-        {lastResult === "ok" && (
-          <div className={styles.editFormHelp} data-testid="tasks-trust-ok">
-            {t(I18N_KEYS.trust.ok)}
-          </div>
-        )}
-        {lastResult === "error" && (
-          <div className={styles.editFormError} data-testid="tasks-trust-error">
-            {t(I18N_KEYS.trust.error)}
-            {lastError ? <> · {lastError}</> : null}
-          </div>
-        )}
-      </div>
-    );
-  },
-);

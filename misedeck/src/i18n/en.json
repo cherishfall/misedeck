@@ -155,6 +155,9 @@
       "link": {
         "directoryNotFound": "Directory not found: {{path}}. Pick again."
       }
+    },
+    "guard": {
+      "untrustedBody": "Trust this directory before mutating its tools."
     }
   },
   "preview": {

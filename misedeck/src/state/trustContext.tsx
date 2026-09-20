@@ -152,7 +152,8 @@ export function useTrust(): TrustContextValue {
 interface TrustAction {
   /** True while `mise trust` is streaming through the panel. */
   running: boolean;
-  /** Last terminal status. Cleared at the start of each run. */
+  /** Last terminal status. Cleared at the start of each run and when
+   *  the directory changes. */
   lastResult: "ok" | "error" | null;
   /** Last error as display copy (resolved via `resolveAppErrorMessage`)
    *  when `lastResult === "error"`. */
@@ -184,6 +185,13 @@ export function useTrustAction(): TrustAction {
   const [running, setRunning] = useState(false);
   const [lastResult, setLastResult] = useState<"ok" | "error" | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
+  // The terminal note describes the run for one specific cwd; a
+  // directory switch must not leave the previous directory's
+  // success/failure note behind under the new banner (issue #141).
+  useEffect(() => {
+    setLastResult(null);
+    setLastError(null);
+  }, [cwd]);
   // Guards against setState after unmount: a trust run outlives the
   // banner when the user navigates away mid-run.
   const mountedRef = useRef(true);

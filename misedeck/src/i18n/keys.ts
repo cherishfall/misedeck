@@ -168,6 +168,9 @@ export const I18N_KEYS = {
         directoryNotFound: "tools.confirm.link.directoryNotFound",
       },
     },
+    guard: {
+      untrustedBody: "tools.guard.untrustedBody",
+    },
     addTool: {
       title: "tools.addTool.title",
       searchPlaceholder: "tools.addTool.searchPlaceholder",

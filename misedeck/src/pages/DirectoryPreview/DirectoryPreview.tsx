@@ -33,12 +33,11 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { forwardRef, useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
 import { pickDirectory } from "../../directory/pickDirectory";
-import { useTrust, useTrustAction } from "../../state/trustContext";
 import { detectMise, isAppError } from "../../api/mise";
 import { reconcileEnvSources, type EnvSource } from "../../api/miseTools";
 import type { ConfigFile } from "../../types/tauri";
@@ -52,7 +51,6 @@ import {
 } from "../../hooks/useToolsList";
 import {
   Badge,
-  Banner,
   Button,
   CommandHint,
   EmptyState,
@@ -61,6 +59,7 @@ import {
   Table,
   type TableColumn,
   Tooltip,
+  TrustBanner,
   useRegisterPageRefresh,
 } from "../../components";
 
@@ -135,15 +134,6 @@ export function DirectoryPreview() {
   const { t } = useTranslation();
   const { cwd, setDirectory } = useDirectory();
   const queryClient = useQueryClient();
-  // Trust UX (issue #25): when the cwd's `mise.toml` is not
-  // trusted, render a Banner at the top with a one-click Trust
-  // action. The Banner is the prescribed surface (per architecture
-  // doc + `components/Banner/Banner.tsx`); the action routes
-  // through the existing execution panel so the trust attempt is
-  // visible alongside any other mutation.
-  const { state: trust } = useTrust();
-  const trustAction = useTrustAction();
-  const bannerRef = useRef<HTMLDivElement | null>(null);
 
   // First check: is mise available at all? Same gate the tools page
   // uses. When mise is missing, render the missing state — the rest
@@ -352,15 +342,10 @@ export function DirectoryPreview() {
         </div>
 
 
-        {/* ---------- Trust banner (issue #25) ---------- */}
-        <TrustBanner
-          ref={bannerRef}
-          trust={trust}
-          running={trustAction.running}
-          lastResult={trustAction.lastResult}
-          lastError={trustAction.lastError}
-          onTrust={trustAction.run}
-        />
+        {/* Trust banner (issues #25 / #141) — shared component; the
+            one-click Trust action routes through the execution
+            panel and the banner disappears on success. */}
+        <TrustBanner body={I18N_KEYS.trust.banner.body} />
 
         {/* ---------- Resolved tools ---------- */}
         <section className={styles.section} data-testid="preview-section-tools">
@@ -584,69 +569,3 @@ function PreviewLoading() {
   );
 }
 
-// ---------- Trust banner (issue #25) ----------
-
-interface TrustBannerProps {
-  trust: ReturnType<typeof useTrust>["state"];
-  running: boolean;
-  lastResult: "ok" | "error" | null;
-  lastError: string | null;
-  onTrust: () => void;
-}
-
-/**
- * The trust gate. Renders nothing in every state except
- * `untrusted`, so it is safe to drop into the page unconditionally.
- * The one-click `Trust` action routes through the execution panel
- * (so the `mise trust` attempt is visible alongside any other
- * panel activity), and on success the trust query invalidates
- * itself and the banner disappears.
- *
- * `ref` is forwarded so future mutating actions can scroll the
- * user to the banner instead of running.
- */
-const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(function TrustBanner(
-  { trust, running, lastResult, lastError, onTrust },
-  ref,
-) {
-  const { t } = useTranslation();
-  if (trust.kind !== "untrusted") return null;
-  return (
-    <div ref={ref} data-testid="preview-trust-banner">
-      <Banner
-        tone="warning"
-        label={t(I18N_KEYS.trust.banner.label)}
-        action={
-          <Button
-            variant="primary"
-            size="sm"
-            loading={running}
-            disabled={running}
-            onClick={onTrust}
-            data-testid="preview-trust-button"
-          >
-            {running
-              ? t(I18N_KEYS.trust.busy)
-              : t(I18N_KEYS.trust.banner.action)}
-          </Button>
-        }
-      >
-        {t(I18N_KEYS.trust.banner.body)}
-        {trust.path ? (
-          <Tooltip text={trust.path}><span className={styles.trustPath}> · {trust.path}</span></Tooltip>
-        ) : null}
-      </Banner>
-      {lastResult === "ok" && (
-        <div className={styles.trustNote} data-testid="preview-trust-ok">
-          {t(I18N_KEYS.trust.ok)}
-        </div>
-      )}
-      {lastResult === "error" && (
-        <div className={styles.trustNote} data-testid="preview-trust-error">
-          {t(I18N_KEYS.trust.error)}
-          {lastError ? <> · {lastError}</> : null}
-        </div>
-      )}
-    </div>
-  );
-});

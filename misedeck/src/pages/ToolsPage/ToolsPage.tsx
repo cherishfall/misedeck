@@ -67,7 +67,9 @@ import {
   type TableColumn,
   TableFilter,
   Tooltip,
+  TrustBanner,
   useRegisterPageRefresh,
+  useTrustBannerFocus,
 } from "../../components";
 import {
   commandEcho,
@@ -193,6 +195,11 @@ export function ToolsPage() {
   const { cwd } = useDirectory();
   const queryClient = useQueryClient();
   const guard = useTrustGuard();
+  // The trust banner is the shared component (issues #25 / #141);
+  // `focusTrustBanner` is what the mutation paths call when the
+  // guard blocks, so a blocked button scrolls the user to the
+  // banner instead of silently doing nothing.
+  const { ref: bannerRef, focus: focusTrustBanner } = useTrustBannerFocus();
 
   // The removal confirmation (issues #56 + #131): clicking 卸载 / Unuse
   // or 删除此版本 / Uninstall opens a dialog showing the exact command
@@ -253,7 +260,10 @@ export function ToolsPage() {
   const mutation = useOwnRun();
   const fireMutation = useCallback(
     async (builder: (cwd: string | null) => string[]) => {
-      if (!guard.allowed) return;
+      if (!guard.allowed) {
+        focusTrustBanner();
+        return;
+      }
       if (mutation.isRunning) return;
       const res = await mutation.run({ cwd, args: builder(cwd) });
       if (res.kind === "ok") {
@@ -262,7 +272,7 @@ export function ToolsPage() {
       }
       return res;
     },
-    [guard.allowed, mutation.isRunning, mutation.run, cwd, queryClient],
+    [guard.allowed, focusTrustBanner, mutation.isRunning, mutation.run, cwd, queryClient],
   );
 
   const onRefresh = useCallback(() => {
@@ -525,6 +535,14 @@ export function ToolsPage() {
           <p className={styles.hint}>{t(I18N_KEYS.tools.hint)}</p>
         </header>
 
+        {/* Trust banner (issues #25 / #141): every mutation below is
+            trust-gated; when the guard blocks, the page scrolls to
+            this banner instead of running. */}
+        <TrustBanner
+          ref={bannerRef}
+          body={I18N_KEYS.tools.guard.untrustedBody}
+        />
+
         {/* The single add-tool entry (issue #134): registry search +
             version (default `latest`) + one Use action running
             `mise use <tool>@<version>` — install and activate in one
@@ -533,8 +551,13 @@ export function ToolsPage() {
           disabled={mutation.isRunning}
           onUse={async (tool, version) => {
             // Mirror fireMutation's gates so a blocked run never leaves
-            // a stale pending expansion behind.
-            if (!guard.allowed || mutation.isRunning) return;
+            // a stale pending expansion behind; a trust-blocked run
+            // focuses the banner instead of silently returning.
+            if (!guard.allowed) {
+              focusTrustBanner();
+              return;
+            }
+            if (mutation.isRunning) return;
             const res = await fireMutation((cwd) => miseUseArgs(tool, version, cwd));
             if (res?.kind === "ok") setExpandedTool(tool);
           }}

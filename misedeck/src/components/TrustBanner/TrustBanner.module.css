@@ -1,0 +1,22 @@
+/* Trust banner (issues #25 / #141) — one shared implementation for
+   every page; the per-page copies were deleted in #141. */
+
+.trustPath {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.trustNote {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--hull) 60%, transparent);
+}
