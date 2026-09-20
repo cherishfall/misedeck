@@ -332,6 +332,7 @@ export const I18N_KEYS = {
     tooltip: {
       tool: "env.tooltip.tool",
       default: "env.tooltip.default",
+      configTool: "env.tooltip.configTool",
     },
     confirm: {
       remove: {

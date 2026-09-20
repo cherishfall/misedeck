@@ -278,7 +278,8 @@
     },
     "tooltip": {
       "tool": "Injected by {{tool}} via `mise env`; resolved at runtime, not settable via `mise set`.",
-      "default": "Inherited from the host environment; not written by mise, so not settable via `mise set`."
+      "default": "Inherited from the host environment; not written by mise, so not settable via `mise set`.",
+      "configTool": "Requested by the config file and injected by {{tool}}; overridable via `mise set`."
     },
     "confirm": {
       "remove": {

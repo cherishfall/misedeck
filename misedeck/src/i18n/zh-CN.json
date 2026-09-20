@@ -278,7 +278,8 @@
     },
     "tooltip": {
       "tool": "由 {{tool}} 通过 `mise env` 注入；在运行时解析，无法通过 `mise set` 设置。",
-      "default": "继承自宿主环境；并非由 mise 写入，因此无法通过 `mise set` 设置。"
+      "default": "继承自宿主环境；并非由 mise 写入，因此无法通过 `mise set` 设置。",
+      "configTool": "由配置文件请求、{{tool}} 注入；可通过 `mise set` 覆盖。"
     },
     "confirm": {
       "remove": {

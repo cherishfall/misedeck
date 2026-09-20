@@ -359,10 +359,14 @@ function envSourceVariant(source: EnvSource): "default" | "info" | "warning" {
 }
 
 /**
- * A row is editable only when its value is config-file-sourced. Tool
- * vars (`tool`) and host-inherited vars (`default`) are not written by
- * mise config, so `mise set` / `mise unset` must never target them
- * (issue #58).
+ * A row is editable when mise reported a config-file source path for
+ * it (`sourcePath` present ⇒ config-writable, beta11 4.3-C1, issue
+ * #156): that covers plain config rows and config-requested tool
+ * vars (CARGO_HOME etc.), which `mise set` overwrites and takes
+ * effect. Pure injections (`tool` with no sourcePath) and
+ * host-inherited vars (`default`) are not written by mise config, so
+ * `mise set` / `mise unset` must never target them (issue #58; the
+ * beta4 U1 decision still holds for that subset).
  */
 function isConfigSource(source: EnvSource): boolean {
   return source === "project" || source === "global";
@@ -370,23 +374,28 @@ function isConfigSource(source: EnvSource): boolean {
 
 function EnvSourceCell({ row }: { row: EnvRow }) {
   const { t } = useTranslation();
-  const label =
-    row.source === "tool" && row.sourceDetail
-      ? t(I18N_KEYS.env.source.toolDetail, {
-          source: t(I18N_KEYS.env.source.tool),
-          detail: row.sourceDetail,
-        })
-      : t(I18N_KEYS.env.source[row.source]);
-  // Tool-injected and host-inherited rows cannot be set via `mise set`;
-  // the badge carries a CLI-terms tooltip explaining why (issue #58).
-  // The shared Tooltip is the only hover-detail layer (ui-ux-rules:
-  // layout/typography) — the badge's native `title` exception is
-  // retired (issue #154).
+  // A row with a tool contributor (pure injection or config-requested)
+  // renders the combined「Current directory · rust」label via the
+  // shared toolDetail template (issue #156).
+  const label = row.sourceDetail
+    ? t(I18N_KEYS.env.source.toolDetail, {
+        source: t(I18N_KEYS.env.source[row.source]),
+        detail: row.sourceDetail,
+      })
+    : t(I18N_KEYS.env.source[row.source]);
+  // The badge tooltip tells the truth per row kind (issue #156):
+  // pure injections and host-inherited rows cannot be set via
+  // `mise set`; a config-requested tool var CAN — `mise set`
+  // overrides it. The shared Tooltip is the only hover-detail layer
+  // (ui-ux-rules: layout/typography) — the badge's native `title`
+  // exception is retired (issue #154).
   const tooltip = !isConfigSource(row.source)
     ? row.source === "tool" && row.sourceDetail
       ? t(I18N_KEYS.env.tooltip.tool, { tool: row.sourceDetail })
       : t(I18N_KEYS.env.tooltip.default)
-    : undefined;
+    : row.sourceDetail
+      ? t(I18N_KEYS.env.tooltip.configTool, { tool: row.sourceDetail })
+      : undefined;
   const badge = <Badge variant={envSourceVariant(row.source)}>{label}</Badge>;
   return (
     <div className={styles.sourceCell}>

@@ -285,6 +285,16 @@ function isGlobalConfigPath(path: string): boolean {
  * source path and tool name from mise are preserved; the badge
  * category is derived from them, falling back to the same
  * conventions as `parseEnvPayload` when mise omits source info.
+ *
+ * The config source path wins over the tool name: mise reports BOTH
+ * for a variable that a config file's requested tool injects (probe:
+ * CARGO_HOME → source=<repo mise.toml> + tool=rust), and such a
+ * variable IS overridable via `mise set` — `sourcePath` present ⇒
+ * config-writable (beta11 4.3-C1, issue #156). Only a row with NO
+ * sourcePath is a pure injection, and pure injections stay read-only
+ * (the beta4 U1 decision still holds for them). The tool name is
+ * kept as `sourceDetail` on a config-sourced row so the badge can
+ * render the combined「Current directory · rust」label.
  */
 export function parseEnvExtendedPayload(value: unknown): EnvEntry[] {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return [];
@@ -315,18 +325,18 @@ export function parseEnvExtendedPayload(value: unknown): EnvEntry[] {
 
     let source: EnvSource;
     let sourceDetail: string | undefined;
-    if (sourceTool && sourceTool.length > 0) {
-      source = "tool";
-      sourceDetail = sourceTool;
-    } else if (sourcePath && isGlobalConfigPath(sourcePath)) {
+    if (sourcePath && isGlobalConfigPath(sourcePath)) {
       source = "global";
+      sourceDetail = sourceTool;
     } else if (sourcePath && sourcePath.length > 0) {
       source = "project";
+      sourceDetail = sourceTool;
+    } else if (sourceTool && sourceTool.length > 0) {
+      source = "tool";
+      sourceDetail = sourceTool;
     } else if (TOOL_DERIVED[name]) {
       source = "tool";
       sourceDetail = TOOL_DERIVED[name];
-    } else if (DEFAULT_VARS.has(name)) {
-      source = "default";
     } else {
       source = "default";
     }
