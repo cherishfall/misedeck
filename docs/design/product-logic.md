@@ -18,6 +18,7 @@ North-star feeling: *"I always know which mise command this screen is showing me
 4. **Chrome gets out of the way.** Navigation is a collapsible sidebar; the directory indicator appears only when relevant; the execution panel appears when the user runs something, not when a table refreshes itself in the background.
 5. **Data is data, labels are labels.** Typography styling (uppercase, tracking) belongs to the section eyebrow alone, never to data — paths, versions, commands, values render exactly as mise reports them.
 6. **Visual inheritance.** Light and dark themes both follow mise.jdx.dev's look, so the app reads as part of the mise family, not a generic hacker skin.
+7. **No "update everything" flows.** mise manages dev tool versions, not application software. Best practice for dev tools is LTS or a version a few behind latest — precisely to shield the dev environment from the big bugs and breaking changes a fresh release can ship. MiseDeck therefore has no batch upgrade and no multi-tool simultaneous update: every upgrade is a deliberate per-tool decision (`mise upgrade`). Usability is still the goal — package-manager-grade convenience is pursued everywhere it does not imply "newest is best"; the domain distinction (dev tools value stability) is the premise. Precedent: beta8 Issues 5/8 already ruled this way (batching commands invents beyond the CLI — the ADR-0007 boundary's first application; the "Upgrade all" button was removed then). This stance is codified so future feedback rounds do not re-propose it.
 
 ## Information architecture
 
@@ -85,3 +86,5 @@ The `/config` route redirects to `/preview` for one release, then is removed.
 ## Out of scope (roadmap, not now)
 
 Environments (`MISE_ENV` profiles) as a first-class UI, hooks editing, lockfile management beyond viewing, `mise watch`, monorepo task syntax, public misedeck CLI (issue #11), deep-water backends (issue #12).
+
+Plugin-level outdated/update (`mise plugins ls --outdated`, `mise plugins update`) is out of scope for v1: updating a Plugin is maintaining its installer script — a different concern from keeping tool versions stable — and a half-baked v1 implementation would be worse than none (beta11 Issue 4 Q7).
