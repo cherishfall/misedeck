@@ -58,11 +58,12 @@ Semantic discipline:
 
 | Role | Face | Usage |
 |---|---|---|
-| Display | Cormorant Garamond 500–600, normal case, no tracking | page titles, the wordmark (italic) |
+| Display | Cormorant Garamond 500–600, upright (not italic), no tracking | page titles, the wordmark (italic) |
 | UI / nav | Space Grotesk 400–600 | nav items, buttons, prose |
 | Data | JetBrains Mono 400–600 | versions, paths, commands, logs, badges |
 | Eyebrow | JetBrains Mono 400–600, uppercase, letter-spacing ≈ .18em, `--ice` | mode/section labels only (the toolbar mode indicator); Latin-only — zh-CN eyebrows drop uppercase and tracking |
 
+- Casing is layered (beta11, revising the beta7 sentence-case settlement): page titles and sidebar nav items take Title Case (`Directory Overview`); section headings, labels, badges, and buttons stay sentence case. zh-CN has no letter-case distinction — the rule binds the Latin layer only.
 - The serif display face is the editorial signature of mise.jdx.dev — it is spent on titles and the wordmark only, never on data or controls.
 - zh-CN: display text falls back to `Songti SC` / `SimSun` (Chinese serifs), UI text to `PingFang SC` / `system-ui`; Latin data keeps JetBrains Mono.
 - Base size 14px (`--size-base`), data exactly 12px (`--size-data` — a single value, not a range), eyebrows 10px (`--size-label`) as standalone decoration, display 26px (`--size-display`). No fluid type; desktop-app density.

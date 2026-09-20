@@ -234,6 +234,7 @@ export const I18N_KEYS = {
   preview: {
     title: "preview.title",
     hint: "preview.hint",
+    hintGlobal: "preview.hintGlobal",
     commandHint: "preview.commandHint",
     nav: "preview.nav",
     empty: {

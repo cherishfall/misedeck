@@ -179,10 +179,11 @@
     }
   },
   "preview": {
-    "title": "Directory overview",
+    "title": "Directory Overview",
     "hint": "Resolved tools, env, config files, and lockfile for the current directory.",
-    "commandHint": "mise -C <dir> ls · mise outdated · mise trust · mise env · mise config · mise.lock",
-    "nav": "Directory overview",
+    "hintGlobal": "Resolved env, config files, and lockfile for Global mode.",
+    "commandHint": "mise outdated · mise trust · mise -C <dir> ls · mise env · mise config",
+    "nav": "Directory Overview",
     "empty": {
       "body": "The env, config, and lockfile sections already show the global resolution; this list is directory-scoped. Choose a directory to see what `mise -C <dir> ls` reports there.",
       "action": "Choose directory"

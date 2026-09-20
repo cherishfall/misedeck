@@ -58,11 +58,12 @@ MiseDeck 界面的设计系统基础。在 issue #37 中重写：首个设计冲
 
 | 角色 | 字体 | 用途 |
 |---|---|---|
-| Display | Cormorant Garamond 500–600，正常大小写，无字距 | 页面标题、wordmark（斜体） |
+| Display | Cormorant Garamond 500–600，正体（非斜体），无字距 | 页面标题、wordmark（斜体） |
 | UI / 导航 | Space Grotesk 400–600 | 导航项、按钮、正文 |
 | 数据 | JetBrains Mono 400–600 | 版本、路径、命令、日志、徽章 |
 | 眉签 | JetBrains Mono 400–600，大写，字距 ≈ .18em，`--ice` | 仅限模式/区块标签（工具栏模式指示器）；仅拉丁文——zh-CN 眉签不取大写与字距 |
 
+- 大小写分层（beta11，修订 beta7 的 sentence-case 裁决）：页面标题与侧边栏导航项用 Title Case（如 `Directory Overview`）；节标题、标签、徽标与按钮保持 sentence case。zh-CN 无字母大小写之分——本条仅约束拉丁文层。
 - 衬线 display 字体是 mise.jdx.dev 的编辑式签名 —— 只花在标题与 wordmark 上，绝不用于数据或控件。
 - zh-CN：display 文本回退到 `Songti SC` / `SimSun`（中文衬线），UI 文本回退到 `PingFang SC` / `system-ui`；Latin 数据保持 JetBrains Mono。
 - 基准字号 14px（`--size-base`），数据恰好 12px（`--size-data`——单一值，不是区间），眉签作为独立装饰时 10px（`--size-label`），display 26px（`--size-display`）。无流式字号；桌面应用密度。

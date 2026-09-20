@@ -72,11 +72,8 @@ interface ToolRow {
   id: string;
   tool: string;
   version: string;
-  /** "GLOBAL" or "THIS DIRECTORY" — derived from `source.path`. */
+  /** "Global" or "Current directory" (i18n) — derived from `source.path`. */
   source: "global" | "project";
-  /** True when this row appears in the outdated map. */
-  outdated: boolean;
-  latest: string;
 }
 
 interface EnvRow {
@@ -208,10 +205,6 @@ export function DirectoryPreview() {
   // already lives at /tools).
   const toolRows: ToolRow[] = useMemo(() => {
     if (!tools.data || cwd === null) return [];
-    const outdatedByTool = new Map<string, { latest: string }>();
-    for (const item of outdated.data ?? []) {
-      if (item.latest) outdatedByTool.set(item.name, { latest: item.latest });
-    }
     const out: ToolRow[] = [];
     for (const { tool, items } of tools.data) {
       const active = items.find((it) => it.active) ?? items[0];
@@ -222,12 +215,10 @@ export function DirectoryPreview() {
         tool,
         version: active.version,
         source: toolSourceKind(srcPath, cwd),
-        outdated: outdatedByTool.has(tool),
-        latest: outdatedByTool.get(tool)?.latest ?? "",
       });
     }
     return out;
-  }, [tools.data, outdated.data, cwd]);
+  }, [tools.data, cwd]);
 
   // Env rows: use the reconciled entries.
   const envRows: EnvRow[] = useMemo(() => {
@@ -357,13 +348,14 @@ export function DirectoryPreview() {
         <header className={styles.head}>
           <h1 className={styles.title}>{t(I18N_KEYS.preview.title)}</h1>
           <CommandHint>{t(I18N_KEYS.preview.commandHint)}</CommandHint>
-          <p className={styles.hint}>{t(I18N_KEYS.preview.hint)}</p>
+          <p className={styles.hint}>
+            {t(cwd === null ? I18N_KEYS.preview.hintGlobal : I18N_KEYS.preview.hint)}
+          </p>
         </header>
 
         <div className={styles.toolbar}>
           <OutdatedHint count={outdated.data == null ? null : outdated.data.length} />
         </div>
-
 
         {/* Trust banner (issues #25 / #141) — shared component; the
             one-click Trust action routes through the execution
@@ -555,14 +547,14 @@ function ConfigFileRow({ file, rank }: { file: ConfigFile; rank: number }) {
         {file.tools.length > 0 && (
           <span className={styles.configTools}>{file.tools.join(", ")}</span>
         )}
-        <button
-          type="button"
-          className={styles.configToggle}
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setExpanded((v) => !v)}
           data-testid="preview-config-toggle"
         >
           {expanded ? t(I18N_KEYS.preview.config.hide) : t(I18N_KEYS.preview.config.view)}
-        </button>
+        </Button>
       </div>
       {expanded &&
         (file.content !== null ? (
