@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { usePersistentState } from "../../hooks/usePersistentState";
+import { Tooltip } from "../Tooltip";
 import { writeClipboard } from "../../utils/clipboard";
 import { useExecutionContext } from "./ExecutionContext";
 import type { ExecutionStatus } from "./useExecution";
@@ -215,7 +216,11 @@ export function ExecutionPanel() {
         <div className={styles.header}>
           <div className={styles.headerLeft}>
             <span className={styles.label}>{t(I18N_KEYS.execution.title)}</span>
-            {echo && <span className={styles.command}>{echo}</span>}
+            {echo && (
+              <Tooltip text={echo}>
+                <span className={styles.command}>{echo}</span>
+              </Tooltip>
+            )}
           </div>
           <div className={styles.headerRight}>
             {state.status === "running" && (

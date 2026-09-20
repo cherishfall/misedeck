@@ -47,14 +47,18 @@
   border-radius: 6px;
   background: color-mix(in srgb, var(--void) 45%, transparent);
   padding: var(--space-2) var(--space-3);
-  overflow-x: auto;
 }
 
+/* The dialog shows exactly one full command and it must be completely
+ * readable — a confirmation is a teaching moment (ui-ux-rules.md), so a
+ * truncated or horizontally-scrolled command would fail its job. The
+ * command soft-wraps; with a long `-C <path>` injected, breaking mid-token
+ * is acceptable — data honesty beats an unbreakable token. */
 .command {
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .actions {
