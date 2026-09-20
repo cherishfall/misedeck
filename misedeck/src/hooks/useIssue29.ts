@@ -5,16 +5,23 @@
 // directory refetches the data. The result is the typed JSON Result
 // union (`{kind: "ok", ...} | {kind: "err", ...}`) so the consumer
 // pattern-matches the same way the tools page does.
+//
+// The `settings ls` read routes through the execution panel's runner
+// (ADR-0005, issue #162) rather than its own Tauri command (removed once
+// no callers remained, same as the tools `ls` family): every mise
+// invocation the app makes is visible in one place and runs once.
 
+import { useCallback } from "react";
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
-import { doctor, pluginsLs, registry, settingsLs } from "../api/mise";
+import { doctor, pluginsLs, registry } from "../api/mise";
 import {
   parseDoctorPayload,
   parsePluginsLsPayload,
   parseRegistryPayload,
   parseSettingsPayload,
 } from "../api/miseTools";
+import { toJsonResult, useExecutionContext } from "../components/ExecutionPanel";
 import { useDirectory } from "../state/directoryContext";
 import type {
   DoctorPayload,
@@ -24,14 +31,34 @@ import type {
   SettingsItem,
 } from "../types/tauri";
 
+/** Build the `mise settings ls` argv, mirroring the Rust helper
+ *  `mise_settings_ls` (issue #29). `--all` lists unset keys with their
+ *  defaults (issue #52); `--local` restricts the list to the project
+ *  config when the context is a directory. */
+function settingsLsArgs(all: boolean, local: boolean): string[] {
+  const args = ["settings", "ls", "--json-extended"];
+  if (all) args.push("--all");
+  if (local) args.push("--local");
+  return args;
+}
+
 /** Read-only mise settings list (`mise settings ls --json-extended`).
- *  Cache key is `["settings", "ls", cwd, all]`; `all: true` adds
- *  `--all` so unset keys are listed with their defaults (issue #52). */
+ *  Cache key is `["settings", "ls", cwd, all]`. The table loads itself,
+ *  so this read is dispatched in the background: the same runner, but
+ *  it must not replace the transcript the user is reading (a write's
+ *  log, typically, since a successful write invalidates this very
+ *  query — ADR-0005). */
 export function useSettingsList(all: boolean): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
+  const { run } = useExecutionContext();
+  const read = useCallback(
+    async (dir: string | null, argv: string[]) =>
+      toJsonResult(await run({ cwd: dir, args: argv }, { background: true })),
+    [run],
+  );
   return useQuery({
     queryKey: ["settings", "ls", cwd, all],
-    queryFn: () => settingsLs(cwd, all),
+    queryFn: () => read(cwd, settingsLsArgs(all, cwd !== null)),
     refetchOnWindowFocus: false,
     retry: false,
   });

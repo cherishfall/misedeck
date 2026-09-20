@@ -432,6 +432,7 @@ export const I18N_KEYS = {
     },
     saveButton: "settings.saveButton",
     unsetButton: "settings.unsetButton",
+    editButton: "settings.editButton",
     addButton: "settings.addButton",
     addSettingLabel: "settings.addSettingLabel",
     keyPlaceholder: "settings.keyPlaceholder",
@@ -447,6 +448,15 @@ export const I18N_KEYS = {
         title: "settings.confirm.overwrite.title",
         body: "settings.confirm.overwrite.body",
       },
+      unset: {
+        title: "settings.confirm.unset.title",
+        body: "settings.confirm.unset.body",
+      },
+    },
+    tooltip: {
+      objectReadOnly: "settings.tooltip.objectReadOnly",
+      unsetOutOfScope: "settings.tooltip.unsetOutOfScope",
+      unsetDefault: "settings.tooltip.unsetDefault",
     },
     success: {
       set: "settings.success.set",

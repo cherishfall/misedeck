@@ -25,6 +25,7 @@ The panel is also now the home of **copy command**. It is the command history, s
 - Switching the directory context clears a committed version query instead of silently refetching it: a query with no fetcher cannot refetch, and a spinner that never resolves would be a lie. The typed tool name stays, so re-running against the new directory is one click.
 - `tools_ls`, `tools_ls_tool`, and `tools_ls_remote` keep their Tauri commands and runner functions (typed contract and Rust tests unchanged) but the UI no longer calls them; the frontend wrappers are gone so the bypass cannot be reintroduced by accident.
 - Reads that do not belong to the `ls` family (`outdated`, `env`, `config ls`, lockfile, tasks, plugins) still use their own commands. They are not exempt in principle — this ticket's scope was the three queries the owner hit. New read surfaces should route through the runner.
+- `settings ls` joined the runner-routed reads in #162 (the beta11 audit found the page still invoking its own `settings_ls` Tauri command — the "new read surfaces" clause had not reached it). The page now dispatches `mise settings ls --json-extended` through the runner in background mode; the dedicated Tauri command and the frontend wrapper were removed once no callers remained, the same end state as the tools `ls` family. The Rust runner function and its fixture tests stay as the pinned argv contract.
 
 ## Amendment — the single-flight rule was an accidental global lock (issue #138)
 

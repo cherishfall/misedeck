@@ -136,14 +136,11 @@ export async function openInTerminal(
   return (await invoke("open_in_terminal", { path })) as TerminalOpenResult;
 }
 
-/** Calls the `settings_ls` Tauri command (`mise settings ls --json-extended`).
- *  Returns the raw JSON object mise emits; the JS side parses it into
- *  a table of settings with source badges (issue #29). When `all` is
- *  true, `--all` is passed so unset keys are listed with their
- *  defaults (issue #52). */
-export async function settingsLs(cwd: string | null, all: boolean): Promise<JsonResult> {
-  return (await invoke("settings_ls", { cwd, all })) as JsonResult;
-}
+// The `settings ls` read has no wrapper here on purpose: like the tools
+// `ls` family, it is dispatched through the execution-panel runner in
+// background mode so the argv contract is pinned in one place and the
+// bypass cannot be reintroduced by accident (ADR-0005, issue #162). See
+// `useIssue29.ts`.
 
 /** Calls the `doctor` Tauri command (`mise doctor --json`). Returns the
  *  raw JSON payload on success, or a structured fallback with

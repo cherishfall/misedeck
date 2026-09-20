@@ -95,10 +95,10 @@
 /* ---------- Table cells ---------- */
 
 /* min-width = sum of declared column widths (240 key + 84 type + 140
- * source + 210 actions): narrow windows scroll horizontally instead of
+ * source + 220 actions): narrow windows scroll horizontally instead of
  * crushing columns (issues #90, #103). */
 .settingsTable {
-  min-width: 674px;
+  min-width: 684px;
 }
 
 .cellKey {
@@ -114,6 +114,12 @@
 }
 
 .cellValue {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--beam);
@@ -135,7 +141,14 @@
   color: var(--dim);
 }
 
-/* ---------- Per-row editor ---------- */
+/* ---------- Per-row actions ---------- */
+
+.rowActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
 
 .rowEditor {
   display: inline-flex;

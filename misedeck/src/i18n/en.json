@@ -375,10 +375,11 @@
     },
     "error": {
       "title": "Failed to load settings",
-      "body": "`mise settings ls --json-extended` did not return. Stderr is preserved in the execution panel."
+      "body": "`mise settings ls --json-extended` did not return. Stderr is shown below."
     },
     "saveButton": "Save",
     "unsetButton": "Unset",
+    "editButton": "Edit",
     "addButton": "Add",
     "addSettingLabel": "Add a setting",
     "keyPlaceholder": "setting name",
@@ -397,7 +398,16 @@
       "overwrite": {
         "title": "Overwrite {{key}}?",
         "body": "The setting {{key}} already has a value; adding it again overwrites the current value. This will run the exact command below."
+      },
+      "unset": {
+        "title": "Unset {{key}}?",
+        "body": "This will run the exact command below. The setting {{key}} will be removed from its config file and this cannot be undone."
       }
+    },
+    "tooltip": {
+      "objectReadOnly": "Table-typed settings cannot be written by `mise settings set` — edit the config file directly.",
+      "unsetOutOfScope": "Defined in {{source}}, outside the current write scope — Unset would not take effect.",
+      "unsetDefault": "This key only carries a built-in default — there is nothing to unset."
     }
   },
   "doctor": {

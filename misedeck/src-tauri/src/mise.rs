@@ -1064,6 +1064,12 @@ where
 /// `all` is true, `--all` is added so unset keys (with their default
 /// values) are listed too — the Settings page's opt-in "--all" view
 /// and its key-name completion both read from this (issue #52).
+///
+/// The dedicated `settings_ls` Tauri command was removed in #162: the
+/// page now dispatches this read through the execution-panel runner in
+/// background mode (ADR-0005), building the same argv in the frontend.
+/// The function stays as the pinned argv/contract reference, tested
+/// against fixtures like the tools `ls` family (issue #72).
 pub fn mise_settings_ls(
     mise_path: &Path,
     cwd: Option<&Path>,

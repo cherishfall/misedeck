@@ -375,10 +375,11 @@
     },
     "error": {
       "title": "加载设置失败",
-      "body": "`mise settings ls --json-extended` 未返回结果。stderr 已在执行面板中保留。"
+      "body": "`mise settings ls --json-extended` 未返回结果。stderr 如下所示。"
     },
     "saveButton": "保存",
     "unsetButton": "移除",
+    "editButton": "编辑",
     "addButton": "添加",
     "addSettingLabel": "添加设置",
     "keyPlaceholder": "设置名",
@@ -397,7 +398,16 @@
       "overwrite": {
         "title": "覆盖 {{key}}？",
         "body": "设置 {{key}} 已有值；再次添加会用新值覆盖当前值。将运行以下确切命令。"
+      },
+      "unset": {
+        "title": "移除 {{key}}？",
+        "body": "将运行以下确切命令。设置 {{key}} 会从其配置文件中移除，此操作无法撤销。"
       }
+    },
+    "tooltip": {
+      "objectReadOnly": "整表设置无法通过 `mise settings set` 写入，请直接编辑配置文件。",
+      "unsetOutOfScope": "该设置定义在 {{source}}，不在当前写入范围内——移除不会生效。",
+      "unsetDefault": "该键只有内置默认值，没有可移除的设置。"
     }
   },
   "doctor": {

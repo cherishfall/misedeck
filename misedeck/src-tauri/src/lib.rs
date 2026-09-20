@@ -21,7 +21,7 @@ use install::{run_install as run_install_script, run_self_update, InstallOutcome
 use mise::{
     check_trust, detect_mise as run_mise_probe, locate_mise, mise_config_files, mise_doctor,
     mise_env, mise_env_extended, mise_outdated, mise_plugins_ls,
-    mise_registry, mise_settings_ls, mise_tasks_ls, read_mise_lockfile,
+    mise_registry, mise_tasks_ls, read_mise_lockfile,
     run_mise, run_trust, validate_run_args,
     AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
 };
@@ -562,28 +562,6 @@ async fn tasks_ls(cwd: Option<String>) -> JsonResult {
     }
 }
 
-/// `mise settings ls --json-extended` for the active directory
-/// context. Returns the raw JSON object mise emits; the JS side
-/// parses it into a table of settings with source badges. When
-/// `cwd` is `Some`, `--local` is added so project-level settings
-/// are listed. When `all` is true, `--all` is added so unset keys
-/// are listed with their defaults (issue #52).
-#[tauri::command]
-async fn settings_ls(cwd: Option<String>, all: Option<bool>) -> JsonResult {
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return JsonResult::Err { err: e },
-    };
-    let cwd_owned = cwd.as_deref().map(PathBuf::from);
-    match spawn_run(move || {
-        let cwd = cwd_owned.as_deref();
-        mise_settings_ls(&path, cwd, all.unwrap_or(false))
-    }).await {
-        Ok(value) => JsonResult::Ok { value },
-        Err(err) => JsonResult::Err { err },
-    }
-}
-
 /// `mise doctor --json` for the active directory context. Returns
 /// the raw JSON payload on success; if the mise binary does not
 /// support `--json`, the runner captures the raw doctor text and
@@ -747,7 +725,6 @@ pub fn run() {
             trust_check,
             mise_trust,
             tasks_ls,
-            settings_ls,
             doctor,
             registry,
             plugins_ls,

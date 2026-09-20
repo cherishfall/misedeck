@@ -1,8 +1,12 @@
 // Integration tests for the settings, doctor, registry, and plugins
 // surface (issues #29 + #51).
 //
-//   * `settings_ls`  → `mise settings ls --json-extended`
-//   * `doctor`       → `mise doctor --json` (with raw-text fallback)
+//   * settings ls      → `mise settings ls --json-extended` (the dedicated
+//                        `settings_ls` Tauri command was removed in #162;
+//                        the page now dispatches this read through the
+//                        execution-panel runner — the runner function
+//                        stays as the pinned argv contract)
+//   * `doctor`         → `mise doctor --json` (with raw-text fallback)
 //   * `registry`     → `mise registry --json` (with table fallback)
 //   * `plugins_ls`   → `mise plugins ls --urls` (table parsing; no
 //                      `--json` exists for this command)
@@ -81,7 +85,7 @@ fn mise_settings_unset_argv_builds_command() {
     );
 }
 
-// ---------- settings_ls ----------
+// ---------- settings ls ----------
 
 #[test]
 #[serial]

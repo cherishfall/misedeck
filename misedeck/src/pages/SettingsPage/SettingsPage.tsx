@@ -5,6 +5,15 @@
 // form completes key names from `mise settings ls --all`, and an
 // opt-in "--all" toggle reveals unset keys (issue #52).
 //
+// Rows render read-only by default; an explicit Edit expands the
+// inline form (ui-ux-rules: "read-only by default", the beta8 rule's
+// last holdout — Env migrated in #58). Object/table-valued settings
+// cannot be written wholesale by the CLI, so they render read-only
+// (beta11 4.7-M2). Unset is destructive: it confirms first and is
+// disabled when the key's source file is outside the current write
+// scope, where `mise settings unset` would silently do nothing
+// (beta11 4.7-M1/B1, issue #162).
+//
 // The page follows the same trust-guarded mutation pattern as the
 // config editor (#26): every mutating button checks `useTrustGuard()`
 // first, and the trust banner is focused when a write is blocked.
@@ -40,6 +49,7 @@ import {
 } from "../../components";
 import { useParsedSettingsList } from "../../hooks/useIssue29";
 import { useTableFilter } from "../../hooks/useTableFilter";
+import { isPathUnder, normalizePathForCompare } from "../../utils/paths";
 import type { SettingsItem } from "../../types/tauri";
 
 import styles from "./SettingsPage.module.css";
@@ -175,7 +185,11 @@ export function SettingsPage() {
       key: "value",
       header: t(I18N_KEYS.settings.columns.value),
       sortValue: (r) => formatValue(r.value),
-      cell: (r) => <span className={styles.cellValue}>{formatValue(r.value)}</span>,
+      cell: (r) => (
+        <Tooltip text={formatValue(r.value)}>
+          <span className={styles.cellValue}>{formatValue(r.value)}</span>
+        </Tooltip>
+      ),
     },
     {
       key: "type",
@@ -194,8 +208,18 @@ export function SettingsPage() {
     {
       key: "actions",
       header: t(I18N_KEYS.settings.columns.actions),
-      width: "210px",
-      cell: (r) => <RowEditor row={r} onWrite={runWrite} disabled={writeRun.isRunning} />,
+      // Sized for the two rest-state buttons (Edit / Unset) — the
+      // inline editor wraps inside the cell (beta11, issue #148).
+      width: "220px",
+      cell: (r) => (
+        <RowActions
+          row={r}
+          cwd={cwd}
+          allView={showAll}
+          onWrite={runWrite}
+          disabled={writeRun.isRunning}
+        />
+      ),
     },
   ];
 
@@ -325,97 +349,214 @@ function formatValue(value: unknown): string {
   return String(value);
 }
 
-function RowEditor({
+/** Whole-table (object) values: `mise settings set` cannot write them
+ *  (the CLI rejects table-valued settings, beta11 4.7-M2), so these
+ *  rows render read-only. Arrays stay editable as JSON text. */
+function isObjectValue(value: unknown): boolean {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+/** True when `mise settings unset [--local]` can actually remove this
+ *  row. The command exits 0 without doing anything when the key lives
+ *  in a different config file than the write target (beta11 4.7-M1),
+ *  so an out-of-scope Unset renders disabled with its reason instead
+ *  of silently failing. */
+function unsetInScope(row: SettingsItem, cwd: string | null, allView: boolean): boolean {
+  if (!row.source) {
+    // An `--all` row without a source carries only a built-in default
+    // — there is nothing to unset. The explicit view's rows are by
+    // construction explicitly set (the plain `--json` fallback shape
+    // merely drops the source field), so they stay in scope.
+    return !allView;
+  }
+  if (cwd === null) {
+    // Global context writes to the global config file; rows listed in
+    // this context are global-sourced in practice, so a sourced row is
+    // in scope. (A project-sourced row can only appear when the app's
+    // own process cwd sits inside a project, which the frontend cannot
+    // detect from here.)
+    return true;
+  }
+  // Directory context: `--local` finds and removes the key from
+  // whatever project config up the tree defines it, so the source's
+  // directory must be the cwd itself or one of its ancestors. A
+  // global-config source is never under the cwd — Unset would no-op.
+  const source = normalizePathForCompare(row.source);
+  const sourceDir = source.slice(0, Math.max(0, source.lastIndexOf("/")));
+  return isPathUnder(sourceDir, cwd);
+}
+
+function RowActions({
   row,
+  cwd,
+  allView,
   onWrite,
   disabled,
 }: {
   row: SettingsItem;
+  /** Active directory context, echoed in the unset confirmation. */
+  cwd: string | null;
+  /** Whether the row comes from the opt-in `--all` view. */
+  allView: boolean;
   onWrite: (
     builder: (cwd: string | null) => string[],
     successMessage?: string,
   ) => Promise<WriteOutcome>;
   /** True while a foreground command runs. Run-locking (issue #135)
-   *  gates only command-firing controls — Save / submit and Unset.
-   *  Editing the draft value never locks. */
+   *  gates only command-firing controls — the draft's Save. Opening
+   *  and editing the draft (Edit, inputs, Cancel) never locks, and
+   *  neither does Unset: it only opens the confirm dialog, whose own
+   *  Confirm button is run-aware (see ConfirmDialog). */
   disabled: boolean;
 }) {
   const { t } = useTranslation();
+  const [editing, setEditing] = useState(false);
+  const [confirmingUnset, setConfirmingUnset] = useState(false);
   // Boolean-typed settings edit through a two-state control, not a
   // free text field (issue #52).
   const isBool = row.type === "boolean" || typeof row.value === "boolean";
   const [value, setValue] = useState(formatValue(row.value));
   const [checked, setChecked] = useState(row.value === true);
+  // Reset the draft only while not actively editing, so an open editor
+  // keeps its own edits across refetches (issue #58).
   useEffect(() => {
-    setValue(formatValue(row.value));
-    setChecked(row.value === true);
-  }, [row.value]);
+    if (!editing) {
+      setValue(formatValue(row.value));
+      setChecked(row.value === true);
+    }
+  }, [row.value, editing]);
+
+  // A row the CLI cannot write renders read-only (ui-ux-rules): the
+  // action cell carries a dim "—" whose Tooltip says why (issue #148).
+  if (isObjectValue(row.value)) {
+    return (
+      <Tooltip text={t(I18N_KEYS.settings.tooltip.objectReadOnly)}>
+        <span className={styles.dim}>—</span>
+      </Tooltip>
+    );
+  }
+
+  const inScope = unsetInScope(row, cwd, allView);
+
   const dirty = isBool
     ? checked !== (row.value === true)
     : value !== formatValue(row.value);
-  // Escape reverts the draft to the row's current value (issue #109).
-  const onRevert = () => {
+  const startEdit = () => {
     setValue(formatValue(row.value));
     setChecked(row.value === true);
+    setEditing(true);
   };
-  return (
-    <KeyForm
-      className={styles.rowEditor}
-      onSubmit={() =>
-        onWrite(
-          (cwd) => miseSettingsSetArgs(row.key, isBool ? String(checked) : value, cwd),
-          t(I18N_KEYS.settings.success.set, { key: row.key }),
-        )
-      }
-      onRevert={onRevert}
-      submitDisabled={disabled || !dirty || (!isBool && value.length === 0)}
-    >
-      {isBool ? (
-        <input
-          type="checkbox"
-          className={styles.boolToggle}
-          checked={checked}
-          onChange={(e) => setChecked(e.target.checked)}
-          aria-label={`${row.key}: ${formatValue(row.value)}`}
-        />
-      ) : (
-        <input
-          type="text"
-          className={styles.input}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder={t(I18N_KEYS.settings.valuePlaceholder)}
-          spellCheck={false}
-          autoComplete="off"
-        />
-      )}
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={() =>
-          onWrite(
-            (cwd) => miseSettingsSetArgs(row.key, isBool ? String(checked) : value, cwd),
-            t(I18N_KEYS.settings.success.set, { key: row.key }),
-          )
-        }
-        disabled={disabled || !dirty || (!isBool && value.length === 0)}
+  const cancelEdit = () => {
+    setValue(formatValue(row.value));
+    setChecked(row.value === true);
+    setEditing(false);
+  };
+  // The editor closes only on success so a failed or trust-blocked
+  // write keeps the draft (beta11 4.3-B1 pattern, Env page).
+  const doSave = async () => {
+    const outcome = await onWrite(
+      (cwd) => miseSettingsSetArgs(row.key, isBool ? String(checked) : value, cwd),
+      t(I18N_KEYS.settings.success.set, { key: row.key }),
+    );
+    if (outcome === "ok") setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <KeyForm
+        className={styles.rowEditor}
+        onSubmit={() => void doSave()}
+        onRevert={cancelEdit}
+        submitDisabled={disabled || !dirty || (!isBool && value.length === 0)}
       >
-        {t(I18N_KEYS.settings.saveButton)}
+        {isBool ? (
+          <input
+            type="checkbox"
+            className={styles.boolToggle}
+            checked={checked}
+            onChange={(e) => setChecked(e.target.checked)}
+            aria-label={t(I18N_KEYS.settings.columns.value)}
+          />
+        ) : (
+          <input
+            type="text"
+            className={styles.input}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={t(I18N_KEYS.settings.valuePlaceholder)}
+            spellCheck={false}
+            autoComplete="off"
+          />
+        )}
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => void doSave()}
+          disabled={disabled || !dirty || (!isBool && value.length === 0)}
+        >
+          {t(I18N_KEYS.settings.saveButton)}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={cancelEdit}>
+          {t(I18N_KEYS.common.cancel)}
+        </Button>
+      </KeyForm>
+    );
+  }
+
+  return (
+    <span className={styles.rowActions}>
+      <Button variant="secondary" size="sm" onClick={startEdit}>
+        {t(I18N_KEYS.settings.editButton)}
       </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() =>
-          onWrite(
+      {inScope ? (
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={() => setConfirmingUnset(true)}
+        >
+          {t(I18N_KEYS.settings.unsetButton)}
+        </Button>
+      ) : (
+        /* Out of the current write scope the command would silently
+           do nothing, so the button renders disabled and the Tooltip
+           says why (beta11 4.7-M1; ui-ux-rules: disabled control +
+           discoverable reason). */
+        <Tooltip
+          text={
+            row.source
+              ? t(I18N_KEYS.settings.tooltip.unsetOutOfScope, { source: row.source })
+              : t(I18N_KEYS.settings.tooltip.unsetDefault)
+          }
+        >
+          <span className={styles.rowActions}>
+            <Button variant="danger" size="sm" disabled>
+              {t(I18N_KEYS.settings.unsetButton)}
+            </Button>
+          </span>
+        </Tooltip>
+      )}
+      {/* Unset is destructive, so it confirms first and the dialog
+          teaches the exact command that will run (ui-ux-rules:
+          "uninstall, unset, overwrite always confirm"). Same
+          ConfirmDialog pattern as the env page's Remove. */}
+      <ConfirmDialog
+        open={confirmingUnset}
+        confirmBusy={disabled}
+        title={t(I18N_KEYS.settings.confirm.unset.title, { key: row.key })}
+        body={t(I18N_KEYS.settings.confirm.unset.body, { key: row.key })}
+        command={commandEcho("mise", cwd, miseSettingsUnsetArgs(row.key, cwd))}
+        confirmLabel={t(I18N_KEYS.settings.unsetButton)}
+        cancelLabel={t(I18N_KEYS.common.cancel)}
+        onConfirm={() => {
+          setConfirmingUnset(false);
+          void onWrite(
             (cwd) => miseSettingsUnsetArgs(row.key, cwd),
             t(I18N_KEYS.settings.success.unset, { key: row.key }),
-          )
-        }
-        disabled={disabled}
-      >
-        {t(I18N_KEYS.settings.unsetButton)}
-      </Button>
-    </KeyForm>
+          );
+        }}
+        onCancel={() => setConfirmingUnset(false)}
+      />
+    </span>
   );
 }
 
