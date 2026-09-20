@@ -925,6 +925,17 @@ function AddToolEntry({ disabled, onUse }: AddToolEntryProps) {
   const suggestions = useMemo<RegistryItem[]>(() => {
     const q = query.trim().toLowerCase();
     if (q.length === 0) return [];
+    // Tiered ranking (issue #149): an exact or prefix short-name match
+    // always outranks a description hit, so typing "java" puts `java`
+    // first instead of `ant` (alphabetically first via its "Java
+    // library" description). Ties keep the registry's own order.
+    const tier = (r: RegistryItem): number => {
+      const short = r.short.toLowerCase();
+      if (short === q) return 0;
+      if (short.startsWith(q)) return 1;
+      if ((r.aliases ?? []).some((a) => a.toLowerCase().includes(q))) return 2;
+      return 3;
+    };
     return (registry.data ?? [])
       .filter((r) =>
         [r.short, r.description ?? "", ...(r.aliases ?? [])]
@@ -932,6 +943,7 @@ function AddToolEntry({ disabled, onUse }: AddToolEntryProps) {
           .toLowerCase()
           .includes(q),
       )
+      .sort((a, b) => tier(a) - tier(b))
       .slice(0, ADD_TOOL_SUGGESTION_CAP);
   }, [registry.data, query]);
 
@@ -998,12 +1010,27 @@ function AddToolEntry({ disabled, onUse }: AddToolEntryProps) {
                 e.preventDefault();
                 setActiveIndex((i) => (i - 1 + suggestions.length) % suggestions.length);
               } else if (e.key === "Enter") {
-                // Enter with an open list picks the active suggestion
-                // instead of submitting; the form's own Enter handles
-                // the closed-list submit.
-                e.preventDefault();
-                e.stopPropagation();
-                pickSuggestion(suggestions[activeIndex]);
+                const exact = suggestions.find(
+                  (s) => s.short.toLowerCase() === query.trim().toLowerCase(),
+                );
+                if (exact && !disabled) {
+                  // The query is already an exact tool name — submit
+                  // it directly instead of picking the suggestion and
+                  // requiring a second Enter (issue #149).
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setQuery(exact.short);
+                  setOpen(false);
+                  // An empty version means latest — `mise use <tool>@latest`.
+                  onUse(exact.short, version.trim() || "latest");
+                } else {
+                  // Enter with an open list picks the active suggestion
+                  // instead of submitting; the form's own Enter handles
+                  // the closed-list submit.
+                  e.preventDefault();
+                  e.stopPropagation();
+                  pickSuggestion(suggestions[activeIndex]);
+                }
               } else if (e.key === "Escape") {
                 // Escape closes the list first; KeyForm's revert clears
                 // the draft on the next press.
