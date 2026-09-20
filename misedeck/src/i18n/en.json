@@ -59,13 +59,16 @@
       "action": "Trust this directory"
     },
     "busy": "Trusting…",
-    "ok": "Trusted. You may need to re-run actions to see updated results.",
-    "error": "Could not trust the directory. Check the execution panel for details."
+    "error": "Could not trust the directory. Check the execution panel for details.",
+    "success": "Directory trusted"
   },
   "home": {
     "title": "Home",
     "hint": "Is mise installed and new enough for MiseDeck? Guided install and self-update live here; every action streams through the execution panel.",
-    "commandHint": "mise version · mise self-update"
+    "commandHint": "mise version · mise self-update",
+    "success": {
+      "selfUpdated": "mise updated"
+    }
   },
   "tools": {
     "title": "Tools",
@@ -275,6 +278,10 @@
         "title": "Remove {{name}}?",
         "body": "This will run the exact command below. The env var will be removed from mise's config for this context and this cannot be undone."
       }
+    },
+    "success": {
+      "set": "{{name}} set",
+      "unset": "{{name}} removed"
     }
   },
   "tasks": {
@@ -323,6 +330,9 @@
     "readError": {
       "title": "Failed to load tasks",
       "body": "`mise tasks ls --json` did not return. Stderr is preserved in the execution panel."
+    },
+    "success": {
+      "saved": "Task {{name}} saved"
     }
   },
   "settings": {
@@ -355,6 +365,10 @@
     "count": "{{count}} settings",
     "guard": {
       "untrustedBody": "Trust this directory before mutating its settings."
+    },
+    "success": {
+      "set": "{{key}} saved",
+      "unset": "{{key}} unset"
     }
   },
   "doctor": {
@@ -430,6 +444,9 @@
     "installedError": {
       "title": "Failed to load plugins",
       "body": "`mise plugins ls` did not return. Stderr is preserved in the execution panel."
+    },
+    "success": {
+      "uninstalled": "Plugin {{name}} uninstalled"
     }
   },
   "states": {

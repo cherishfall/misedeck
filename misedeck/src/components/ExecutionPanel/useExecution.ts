@@ -472,13 +472,15 @@ export function useExecution() {
     await runMiseInternal("install_mise", "install", {}, request);
   }, [runMiseInternal]);
 
-  /** Run `mise self-update --yes` via the cached mise binary. */
-  const runSelfUpdate = useCallback(async () => {
+  /** Run `mise self-update --yes` via the cached mise binary. The
+   *  structured result is returned so the caller can tell success from
+   *  failure (issue #145). */
+  const runSelfUpdate = useCallback((): Promise<RunCommandResult> => {
     const request: RunRequest = {
       cwd: null,
       args: ["self-update", "--yes"],
     };
-    await runMiseInternal("mise_self_update", "selfUpdate", {}, request);
+    return runMiseInternal("mise_self_update", "selfUpdate", {}, request);
   }, [runMiseInternal]);
 
   /** Run `mise trust` for the given directory. Streams into the

@@ -109,6 +109,9 @@ export const I18N_KEYS = {
     title: "home.title",
     hint: "home.hint",
     commandHint: "home.commandHint",
+    success: {
+      selfUpdated: "home.success.selfUpdated",
+    },
   },
   trust: {
     banner: {
@@ -117,8 +120,8 @@ export const I18N_KEYS = {
       action: "trust.banner.action",
     },
     busy: "trust.busy",
-    ok: "trust.ok",
     error: "trust.error",
+    success: "trust.success",
   },
   tools: {
     title: "tools.title",
@@ -329,6 +332,10 @@ export const I18N_KEYS = {
         body: "env.confirm.remove.body",
       },
     },
+    success: {
+      set: "env.success.set",
+      unset: "env.success.unset",
+    },
   },
   tasks: {
     title: "tasks.title",
@@ -377,6 +384,9 @@ export const I18N_KEYS = {
       title: "tasks.readError.title",
       body: "tasks.readError.body",
     },
+    success: {
+      saved: "tasks.success.saved",
+    },
   },
   settings: {
     title: "settings.title",
@@ -408,6 +418,10 @@ export const I18N_KEYS = {
     count: "settings.count",
     guard: {
       untrustedBody: "settings.guard.untrustedBody",
+    },
+    success: {
+      set: "settings.success.set",
+      unset: "settings.success.unset",
     },
   },
   doctor: {
@@ -483,6 +497,9 @@ export const I18N_KEYS = {
     installedError: {
       title: "plugins.installedError.title",
       body: "plugins.installedError.body",
+    },
+    success: {
+      uninstalled: "plugins.success.uninstalled",
     },
   },
   states: {

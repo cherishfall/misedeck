@@ -2,7 +2,9 @@
 // brand lockup in the sidebar; it is deliberately not a nav item
 // (docs/design/product-logic.md). The page's jobs are guided install and
 // self-update: it probes `mise version --json` at startup and renders one
-// panel per detection state (missing / too old / ready / error).
+// panel per detection state (missing / too old / ready / error). A
+// successful self-update closes the loop in-page with a short-lived
+// confirmation bar (issue #145); failures still auto-open the panel.
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -23,6 +25,7 @@ import {
   PageShell,
   Panel,
   ProgressDot,
+  SuccessBar,
   useRegisterPageRefresh,
 } from "../../components";
 import { commandEcho, useExecutionContext } from "../../components/ExecutionPanel";
@@ -81,6 +84,11 @@ export function HomePage() {
   // any unrelated command running elsewhere.
   const [selfUpdateRunning, setSelfUpdateRunning] = useState(false);
 
+  // In-page success confirmation (issue #145): a successful
+  // self-update closes the loop here with a short-lived bar; failures
+  // are unchanged — the panel still auto-opens.
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const query = useQuery({
     queryKey: ["mise", "detect"],
     queryFn: detectMise,
@@ -134,6 +142,14 @@ export function HomePage() {
           <CommandHint>{t(I18N_KEYS.home.commandHint)}</CommandHint>
           <p className={styles.hint}>{t(I18N_KEYS.home.hint)}</p>
         </header>
+
+        {/* In-page success confirmation (issue #145): set by a
+            successful self-update below, auto-dismisses after a few
+            seconds. Null renders nothing. */}
+        <SuccessBar
+          message={successMessage}
+          onDismiss={() => setSuccessMessage(null)}
+        />
 
         {view.status === "loading" && (
           <Panel className={styles.state}>
@@ -346,7 +362,16 @@ export function HomePage() {
             setPendingSelfUpdate(null);
             setSelfUpdateRunning(true);
             void runSelfUpdate()
-              .then(onSelfUpdateOk)
+              .then((res) => {
+                // Success closes the loop in-page (issue #145); the
+                // exact command stays in the execution panel's
+                // transcript. The version refetch happens either way,
+                // as before.
+                if (res.kind === "ok") {
+                  setSuccessMessage(t(I18N_KEYS.home.success.selfUpdated));
+                }
+                onSelfUpdateOk();
+              })
               .finally(() => setSelfUpdateRunning(false));
           }}
           onCancel={() => setPendingSelfUpdate(null)}

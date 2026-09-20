@@ -22,6 +22,7 @@ import {
   ConfirmDialog,
   EmptyState,
   PageShell,
+  SuccessBar,
   Table,
   type TableColumn,
   Tooltip,
@@ -60,6 +61,11 @@ export function PluginsPage() {
   const uninstall = useOwnRun();
   const [pendingUninstall, setPendingUninstall] = useState<string | null>(null);
 
+  // In-page success confirmation (issue #145): a successful uninstall
+  // closes the loop here with a short-lived bar; failures are
+  // unchanged — the panel still auto-opens.
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   // Per-action run-lock (issue #138): `uninstall` wraps the panel runner and
   // its in-flight flag is true only while *this* uninstall is running, so a
   // long install elsewhere never disables this page. The read query
@@ -70,9 +76,10 @@ export function PluginsPage() {
       const res = await uninstall.run({ cwd, args: misePluginsUninstallArgs(name) });
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["plugins", "ls", cwd] });
+        setSuccessMessage(t(I18N_KEYS.plugins.success.uninstalled, { name }));
       }
     },
-    [uninstall.isRunning, uninstall.run, cwd, queryClient],
+    [uninstall.isRunning, uninstall.run, cwd, queryClient, t],
   );
 
   const pluginsError = plugins.error?.kind === "err" ? plugins.error.err : null;
@@ -146,6 +153,14 @@ export function PluginsPage() {
           <CommandHint>{t(I18N_KEYS.plugins.commandHint)}</CommandHint>
           <p className={styles.hint}>{t(I18N_KEYS.plugins.hint)}</p>
         </header>
+
+        {/* In-page success confirmation (issue #145): set by a
+            successful uninstall below, auto-dismisses after a few
+            seconds. Null renders nothing. */}
+        <SuccessBar
+          message={successMessage}
+          onDismiss={() => setSuccessMessage(null)}
+        />
 
         <section className={styles.section} data-testid="plugins-installed-section">
           <header className={styles.sectionHead}>

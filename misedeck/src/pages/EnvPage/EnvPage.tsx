@@ -6,8 +6,10 @@
 //   * mise unset <KEY>          → remove an env var
 //
 // All mutations route through the execution panel so the exact argv
-// and live log are visible. Mutations are trust-gated in directory
-// contexts; the trust banner follows the same pattern as Preview.
+// and live log are visible; a successful write closes the loop in-page
+// with a short-lived confirmation bar (issue #145). Mutations are
+// trust-gated in directory contexts; the trust banner follows the
+// same pattern as Preview.
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -27,6 +29,7 @@ import {
   EmptyState,
   KeyForm,
   PageShell,
+  SuccessBar,
   Suggestions,
   Table,
   type TableColumn,
@@ -90,6 +93,11 @@ export function EnvPage() {
   const env = useParsedEnvList();
   const envWrite = useOwnRun();
 
+  // In-page success confirmation (issue #145): a successful write
+  // closes the loop here with a short-lived bar; failures are
+  // unchanged — the panel still auto-opens.
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   // Top-toolbar refresh (issue #98): invalidate both the active and the
   // global env queries, plus the preview page's env query.
   const onRefresh = useCallback(() => {
@@ -105,9 +113,10 @@ export function EnvPage() {
   // dispatched is running. On this run's own success, refresh both the
   // active and global env queries (so switching contexts shows fresh
   // data) plus the preview page's env query; active queries refetch
-  // immediately so the table updates visibly (issue #41).
+  // immediately so the table updates visibly (issue #41). The optional
+  // `successMessage` closes the loop in-page (issue #145).
   const runWrite = useCallback(
-    async (builder: (cwd: string | null) => string[]) => {
+    async (builder: (cwd: string | null) => string[], successMessage?: string) => {
       if (!guard.allowed) {
         focusTrustBanner();
         return;
@@ -121,6 +130,7 @@ export function EnvPage() {
         void queryClient.invalidateQueries({ queryKey: ["tools", "env", null] });
         void queryClient.refetchQueries({ queryKey: ["env", "ls", cwd], type: "active" });
         void queryClient.refetchQueries({ queryKey: ["env", "ls", null], type: "active" });
+        if (successMessage !== undefined) setSuccessMessage(successMessage);
       }
     },
     [guard.allowed, focusTrustBanner, envWrite.isRunning, envWrite.run, cwd, queryClient],
@@ -210,6 +220,14 @@ export function EnvPage() {
           <p className={styles.hint}>{t(I18N_KEYS.env.hint)}</p>
           <ScopeBadge cwd={cwd} />
         </header>
+
+        {/* In-page success confirmation (issue #145): set by every
+            successful write below, auto-dismisses after a few
+            seconds. Null renders nothing. */}
+        <SuccessBar
+          message={successMessage}
+          onDismiss={() => setSuccessMessage(null)}
+        />
 
         <TrustBanner
           ref={bannerRef}
@@ -375,7 +393,10 @@ function EnvRowActions({
 }: {
   row: EnvRow;
   cwd: string | null;
-  onWrite: (builder: (cwd: string | null) => string[]) => void | Promise<void>;
+  onWrite: (
+    builder: (cwd: string | null) => string[],
+    successMessage?: string,
+  ) => void | Promise<void>;
   /** True while a foreground command runs. Run-locking (issue #135)
    *  gates only command-firing controls — the draft's Save / submit.
    *  Opening and editing the draft (Edit, inputs, Cancel) never locks,
@@ -416,9 +437,15 @@ function EnvRowActions({
   };
   const onSave = () => {
     if (name !== row.name) {
-      void onWrite((cwd) => miseEnvUnsetArgs(row.name, cwd));
+      void onWrite(
+        (cwd) => miseEnvUnsetArgs(row.name, cwd),
+        t(I18N_KEYS.env.success.unset, { name: row.name }),
+      );
     }
-    void onWrite((cwd) => miseEnvSetArgs(name, value, cwd));
+    void onWrite(
+      (cwd) => miseEnvSetArgs(name, value, cwd),
+      t(I18N_KEYS.env.success.set, { name }),
+    );
     setEditing(false);
   };
 
@@ -504,7 +531,10 @@ function EnvRowActions({
         cancelLabel={t(I18N_KEYS.common.cancel)}
         onConfirm={() => {
           setConfirmingRemove(false);
-          void onWrite((cwd) => miseEnvUnsetArgs(row.name, cwd));
+          void onWrite(
+            (cwd) => miseEnvUnsetArgs(row.name, cwd),
+            t(I18N_KEYS.env.success.unset, { name: row.name }),
+          );
         }}
         onCancel={() => setConfirmingRemove(false)}
       />
@@ -518,7 +548,10 @@ function AddEnvForm({
   onWrite,
   disabled,
 }: {
-  onWrite: (builder: (cwd: string | null) => string[]) => void | Promise<void>;
+  onWrite: (
+    builder: (cwd: string | null) => string[],
+    successMessage?: string,
+  ) => void | Promise<void>;
   /** True while a foreground command runs; locks only the Add submit
    *  (run-locking, issue #135) — drafting the inputs never locks. */
   disabled: boolean;
@@ -527,7 +560,10 @@ function AddEnvForm({
   const [name, setName] = useState("");
   const [value, setValue] = useState("");
   const onAdd = () => {
-    void onWrite((cwd) => miseEnvSetArgs(name, value, cwd));
+    void onWrite(
+      (cwd) => miseEnvSetArgs(name, value, cwd),
+      t(I18N_KEYS.env.success.set, { name }),
+    );
   };
   // Escape clears the draft (issue #109).
   const onRevert = () => {

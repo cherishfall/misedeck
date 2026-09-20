@@ -25,6 +25,7 @@ import {
   EmptyState,
   KeyForm,
   PageShell,
+  SuccessBar,
   Suggestions,
   Table,
   type TableColumn,
@@ -84,6 +85,11 @@ export function SettingsPage() {
 
   const writeRun = useOwnRun();
 
+  // In-page success confirmation (issue #145): a successful write
+  // closes the loop here with a short-lived bar; failures are
+  // unchanged — the panel still auto-opens.
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   // Top-toolbar refresh (issue #98): the prefix key covers both the
   // explicit and the `--all` settings queries.
   const onRefresh = useCallback(() => {
@@ -95,9 +101,10 @@ export function SettingsPage() {
   // its in-flight flag is true only while the command *this* callback
   // dispatched is running, so a long install elsewhere never disables
   // this page's Save / Add. The read query refreshes on this run's own
-  // success (not on a global status transition).
+  // success (not on a global status transition). The optional
+  // `successMessage` closes the loop in-page (issue #145).
   const runWrite = useCallback(
-    async (builder: (cwd: string | null) => string[]) => {
+    async (builder: (cwd: string | null) => string[], successMessage?: string) => {
       if (!guard.allowed) {
         focusTrustBanner();
         return;
@@ -106,6 +113,7 @@ export function SettingsPage() {
       const res = await writeRun.run({ cwd, args: builder(cwd) });
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["settings", "ls", cwd] });
+        if (successMessage !== undefined) setSuccessMessage(successMessage);
       }
     },
     [guard.allowed, focusTrustBanner, writeRun.isRunning, writeRun.run, cwd, queryClient],
@@ -185,6 +193,14 @@ export function SettingsPage() {
           <p className={styles.hint}>{t(I18N_KEYS.settings.hint)}</p>
           <ScopeBadge cwd={cwd} />
         </header>
+
+        {/* In-page success confirmation (issue #145): set by every
+            successful write below, auto-dismisses after a few
+            seconds. Null renders nothing. */}
+        <SuccessBar
+          message={successMessage}
+          onDismiss={() => setSuccessMessage(null)}
+        />
 
         <div className={styles.toolbar}>
           <span className={styles.toolbarHint}>
@@ -312,7 +328,10 @@ function RowEditor({
   disabled,
 }: {
   row: SettingsItem;
-  onWrite: (builder: (cwd: string | null) => string[]) => void | Promise<void>;
+  onWrite: (
+    builder: (cwd: string | null) => string[],
+    successMessage?: string,
+  ) => void | Promise<void>;
   /** True while a foreground command runs. Run-locking (issue #135)
    *  gates only command-firing controls — Save / submit and Unset.
    *  Editing the draft value never locks. */
@@ -340,8 +359,9 @@ function RowEditor({
     <KeyForm
       className={styles.rowEditor}
       onSubmit={() =>
-        onWrite((cwd) =>
-          miseSettingsSetArgs(row.key, isBool ? String(checked) : value, cwd),
+        onWrite(
+          (cwd) => miseSettingsSetArgs(row.key, isBool ? String(checked) : value, cwd),
+          t(I18N_KEYS.settings.success.set, { key: row.key }),
         )
       }
       onRevert={onRevert}
@@ -370,8 +390,9 @@ function RowEditor({
         variant="primary"
         size="sm"
         onClick={() =>
-          onWrite((cwd) =>
-            miseSettingsSetArgs(row.key, isBool ? String(checked) : value, cwd),
+          onWrite(
+            (cwd) => miseSettingsSetArgs(row.key, isBool ? String(checked) : value, cwd),
+            t(I18N_KEYS.settings.success.set, { key: row.key }),
           )
         }
         disabled={disabled || !dirty || (!isBool && value.length === 0)}
@@ -381,7 +402,12 @@ function RowEditor({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => onWrite((cwd) => miseSettingsUnsetArgs(row.key, cwd))}
+        onClick={() =>
+          onWrite(
+            (cwd) => miseSettingsUnsetArgs(row.key, cwd),
+            t(I18N_KEYS.settings.success.unset, { key: row.key }),
+          )
+        }
         disabled={disabled}
       >
         {t(I18N_KEYS.settings.unsetButton)}
@@ -395,7 +421,10 @@ function AddSettingForm({
   disabled,
   keySuggestions,
 }: {
-  onWrite: (builder: (cwd: string | null) => string[]) => void | Promise<void>;
+  onWrite: (
+    builder: (cwd: string | null) => string[],
+    successMessage?: string,
+  ) => void | Promise<void>;
   /** True while a foreground command runs; locks only the Add submit
    *  (run-locking, issue #135) — drafting the inputs never locks. */
   disabled: boolean;
@@ -407,7 +436,10 @@ function AddSettingForm({
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
   const onAdd = () => {
-    void onWrite((cwd) => miseSettingsSetArgs(key, value, cwd));
+    void onWrite(
+      (cwd) => miseSettingsSetArgs(key, value, cwd),
+      t(I18N_KEYS.settings.success.set, { key }),
+    );
   };
   // Escape clears the draft (issue #109).
   const onRevert = () => {

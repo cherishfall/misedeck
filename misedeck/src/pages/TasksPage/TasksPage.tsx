@@ -51,6 +51,7 @@ import {
   EmptyState,
   KeyForm,
   PageShell,
+  SuccessBar,
   Suggestions,
   Table,
   type TableColumn,
@@ -155,6 +156,11 @@ export function TasksPage() {
 
   const tasks = useParsedTasksList();
 
+  // In-page success confirmation (issue #145): a successful save
+  // closes the loop here with a short-lived bar; failures are
+  // unchanged — the panel still auto-opens.
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   // Top-toolbar refresh (issue #98).
   const onRefresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["tasks", "ls", cwd] });
@@ -203,9 +209,10 @@ export function TasksPage() {
       const res = await saveRun.run({ cwd, args: miseTasksAddArgs(name, runCmd, depends) });
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["tasks", "ls", cwd] });
+        setSuccessMessage(t(I18N_KEYS.tasks.success.saved, { name }));
       }
     },
-    [guard.allowed, focusTrustBanner, saveRun.isRunning, saveRun.run, cwd, queryClient],
+    [guard.allowed, focusTrustBanner, saveRun.isRunning, saveRun.run, cwd, queryClient, t],
   );
 
   // Open the file that defines the task in the OS default editor.
@@ -472,6 +479,14 @@ export function TasksPage() {
           <CommandHint>{t(I18N_KEYS.tasks.commandHint)}</CommandHint>
           <p className={styles.hint}>{t(I18N_KEYS.tasks.subtitle)}</p>
         </header>
+
+        {/* In-page success confirmation (issue #145): set by a
+            successful save below, auto-dismisses after a few seconds.
+            Null renders nothing. */}
+        <SuccessBar
+          message={successMessage}
+          onDismiss={() => setSuccessMessage(null)}
+        />
 
         <div className={styles.toolbar}>
           <span className={styles.toolbarHint}>

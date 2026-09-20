@@ -59,13 +59,16 @@
       "action": "信任此目录"
     },
     "busy": "正在信任…",
-    "ok": "已信任。可能需要重新执行操作以查看最新结果。",
-    "error": "无法信任该目录。请查看执行面板了解详情。"
+    "error": "无法信任该目录。请查看执行面板了解详情。",
+    "success": "目录已信任"
   },
   "home": {
     "title": "首页",
     "hint": "检测 mise 是否已安装且版本满足 MiseDeck 的要求；引导安装与自更新都在这里进行，所有操作都通过执行面板实时显示。",
-    "commandHint": "mise version · mise self-update"
+    "commandHint": "mise version · mise self-update",
+    "success": {
+      "selfUpdated": "mise 已更新"
+    }
   },
   "tools": {
     "title": "工具",
@@ -275,6 +278,10 @@
         "title": "移除 {{name}}？",
         "body": "将运行以下确切命令。该环境变量会从当前上下文的 mise 配置中移除，此操作无法撤销。"
       }
+    },
+    "success": {
+      "set": "{{name}} 已设置",
+      "unset": "{{name}} 已移除"
     }
   },
   "tasks": {
@@ -323,6 +330,9 @@
     "readError": {
       "title": "加载任务失败",
       "body": "`mise tasks ls --json` 未返回结果。stderr 已在执行面板中保留。"
+    },
+    "success": {
+      "saved": "任务 {{name}} 已保存"
     }
   },
   "settings": {
@@ -355,6 +365,10 @@
     "count": "{{count}} 项设置",
     "guard": {
       "untrustedBody": "在修改此目录的设置之前，请先信任它。"
+    },
+    "success": {
+      "set": "{{key}} 已保存",
+      "unset": "{{key}} 已取消设置"
     }
   },
   "doctor": {
@@ -430,6 +444,9 @@
     "installedError": {
       "title": "加载插件失败",
       "body": "`mise plugins ls` 未返回结果。stderr 已在执行面板中保留。"
+    },
+    "success": {
+      "uninstalled": "插件 {{name}} 已卸载"
     }
   },
   "states": {

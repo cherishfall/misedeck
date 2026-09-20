@@ -40,8 +40,10 @@ interface ExecutionContextValue {
   run: (request: RunRequest, options?: RunOptions) => Promise<RunCommandResult>;
   /** Run the official install script. Streams into the panel. */
   runInstall: () => Promise<void>;
-  /** Run `mise self-update --yes`. Streams into the panel. */
-  runSelfUpdate: () => Promise<void>;
+  /** Run `mise self-update --yes`. Streams into the panel and returns
+   *  the structured result so the caller can close the loop in-page on
+   *  success (issue #145). */
+  runSelfUpdate: () => Promise<RunCommandResult>;
   /** Run `mise trust` for the given directory. Streams into the panel
    *  and returns the structured result — with concurrent runs (#138)
    *  the caller cannot rely on the panel's active-run projection. */

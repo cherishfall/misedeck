@@ -12,15 +12,22 @@
 // drop into a page unconditionally. The one-click `Trust` action
 // routes through the execution panel (so the `mise trust` attempt is
 // visible alongside any other panel activity); on success the trust
-// query invalidates itself and the banner disappears.
+// query invalidates itself, the banner disappears, and the success
+// closes the loop in-page with the shared SuccessBar (issue #145) —
+// the bar lives outside the banner's `untrusted` early return because
+// the re-probe flips the trust state within milliseconds, which made
+// the old in-banner note vanish before it could be read. Failures are
+// unchanged: the panel auto-opens and the error note stays under the
+// banner.
 
-import { forwardRef, useCallback, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useTrust, useTrustAction } from "../../state/trustContext";
 import { Banner } from "../Banner/Banner";
 import { Button } from "../Button/Button";
+import { SuccessBar } from "../SuccessBar/SuccessBar";
 import { Tooltip } from "../Tooltip/Tooltip";
 
 import styles from "./TrustBanner.module.css";
@@ -36,42 +43,57 @@ export const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(
     const { t } = useTranslation();
     const { state: trust } = useTrust();
     const { running, lastResult, lastError, run } = useTrustAction();
-    if (trust.kind !== "untrusted") return null;
+    // The success bar must survive the banner itself: on Ok the trust
+    // query re-probes and `trust.kind` flips away from `untrusted`
+    // within milliseconds (issue #145). `dismissed` is cleared whenever
+    // the terminal flag moves off "ok", so a later re-run re-arms the
+    // bar.
+    const [dismissed, setDismissed] = useState(false);
+    useEffect(() => {
+      if (lastResult !== "ok") setDismissed(false);
+    }, [lastResult]);
+    const justTrusted = lastResult === "ok" && !dismissed;
+    if (trust.kind !== "untrusted" && !justTrusted) return null;
     return (
       <div ref={ref} data-testid="trust-banner">
-        <Banner
-          tone="warning"
-          label={t(I18N_KEYS.trust.banner.label)}
-          action={
-            <Button
-              variant="primary"
-              size="sm"
-              loading={running}
-              disabled={running}
-              onClick={() => void run()}
-              data-testid="trust-button"
+        {trust.kind === "untrusted" && (
+          <>
+            <Banner
+              tone="warning"
+              label={t(I18N_KEYS.trust.banner.label)}
+              action={
+                <Button
+                  variant="primary"
+                  size="sm"
+                  loading={running}
+                  disabled={running}
+                  onClick={() => void run()}
+                  data-testid="trust-button"
+                >
+                  {running ? t(I18N_KEYS.trust.busy) : t(I18N_KEYS.trust.banner.action)}
+                </Button>
+              }
             >
-              {running ? t(I18N_KEYS.trust.busy) : t(I18N_KEYS.trust.banner.action)}
-            </Button>
-          }
-        >
-          {t(body)}
-          {trust.path ? (
-            <Tooltip text={trust.path}>
-              <span className={styles.trustPath}> · {trust.path}</span>
-            </Tooltip>
-          ) : null}
-        </Banner>
-        {lastResult === "ok" && (
-          <div className={styles.trustNote} data-testid="trust-ok">
-            {t(I18N_KEYS.trust.ok)}
-          </div>
+              {t(body)}
+              {trust.path ? (
+                <Tooltip text={trust.path}>
+                  <span className={styles.trustPath}> · {trust.path}</span>
+                </Tooltip>
+              ) : null}
+            </Banner>
+            {lastResult === "error" && (
+              <div className={styles.trustNote} data-testid="trust-error">
+                {t(I18N_KEYS.trust.error)}
+                {lastError ? <> · {lastError}</> : null}
+              </div>
+            )}
+          </>
         )}
-        {lastResult === "error" && (
-          <div className={styles.trustNote} data-testid="trust-error">
-            {t(I18N_KEYS.trust.error)}
-            {lastError ? <> · {lastError}</> : null}
-          </div>
+        {justTrusted && (
+          <SuccessBar
+            message={t(I18N_KEYS.trust.success)}
+            onDismiss={() => setDismissed(true)}
+          />
         )}
       </div>
     );
