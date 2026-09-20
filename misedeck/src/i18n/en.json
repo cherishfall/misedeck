@@ -284,6 +284,10 @@
       "remove": {
         "title": "Remove {{name}}?",
         "body": "This will run the exact command below. The env var will be removed from mise's config for this context and this cannot be undone."
+      },
+      "overwrite": {
+        "title": "Overwrite {{name}}?",
+        "body": "An env var named {{name}} already exists; adding it again overwrites the current value. This will run the exact command below."
       }
     },
     "success": {
@@ -376,6 +380,12 @@
     "success": {
       "set": "{{key}} saved",
       "unset": "{{key}} unset"
+    },
+    "confirm": {
+      "overwrite": {
+        "title": "Overwrite {{key}}?",
+        "body": "The setting {{key}} already has a value; adding it again overwrites the current value. This will run the exact command below."
+      }
     }
   },
   "doctor": {

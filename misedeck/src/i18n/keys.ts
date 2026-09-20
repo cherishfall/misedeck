@@ -338,6 +338,10 @@ export const I18N_KEYS = {
         title: "env.confirm.remove.title",
         body: "env.confirm.remove.body",
       },
+      overwrite: {
+        title: "env.confirm.overwrite.title",
+        body: "env.confirm.overwrite.body",
+      },
     },
     success: {
       set: "env.success.set",
@@ -425,6 +429,12 @@ export const I18N_KEYS = {
     count: "settings.count",
     guard: {
       untrustedBody: "settings.guard.untrustedBody",
+    },
+    confirm: {
+      overwrite: {
+        title: "settings.confirm.overwrite.title",
+        body: "settings.confirm.overwrite.body",
+      },
     },
     success: {
       set: "settings.success.set",

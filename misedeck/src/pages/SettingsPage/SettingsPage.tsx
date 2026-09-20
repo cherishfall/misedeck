@@ -21,7 +21,9 @@ import { useOwnRun } from "../../components/ExecutionPanel";
 import {
   Badge,
   Button,
+  commandEcho,
   CommandHint,
+  ConfirmDialog,
   EmptyState,
   KeyForm,
   ListLoading,
@@ -43,6 +45,10 @@ import type { SettingsItem } from "../../types/tauri";
 import styles from "./SettingsPage.module.css";
 
 // ---------- Args builders ----------
+
+/** Outcome of a page write: "ok" only when the command ran and
+ *  succeeded — add forms clear their draft on "ok" (issue #153). */
+type WriteOutcome = "ok" | "err";
 
 function miseSettingsSetArgs(key: string, value: string, cwd: string | null): string[] {
   const args = ["settings", "set"];
@@ -103,19 +109,23 @@ export function SettingsPage() {
   // dispatched is running, so a long install elsewhere never disables
   // this page's Save / Add. The read query refreshes on this run's own
   // success (not on a global status transition). The optional
-  // `successMessage` closes the loop in-page (issue #145).
+  // `successMessage` closes the loop in-page (issue #145). Resolves to
+  // "ok" only when the command ran and succeeded, so callers can chain
+  // form cleanup (clear-on-success, issue #153) on the result.
   const runWrite = useCallback(
-    async (builder: (cwd: string | null) => string[], successMessage?: string) => {
+    async (builder: (cwd: string | null) => string[], successMessage?: string): Promise<WriteOutcome> => {
       if (!guard.allowed) {
         focusTrustBanner();
-        return;
+        return "err";
       }
-      if (writeRun.isRunning) return;
+      if (writeRun.isRunning) return "err";
       const res = await writeRun.run({ cwd, args: builder(cwd) });
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["settings", "ls", cwd] });
         if (successMessage !== undefined) setSuccessMessage(successMessage);
+        return "ok";
       }
+      return "err";
     },
     [guard.allowed, focusTrustBanner, writeRun.isRunning, writeRun.run, cwd, queryClient],
   );
@@ -275,6 +285,8 @@ export function SettingsPage() {
             <AddSettingForm
               onWrite={runWrite}
               disabled={writeRun.isRunning}
+              cwd={cwd}
+              existingKeys={explicitSettings.data?.map((r) => r.key) ?? []}
               keySuggestions={allSettings.data?.map((r) => r.key) ?? []}
             />
           </>
@@ -322,7 +334,7 @@ function RowEditor({
   onWrite: (
     builder: (cwd: string | null) => string[],
     successMessage?: string,
-  ) => void | Promise<void>;
+  ) => Promise<WriteOutcome>;
   /** True while a foreground command runs. Run-locking (issue #135)
    *  gates only command-firing controls — Save / submit and Unset.
    *  Editing the draft value never locks. */
@@ -410,15 +422,23 @@ function RowEditor({
 function AddSettingForm({
   onWrite,
   disabled,
+  cwd,
+  existingKeys,
   keySuggestions,
 }: {
   onWrite: (
     builder: (cwd: string | null) => string[],
     successMessage?: string,
-  ) => void | Promise<void>;
+  ) => Promise<WriteOutcome>;
   /** True while a foreground command runs; locks only the Add submit
    *  (run-locking, issue #135) — drafting the inputs never locks. */
   disabled: boolean;
+  /** Active directory context, echoed in the overwrite confirmation. */
+  cwd: string | null;
+  /** Keys with an explicitly-set value in this context; an Add
+   *  targeting one of these overwrites, so it confirms first
+   *  (issue #153). */
+  existingKeys: string[];
   /** Known setting keys from `mise settings ls --all`, offered as
    *  completion on the key field (issue #52). */
   keySuggestions: string[];
@@ -426,11 +446,28 @@ function AddSettingForm({
   const { t } = useTranslation();
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
-  const onAdd = () => {
-    void onWrite(
+  const [confirmingOverwrite, setConfirmingOverwrite] = useState(false);
+  // A successful add clears the draft (issue #153): adding the next
+  // setting must not require manual clearing.
+  const doAdd = async () => {
+    const outcome = await onWrite(
       (cwd) => miseSettingsSetArgs(key, value, cwd),
       t(I18N_KEYS.settings.success.set, { key }),
     );
+    if (outcome === "ok") {
+      setKey("");
+      setValue("");
+    }
+  };
+  const onAdd = () => {
+    // Overwrite is destructive (ui-ux-rules: "uninstall, unset,
+    // overwrite always confirm first"), so an existing key opens the
+    // confirm dialog before dispatching.
+    if (existingKeys.includes(key)) {
+      setConfirmingOverwrite(true);
+      return;
+    }
+    void doAdd();
   };
   // Escape clears the draft (issue #109).
   const onRevert = () => {
@@ -443,7 +480,7 @@ function AddSettingForm({
       testId="settings-add"
       onSubmit={onAdd}
       onRevert={onRevert}
-      submitDisabled={disabled || key.length === 0 || value.length === 0}
+      submitDisabled={disabled || key.length === 0}
     >
       <span className={styles.addLabel}>{t(I18N_KEYS.settings.addSettingLabel)}</span>
       <input
@@ -470,10 +507,27 @@ function AddSettingForm({
         variant="primary"
         size="sm"
         onClick={onAdd}
-        disabled={disabled || key.length === 0 || value.length === 0}
+        disabled={disabled || key.length === 0}
       >
         {t(I18N_KEYS.settings.addButton)}
       </Button>
+      {/* Adding an existing key overwrites its value, so it confirms
+          first and the dialog teaches the exact command (ui-ux-rules).
+          Same ConfirmDialog pattern as the env page. */}
+      <ConfirmDialog
+        open={confirmingOverwrite}
+        confirmBusy={disabled}
+        title={t(I18N_KEYS.settings.confirm.overwrite.title, { key })}
+        body={t(I18N_KEYS.settings.confirm.overwrite.body, { key })}
+        command={commandEcho("mise", cwd, miseSettingsSetArgs(key, value, cwd))}
+        confirmLabel={t(I18N_KEYS.settings.addButton)}
+        cancelLabel={t(I18N_KEYS.common.cancel)}
+        onConfirm={() => {
+          setConfirmingOverwrite(false);
+          void doAdd();
+        }}
+        onCancel={() => setConfirmingOverwrite(false)}
+      />
     </KeyForm>
   );
 }

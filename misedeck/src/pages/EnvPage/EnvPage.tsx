@@ -65,6 +65,10 @@ interface EnvRow {
 
 // ---------- Args builders (mirror the Rust helpers) ----------
 
+/** Outcome of a page write: "ok" only when the command ran and
+ *  succeeded — add forms clear their draft on "ok" (issue #153). */
+type WriteOutcome = "ok" | "err";
+
 function miseEnvSetArgs(key: string, value: string, cwd: string | null): string[] {
   return cwd === null ? ["set", "-g", `${key}=${value}`] : ["set", `${key}=${value}`];
 }
@@ -115,14 +119,16 @@ export function EnvPage() {
   // active and global env queries (so switching contexts shows fresh
   // data) plus the preview page's env query; active queries refetch
   // immediately so the table updates visibly (issue #41). The optional
-  // `successMessage` closes the loop in-page (issue #145).
+  // `successMessage` closes the loop in-page (issue #145). Resolves to
+  // "ok" only when the command ran and succeeded, so callers can chain
+  // form cleanup (clear-on-success, issue #153) on the result.
   const runWrite = useCallback(
-    async (builder: (cwd: string | null) => string[], successMessage?: string) => {
+    async (builder: (cwd: string | null) => string[], successMessage?: string): Promise<WriteOutcome> => {
       if (!guard.allowed) {
         focusTrustBanner();
-        return;
+        return "err";
       }
-      if (envWrite.isRunning) return;
+      if (envWrite.isRunning) return "err";
       const res = await envWrite.run({ cwd, args: builder(cwd) });
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["env", "ls", cwd] });
@@ -132,7 +138,9 @@ export function EnvPage() {
         void queryClient.refetchQueries({ queryKey: ["env", "ls", cwd], type: "active" });
         void queryClient.refetchQueries({ queryKey: ["env", "ls", null], type: "active" });
         if (successMessage !== undefined) setSuccessMessage(successMessage);
+        return "ok";
       }
+      return "err";
     },
     [guard.allowed, focusTrustBanner, envWrite.isRunning, envWrite.run, cwd, queryClient],
   );
@@ -148,6 +156,15 @@ export function EnvPage() {
       sourcePath: e.sourcePath,
     }));
   }, [env.data]);
+
+  // Config-sourced names offered as completion on the var-name inputs
+  // (issue #109); read-only injected / host-inherited names (PATH etc.)
+  // stay out of the list — picking one would submit an overwrite of a
+  // value mise controls (beta11 4.3-m5, issue #153).
+  const suggestionNames = useMemo(
+    () => envRows.filter((r) => isConfigSource(r.source)).map((r) => r.name),
+    [envRows],
+  );
 
   // Text filter over the full row set (issue #106), shared with the
   // tools / tasks / settings tables via `useTableFilter`.
@@ -288,14 +305,16 @@ export function EnvPage() {
             </>
           )}
 
-          <AddEnvForm onWrite={runWrite} disabled={envWrite.isRunning} />
+          <AddEnvForm
+            onWrite={runWrite}
+            disabled={envWrite.isRunning}
+            cwd={cwd}
+            existingNames={envRows.map((r) => r.name)}
+          />
 
           {/* Existing keys, referenced as completion by both var-name
               inputs' datalist (issue #109). Rendered once for the page. */}
-          <Suggestions
-            id="env-name-suggestions"
-            options={envRows.map((r) => r.name)}
-          />
+          <Suggestions id="env-name-suggestions" options={suggestionNames} />
         </section>
       </div>
     </PageShell>
@@ -389,7 +408,7 @@ function EnvRowActions({
   onWrite: (
     builder: (cwd: string | null) => string[],
     successMessage?: string,
-  ) => void | Promise<void>;
+  ) => Promise<WriteOutcome>;
   /** True while a foreground command runs. Run-locking (issue #135)
    *  gates only command-firing controls — the draft's Save / submit.
    *  Opening and editing the draft (Edit, inputs, Cancel) never locks,
@@ -543,23 +562,47 @@ function EnvRowActions({
 function AddEnvForm({
   onWrite,
   disabled,
+  cwd,
+  existingNames,
 }: {
   onWrite: (
     builder: (cwd: string | null) => string[],
     successMessage?: string,
-  ) => void | Promise<void>;
+  ) => Promise<WriteOutcome>;
   /** True while a foreground command runs; locks only the Add submit
    *  (run-locking, issue #135) — drafting the inputs never locks. */
   disabled: boolean;
+  /** Active directory context, echoed in the overwrite confirmation. */
+  cwd: string | null;
+  /** Every resolved env var name; an Add targeting one of these
+   *  overwrites, so it confirms first (issue #153). */
+  existingNames: string[];
 }) {
   const { t } = useTranslation();
   const [name, setName] = useState("");
   const [value, setValue] = useState("");
-  const onAdd = () => {
-    void onWrite(
+  const [confirmingOverwrite, setConfirmingOverwrite] = useState(false);
+  // A successful add clears the draft (issue #153): adding the next
+  // var must not require manual clearing.
+  const doAdd = async () => {
+    const outcome = await onWrite(
       (cwd) => miseEnvSetArgs(name, value, cwd),
       t(I18N_KEYS.env.success.set, { name }),
     );
+    if (outcome === "ok") {
+      setName("");
+      setValue("");
+    }
+  };
+  const onAdd = () => {
+    // Overwrite is destructive (ui-ux-rules: "uninstall, unset,
+    // overwrite always confirm first"), so an existing name opens the
+    // confirm dialog before dispatching.
+    if (existingNames.includes(name)) {
+      setConfirmingOverwrite(true);
+      return;
+    }
+    void doAdd();
   };
   // Escape clears the draft (issue #109).
   const onRevert = () => {
@@ -572,7 +615,7 @@ function AddEnvForm({
       testId="env-add"
       onSubmit={onAdd}
       onRevert={onRevert}
-      submitDisabled={disabled || name.length === 0 || value.length === 0}
+      submitDisabled={disabled || name.length === 0}
     >
       <span className={styles.addLabel}>{t(I18N_KEYS.env.addLabel)}</span>
       <input
@@ -600,11 +643,28 @@ function AddEnvForm({
         variant="primary"
         size="sm"
         onClick={onAdd}
-        disabled={disabled || name.length === 0 || value.length === 0}
+        disabled={disabled || name.length === 0}
         data-testid="env-add-button"
       >
         {t(I18N_KEYS.env.addButton)}
       </Button>
+      {/* Adding an existing name overwrites its value, so it confirms
+          first and the dialog teaches the exact command (ui-ux-rules).
+          Same ConfirmDialog the row actions use for remove. */}
+      <ConfirmDialog
+        open={confirmingOverwrite}
+        confirmBusy={disabled}
+        title={t(I18N_KEYS.env.confirm.overwrite.title, { name })}
+        body={t(I18N_KEYS.env.confirm.overwrite.body, { name })}
+        command={commandEcho("mise", cwd, miseEnvSetArgs(name, value, cwd))}
+        confirmLabel={t(I18N_KEYS.env.addButton)}
+        cancelLabel={t(I18N_KEYS.common.cancel)}
+        onConfirm={() => {
+          setConfirmingOverwrite(false);
+          void doAdd();
+        }}
+        onCancel={() => setConfirmingOverwrite(false)}
+      />
     </KeyForm>
   );
 }
