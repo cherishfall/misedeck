@@ -214,6 +214,49 @@ impl RunRequest {
     }
 }
 
+/// Characters that would be meaningful to a shell. The runner spawns
+/// mise directly with no shell in between, so in argv these are inert
+/// data — a value token containing them (a task's `run` command, an
+/// env value) must pass through untouched (issue #160).
+fn contains_shell_metachar(s: &str) -> bool {
+    s.contains(';') || s.contains('|') || s.contains('&') || s.contains('`')
+        || s.contains('$') || s.contains('\n') || s.contains('\r')
+}
+
+/// Validate the argv for `run_mise_command` before it reaches the
+/// runner. Two rules, both narrowing the original guardrail from
+/// issue #18, which rejected ANY token containing a shell
+/// metacharacter and thereby made common values (`npm run build &&
+/// npm run test`, `echo $HOME`, a `DATABASE_URL` containing `&`)
+/// impossible to save in the GUI:
+///
+///   * args must be non-empty;
+///   * a token that starts with `-` (a flag/option) must not contain
+///     a shell metacharacter — every argv builder in the app
+///     separates flags from values, so a flag token carrying
+///     metacharacters can only arise from a bug; it stays rejected
+///     as a defense-in-depth tripwire. Everything else — the
+///     subcommand, positionals, `run` values, `set` values — is data
+///     and passes through, since the shell-less spawn gives it no
+///     injection surface.
+pub fn validate_run_args(args: &[String]) -> Result<(), AppError> {
+    if args.is_empty() {
+        return Err(AppError::command_failed(
+            "run_mise_command called with empty args",
+            String::new(),
+        ));
+    }
+    for a in args {
+        if a.starts_with('-') && contains_shell_metachar(a) {
+            return Err(AppError::command_failed(
+                format!("run_mise_command: flag arg contains shell metacharacter: {a:?}"),
+                String::new(),
+            ));
+        }
+    }
+    Ok(())
+}
+
 /// Spawn the mise binary and capture its output, enforcing a finite
 /// `timeout`. This is the low-level entry point the runner routes every
 /// call through.
@@ -1368,9 +1411,10 @@ pub fn mise_upgrade_argv(tool: Option<&str>) -> Vec<String> {
 //                                              `tests/tasks.rs`.
 //
 // `run` is split across multiple argv entries (one per shell
-// token) so the runner's shell-metacharacter check rejects unsafe
-// input — passing the whole command as a single string would
-// defeat that guardrail.
+// token) so mise receives the command exactly as the user typed
+// it. The runner entry check (issue #160) lets value tokens
+// through regardless, so this split is about argv fidelity, not
+// about the guardrail.
 
 /// Build the argv for `mise run <name>`. Reused as the
 /// "Run" button on the tasks page; output streams through the

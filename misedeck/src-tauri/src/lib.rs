@@ -22,7 +22,7 @@ use mise::{
     check_trust, detect_mise as run_mise_probe, locate_mise, mise_config_files, mise_doctor,
     mise_env, mise_env_extended, mise_outdated, mise_plugins_ls,
     mise_registry, mise_settings_ls, mise_tasks_ls, read_mise_lockfile,
-    run_mise, run_trust,
+    run_mise, run_trust, validate_run_args,
     AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
 };
 use shell::{check_shell_activation, open_in_terminal as open_in_terminal_inner};
@@ -231,25 +231,11 @@ async fn run_mise_command(
     args: Vec<String>,
     on_event: tauri::ipc::Channel<RunEvent>,
 ) -> RunCommandResult {
-    // Validate args: must be non-empty, no shell metacharacters.
-    if args.is_empty() {
-        return RunCommandResult::Err {
-            err: AppError::command_failed(
-                "run_mise_command called with empty args",
-                String::new(),
-            ),
-        };
-    }
-    for a in &args {
-        if a.contains(';') || a.contains('|') || a.contains('&') || a.contains('`')
-            || a.contains('$') || a.contains('\n') || a.contains('\r') {
-            return RunCommandResult::Err {
-                err: AppError::command_failed(
-                    format!("run_mise_command: arg contains shell metacharacter: {a:?}"),
-                    String::new(),
-                ),
-            };
-        }
+    // Validate args: must be non-empty; flag tokens must not contain
+    // shell metacharacters. Value tokens (run commands, env values)
+    // pass through — see `validate_run_args` (issue #160).
+    if let Err(err) = validate_run_args(&args) {
+        return RunCommandResult::Err { err };
     }
 
     // Resolve the mise binary path.
