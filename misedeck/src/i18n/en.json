@@ -288,6 +288,10 @@
       "overwrite": {
         "title": "Overwrite {{name}}?",
         "body": "An env var named {{name}} already exists; adding it again overwrites the current value. This will run the exact command below."
+      },
+      "rename": {
+        "title": "Rename {{from}} to {{to}}?",
+        "body": "Renaming runs the two exact commands below in order: first the old key is removed, then the new key is written. The second command runs only when the first succeeds. This cannot be undone."
       }
     },
     "success": {

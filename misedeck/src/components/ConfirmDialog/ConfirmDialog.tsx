@@ -2,7 +2,7 @@
 //
 // Per docs/design/ui-ux-rules.md every destructive action (uninstall,
 // unset, overwrite) must confirm first, and the confirmation is a
-// teaching moment: it shows the exact mise command that will run. This
+// teaching moment: it shows the exact mise command(s) that will run. This
 // component is intentionally generic so future destructive actions
 // (issue #56: "Same pattern is reusable for future destructive actions")
 // only supply their own title / body / command / labels — they never
@@ -35,8 +35,10 @@ export interface ConfirmDialogProps {
   title: string;
   /** Supporting copy above the command (already translated). */
   body: string;
-  /** The exact mise command that will run, rendered as inline code. */
-  command: string;
+  /** The exact mise command(s) that will run, rendered as inline code.
+   *  A multi-step action (e.g. an env rename: unset old key, then set
+   *  new key) passes one entry per command, in execution order. */
+  command: string | string[];
   /** Label for the confirm (destructive) button. */
   confirmLabel: string;
   /** Label for the cancel button. */
@@ -78,6 +80,8 @@ export function ConfirmDialog({
 
   if (!open) return null;
 
+  const commands = Array.isArray(command) ? command : [command];
+
   return (
     <div
       className={styles.overlay}
@@ -93,9 +97,11 @@ export function ConfirmDialog({
       >
         <h2 className={styles.title}>{title}</h2>
         <p className={styles.body}>{body}</p>
-        <div className={styles.commandWrap}>
-          <code className={styles.command}>{command}</code>
-        </div>
+        {commands.map((c) => (
+          <div key={c} className={styles.commandWrap}>
+            <code className={styles.command}>{c}</code>
+          </div>
+        ))}
         {children}
         <div className={styles.actions}>
           <Button variant="secondary" size="sm" onClick={onCancel}>

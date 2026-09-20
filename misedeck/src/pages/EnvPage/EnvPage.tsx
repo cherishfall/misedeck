@@ -157,10 +157,12 @@ export function EnvPage() {
     }));
   }, [env.data]);
 
-  // Config-sourced names offered as completion on the var-name inputs
-  // (issue #109); read-only injected / host-inherited names (PATH etc.)
+  // Config-sourced names offered as completion on the Add form's var-name
+  // input (issue #109); read-only injected / host-inherited names (PATH etc.)
   // stay out of the list — picking one would submit an overwrite of a
-  // value mise controls (beta11 4.3-m5, issue #153).
+  // value mise controls (beta11 4.3-m5, issue #153). The row editor's
+  // name field deliberately has no datalist: suggesting existing keys
+  // there guides a rename onto a key that already exists (beta11 4.3-B1).
   const suggestionNames = useMemo(
     () => envRows.filter((r) => isConfigSource(r.source)).map((r) => r.name),
     [envRows],
@@ -312,8 +314,9 @@ export function EnvPage() {
             existingNames={envRows.map((r) => r.name)}
           />
 
-          {/* Existing keys, referenced as completion by both var-name
-              inputs' datalist (issue #109). Rendered once for the page. */}
+          {/* Existing keys, referenced as completion by the Add form's
+              var-name input datalist (issue #109). Rendered once for the
+              page. */}
           <Suggestions id="env-name-suggestions" options={suggestionNames} />
         </section>
       </div>
@@ -421,6 +424,7 @@ function EnvRowActions({
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [confirmingRemove, setConfirmingRemove] = useState(false);
+  const [confirmingRename, setConfirmingRename] = useState(false);
   const [name, setName] = useState(row.name);
   const [value, setValue] = useState(row.value);
   // Reset the draft only while not actively editing, so an open editor
@@ -454,65 +458,108 @@ function EnvRowActions({
   };
   const onSave = () => {
     if (name !== row.name) {
-      void onWrite(
-        (cwd) => miseEnvUnsetArgs(row.name, cwd),
-        t(I18N_KEYS.env.success.unset, { name: row.name }),
-      );
+      // Renaming is unset old key + set new key. Dispatching both in the
+      // same tick raced two mise processes on the same TOML and silently
+      // lost a key (beta11 4.3-B1), and the unset ran without a confirm
+      // (ui-ux-rules: "uninstall, unset, overwrite always confirm first").
+      // It confirms first, then runs the two commands sequentially.
+      setConfirmingRename(true);
+      return;
     }
-    void onWrite(
+    void doSaveValue();
+  };
+  // Value-only save: the editor closes only on success so a failed or
+  // trust-blocked write keeps the draft (beta11 4.3-B1).
+  const doSaveValue = async () => {
+    const outcome = await onWrite(
       (cwd) => miseEnvSetArgs(name, value, cwd),
       t(I18N_KEYS.env.success.set, { name }),
     );
-    setEditing(false);
+    if (outcome === "ok") setEditing(false);
+  };
+  // Sequential, never concurrent: the set runs only after the unset
+  // succeeds, so the two mise processes can never interleave their
+  // read-modify-write on the same TOML (beta11 4.3-B1). Any failure
+  // keeps the draft open; the success bar fires only after the set
+  // completes (issue #145).
+  const doRename = async () => {
+    setConfirmingRename(false);
+    const unsetOutcome = await onWrite((cwd) => miseEnvUnsetArgs(row.name, cwd));
+    if (unsetOutcome !== "ok") return;
+    const setOutcome = await onWrite(
+      (cwd) => miseEnvSetArgs(name, value, cwd),
+      t(I18N_KEYS.env.success.set, { name }),
+    );
+    if (setOutcome === "ok") setEditing(false);
   };
 
   if (editing) {
     return (
-      <KeyForm
-        className={styles.rowEditor}
-        onSubmit={onSave}
-        onRevert={cancelEdit}
-        submitDisabled={disabled || !dirty || name.length === 0 || value.length === 0}
-      >
-        <input
-          type="text"
-          className={styles.inputName}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={t(I18N_KEYS.env.namePlaceholder)}
-          data-testid={`env-name-${row.name}`}
-          spellCheck={false}
-          autoComplete="off"
-          list="env-name-suggestions"
-        />
-        <input
-          type="text"
-          className={styles.inputValue}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder={t(I18N_KEYS.env.valuePlaceholder)}
-          data-testid={`env-value-${row.name}`}
-          spellCheck={false}
-          autoComplete="off"
-        />
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={onSave}
-          disabled={disabled || !dirty || name.length === 0 || value.length === 0}
-          data-testid={`env-save-${row.name}`}
+      <>
+        <KeyForm
+          className={styles.rowEditor}
+          onSubmit={onSave}
+          onRevert={cancelEdit}
+          submitDisabled={disabled || !dirty || name.length === 0 || value.length === 0}
         >
-          {t(I18N_KEYS.common.save)}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={cancelEdit}
-          data-testid={`env-cancel-${row.name}`}
-        >
-          {t(I18N_KEYS.common.cancel)}
-        </Button>
-      </KeyForm>
+          <input
+            type="text"
+            className={styles.inputName}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t(I18N_KEYS.env.namePlaceholder)}
+            data-testid={`env-name-${row.name}`}
+            spellCheck={false}
+            autoComplete="off"
+          />
+          <input
+            type="text"
+            className={styles.inputValue}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={t(I18N_KEYS.env.valuePlaceholder)}
+            data-testid={`env-value-${row.name}`}
+            spellCheck={false}
+            autoComplete="off"
+          />
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={onSave}
+            disabled={disabled || !dirty || name.length === 0 || value.length === 0}
+            data-testid={`env-save-${row.name}`}
+          >
+            {t(I18N_KEYS.common.save)}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={cancelEdit}
+            data-testid={`env-cancel-${row.name}`}
+          >
+            {t(I18N_KEYS.common.cancel)}
+          </Button>
+        </KeyForm>
+        {/* Renaming confirms first and the dialog teaches both exact
+            commands in execution order (unset old key, then set new
+            key) — same ConfirmDialog the row actions use for remove. */}
+        <ConfirmDialog
+          open={confirmingRename}
+          confirmBusy={disabled}
+          title={t(I18N_KEYS.env.confirm.rename.title, { from: row.name, to: name })}
+          body={t(I18N_KEYS.env.confirm.rename.body)}
+          command={[
+            commandEcho("mise", cwd, miseEnvUnsetArgs(row.name, cwd)),
+            commandEcho("mise", cwd, miseEnvSetArgs(name, value, cwd)),
+          ]}
+          confirmLabel={t(I18N_KEYS.common.save)}
+          cancelLabel={t(I18N_KEYS.common.cancel)}
+          onConfirm={() => {
+            void doRename();
+          }}
+          onCancel={() => setConfirmingRename(false)}
+        />
+      </>
     );
   }
 

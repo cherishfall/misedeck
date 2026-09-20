@@ -49,11 +49,12 @@
   padding: var(--space-2) var(--space-3);
 }
 
-/* The dialog shows exactly one full command and it must be completely
- * readable — a confirmation is a teaching moment (ui-ux-rules.md), so a
- * truncated or horizontally-scrolled command would fail its job. The
+/* The dialog shows exactly the command(s) that will run and they must be
+ * completely readable — a confirmation is a teaching moment (ui-ux-rules.md),
+ * so a truncated or horizontally-scrolled command would fail its job. The
  * command soft-wraps; with a long `-C <path>` injected, breaking mid-token
- * is acceptable — data honesty beats an unbreakable token. */
+ * is acceptable — data honesty beats an unbreakable token. A multi-step
+ * action renders one such box per command, in execution order. */
 .command {
   font-family: var(--font-mono);
   font-size: var(--size-data);

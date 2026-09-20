@@ -342,6 +342,10 @@ export const I18N_KEYS = {
         title: "env.confirm.overwrite.title",
         body: "env.confirm.overwrite.body",
       },
+      rename: {
+        title: "env.confirm.rename.title",
+        body: "env.confirm.rename.body",
+      },
     },
     success: {
       set: "env.success.set",
