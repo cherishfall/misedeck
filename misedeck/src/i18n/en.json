@@ -158,6 +158,14 @@
     },
     "guard": {
       "untrustedBody": "Trust this directory before mutating its tools."
+    },
+    "success": {
+      "used": "{{tool}}@{{version}} installed and activated",
+      "installed": "{{tool}}@{{version}} installed",
+      "upgraded": "{{tool}} upgraded",
+      "uninstalled": "{{tool}}@{{version}} uninstalled",
+      "unused": "{{tool}} removed",
+      "linked": "{{tool}}@{{version}} linked"
     }
   },
   "preview": {

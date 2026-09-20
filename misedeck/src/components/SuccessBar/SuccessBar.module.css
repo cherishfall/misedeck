@@ -1,0 +1,35 @@
+/* SuccessBar — short-lived in-page success confirmation (issue #144).
+ * Reuses the Banner success tone verbatim: panel surface, neutral
+ * border, grove left edge + dot. No entrance animation (floating-layer
+ * rule); appearing and dismissing are instant state changes. */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-left-color: var(--grove);
+  border-radius: var(--radius-panel);
+}
+
+.message {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  line-height: 1.5;
+  color: var(--text);
+  /* Data honesty: neutralize any inherited label styling (uppercase
+   * and tracking inherit). */
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--grove);
+  flex: none;
+}

@@ -26,7 +26,9 @@
 // one row at a time, #133). Every invocation — mutations and reads
 // alike — routes through the execution panel so the exact command and
 // live logs are visible (ADR-0005). The list refreshes when a run exits
-// successfully; failures surface stderr and leave state unchanged.
+// successfully; the success closes the loop in-page with a short-lived
+// confirmation bar (issue #144); failures surface stderr and leave state
+// unchanged.
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -63,6 +65,7 @@ import {
   MiseMissingState,
   OutdatedHint,
   PageShell,
+  SuccessBar,
   Table,
   type TableColumn,
   TableFilter,
@@ -219,6 +222,12 @@ export function ToolsPage() {
   // unless the last `mise link` failed with a recognized conflict.
   const [linkConflict, setLinkConflict] = useState<string | null>(null);
 
+  // In-page success confirmation (issue #144): a successful mutation
+  // closes the loop here with a short-lived bar instead of leaving the
+  // only signal to the panel's tone dot. The message is passed per
+  // action; failures are unchanged — the panel still auto-opens.
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   // The Link form (`mise link`) is an advanced low-frequency flow, so it
   // lives in a collapsed "Advanced" section off the first screen
   // (issue #135); the form inside is unchanged.
@@ -259,7 +268,10 @@ export function ToolsPage() {
   // installed sub-list derives from the same read).
   const mutation = useOwnRun();
   const fireMutation = useCallback(
-    async (builder: (cwd: string | null) => string[]) => {
+    async (
+      builder: (cwd: string | null) => string[],
+      successMessage?: string,
+    ) => {
       if (!guard.allowed) {
         focusTrustBanner();
         return;
@@ -269,6 +281,9 @@ export function ToolsPage() {
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
         void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
+        // Success closes the loop in-page (issue #144); the exact
+        // command stays in the execution panel's transcript.
+        if (successMessage !== undefined) setSuccessMessage(successMessage);
       }
       return res;
     },
@@ -293,7 +308,10 @@ export function ToolsPage() {
   const onLink = useCallback(
     async (tool: string, version: string, path: string) => {
       setLinkConflict(null);
-      const res = await fireMutation(() => miseLinkArgs(tool, version, path));
+      const res = await fireMutation(
+        () => miseLinkArgs(tool, version, path),
+        t(I18N_KEYS.tools.success.linked, { tool, version }),
+      );
       if (res && res.kind === "err") {
         const stderr = res.err.stderr;
         if (/already exists|already installed/i.test(stderr)) {
@@ -502,7 +520,10 @@ export function ToolsPage() {
           disabled={mutation.isRunning}
           versions={versionsByTool.get(r.tool) ?? []}
           onUse={(version) =>
-            void fireMutation((cwd) => miseUseArgs(r.tool, version, cwd))
+            void fireMutation(
+              (cwd) => miseUseArgs(r.tool, version, cwd),
+              t(I18N_KEYS.tools.success.used, { tool: r.tool, version }),
+            )
           }
         />
       ),
@@ -519,7 +540,10 @@ export function ToolsPage() {
             setPendingRemoval({ kind: "unuse", tool: r.tool, orphan: r.orphan })
           }
           onUpgrade={() =>
-            void fireMutation(() => miseUpgradeArgs(r.tool))
+            void fireMutation(
+              () => miseUpgradeArgs(r.tool),
+              t(I18N_KEYS.tools.success.upgraded, { tool: r.tool }),
+            )
           }
         />
       ),
@@ -534,6 +558,14 @@ export function ToolsPage() {
           <CommandHint>{t(I18N_KEYS.tools.commandHint)}</CommandHint>
           <p className={styles.hint}>{t(I18N_KEYS.tools.hint)}</p>
         </header>
+
+        {/* In-page success confirmation (issue #144): set by every
+            successful mutation below, auto-dismisses after a few
+            seconds. Null renders nothing. */}
+        <SuccessBar
+          message={successMessage}
+          onDismiss={() => setSuccessMessage(null)}
+        />
 
         {/* Trust banner (issues #25 / #141): every mutation below is
             trust-gated; when the guard blocks, the page scrolls to
@@ -558,7 +590,10 @@ export function ToolsPage() {
               return;
             }
             if (mutation.isRunning) return;
-            const res = await fireMutation((cwd) => miseUseArgs(tool, version, cwd));
+            const res = await fireMutation(
+              (cwd) => miseUseArgs(tool, version, cwd),
+              t(I18N_KEYS.tools.success.used, { tool, version }),
+            );
             if (res?.kind === "ok") setExpandedTool(tool);
           }}
         />
@@ -601,10 +636,16 @@ export function ToolsPage() {
                 installed={itemsByTool.get(r.tool) ?? []}
                 disabled={mutation.isRunning}
                 onUse={(version) =>
-                  void fireMutation((cwd) => miseUseArgs(r.tool, version, cwd))
+                  void fireMutation(
+                    (cwd) => miseUseArgs(r.tool, version, cwd),
+                    t(I18N_KEYS.tools.success.used, { tool: r.tool, version }),
+                  )
                 }
                 onInstallOnly={(version) =>
-                  void fireMutation(() => miseInstallArgs(r.tool, version))
+                  void fireMutation(
+                    () => miseInstallArgs(r.tool, version),
+                    t(I18N_KEYS.tools.success.installed, { tool: r.tool, version }),
+                  )
                 }
                 onUninstall={(version) =>
                   setPendingRemoval({ kind: "uninstall", tool: r.tool, version })
@@ -690,9 +731,18 @@ export function ToolsPage() {
             const target = pendingRemoval;
             setPendingRemoval(null);
             if (target?.kind === "unuse") {
-              void fireMutation(() => miseUnuseArgs(target.tool, target.orphan));
+              void fireMutation(
+                () => miseUnuseArgs(target.tool, target.orphan),
+                t(I18N_KEYS.tools.success.unused, { tool: target.tool }),
+              );
             } else if (target?.kind === "uninstall") {
-              void fireMutation(() => miseUninstallArgs(target.tool, target.version));
+              void fireMutation(
+                () => miseUninstallArgs(target.tool, target.version),
+                t(I18N_KEYS.tools.success.uninstalled, {
+                  tool: target.tool,
+                  version: target.version,
+                }),
+              );
             }
           }}
           onCancel={() => setPendingRemoval(null)}

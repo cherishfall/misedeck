@@ -23,6 +23,7 @@ export { useRegisterPageRefresh } from "./PageShell/pageRefresh";
 export { Pagination } from "./Pagination/Pagination";
 export { Panel } from "./Panel/Panel";
 export { ProgressDot } from "./ProgressDot/ProgressDot";
+export { SuccessBar } from "./SuccessBar/SuccessBar";
 export { Table, sortRows, type SortState, type TableColumn } from "./Table/Table";
 export { TableFilter } from "./TableFilter/TableFilter";
 export { Tooltip } from "./Tooltip/Tooltip";

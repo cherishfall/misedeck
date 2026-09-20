@@ -171,6 +171,14 @@ export const I18N_KEYS = {
     guard: {
       untrustedBody: "tools.guard.untrustedBody",
     },
+    success: {
+      used: "tools.success.used",
+      installed: "tools.success.installed",
+      upgraded: "tools.success.upgraded",
+      uninstalled: "tools.success.uninstalled",
+      unused: "tools.success.unused",
+      linked: "tools.success.linked",
+    },
     addTool: {
       title: "tools.addTool.title",
       searchPlaceholder: "tools.addTool.searchPlaceholder",

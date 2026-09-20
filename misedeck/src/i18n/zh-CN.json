@@ -158,6 +158,14 @@
     },
     "guard": {
       "untrustedBody": "在修改此目录的工具之前，请先信任它。"
+    },
+    "success": {
+      "used": "{{tool}}@{{version}} 已安装并启用",
+      "installed": "{{tool}}@{{version}} 已安装",
+      "upgraded": "{{tool}} 已升级",
+      "uninstalled": "{{tool}}@{{version}} 已删除",
+      "unused": "{{tool}} 已卸载",
+      "linked": "{{tool}}@{{version}} 已链接"
     }
   },
   "preview": {
