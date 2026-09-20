@@ -14,7 +14,7 @@
 //      copies drift (only ToolsPage ever had the 60ch cap).
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -66,8 +66,10 @@ function listCss(dir: string): string[] {
 }
 
 for (const file of listCss(SRC_DIR)) {
-  const rel = relative(REPO_ROOT, file);
-  if (rel === SHARED_CSS) continue;
+  // Compare resolved absolute paths: `relative()` returns backslashes on
+  // Windows, which never equals the forward-slash SHARED_CSS literal.
+  if (resolve(file) === resolve(REPO_ROOT, SHARED_CSS)) continue;
+  const rel = relative(REPO_ROOT, file).split(sep).join("/");
   if (/\.commandHint\b/.test(readFileSync(file, "utf8"))) {
     failures.push(
       `${rel}: .commandHint defined outside the shared CommandHint component — use <CommandHint> instead`,
