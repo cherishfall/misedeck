@@ -3,13 +3,15 @@
 //   * mise registry --json   → the top add-tool entry's search
 //                              autocomplete (tool names + descriptions,
 //                              issue #134)
-//   * mise ls --json         → table rows (tool, version, requested,
-//                              backend, source, latest, actions)
+//   * mise ls --json         → table rows (tool, version+switch,
+//                              requested, backend, source, latest,
+//                              actions)
 //   * mise outdated --json   → the Latest column's current → latest
 //                              path on the rows that appear in the map
 //   * mise use -g            → the add-tool entry's one-step install +
 //                              activate (#134), and switching an installed
-//                              version (dropdown, #132)
+//                              version (the Version cell is the trigger,
+//                              #132 + #151)
 //   * mise install           → install only a version (version center)
 //   * mise unuse             → remove a tool (config request + installs);
 //                              orphans run `mise uninstall --all` (ADR-0008)
@@ -434,6 +436,34 @@ export function ToolsPage() {
   };
   const showBackend = rows.some((r) => r.backend !== undefined);
 
+  // The Latest column exists only when at least one row is outdated
+  // (beta11 2-c): with every tool up to date the column would render
+  // nothing but "—" — noise, not data. Same conditional-column logic as
+  // the Backend column; the OutdatedHint counter still communicates
+  // "all up to date" when the column is absent.
+  const latestColumn: TableColumn<ToolRow> = {
+    key: "latest",
+    header: t(I18N_KEYS.tools.columns.latest),
+    width: "150px",
+    sortValue: (r) => (r.outdated ? r.latest : ""),
+    sortVersion: true,
+    cell: (r) =>
+      // The full current → latest upgrade path; the shared
+      // `upgrade-arrow` span carries the --flare arrow (issue #110).
+      r.outdated ? (
+        <Tooltip text={`${r.version} → ${r.latest}`}>
+          <span className={styles.cellLatest}>
+            {r.version}{" "}
+            <span className="upgrade-arrow" aria-hidden="true">→</span>{" "}
+            <span className={styles.latestValue}>{r.latest}</span>
+          </span>
+        </Tooltip>
+      ) : (
+        <span className={styles.dim}>—</span>
+      ),
+  };
+  const showLatest = rows.some((r) => r.outdated);
+
   const columns: TableColumn<ToolRow>[] = [
     {
       key: "tool",
@@ -463,61 +493,17 @@ export function ToolsPage() {
       ),
     },
     {
+      // The Version cell is itself the version-switch trigger (issue
+      // #151, merging the retired Use column): the data renders once,
+      // and the cell doubles as the control — hover shows the option
+      // hover wash and the Tooltip teaches "click to switch version"
+      // instead of repeating the value (beta11 2-d/3-f).
       key: "version",
       header: t(I18N_KEYS.tools.columns.version),
-      width: "96px",
+      width: "140px",
+      minWidth: "96px",
       sortValue: (r) => r.version,
       sortVersion: true,
-      // The current version's color is stable — it describes current
-      // state; attention belongs to the Latest column (issue #110).
-      cell: (r) => (
-        <Tooltip text={r.version}>
-          <span className={styles.cellVersion}>
-            {r.version}
-          </span>
-        </Tooltip>
-      ),
-    },
-    {
-      key: "requested",
-      header: t(I18N_KEYS.tools.columns.requested),
-      width: "120px",
-      sortValue: (r) => r.requested,
-      cell: (r) => <Tooltip text={r.requested}><span className={styles.cellRequested}>{r.requested}</span></Tooltip>,
-    },
-    ...(showBackend ? [backendColumn] : []),
-    {
-      key: "source",
-      header: t(I18N_KEYS.tools.columns.source),
-      width: "100px",
-      sortValue: (r) => r.source,
-      cell: (r) => <Tooltip text={r.source}><span className={styles.cellSource}>{r.source}</span></Tooltip>,
-    },
-    {
-      key: "latest",
-      header: t(I18N_KEYS.tools.columns.latest),
-      width: "150px",
-      sortValue: (r) => (r.outdated ? r.latest : ""),
-      sortVersion: true,
-      cell: (r) =>
-        // The full current → latest upgrade path; the shared
-        // `upgrade-arrow` span carries the --flare arrow (issue #110).
-        r.outdated ? (
-          <Tooltip text={`${r.version} → ${r.latest}`}>
-            <span className={styles.cellLatest}>
-              {r.version}{" "}
-              <span className="upgrade-arrow" aria-hidden="true">→</span>{" "}
-              <span className={styles.latestValue}>{r.latest}</span>
-            </span>
-          </Tooltip>
-        ) : (
-          <span className={styles.dim}>—</span>
-        ),
-    },
-    {
-      key: "use",
-      header: t(I18N_KEYS.tools.columns.use),
-      width: "140px",
       cell: (r) => (
         <UseVersionCell
           row={r}
@@ -532,6 +518,39 @@ export function ToolsPage() {
         />
       ),
     },
+    {
+      key: "requested",
+      header: t(I18N_KEYS.tools.columns.requested),
+      width: "160px",
+      sortValue: (r) => r.requested,
+      cell: (r) =>
+        // An orphan row (no Config file requests this tool) shows its
+        // missing request as a dim "—" plus an orphan badge; the Tooltip
+        // teaches why instead of repeating the dash (beta11 3-g/5-b).
+        r.orphan ? (
+          <Tooltip text={t(I18N_KEYS.tools.orphan.tooltip)}>
+            <span className={styles.cellOrphan}>
+              <span className={styles.dim}>—</span>
+              <Badge variant="info">{t(I18N_KEYS.tools.orphan.badge)}</Badge>
+            </span>
+          </Tooltip>
+        ) : (
+          <Tooltip text={r.requested}>
+            <span className={styles.cellRequested}>{r.requested}</span>
+          </Tooltip>
+        ),
+    },
+    ...(showBackend ? [backendColumn] : []),
+    {
+      key: "source",
+      header: t(I18N_KEYS.tools.columns.source),
+      width: "100px",
+      sortValue: (r) => r.source,
+      cell: (r) => <Tooltip text={r.source}><span className={styles.cellSource}>{r.source}</span></Tooltip>,
+    },
+    // The Latest column renders only when at least one row is outdated
+    // (see `latestColumn` / `showLatest` above).
+    ...(showLatest ? [latestColumn] : []),
     {
       key: "actions",
       header: t(I18N_KEYS.tools.columns.actions),
@@ -767,16 +786,18 @@ interface UseVersionCellProps {
 }
 
 /**
- * The per-row Use control (issue #132): a FloatingMenu dropdown listing
- * the tool's installed versions, dispatching `mise use [-g]
- * <tool>@<version>` on selection. No typing, no datalist — a version
- * that does not exist on disk can never be submitted; installing a new
- * version is the expanded row's version center's job (#133). The current
- * version is marked (`aria-current`) and disabled, since re-selecting
- * it would be a no-op. Rendered through the shared FloatingMenu
- * primitive, so the menu portals out of the table's scroller and
- * follows the WAI-ARIA Menu Button Pattern. Menu triggers carry no
- * caret glyph (beta8).
+ * The per-row version-switch control (issue #132, merged into the
+ * Version column in #151): the Version cell itself is the FloatingMenu
+ * trigger — the version number renders once, as data and control at
+ * once. No typing, no datalist — a version that does not exist on disk
+ * can never be submitted; installing a new version is the expanded
+ * row's version center's job (#133). The current version is marked
+ * (`aria-current`) and disabled in the menu, since re-selecting it
+ * would be a no-op. Rendered through the shared FloatingMenu primitive,
+ * so the menu portals out of the table's scroller and follows the
+ * WAI-ARIA Menu Button Pattern. Discoverability is the hover wash (the
+ * option-hover language) plus a teaching Tooltip — never a caret glyph
+ * (beta8, beta11 2-d).
  */
 function UseVersionCell({ row, disabled, versions, onUse }: UseVersionCellProps) {
   const { t } = useTranslation();
@@ -787,12 +808,15 @@ function UseVersionCell({ row, disabled, versions, onUse }: UseVersionCellProps)
       onOpenChange={setOpen}
       placement="down"
       align="start"
-      aria-label={t(I18N_KEYS.tools.columns.use)}
+      aria-label={t(I18N_KEYS.tools.columns.version)}
       trigger={(tp) => (
-        <Tooltip text={row.version}>
+        // Teaching Tooltip (beta11 2-d): the value is already fully
+        // visible in the cell, so the hover layer teaches the action
+        // instead of repeating it.
+        <Tooltip text={t(I18N_KEYS.tools.tooltip.switchVersion)}>
           <button
             type="button"
-            className={styles.useTrigger}
+            className={`${styles.cellVersion} ${styles.versionTrigger}`}
             onClick={tp.onClick}
             aria-haspopup={tp["aria-haspopup"]}
             aria-expanded={tp["aria-expanded"]}
@@ -845,8 +869,8 @@ interface RowActionsProps {
  * Upgrade button (`mise upgrade --bump <tool>`); Unuse (ADR-0008,
  * issue #131) dispatches `mise unuse <tool>` — or `mise uninstall
  * --all <tool>` for an orphan installation — via the confirmation
- * dialog. Version selection lives in its own column
- * (UseVersionCell, issue #132).
+ * dialog. Version selection lives in the Version cell itself
+ * (UseVersionCell, issues #132 + #151).
  */
 function RowActions({
   row,

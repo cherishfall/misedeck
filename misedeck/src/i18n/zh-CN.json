@@ -77,12 +77,18 @@
     "columns": {
       "tool": "工具",
       "version": "版本",
-      "requested": "请求",
+      "requested": "请求版本",
       "backend": "后端",
       "source": "来源",
       "latest": "最新",
-      "use": "使用",
       "actions": "操作"
+    },
+    "orphan": {
+      "badge": "孤立安装",
+      "tooltip": "没有 Config 文件请求此工具"
+    },
+    "tooltip": {
+      "switchVersion": "点击切换版本"
     },
     "empty": {
       "title": "尚未安装任何工具",
@@ -144,7 +150,8 @@
       "emptyInstalledTitle": "没有已安装版本",
       "emptyInstalledBody": "`mise ls {{tool}}` 没有报告 {{tool}} 的任何已安装版本。",
       "emptyAvailableTitle": "没有可安装版本",
-      "emptyAvailableBody": "`mise ls-remote {{tool}}` 没有返回任何版本。"
+      "emptyAvailableBody": "`mise ls-remote {{tool}}` 没有返回任何版本。",
+      "activeUninstallTooltip": "先切换到其他版本才能删除此版本"
     },
     "confirm": {
       "uninstall": {

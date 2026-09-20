@@ -66,3 +66,7 @@ _Avoid_: setup
 **Uninstall**:
 `mise uninstall <tool>@<version>` — delete one installed Tool version's files only; the Config file keeps its request, so a still-requested version will be reinstalled on the next install. UI copy: "Uninstall" / 删除此版本.
 _Avoid_: remove, delete (at version level)
+
+**Orphan installation**:
+A Tool that is installed but requested by no Config file (e.g. from a manual CLI `mise install`). `mise ls` reports it as an unrequested item; in the GUI its row carries an orphan badge, and its tool-level removal runs `mise uninstall --all <tool>` instead of `mise unuse` (ADR-0008). UI copy: "Orphan" / 孤立安装.
+_Avoid_: stray, unused tool

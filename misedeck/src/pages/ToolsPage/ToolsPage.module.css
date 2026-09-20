@@ -44,12 +44,12 @@
 
 /* ---------- Table cells ---------- */
 
-/* min-width = sum of declared column widths (160 tool + 96 version + 120
- * requested + 120 backend (conditional) + 100 source + 150 latest + 140
- * use + 220 actions): below this the shared scroller scrolls
+/* min-width = sum of declared column widths (160 tool + 140 version +
+ * 160 requested + 120 backend (conditional) + 100 source + 150 latest
+ * (conditional) + 220 actions): below this the shared scroller scrolls
  * horizontally instead of crushing columns (issues #90, #103). */
 .toolsTable {
-  min-width: 1106px;
+  min-width: 1050px;
 }
 
 .cellTool {
@@ -98,6 +98,45 @@
   font-weight: 600;
 }
 
+/* The Version cell doubles as the version-switch trigger (issue #151):
+ * the button keeps the plain version look — interactivity is shown by
+ * the option-hover wash on hover/focus, never a caret glyph (beta8,
+ * beta11 2-d). */
+.versionTrigger {
+  padding: var(--space-1) var(--space-2);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion-state-change) ease;
+}
+
+.versionTrigger:hover:not(:disabled),
+.versionTrigger:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--beam) 6%, transparent);
+}
+
+.versionTrigger:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--beam) 25%, transparent);
+}
+
+.versionTrigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* An orphan row's Requested cell: the dim "—" pairs with the orphan
+ * badge; the cell Tooltip teaches why no version is requested
+ * (beta11 3-g/5-b). */
+.cellOrphan {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
 .cellRequested {
   display: block;
   overflow: hidden;
@@ -142,44 +181,9 @@
   color: var(--dim);
 }
 
-/* The per-row Use dropdown (issue #132): the trigger echoes the current
- * version in mono and reads as a compact control; the menu lists the
- * tool's installed versions, current one marked. Tokens only; no caret
- * glyph on the trigger (beta8). */
-.useTrigger {
-  font-family: var(--font-mono);
-  font-size: var(--size-data);
-  color: var(--text);
-  background: color-mix(in srgb, var(--text) 4%, transparent);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: var(--space-1) var(--space-2);
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    border-color var(--motion-state-change) ease,
-    box-shadow var(--motion-state-change) ease;
-}
-
-.useTrigger:hover:not(:disabled),
-.useTrigger:focus-visible {
-  outline: none;
-  border-color: var(--line-strong);
-}
-
-.useTrigger:focus-visible {
-  border-color: var(--beam);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--beam) 25%, transparent);
-}
-
-.useTrigger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
+/* The version-switch menu (issue #132): lists the tool's installed
+ * versions, current one marked. The trigger is the Version cell itself
+ * (`.versionTrigger` above); no caret glyph anywhere (beta8). */
 .useMenu {
   display: flex;
   flex-direction: column;
@@ -218,7 +222,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .useTrigger,
+  .versionTrigger,
   .useOption,
   .useOptionCurrent {
     transition: none;

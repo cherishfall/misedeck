@@ -4,7 +4,8 @@
 //   * Installed versions — every installed version from the live
 //     `mise ls --json` read the page already holds; the active one
 //     carries the active badge (the single active signal — the retired
-//     "inactive" note and Active column are gone, #133), others offer
+//     "inactive" note and Active column are gone, #133) and a disabled
+//     Uninstall whose Tooltip says why (beta11 2-f C); others offer
 //     Use (`mise use`) and Uninstall (`mise uninstall <tool>@<version>`,
 //     confirmed by the page's dialog; non-active only, ADR-0008).
 //   * Available versions — one cached `mise ls-remote --json <tool>`
@@ -115,11 +116,19 @@ export function VersionCenter({
     () => new Set(installedOnDisk.map((it) => it.version)),
     [installedOnDisk],
   );
+  // An orphan installation is a tool-level fact (ADR-0008): no item in
+  // the `mise ls` read — installed or merely requested — carries a
+  // request. Inside a requested tool, a non-requested installed version
+  // is ordinary (its files simply outlive the request), not an orphan,
+  // so the badge keys off the tool, not the single row.
+  const orphanTool = installed.every((it) => it.requestedVersion == null);
 
   const installedColumns: TableColumn<MiseLsItem>[] = [
     {
       key: "version",
       header: t(I18N_KEYS.tools.columns.version),
+      width: "140px",
+      minWidth: "120px",
       cell: (r) => (
         <span className={styles.versionCell}>
           <span className={styles.cellVersion}>{r.version}</span>
@@ -132,7 +141,23 @@ export function VersionCenter({
     {
       key: "requested",
       header: t(I18N_KEYS.tools.columns.requested),
-      cell: (r) => <span className={styles.cellRequested}>{r.requestedVersion ?? "—"}</span>,
+      width: "160px",
+      cell: (r) =>
+        // Same orphan treatment as the parent table (beta11 3-g/5-b):
+        // when the tool itself is unrequested, its rows show a dim "—"
+        // plus the orphan badge, and the Tooltip teaches why.
+        orphanTool ? (
+          <Tooltip text={t(I18N_KEYS.tools.orphan.tooltip)}>
+            <span className={styles.cellOrphan}>
+              <span className={styles.dim}>—</span>
+              <Badge variant="info">{t(I18N_KEYS.tools.orphan.badge)}</Badge>
+            </span>
+          </Tooltip>
+        ) : (
+          <Tooltip text={r.requestedVersion ?? "—"}>
+            <span className={styles.cellRequested}>{r.requestedVersion ?? "—"}</span>
+          </Tooltip>
+        ),
     },
     {
       key: "source",
@@ -148,12 +173,26 @@ export function VersionCenter({
       // deletes a non-active version's files only (ADR-0008). The active
       // version offers neither: re-using it is a no-op, and deleting its
       // files invites an immediate reinstall — tool-level Unuse is the
-      // way out of an active version.
+      // way out of an active version. Instead of a bare "—", its blocked
+      // action renders as a disabled Uninstall button whose Tooltip says
+      // why (beta11 2-f C).
       key: "actions",
       header: t(I18N_KEYS.tools.columns.actions),
+      width: "220px",
       cell: (r) =>
         r.active ? (
-          <span className={styles.dim}>—</span>
+          <Tooltip text={t(I18N_KEYS.tools.versionCenter.activeUninstallTooltip)}>
+            <span className={styles.cellActions}>
+              <Button
+                variant="danger"
+                size="sm"
+                disabled
+                data-testid={`center-installed-uninstall-${r.version}`}
+              >
+                {t(I18N_KEYS.tools.actions.uninstall)}
+              </Button>
+            </span>
+          </Tooltip>
         ) : (
           <span className={styles.cellActions}>
             <Button
@@ -220,11 +259,14 @@ export function VersionCenter({
     {
       key: "version",
       header: t(I18N_KEYS.tools.columns.version),
+      width: "140px",
+      minWidth: "120px",
       cell: (r) => <span className={styles.cellVersion}>{r.version}</span>,
     },
     {
       key: "created",
       header: t(I18N_KEYS.tools.versionCenter.created),
+      width: "150px",
       cell: (r) => (
         <Tooltip text={r.createdAt ?? "—"}>
           <span className={styles.cellSource}>{r.createdAt ?? "—"}</span>
@@ -234,6 +276,7 @@ export function VersionCenter({
     {
       key: "actions",
       header: t(I18N_KEYS.tools.columns.actions),
+      width: "220px",
       cell: (r) =>
         installedSet.has(r.version) ? (
           // Already on disk: marked, no action — its actions live in the
@@ -278,6 +321,9 @@ export function VersionCenter({
           columns={installedColumns}
           rows={installedRows}
           rowKey={(r) => `${tool}@${r.version}`}
+          fixed
+          resizeKey="tools.version-center.installed"
+          className={styles.installedTable}
           empty={
             <EmptyState
               title={t(I18N_KEYS.tools.versionCenter.emptyInstalledTitle)}
@@ -336,6 +382,9 @@ export function VersionCenter({
               columns={remoteColumns}
               rows={visibleRemoteRows}
               rowKey={(r) => `${tool}@remote:${r.version}`}
+              fixed
+              resizeKey="tools.version-center.remote"
+              className={styles.remoteTable}
             />
             {showPager && (
               <Pagination

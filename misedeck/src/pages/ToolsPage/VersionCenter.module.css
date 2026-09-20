@@ -30,6 +30,18 @@
   margin: 0;
 }
 
+/* ---------- Sub-list tables (fixed layout, issue #151) ---------- */
+
+/* min-width ≈ sum of declared column widths; the Source column takes
+ * the remaining width in the installed table (issue #90 pattern). */
+.installedTable {
+  min-width: 520px;
+}
+
+.remoteTable {
+  min-width: 510px;
+}
+
 /* ---------- Cells ---------- */
 
 .versionCell {
@@ -78,6 +90,16 @@
   align-items: center;
   gap: var(--space-2);
   white-space: nowrap;
+}
+
+/* An orphan tool's Requested cell: the dim "—" pairs with the orphan
+ * badge; the cell Tooltip teaches why no version is requested
+ * (beta11 3-g/5-b). */
+.cellOrphan {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .dim {

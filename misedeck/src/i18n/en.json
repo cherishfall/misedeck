@@ -77,12 +77,18 @@
     "columns": {
       "tool": "Tool",
       "version": "Version",
-      "requested": "Requested",
+      "requested": "Requested version",
       "backend": "Backend",
       "source": "Source",
       "latest": "Latest",
-      "use": "Use",
       "actions": "Actions"
+    },
+    "orphan": {
+      "badge": "Orphan",
+      "tooltip": "No Config file requests this tool"
+    },
+    "tooltip": {
+      "switchVersion": "Click to switch version"
     },
     "empty": {
       "title": "No tools installed",
@@ -144,7 +150,8 @@
       "emptyInstalledTitle": "No installed versions",
       "emptyInstalledBody": "`mise ls {{tool}}` reports no installed versions for {{tool}}.",
       "emptyAvailableTitle": "No available versions",
-      "emptyAvailableBody": "`mise ls-remote {{tool}}` returned no versions."
+      "emptyAvailableBody": "`mise ls-remote {{tool}}` returned no versions.",
+      "activeUninstallTooltip": "Switch to another version before deleting this one"
     },
     "confirm": {
       "uninstall": {

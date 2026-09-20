@@ -134,8 +134,14 @@ export const I18N_KEYS = {
       backend: "tools.columns.backend",
       source: "tools.columns.source",
       latest: "tools.columns.latest",
-      use: "tools.columns.use",
       actions: "tools.columns.actions",
+    },
+    orphan: {
+      badge: "tools.orphan.badge",
+      tooltip: "tools.orphan.tooltip",
+    },
+    tooltip: {
+      switchVersion: "tools.tooltip.switchVersion",
     },
     empty: {
       title: "tools.empty.title",
@@ -222,6 +228,7 @@ export const I18N_KEYS = {
       emptyInstalledBody: "tools.versionCenter.emptyInstalledBody",
       emptyAvailableTitle: "tools.versionCenter.emptyAvailableTitle",
       emptyAvailableBody: "tools.versionCenter.emptyAvailableBody",
+      activeUninstallTooltip: "tools.versionCenter.activeUninstallTooltip",
     },
   },
   preview: {
