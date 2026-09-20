@@ -4,7 +4,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 
 import { I18N_KEYS } from "../../i18n/keys";
@@ -14,6 +14,7 @@ import {
   Badge,
   Button,
   CommandHint,
+  CopyButton,
   EmptyState,
   PageShell,
   Table,
@@ -22,7 +23,6 @@ import {
   useRegisterPageRefresh,
 } from "../../components";
 import { useParsedDoctor } from "../../hooks/useIssue29";
-import { writeClipboard } from "../../utils/clipboard";
 import { useActivation } from "../../state/activationContext";
 import type { DoctorLine, DoctorPayload } from "../../types/tauri";
 
@@ -87,7 +87,11 @@ export function DoctorPage() {
 
         <div className={styles.toolbar}>
           <span className={styles.toolbarHint}>
-            {doctor.data ? t(I18N_KEYS.doctor.statusLabel) : t(I18N_KEYS.common.loading)}
+            {doctor.data
+              ? t(I18N_KEYS.doctor.statusLabel)
+              : doctorError
+                ? null
+                : t(I18N_KEYS.common.loading)}
           </span>
         </div>
 
@@ -121,6 +125,10 @@ function DoctorContent({
   // is the rc-file probe (`shell_activation_check`, issue #28), not
   // `mise doctor`'s own `activated` field, which describes the GUI
   // subprocess environment and is necessarily false here (issue #92).
+  // The probe is tri-state (issue #166): `null` means it could not
+  // run (unknown shell family) — rendered as "—" below and excluded
+  // from the page-level Warn derivation, never reported as a false
+  // "not activated".
   const activation = useActivation();
   const rcActivated: boolean | null =
     activation.state.kind === "ok" ? activation.state.status.activated : null;
@@ -210,7 +218,7 @@ function DoctorContent({
           <StatusRow label={t(I18N_KEYS.doctor.summary.shell)}>
             <Tooltip text={`${data.shell.name} ${data.shell.version ?? ""}`.trim()}>
               <span className={styles.statusValueText}>
-                {data.shell.name} {data.shell.version}
+                {data.shell.name} {data.shell.version ?? ""}
               </span>
             </Tooltip>
           </StatusRow>
@@ -298,12 +306,9 @@ function doctorStatus(
   dotTone: "beam" | "flare" | "breach";
   labelKey: string;
 } {
-  if (data.rawLines && data.rawLines.some((l) => l.status === "error")) {
-    return { variant: "danger", dotTone: "breach", labelKey: I18N_KEYS.doctor.status.error };
-  }
-  if (data.rawLines && data.rawLines.some((l) => l.status === "warn")) {
-    return { variant: "warning", dotTone: "flare", labelKey: I18N_KEYS.doctor.status.warn };
-  }
+  // Note: the raw-text fallback (`data.rawLines`) early-returns its own
+  // view in DoctorContent above, so those lines never reach this
+  // derivation — only the structured JSON payload does.
   const warnings = data.warnings ?? [];
   if (warnings.length > 0 || rcActivated === false) {
     return { variant: "warning", dotTone: "flare", labelKey: I18N_KEYS.doctor.status.warn };
@@ -314,7 +319,9 @@ function doctorStatus(
 type TFn = (key: string, options?: Record<string, unknown>) => string;
 
 /** A single `label: value` health row. The badge (or value) sits
- *  immediately after the label so its ownership is never ambiguous. */
+ *  immediately after the label so its ownership is never ambiguous.
+ *  The colon is part of the label (no gap between label and colon);
+ *  the row's flex gap separates "label:" from the value. */
 function StatusRow({
   label,
   children,
@@ -324,8 +331,7 @@ function StatusRow({
 }) {
   return (
     <div className={styles.statusRow}>
-      <span className={styles.statusLabel}>{label}</span>
-      <span className={styles.statusSep}>:</span>
+      <span className={styles.statusLabel}>{label}:</span>
       <span className={styles.statusValue}>{children}</span>
     </div>
   );
@@ -344,7 +350,9 @@ function parseUpgradePath(warnings: string[]): { current: string; latest: string
 }
 
 /** The self-update notice: a localized upgrade path with a copy
- *  action outlet for `mise self-update` (issue #59). */
+ *  action outlet for `mise self-update` (issue #59). The copy
+ *  affordance is the shared CopyButton (issue #107) — no bespoke
+ *  button. */
 function UpgradeNotice({
   current,
   latest,
@@ -354,19 +362,7 @@ function UpgradeNotice({
   latest: string;
   t: TFn;
 }) {
-  const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
-
-  const onCopy = async () => {
-    const command = "mise self-update";
-    const ok = await writeClipboard(command);
-    if (!ok) {
-      /* clipboard unavailable — leave the affordance inert */
-      return;
-    }
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <section className={styles.upgrade} aria-label={t(I18N_KEYS.doctor.updateNotice.title)}>
@@ -379,16 +375,7 @@ function UpgradeNotice({
         <span className="upgrade-arrow" aria-hidden="true">→</span>
         <Tooltip text={latest}><span className={styles.upgradeLatest}>{latest}</span></Tooltip>
       </div>
-      <button
-        type="button"
-        className={styles.upgradeAction}
-        onClick={() => void onCopy()}
-        data-testid="doctor-self-update-copy"
-      >
-        {copied
-          ? t(I18N_KEYS.doctor.updateNotice.copied)
-          : t(I18N_KEYS.doctor.updateNotice.copy)}
-      </button>
+      <CopyButton text="mise self-update" className={styles.upgradeCopy} />
       {/* Close the loop (issue #112): HomePage owns the one-click
           `mise self-update`; this ghost link points there. */}
       <Button

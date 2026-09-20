@@ -114,9 +114,15 @@ pub struct ActivationStatus {
     /// The actual text the probe inspected, for the UI's
     /// debug-only path. Empty when the file does not exist.
     pub rc_contents: String,
-    /// True when the rc file contains a `mise activate` line (or
-    /// `mise activate <shell>`) that satisfies the matcher below.
-    pub activated: bool,
+    /// Tri-state: `Some(true)` when the rc file contains a
+    /// `mise activate` line (or `mise activate <shell>`) that
+    /// satisfies the matcher below; `Some(false)` when the probe ran
+    /// and found no such line; `None` when the probe could not run at
+    /// all (unknown shell family — there is no rc file to inspect).
+    /// The UI must render `None` as "—" and exclude it from status
+    /// derivation — an undetectable state is not a negative fact
+    /// (issue #166).
+    pub activated: Option<bool>,
 }
 
 /// Detect the user's shell. Order of preference:
@@ -187,7 +193,7 @@ fn which_exists(name: &str) -> bool {
 
 /// Compute the rc file path for the given shell. The function does
 /// not check that the file exists — `check_shell_activation` reads
-/// it and surfaces the `NotFound` case as `activated = false`. The
+/// it and surfaces the `NotFound` case as `activated = Some(false)`. The
 /// returned path is always absolute; an empty `String` is returned
 /// when `$HOME` is unset (only happens in extreme sandboxes).
 pub fn rc_path_for(shell: &ShellKind) -> String {
@@ -293,10 +299,10 @@ fn line_is_mise_activate(line: &str) -> bool {
 /// `mise activate` is present. Convenience wrapper that combines
 /// `detect_user_shell`, `rc_path_for`, `read_rc_file`, and
 /// `rc_has_mise_activate`. Returns `ActivationStatus` with
-/// `activated = false` on any error (read failure on a non-`NotFound`
-/// IO error is propagated as a CommandFailed AppError by the
-/// caller — this function returns the structured status for the
-/// happy path only).
+/// `activated = Some(false)` when the probe ran and found nothing (a
+/// read failure on a non-`NotFound` IO error is propagated as a
+/// CommandFailed AppError by the caller — this function returns the
+/// structured status for the happy path only).
 pub fn check_shell_activation() -> Result<ActivationStatus, std::io::Error> {
     let shell = detect_user_shell();
     check_shell_activation_for(&shell)
@@ -309,15 +315,17 @@ pub fn check_shell_activation_for(shell: &ShellKind) -> Result<ActivationStatus,
     let primary = rc_path_for(shell);
     let siblings = rc_sibling_paths(shell);
 
-    // No specific rc for unknown shells — surface an empty
-    // status so the UI can render a generic "we could not detect
-    // your shell" message instead of probing a random file.
+    // No specific rc for unknown shells — the probe cannot run, so
+    // the status carries `activated: None` (not `Some(false)`): the
+    // UI surfaces a generic "we could not detect your shell" message
+    // instead of reporting "not activated", which would be a false
+    // warning for a whole class of environments (issue #166).
     if primary.is_empty() {
         return Ok(ActivationStatus {
             shell: shell.clone(),
             rc_path: String::new(),
             rc_contents: String::new(),
-            activated: false,
+            activated: None,
         });
     }
 
@@ -341,7 +349,7 @@ pub fn check_shell_activation_for(shell: &ShellKind) -> Result<ActivationStatus,
         }
     };
 
-    let activated = rc_has_mise_activate(&contents);
+    let activated = Some(rc_has_mise_activate(&contents));
     Ok(ActivationStatus {
         shell: shell.clone(),
         rc_path,

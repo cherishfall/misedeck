@@ -254,7 +254,7 @@ fn shell_activation_result_ok() {
             shell: ShellKind::Zsh,
             rc_path: "/home/u/.zshrc".to_string(),
             rc_contents: "eval \"$(mise activate zsh)\"".to_string(),
-            activated: true,
+            activated: Some(true),
         },
     })
     .unwrap();
@@ -267,6 +267,37 @@ fn shell_activation_result_ok() {
                 "rcPath": "/home/u/.zshrc",
                 "rcContents": "eval \"$(mise activate zsh)\"",
                 "activated": true,
+            },
+        })
+    );
+}
+
+#[test]
+fn shell_activation_result_unknown_shell_serializes_null_activated() {
+    // Unknown shell: `activated` is JSON `null` on the wire — the
+    // frontend renders "—" and excludes it from the page-level Warn
+    // derivation instead of reporting a false "not activated"
+    // (issue #166).
+    let v = serde_json::to_value(ShellActivationResult::Ok {
+        ok: ActivationStatus {
+            shell: ShellKind::Unknown {
+                name: "unknown".to_string(),
+            },
+            rc_path: String::new(),
+            rc_contents: String::new(),
+            activated: None,
+        },
+    })
+    .unwrap();
+    assert_eq!(
+        v,
+        json!({
+            "kind": "ok",
+            "ok": {
+                "shell": { "kind": "unknown", "name": "unknown" },
+                "rcPath": "",
+                "rcContents": "",
+                "activated": null,
             },
         })
     );

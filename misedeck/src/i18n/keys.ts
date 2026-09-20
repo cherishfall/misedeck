@@ -59,6 +59,8 @@ export const I18N_KEYS = {
       bodyWithLatest: "miseManagement.confirmSelfUpdate.bodyWithLatest",
       bodyUnknownLatest: "miseManagement.confirmSelfUpdate.bodyUnknownLatest",
     },
+    /** In-progress label for the guided-install button (issue #166). */
+    guidedInstallInstalling: "miseManagement.guidedInstallInstalling",
   },
   execution: {
     title: "execution.title",
@@ -109,6 +111,9 @@ export const I18N_KEYS = {
     title: "home.title",
     hint: "home.hint",
     commandHint: "home.commandHint",
+    /** The ready-state disclosure label for the raw `mise version
+     *  --json` payload (beta11 Q3). */
+    rawLabel: "home.rawLabel",
     success: {
       selfUpdated: "home.success.selfUpdated",
     },
@@ -482,8 +487,6 @@ export const I18N_KEYS = {
     updateNotice: {
       title: "doctor.updateNotice.title",
       framing: "doctor.updateNotice.framing",
-      copy: "doctor.updateNotice.copy",
-      copied: "doctor.updateNotice.copied",
       updateOnHome: "doctor.updateNotice.updateOnHome",
     },
     warnings: {
@@ -570,6 +573,8 @@ export const I18N_KEYS = {
       title: "states.parseFailed.title",
       body: "states.parseFailed.body",
     },
+    /** Retry guidance under the timeout state (issue #166). */
+    timeoutBody: "states.timeoutBody",
   },
   labels: {
     version: "labels.version",

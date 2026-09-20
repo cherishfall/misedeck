@@ -25,6 +25,7 @@ const ALLOWLIST = new Map<string, string>([
   ["common.loading", "in-progress state label, not a button"],
   ["trust.busy", "in-progress state label, not a button"],
   ["states.detecting", "in-progress state label, not a button"],
+  ["miseManagement.guidedInstallInstalling", "in-progress copy on a run-locked button (issue #166)"],
 ]);
 
 function collectViolations(

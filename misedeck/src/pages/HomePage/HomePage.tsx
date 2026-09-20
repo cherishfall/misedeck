@@ -4,7 +4,11 @@
 // self-update: it probes `mise version --json` at startup and renders one
 // panel per detection state (missing / too old / ready / error). A
 // successful self-update closes the loop in-page with a short-lived
-// confirmation bar (issue #145); failures still auto-open the panel.
+// confirmation bar (issue #145); failures still auto-open the panel. The
+// guided-install button is run-locked (issue #166) and a successful
+// install invalidates the detect probe, so the page resolves itself
+// instead of asking for a relaunch; the ready state's RAW payload sits
+// behind a collapsed-by-default disclosure (beta11, Q3).
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -84,6 +88,11 @@ export function HomePage() {
   // any unrelated command running elsewhere.
   const [selfUpdateRunning, setSelfUpdateRunning] = useState(false);
 
+  // Per-command run-lock for the guided install (issue #166): this was
+  // the last unguarded command button site-wide — a double click used
+  // to fire two installers concurrently.
+  const [installRunning, setInstallRunning] = useState(false);
+
   // In-page success confirmation (issue #145): a successful
   // self-update closes the loop here with a short-lived bar; failures
   // are unchanged — the panel still auto-opens.
@@ -104,6 +113,27 @@ export function HomePage() {
   const onSelfUpdateOk = () => {
     void queryClient.invalidateQueries({ queryKey: ["mise", "detect"] });
   };
+
+  // Guided install (issue #166): run-locked so a double click cannot
+  // fire two installers; on success the not-found state resolves
+  // itself — invalidate the detect probe exactly like the self-update
+  // path, so the page flips to ready instead of telling the user to
+  // relaunch the app.
+  const onGuidedInstall = () => {
+    if (installRunning) return;
+    setInstallRunning(true);
+    void runInstall()
+      .then((res) => {
+        if (res.kind === "ok") {
+          void queryClient.invalidateQueries({ queryKey: ["mise", "detect"] });
+        }
+      })
+      .finally(() => setInstallRunning(false));
+  };
+
+  // Diagnostic-grade raw output is collapsed by default (beta11, Q3);
+  // the disclosure expands to the full block with the copy affordance.
+  const [rawOpen, setRawOpen] = useState(false);
 
   // Top-toolbar refresh (issue #98): the version probe is the page's
   // only query.
@@ -198,19 +228,36 @@ export function HomePage() {
                   tone="flare"
                 />
               )}
-              <div className={styles.rawWrap}>
-                <DataRow
-                  label="RAW"
-                  value={JSON.stringify(view.ok.raw, null, 2)}
-                  block
-                  full
-                />
-                <CopyButton
-                  text={JSON.stringify(view.ok.raw, null, 2)}
-                  className={styles.rawCopy}
-                />
-              </div>
             </dl>
+            {/* Diagnostic-grade raw output (the `mise version --json`
+                payload) renders collapsed by default behind a
+                disclosure (beta11, Q3); expanded is the previous
+                full block, copy affordance included. */}
+            <div className={styles.rawSection}>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-expanded={rawOpen}
+                onClick={() => setRawOpen((v) => !v)}
+                data-testid="home-raw-toggle"
+              >
+                {t(I18N_KEYS.home.rawLabel)}
+              </Button>
+              {rawOpen && (
+                <div className={styles.rawWrap}>
+                  <DataRow
+                    label={t(I18N_KEYS.home.rawLabel)}
+                    value={JSON.stringify(view.ok.raw, null, 2)}
+                    block
+                    full
+                  />
+                  <CopyButton
+                    text={JSON.stringify(view.ok.raw, null, 2)}
+                    className={styles.rawCopy}
+                  />
+                </div>
+              )}
+            </div>
             {updateAvailable && (
               <div className={styles.stateActions}>
                 <Button
@@ -236,24 +283,25 @@ export function HomePage() {
         {view.status === "notFound" && (
           <Panel className={styles.state}>
             <div className={styles.stateIndicator}>
-              <ProgressDot tone="dim" />
+              <ProgressDot tone="flare" />
               <span className={styles.stateLabel}>
                 {t(I18N_KEYS.states.notInstalled.title)}
               </span>
             </div>
             <p className={styles.stateBody}>
-              {t(I18N_KEYS.states.notInstalled.body, {
-                url: "https://mise.jdx.dev/installing.html",
-              })}
+              {t(I18N_KEYS.states.notInstalled.body)}
             </p>
             <div className={styles.stateActions}>
               <Button
                 variant="primary"
                 size="sm"
-                onClick={runInstall}
+                disabled={installRunning}
+                onClick={onGuidedInstall}
                 data-testid="not-found-guided-install"
               >
-                {t(I18N_KEYS.miseManagement.guidedInstallButton)}
+                {installRunning
+                  ? t(I18N_KEYS.miseManagement.guidedInstallInstalling)
+                  : t(I18N_KEYS.miseManagement.guidedInstallButton)}
               </Button>
               <a
                 className={styles.fallback}
@@ -331,8 +379,11 @@ export function HomePage() {
           <Panel tone="danger" className={styles.state}>
             <div className={styles.stateIndicator}>
               <ProgressDot tone="breach" />
-              <span className={styles.stateLabel}>{t(I18N_KEYS.errors.timeout)}</span>
+              <span className={styles.stateLabel}>
+                {t(I18N_KEYS.errors.timeout)}
+              </span>
             </div>
+            <p className={styles.stateBody}>{t(I18N_KEYS.states.timeoutBody)}</p>
           </Panel>
         )}
 

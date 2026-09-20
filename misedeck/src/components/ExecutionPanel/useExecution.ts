@@ -461,15 +461,17 @@ export function useExecution() {
   );
 
   /** Run the official install script. The displayed command echo is
-   *  platform-derived (curl|sh on Unix, irm|iex on Windows). */
-  const runInstall = useCallback(async () => {
+   *  platform-derived (curl|sh on Unix, irm|iex on Windows). The
+   *  structured result is returned so the caller can tell success
+   *  from failure and refresh its queries on ok (issue #166). */
+  const runInstall = useCallback((): Promise<RunCommandResult> => {
     const request: RunRequest = {
       cwd: null,
       // The displayed args are a hint of what the script is doing.
       // The actual platform-specific command is built in Rust.
       args: ["install", "(official script)"],
     };
-    await runMiseInternal("install_mise", "install", {}, request);
+    return runMiseInternal("install_mise", "install", {}, request);
   }, [runMiseInternal]);
 
   /** Run `mise self-update --yes` via the cached mise binary. The

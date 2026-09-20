@@ -11,8 +11,11 @@
 //   * `check_shell_activation_for` — the end-to-end probe with a
 //      pre-populated rc file: when the file contains
 //      `mise activate <shell>`, the status reports
-//      `activated = true`; when it does not, the status reports
-//      `activated = false`.
+//      `activated = Some(true)`; when it does not, the status reports
+//      `activated = Some(false)`; when the shell family is unknown
+//      and there is no rc to probe, the status reports
+//      `activated = None` (issue #166 — "we cannot tell", never a
+//      false negative).
 //
 // We avoid touching the user's real `$HOME`; the env var is
 // temporarily set to a tempdir for the duration of each test.
@@ -112,7 +115,11 @@ fn activation_zsh_with_line_reports_activated() {
 
     let status = check_shell_activation_for(&ShellKind::Zsh).expect("probe");
     assert_eq!(status.shell, ShellKind::Zsh);
-    assert!(status.activated, "zshrc with `mise activate zsh` should be activated");
+    assert_eq!(
+        status.activated,
+        Some(true),
+        "zshrc with `mise activate zsh` should be activated"
+    );
     assert!(status.rc_path.ends_with(".zshrc"));
 }
 
@@ -134,7 +141,11 @@ fn activation_zsh_without_line_reports_unactivated() {
 
     let status = check_shell_activation_for(&ShellKind::Zsh).expect("probe");
     assert_eq!(status.shell, ShellKind::Zsh);
-    assert!(!status.activated, "zshrc without `mise activate` should NOT be activated");
+    assert_eq!(
+        status.activated,
+        Some(false),
+        "zshrc without `mise activate` should NOT be activated"
+    );
 }
 
 #[test]
@@ -154,7 +165,7 @@ fn activation_bash_with_line_reports_activated() {
     .unwrap();
 
     let status = check_shell_activation_for(&ShellKind::Bash).expect("probe");
-    assert!(status.activated);
+    assert_eq!(status.activated, Some(true));
 }
 
 #[test]
@@ -172,7 +183,7 @@ fn activation_fish_with_line_reports_activated() {
     std::fs::write(fish_dir.join("config.fish"), "mise activate fish | source\n").unwrap();
 
     let status = check_shell_activation_for(&ShellKind::Fish).expect("probe");
-    assert!(status.activated);
+    assert_eq!(status.activated, Some(true));
 }
 
 #[test]
@@ -190,7 +201,9 @@ fn activation_unknown_shell_returns_empty_status() {
         name: "nushell".to_string(),
     })
     .expect("probe");
-    assert!(!status.activated);
+    // Unknown shell: the probe cannot run, so the state is "we
+    // cannot tell" (None) — NOT a false "not activated" (issue #166).
+    assert_eq!(status.activated, None);
     assert!(status.rc_path.is_empty());
 }
 
@@ -206,7 +219,7 @@ fn activation_missing_rc_reports_unactivated() {
     let _restore = HomeGuard::new(prev);
     // No .zshrc written — file does not exist.
     let status = check_shell_activation_for(&ShellKind::Zsh).expect("probe");
-    assert!(!status.activated);
+    assert_eq!(status.activated, Some(false));
     assert!(status.rc_contents.is_empty());
 }
 
@@ -228,7 +241,11 @@ fn activation_falls_back_to_bash_profile_sibling() {
     std::fs::write(tmp.join(".bash_profile"), r#"eval "$(mise activate bash)""#).unwrap();
 
     let status = check_shell_activation_for(&ShellKind::Bash).expect("probe");
-    assert!(status.activated, "should fall back to .bash_profile and find the activation");
+    assert_eq!(
+        status.activated,
+        Some(true),
+        "should fall back to .bash_profile and find the activation"
+    );
     assert!(status.rc_path.ends_with(".bash_profile"));
 }
 
@@ -240,13 +257,31 @@ fn activation_status_serializes_with_camel_case_keys() {
         shell: ShellKind::Zsh,
         rc_path: "/home/x/.zshrc".to_string(),
         rc_contents: String::new(),
-        activated: false,
+        activated: Some(false),
     };
     let v = serde_json::to_value(&status).unwrap();
     assert!(v.get("shell").is_some(), "must have `shell`, got {v:?}");
     assert!(v.get("rcPath").is_some(), "must have `rcPath` (camelCase), got {v:?}");
     assert!(v.get("rcContents").is_some(), "must have `rcContents`, got {v:?}");
-    assert!(v.get("activated").is_some(), "must have `activated`, got {v:?}");
+    assert_eq!(v["activated"], false, "`Some(false)` serializes as `false`");
+}
+
+#[test]
+fn activation_status_unknown_serializes_null_activated() {
+    // The unknown-shell branch carries `activated: None`; the wire
+    // shape is the JSON `null` the frontend reads as "we cannot
+    // tell" (issue #166).
+    let status = ActivationStatus {
+        shell: ShellKind::Unknown {
+            name: "nushell".to_string(),
+        },
+        rc_path: String::new(),
+        rc_contents: String::new(),
+        activated: None,
+    };
+    let v = serde_json::to_value(&status).unwrap();
+    assert_eq!(v["activated"], serde_json::Value::Null);
+    assert_eq!(v["shell"]["kind"], "unknown");
 }
 
 #[test]

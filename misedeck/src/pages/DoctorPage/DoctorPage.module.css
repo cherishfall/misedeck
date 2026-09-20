@@ -79,11 +79,6 @@
   flex: none;
 }
 
-.statusSep {
-  color: var(--dim);
-  flex: none;
-}
-
 .statusValue {
   color: var(--text);
   display: inline-flex;
@@ -231,26 +226,10 @@
   font-weight: 600;
 }
 
-.upgradeAction {
+/* The copy affordance is the shared CopyButton (issue #107); the
+ * section is a flex column, so pin it to the start edge. */
+.upgradeCopy {
   align-self: flex-start;
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  color: var(--ice);
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: var(--space-1) var(--space-2-5);
-  cursor: pointer;
-  transition:
-    color var(--motion-state-change) ease,
-    border-color var(--motion-state-change) ease;
-}
-
-.upgradeAction:hover:not(:disabled),
-.upgradeAction:focus-visible {
-  color: var(--beam);
-  border-color: var(--line-strong);
-  outline: none;
 }
 
 /* ---------- Config files ---------- */

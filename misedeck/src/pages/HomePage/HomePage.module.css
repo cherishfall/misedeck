@@ -82,8 +82,19 @@
 
 /* RAW block copy affordance — shared CopyButton (issue #107) positioned
  * over the RAW block; typography/color come from the component. */
+/* RAW block (issue #166, beta11 Q3): the diagnostic payload sits
+ * behind a disclosure — collapsed by default, one click expands the
+ * full block with the copy affordance overlaid. */
+.rawSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
 .rawWrap {
   position: relative;
+  align-self: stretch;
 }
 
 .rawCopy {

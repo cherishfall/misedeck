@@ -38,7 +38,8 @@
       "title": "更新 mise？",
       "bodyWithLatest": "将运行下面的确切命令，把 mise 从 {{current}} 升级到 {{latest}}，并替换已安装的二进制文件。",
       "bodyUnknownLatest": "将运行下面的确切命令，把 mise 从 {{current}} 升级到最新版本，并替换已安装的二进制文件。"
-    }
+    },
+    "guidedInstallInstalling": "安装中…"
   },
   "nav": {
     "home": "首页",
@@ -66,6 +67,7 @@
     "title": "首页",
     "hint": "检测 mise 是否已安装且版本满足 MiseDeck 的要求；引导安装与自更新都在这里进行，所有操作都通过执行面板实时显示。",
     "commandHint": "mise version · mise self-update",
+    "rawLabel": "RAW",
     "success": {
       "selfUpdated": "mise 已更新"
     }
@@ -414,7 +416,7 @@
   },
   "doctor": {
     "title": "诊断",
-    "hint": "当前目录的 mise 健康检查。当 `--json` 不可用时，原始 doctor 输出会以行级色调渲染。",
+    "hint": "mise 健康检查——针对全局环境或所选目录。当结构化报告不可用时，原始 doctor 输出会以行级色调渲染。",
     "commandHint": "mise doctor",
     "statusLabel": "健康检查",
     "status": {
@@ -452,8 +454,6 @@
     "updateNotice": {
       "title": "有可用更新",
       "framing": "mise 有新版本可用。",
-      "copy": "复制 mise self-update",
-      "copied": "已复制",
       "updateOnHome": "去首页更新"
     }
   },
@@ -504,8 +504,8 @@
     "ready": "就绪",
     "notInstalled": {
       "title": "未找到 mise",
-      "body": "在本机上未找到 mise 可执行文件。请从 {{url}} 安装后重新启动 MiseDeck。",
-      "installHint": "引导式安装将在 #30 中提供。"
+      "body": "在本机上未找到 mise 可执行文件。下方的引导式安装会通过执行面板运行官方安装脚本；安装指南提供了手动安装的步骤。",
+      "installHint": "阅读安装指南"
     },
     "tooOld": {
       "title": "mise 版本过旧",
@@ -518,7 +518,8 @@
     "parseFailed": {
       "title": "无法解析 mise 响应",
       "body": "MiseDeck 无法解析 `mise version --json`。你可能在运行一个 fork 版本。"
-    }
+    },
+    "timeoutBody": "版本探测超时。请使用工具栏的刷新按钮重试。"
   },
   "labels": {
     "version": "版本",

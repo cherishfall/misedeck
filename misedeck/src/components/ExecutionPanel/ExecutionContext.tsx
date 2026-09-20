@@ -38,8 +38,10 @@ interface ExecutionContextValue {
    *  instead of invoking mise again (ADR-0005). Never rejects because
    *  another command is running (#138). */
   run: (request: RunRequest, options?: RunOptions) => Promise<RunCommandResult>;
-  /** Run the official install script. Streams into the panel. */
-  runInstall: () => Promise<void>;
+  /** Run the official install script. Streams into the panel and
+   *  returns the structured result so the caller can tell success
+   *  from failure and refresh its queries on ok (issue #166). */
+  runInstall: () => Promise<RunCommandResult>;
   /** Run `mise self-update --yes`. Streams into the panel and returns
    *  the structured result so the caller can close the loop in-page on
    *  success (issue #145). */

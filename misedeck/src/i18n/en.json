@@ -38,7 +38,8 @@
       "title": "Update mise?",
       "bodyWithLatest": "This will run the exact command below. It upgrades mise from {{current}} to {{latest}} and replaces the installed binary.",
       "bodyUnknownLatest": "This will run the exact command below. It upgrades mise from {{current}} to the latest release and replaces the installed binary."
-    }
+    },
+    "guidedInstallInstalling": "Installing…"
   },
   "nav": {
     "home": "Home",
@@ -66,6 +67,7 @@
     "title": "Home",
     "hint": "Is mise installed and new enough for MiseDeck? Guided install and self-update live here; every action streams through the execution panel.",
     "commandHint": "mise version · mise self-update",
+    "rawLabel": "RAW",
     "success": {
       "selfUpdated": "mise updated"
     }
@@ -414,7 +416,7 @@
   },
   "doctor": {
     "title": "Doctor",
-    "hint": "A health check for the current directory's mise setup. When `--json` is unavailable, the raw doctor output is rendered with row tinting.",
+    "hint": "A health check for mise — the global setup or the chosen directory. When the structured report is unavailable, the raw doctor output renders with row tinting.",
     "commandHint": "mise doctor",
     "statusLabel": "Health check",
     "status": {
@@ -452,8 +454,6 @@
     "updateNotice": {
       "title": "Update available",
       "framing": "A new mise release is available.",
-      "copy": "Copy mise self-update",
-      "copied": "Copied",
       "updateOnHome": "Update on Home"
     }
   },
@@ -504,8 +504,8 @@
     "ready": "Ready",
     "notInstalled": {
       "title": "mise not found",
-      "body": "We could not locate the mise binary on this machine. Install it from {{url}} and relaunch MiseDeck.",
-      "installHint": "Guided install coming in #30."
+      "body": "We could not locate the mise binary on this machine. Guided install below runs the official install script through the execution panel; the install guide has the manual steps.",
+      "installHint": "Read the install guide"
     },
     "tooOld": {
       "title": "mise is too old",
@@ -518,7 +518,8 @@
     "parseFailed": {
       "title": "unrecognised mise response",
       "body": "MiseDeck could not parse `mise version --json`. You may be running a forked build."
-    }
+    },
+    "timeoutBody": "The version probe timed out. Retry with the toolbar refresh button."
   },
   "labels": {
     "version": "Version",

@@ -217,8 +217,13 @@ export interface ActivationStatus {
   /** Raw rc file contents (UTF-8, lossy). Empty when the file
    *  does not exist. Debug-only — do not render in the UI. */
   rcContents: string;
-  /** True when the rc file already contains a `mise activate` line. */
-  activated: boolean;
+  /** Tri-state: `true` when the rc file already contains a
+   *  `mise activate` line; `false` when the probe ran and found
+   *  none; `null` when the probe could not run (unknown shell
+   *  family). The UI renders `null` as "—" and excludes it from
+   *  page-level status derivation — an undetectable state is not a
+   *  negative fact (issue #166). */
+  activated: boolean | null;
 }
 
 /**
