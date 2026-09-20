@@ -86,8 +86,6 @@ interface TaskRow {
   description: string;
   /** Names this task depends on. */
   depends: string[];
-  /** True when `hide = true` in the TOML. */
-  hide: boolean;
 }
 
 // ---------- Args builders (mirror the Rust helpers) ----------
@@ -348,7 +346,9 @@ export function TasksPage() {
     setAddingTask(false);
   }, []);
 
-  // Task rows. Defensive copy + hide-aware display.
+  // Task rows. `mise tasks ls` already filters hidden tasks upstream,
+  // so no hide badge is rendered (beta11 4.4-m1; surfacing it would
+  // need `--hidden`, which the hint rules bar as an internal flag).
   const taskRows: TaskRow[] = useMemo(() => {
     if (!tasks.data) return [];
     return tasks.data.map((t) => ({
@@ -357,7 +357,6 @@ export function TasksPage() {
       run: taskRunDisplay(t.run),
       description: t.description,
       depends: t.depends,
-      hide: t.hide,
     }));
   }, [tasks.data]);
 
@@ -365,6 +364,18 @@ export function TasksPage() {
   // tools / env / settings tables via `useTableFilter`.
   const filter = useTableFilter(taskRows, (r) =>
     [r.name, r.run, r.description, r.depends.join(" ")].join("\n"),
+  );
+
+  // The currently-edited task — used to inject the edit form
+  // below the table so the user can see what they are editing
+  // while the form is open. `null` when no row is being edited.
+  // Hook placement: this memo must stay above the conditional
+  // early returns below — hooks after a conditional return break
+  // the rules of hooks and can white-screen the page on remount
+  // (beta11 4.4-M1).
+  const editingTask = useMemo(
+    () => (editingName ? tasks.data?.find((t) => t.name === editingName) ?? null : null),
+    [editingName, tasks.data],
   );
 
   // Mise-missing or list-loading state. The list-level gate (issue
@@ -407,14 +418,7 @@ export function TasksPage() {
       sortValue: (r) => r.name,
       cell: (r) => (
         <Tooltip text={r.name}>
-          <span className={styles.cellName}>
-            <span className={styles.taskName}>{r.name}</span>
-          {r.hide && (
-            <span className={styles.taskHidden}>
-              {t(I18N_KEYS.tasks.hiddenBadge)}
-            </span>
-          )}
-          </span>
+          <span className={styles.cellName}>{r.name}</span>
         </Tooltip>
       ),
     },
@@ -426,7 +430,9 @@ export function TasksPage() {
       sortValue: (r) => r.run ?? "",
       cell: (r) =>
         r.run ? (
-          <code className={styles.cellRun}>{r.run}</code>
+          <Tooltip text={r.run}>
+            <code className={styles.cellRun}>{r.run}</code>
+          </Tooltip>
         ) : (
           <span className={styles.cellRunEmpty}>—</span>
         ),
@@ -497,14 +503,6 @@ export function TasksPage() {
     },
   ];
 
-  // The currently-edited task — used to inject the edit form
-  // below the table so the user can see what they are editing
-  // while the form is open. `null` when no row is being edited.
-  const editingTask = useMemo(
-    () => (editingName ? tasks.data?.find((t) => t.name === editingName) ?? null : null),
-    [editingName, tasks.data],
-  );
-
   // Which task form to render, if any: the create form (`task:
   // null`) or the row edit form. The `added` flag picks the
   // success-bar message once the save runs.
@@ -535,7 +533,12 @@ export function TasksPage() {
         <div className={styles.toolbar}>
           <span className={styles.toolbarHint}>
             {tasks.data
-              ? t(I18N_KEYS.tasks.count, { count: tasks.data.length })
+              ? filter.active
+                ? t(I18N_KEYS.tasks.countFiltered, {
+                    count: filter.rows.length,
+                    total: tasks.data.length,
+                  })
+                : t(I18N_KEYS.tasks.count, { count: tasks.data.length })
               : t(I18N_KEYS.common.loading)}
           </span>
           <TableFilter
@@ -650,10 +653,14 @@ export function TasksPage() {
             )}
 
             {/* Task names on the page, referenced as completion by the
-                edit form's depends input (issue #109). */}
+                edit form's depends input (issue #109). The edited task's
+                own name is excluded — suggesting it would invite a
+                self-dependency (beta11 4.4-m2). */}
             <Suggestions
               id="tasks-depends-suggestions"
-              options={taskRows.map((r) => r.name)}
+              options={taskRows
+                .map((r) => r.name)
+                .filter((n) => n !== formFor?.task?.name)}
             />
           </>
         )}
@@ -770,9 +777,15 @@ function TaskForm({
       </p>
 
       <div className={styles.editFormField}>
-        <label className={styles.editFormLabel} htmlFor={nameId}>
-          {t(I18N_KEYS.tasks.columns.name)}
-        </label>
+        {isNew ? (
+          <label className={styles.editFormLabel} htmlFor={nameId}>
+            {t(I18N_KEYS.tasks.columns.name)}
+          </label>
+        ) : (
+          <span className={styles.editFormLabel}>
+            {t(I18N_KEYS.tasks.columns.name)}
+          </span>
+        )}
         {isNew ? (
           <input
             id={nameId}
@@ -786,15 +799,15 @@ function TaskForm({
             autoComplete="off"
           />
         ) : (
-          <input
-            id={nameId}
-            name="name"
-            type="text"
-            className={styles.editFormInput}
-            value={task.name}
-            disabled
-            readOnly
-          />
+          // v1 does not support renaming: the name is fixed for an
+          // existing task, so it renders as read-only text — never an
+          // editable input (ui-ux-rules :29, beta11 4.4-m3).
+          <span
+            className={styles.editFormReadonly}
+            data-testid={`tasks-edit-name-${task.name}`}
+          >
+            {task.name}
+          </span>
         )}
       </div>
 

@@ -303,10 +303,13 @@
   },
   "tasks": {
     "title": "Tasks",
-    "subtitle": "List, run, create, and edit the mise tasks for the active directory. Writes go through `mise tasks add` and stream into the panel.",
+    "subtitle": "List, run, create, and edit the mise tasks for the current directory. Writes go through `mise tasks add` and stream into the panel.",
     "filterPlaceholder": "Filter tasks…",
     "count": "{{count}} tasks",
-    "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit",
+    "count_one": "{{count}} task",
+    "countFiltered": "{{count}} of {{total}} tasks",
+    "countFiltered_one": "{{count}} of {{total}} task",
+    "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit · mise config ls",
     "columns": {
       "name": "Name",
       "run": "Run",
@@ -323,7 +326,6 @@
     "runButton": "Run",
     "editButton": "Edit",
     "openInEditorButton": "Open in editor",
-    "hiddenBadge": "hide",
     "editForm": {
       "title": "Edit task",
       "addTitle": "New task",

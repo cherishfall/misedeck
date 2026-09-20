@@ -360,6 +360,7 @@ export const I18N_KEYS = {
     commandHint: "tasks.commandHint",
     filterPlaceholder: "tasks.filterPlaceholder",
     count: "tasks.count",
+    countFiltered: "tasks.countFiltered",
     columns: {
       name: "tasks.columns.name",
       run: "tasks.columns.run",
@@ -376,7 +377,6 @@ export const I18N_KEYS = {
     runButton: "tasks.runButton",
     editButton: "tasks.editButton",
     openInEditorButton: "tasks.openInEditorButton",
-    hiddenBadge: "tasks.hiddenBadge",
     editForm: {
       title: "tasks.editForm.title",
       addTitle: "tasks.editForm.addTitle",

@@ -306,7 +306,10 @@
     "subtitle": "列出、运行、创建并编辑当前目录的 mise 任务。写入通过 `mise tasks add`，并在执行面板中实时显示。",
     "filterPlaceholder": "过滤任务…",
     "count": "{{count}} 个任务",
-    "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit",
+    "count_one": "{{count}} 个任务",
+    "countFiltered": "{{total}} 个任务中的 {{count}} 个",
+    "countFiltered_one": "{{total}} 个任务中的 {{count}} 个",
+    "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit · mise config ls",
     "columns": {
       "name": "名称",
       "run": "运行",
@@ -323,7 +326,6 @@
     "runButton": "运行",
     "editButton": "编辑",
     "openInEditorButton": "在编辑器中打开",
-    "hiddenBadge": "hide",
     "editForm": {
       "title": "编辑任务",
       "addTitle": "新建任务",

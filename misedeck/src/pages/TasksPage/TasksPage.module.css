@@ -122,25 +122,15 @@
   color: var(--text);
 }
 
-.taskName {
-  font-weight: 500;
-}
-
-.taskHidden {
-  color: var(--dim);
-  font-size: var(--size-label);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: var(--space-0-5) var(--space-1-5);
-}
-
 .cellRun {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: var(--size-data);
   color: var(--text);
-  word-break: break-word;
-  display: block;
-  max-width: 360px;
 }
 
 .cellRunEmpty {
@@ -246,16 +236,13 @@
   border-color: var(--beam);
 }
 
-.editFormInput:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* The read-only name field of the edit form (create mode's name
- * field is a plain editable input and keeps the default colors). */
-.editFormInput:read-only {
-  color: var(--dim);
-  cursor: not-allowed;
+/* The edit form's fixed task name renders as read-only text, not an
+ * input (ui-ux-rules :29, beta11 4.4-m3): the label sits above the
+ * value like the editable fields, but the value is plain text. */
+.editFormReadonly {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
 }
 
 /* The run draft: edited one command per line (issue #161), so the
