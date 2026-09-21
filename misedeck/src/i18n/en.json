@@ -408,6 +408,7 @@
     "showAll": "Show all (`--all`)",
     "filterPlaceholder": "Filter settings…",
     "count": "{{count}} settings",
+    "count_one": "{{count}} setting",
     "guard": {
       "untrustedBody": "Trust this directory before mutating its settings."
     },

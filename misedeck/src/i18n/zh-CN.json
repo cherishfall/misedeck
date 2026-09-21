@@ -408,6 +408,7 @@
     "showAll": "显示全部（`--all`）",
     "filterPlaceholder": "过滤设置…",
     "count": "{{count}} 项设置",
+    "count_one": "{{count}} 项设置",
     "guard": {
       "untrustedBody": "在修改此目录的设置之前，请先信任它。"
     },
