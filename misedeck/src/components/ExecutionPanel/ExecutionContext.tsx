@@ -123,6 +123,12 @@ export function useExecutionContext(): ExecutionContextValue {
  *
  * Use one hook instance per command-firing action, not one per page, so a
  * page that fires several commands keeps each control's lock to itself.
+ *
+ * The matching convention at call sites: a handler whose `isRunning` is
+ * true early-returns silently (e.g. `if (runner.isRunning) return`). That
+ * silence is deliberate — ConfirmDialog's `confirmBusy` already blocks a
+ * second confirm on the firing control, so the early return is only a
+ * last-resort race shield, never the place for user-facing feedback.
  */
 export function useOwnRun() {
   const { run } = useExecutionContext();

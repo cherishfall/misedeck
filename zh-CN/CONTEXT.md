@@ -57,7 +57,7 @@ _Avoid_: enable, activate, set as default
 
 **Unuse**（卸载）:
 `mise unuse <tool>` —— 将 Tool 从 Config file 移除，并清理不再被引用的安装。这是真正的工具级移除；`mise uninstall` 只删文件。见 ADR-0008。UI 文案："Unuse" / 卸载。
-「卸载」涵盖两个层级：tool 级（`mise unuse <tool>`）与 plugin 级（`mise plugins uninstall <plugin>`）；version 级移除恒为「删除此版本」（`mise uninstall <tool>@<version>`）。
+「卸载」涵盖两个层级：tool 级（`mise unuse <tool>`）与 plugin 级（`mise plugins uninstall <plugin>`）；version 级移除恒为 "Uninstall" / 删除此版本（`mise uninstall <tool>@<version>`）。
 _Avoid_: uninstall, remove, delete（工具级）
 
 **Install**（仅安装）:

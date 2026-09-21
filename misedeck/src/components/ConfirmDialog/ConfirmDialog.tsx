@@ -97,8 +97,8 @@ export function ConfirmDialog({
       >
         <h2 className={styles.title}>{title}</h2>
         <p className={styles.body}>{body}</p>
-        {commands.map((c) => (
-          <div key={c} className={styles.commandWrap}>
+        {commands.map((c, i) => (
+          <div key={`${i}-${c}`} className={styles.commandWrap}>
             <code className={styles.command}>{c}</code>
           </div>
         ))}

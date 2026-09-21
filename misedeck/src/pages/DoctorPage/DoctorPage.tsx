@@ -17,6 +17,7 @@ import {
   CopyButton,
   EmptyState,
   PageShell,
+  ProgressDot,
   Table,
   type TableColumn,
   Tooltip,
@@ -168,17 +169,23 @@ function DoctorContent({
   // Pull the mise-self-update notice out of the raw warnings and re-render
   // it as a localized upgrade path. The remaining warnings (if any) keep
   // their own list below. This keeps English CLI prose out of a zh-CN UI.
-  let updateWarningText: string | null = null;
-  for (const w of warnings) {
-    if (parseUpgradePath([w])) {
-      updateWarningText = w;
+  // Each warning is parsed at most once, and the winner is excluded from
+  // the remaining list by index — two warnings with identical text must
+  // not be filtered out together.
+  let updateWarningIndex = -1;
+  let upgrade: { current: string; latest: string } | null = null;
+  for (const [i, w] of warnings.entries()) {
+    const parsed = parseUpgradePath([w]);
+    if (parsed) {
+      updateWarningIndex = i;
+      upgrade = parsed;
       break;
     }
   }
-  const upgrade = updateWarningText ? parseUpgradePath([updateWarningText]) ?? null : null;
-  const otherWarnings = updateWarningText
-    ? warnings.filter((w) => w !== updateWarningText)
-    : warnings;
+  const otherWarnings =
+    updateWarningIndex !== -1
+      ? warnings.filter((_, i) => i !== updateWarningIndex)
+      : warnings;
   const status = doctorStatus(data, rcActivated);
 
   const toolsetColumns: TableColumn<ToolsetRow>[] = [
@@ -402,7 +409,7 @@ function DoctorLoading() {
     <PageShell>
       <div className={styles.page}>
         <div className={styles.loading}>
-          <span className={styles.dot} aria-hidden="true" />
+          <ProgressDot tone="dim" />
           <span>{t(I18N_KEYS.common.loading)}</span>
         </div>
       </div>

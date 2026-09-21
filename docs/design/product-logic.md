@@ -68,7 +68,7 @@ North-star feeling: *"I always know which mise command this screen is showing me
 - its `[env]` editing → becomes the **Env** page (`mise set` / `mise unset`);
 - config-file visibility (which files load, in what order, their content) → moves to **Preview** (`mise config`), because "what mise sees here" is exactly Preview's job.
 
-The `/config` route redirects to `/preview` for one release, then is removed.
+The `/config` route still redirects to `/preview`, kept as a compatibility shim for old links — the redirect is retained, with no plan to remove it.
 
 ## Interaction rules
 

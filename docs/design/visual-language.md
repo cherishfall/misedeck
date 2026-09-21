@@ -71,7 +71,7 @@ Base states: the resting button is `--hull` at 80% on a `--line` border with `--
 
 | Role | Face | Usage |
 |---|---|---|
-| Display | Cormorant Garamond 500–600, upright (not italic), no tracking | page titles, the wordmark (italic) |
+| Display | Cormorant Garamond 500–600, upright (not italic), no tracking | page titles (upright); the wordmark — its logotype is italic by design, not a Display-row exception |
 | UI / nav | Space Grotesk 400–600 | nav items, buttons, prose |
 | Data | JetBrains Mono 400–600 | versions, paths, commands, logs, badges |
 | Eyebrow | JetBrains Mono 400–600, uppercase, letter-spacing ≈ .18em, `--ice` | mode/section labels only (the toolbar mode indicator); Latin-only — zh-CN eyebrows drop uppercase and tracking |

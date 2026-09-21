@@ -53,8 +53,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                       <Route path="/env" element={<EnvPage />} />
                       {/* The Config editor page is retired (#43): [tools]
                           editing lives on Tools, [env] editing on Env, and
-                          config-file visibility on Preview. Redirect the old
-                          route for one release. */}
+                          config-file visibility on Preview. The old route
+                          still redirects, kept for old-link compatibility
+                          (product-logic — retained, no removal planned). */}
                       <Route path="/config" element={<Navigate to="/preview" replace />} />
                       <Route path="/settings" element={<SettingsPage />} />
                       <Route path="/doctor" element={<DoctorPage />} />

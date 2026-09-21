@@ -44,7 +44,7 @@ artifact 的那个。
 ### 附注 tag vs 轻量 tag
 
 如果用 `git tag -a v0.2.0 -m "..."` 推送 tag，附注消息会成为 Release 的正文。
-如果用 `git tag v0.2.0 && git push origin v0.2.0` 推送轻量 tag，workflow 会
+如果只用 `git tag v0.2.0` 打 tag、再用 `git push origin v0.2.0` 推送轻量 tag，workflow 会
 回退到 `.github/release-template.md`，把 `<version>` 替换为 tag 名。
 常规发版推荐走模板路径；紧急修复的消息则适合用附注。
 

@@ -56,7 +56,7 @@
   "trust": {
     "banner": {
       "label": "未受信任的配置",
-      "body": "此目录的 mise.toml 尚未被信任。在信任前，环境变量与任务不会运行。",
+      "body": "此目录的 mise 配置文件尚未被信任。在信任前，环境变量与任务不会运行。",
       "action": "信任此目录"
     },
     "busy": "正在信任…",
@@ -541,8 +541,7 @@
     "parseFailed": {
       "title": "无法解析 mise 响应",
       "body": "MiseDeck 无法解析 `mise version --json`。你可能在运行一个 fork 版本。"
-    },
-    "timeoutBody": "版本探测超时。请使用工具栏的刷新按钮重试。"
+    }
   },
   "labels": {
     "version": "版本",

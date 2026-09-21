@@ -601,8 +601,6 @@ export const I18N_KEYS = {
       title: "states.parseFailed.title",
       body: "states.parseFailed.body",
     },
-    /** Retry guidance under the timeout state (issue #166). */
-    timeoutBody: "states.timeoutBody",
   },
   labels: {
     version: "labels.version",

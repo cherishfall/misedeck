@@ -71,7 +71,7 @@ MiseDeck 界面的设计系统基础。在 issue #37 中重写：首个设计冲
 
 | 角色 | 字体 | 用途 |
 |---|---|---|
-| Display | Cormorant Garamond 500–600，正体（非斜体），无字距 | 页面标题、wordmark（斜体） |
+| Display | Cormorant Garamond 500–600，正体（非斜体），无字距 | 页面标题（正体）；wordmark —— 其标志本身即为斜体设计，并非 Display 行的例外 |
 | UI / 导航 | Space Grotesk 400–600 | 导航项、按钮、正文 |
 | 数据 | JetBrains Mono 400–600 | 版本、路径、命令、日志、徽章 |
 | 眉签 | JetBrains Mono 400–600，大写，字距 ≈ .18em，`--ice` | 仅限模式/区块标签（工具栏模式指示器）；仅拉丁文——zh-CN 眉签不取大写与字距 |

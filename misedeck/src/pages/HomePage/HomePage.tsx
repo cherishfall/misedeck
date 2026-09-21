@@ -389,7 +389,6 @@ export function HomePage() {
                 {t(I18N_KEYS.errors.timeout)}
               </span>
             </div>
-            <p className={styles.stateBody}>{t(I18N_KEYS.states.timeoutBody)}</p>
           </Panel>
         )}
 

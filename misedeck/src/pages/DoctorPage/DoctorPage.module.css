@@ -333,13 +333,6 @@
   font-size: var(--size-label);
 }
 
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--dim);
-}
-
 .errorState {
   display: flex;
   flex-direction: column;

@@ -56,7 +56,7 @@
   "trust": {
     "banner": {
       "label": "Untrusted config",
-      "body": "This directory's mise.toml has not been trusted. Env and tasks will not run until you trust it.",
+      "body": "This directory's mise config file has not been trusted. Env and tasks will not run until you trust it.",
       "action": "Trust this directory"
     },
     "busy": "Trusting…",
@@ -541,8 +541,7 @@
     "parseFailed": {
       "title": "unrecognised mise response",
       "body": "MiseDeck could not parse `mise version --json`. You may be running a forked build."
-    },
-    "timeoutBody": "The version probe timed out. Retry with the toolbar refresh button."
+    }
   },
   "labels": {
     "version": "Version",
