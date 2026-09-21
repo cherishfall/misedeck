@@ -4,8 +4,8 @@
 // Refresh is a page-level capability owned by the top toolbar
 // (ui-ux-rules.md): one shared refresh button lives in the
 // DirectoryIndicator strip, and each content page registers a callback
-// that invalidates every query the page fetched (the plugins page's one
-// callback refreshes both the Registry and the installed list). Pages
+// that invalidates every query the page fetched (e.g. the plugins
+// page refreshes its installed list). Pages
 // and sections never place their own refresh buttons.
 //
 // PageRefreshProvider owns the state and is mounted in the app root

@@ -284,6 +284,11 @@ export function ToolsPage() {
   const onRefresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
+    // The registry query backs the add-tool search suggestions
+    // (AddToolSection, `["registry", cwd]` in useIssue29); invalidate it
+    // too so the toolbar refresh covers every query this page fetches
+    // (issue #181).
+    void queryClient.invalidateQueries({ queryKey: ["registry", cwd] });
   }, [queryClient, cwd]);
   // Top-toolbar refresh (issue #98); the page keeps no local button.
   useRegisterPageRefresh(onRefresh);
