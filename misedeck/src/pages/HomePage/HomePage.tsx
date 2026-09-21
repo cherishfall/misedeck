@@ -97,6 +97,7 @@ export function HomePage() {
   // self-update closes the loop here with a short-lived bar; failures
   // are unchanged — the panel still auto-opens.
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [successTick, setSuccessTick] = useState(0);
 
   const query = useQuery({
     queryKey: ["mise", "detect"],
@@ -118,7 +119,11 @@ export function HomePage() {
   // fire two installers; on success the not-found state resolves
   // itself — invalidate the detect probe exactly like the self-update
   // path, so the page flips to ready instead of telling the user to
-  // relaunch the app.
+  // relaunch the app. On failure the command now resolves `{kind:"err"}`
+  // (issue #172): nothing here needs to handle it — the execution panel
+  // auto-opens with the script's stderr (the shared runner contract),
+  // the page stays in the not-found state instead of feigning success,
+  // and `finally` releases the run-lock either way.
   const onGuidedInstall = () => {
     if (installRunning) return;
     setInstallRunning(true);
@@ -178,6 +183,7 @@ export function HomePage() {
             seconds. Null renders nothing. */}
         <SuccessBar
           message={successMessage}
+          tick={successTick}
           onDismiss={() => setSuccessMessage(null)}
         />
 
@@ -420,6 +426,7 @@ export function HomePage() {
                 // as before.
                 if (res.kind === "ok") {
                   setSuccessMessage(t(I18N_KEYS.home.success.selfUpdated));
+                  setSuccessTick((n) => n + 1);
                 }
                 onSelfUpdateOk();
               })

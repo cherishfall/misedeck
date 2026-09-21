@@ -69,7 +69,8 @@ fn build_install_command() -> Command {
 }
 
 /// Run the official install script for the current platform and stream
-/// each line via `on_event`. Returns the aggregated outcome.
+/// each line via `on_event`. Returns the aggregated outcome; a non-zero
+/// exit (or a timeout) is `Err`, matching `run_self_update`'s contract.
 ///
 /// This mirrors `run_mise` so the two surfaces (mise commands +
 /// non-mise shell commands) share the same streaming pattern and
@@ -149,6 +150,16 @@ where
                     duration_ms,
                     timed_out: false,
                 });
+                // Same contract as `run_self_update` below: a non-zero
+                // exit is a failure, not an outcome — returning Ok would
+                // let the next caller treat a failed install as success
+                // (issue #172).
+                if exit_code != 0 {
+                    return Err(AppError::command_failed(
+                        format!("install script exited with status {exit_code}"),
+                        stderr_buf.clone(),
+                    ));
+                }
                 return Ok(InstallOutcome {
                     stdout: stdout_buf,
                     stderr: stderr_buf,

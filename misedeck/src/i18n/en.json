@@ -155,7 +155,8 @@
       "emptyInstalledBody": "`mise ls {{tool}}` reports no installed versions for {{tool}}.",
       "emptyAvailableTitle": "No available versions",
       "emptyAvailableBody": "`mise ls-remote {{tool}}` returned no versions.",
-      "activeUninstallTooltip": "Switch to another version before deleting this one"
+      "activeUninstallTooltip": "Switch to another version before deleting this one",
+      "retryButton": "Retry"
     },
     "confirm": {
       "uninstall": {

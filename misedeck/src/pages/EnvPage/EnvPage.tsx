@@ -102,6 +102,7 @@ export function EnvPage() {
   // closes the loop here with a short-lived bar; failures are
   // unchanged — the panel still auto-opens.
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [successTick, setSuccessTick] = useState(0);
 
   // Top-toolbar refresh (issue #98): invalidate both the active and the
   // global env queries, plus the preview page's env query.
@@ -113,15 +114,21 @@ export function EnvPage() {
   }, [queryClient, cwd]);
   useRegisterPageRefresh(onRefresh);
 
-  // Per-action run-lock (issue #138): `runWrite` wraps the panel runner and
-  // its in-flight flag is true only while the command *this* callback
-  // dispatched is running. On this run's own success, refresh both the
-  // active and global env queries (so switching contexts shows fresh
-  // data) plus the preview page's env query; active queries refetch
-  // immediately so the table updates visibly (issue #41). The optional
-  // `successMessage` closes the loop in-page (issue #145). Resolves to
-  // "ok" only when the command ran and succeeded, so callers can chain
-  // form cleanup (clear-on-success, issue #153) on the result.
+  // Family-level run-lock (issue #138): the whole set/unset family
+  // shares one `useOwnRun`, so while one write is in flight every
+  // write control on the page freezes. The serialization is
+  // deliberate: concurrent `mise set` / `mise unset` processes race
+  // their read-modify-write on the same TOML and silently lose a key
+  // (beta11 4.3-B1). The flag is true only while the command *this*
+  // callback dispatched is running. On this run's own success, refresh
+  // both the active and global env queries (so switching contexts shows
+  // fresh data) plus the preview page's env query; active queries
+  // refetch immediately so the table updates visibly (issue #41). The
+  // optional `successMessage` closes the loop in-page (issue #145) —
+  // `successTick` bumps with it so a repeated identical message still
+  // re-arms the bar's timer (issue #172). Resolves to "ok" only when
+  // the command ran and succeeded, so callers can chain form cleanup
+  // (clear-on-success, issue #153) on the result.
   const runWrite = useCallback(
     async (builder: (cwd: string | null) => string[], successMessage?: string): Promise<WriteOutcome> => {
       if (!guard.allowed) {
@@ -137,7 +144,10 @@ export function EnvPage() {
         void queryClient.invalidateQueries({ queryKey: ["tools", "env", null] });
         void queryClient.refetchQueries({ queryKey: ["env", "ls", cwd], type: "active" });
         void queryClient.refetchQueries({ queryKey: ["env", "ls", null], type: "active" });
-        if (successMessage !== undefined) setSuccessMessage(successMessage);
+        if (successMessage !== undefined) {
+          setSuccessMessage(successMessage);
+          setSuccessTick((n) => n + 1);
+        }
         return "ok";
       }
       return "err";
@@ -264,6 +274,7 @@ export function EnvPage() {
             seconds. Null renders nothing. */}
         <SuccessBar
           message={successMessage}
+          tick={successTick}
           onDismiss={() => setSuccessMessage(null)}
         />
 
@@ -530,11 +541,14 @@ function EnvRowActions({
   if (editing) {
     return (
       <>
+        {/* An empty value is legal — `mise set KEY=` writes an empty
+            string, the same ruling as the Add form (issue #153); only
+            the name must be non-empty. */}
         <KeyForm
           className={styles.rowEditor}
           onSubmit={onSave}
           onRevert={cancelEdit}
-          submitDisabled={disabled || !dirty || name.length === 0 || value.length === 0}
+          submitDisabled={disabled || !dirty || name.length === 0}
         >
           <input
             type="text"
@@ -560,7 +574,7 @@ function EnvRowActions({
             variant="primary"
             size="sm"
             onClick={onSave}
-            disabled={disabled || !dirty || name.length === 0 || value.length === 0}
+            disabled={disabled || !dirty || name.length === 0}
             data-testid={`env-save-${row.name}`}
           >
             {t(I18N_KEYS.common.save)}

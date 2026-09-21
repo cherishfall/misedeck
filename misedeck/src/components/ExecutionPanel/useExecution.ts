@@ -1,8 +1,11 @@
 // useExecution — a small reducer that drives the execution panel.
 // Holds the current request, streamed lines, status, and a cancel handle.
 //
-// It is also the app's *only* mise runner (ADR-0005): reads route
-// through `run()` exactly like mutations do, and `run()` returns the
+// It is also the panel runner for the reads routed through it
+// (ADR-0005: the `ls` family, `ls-remote`, and `settings ls` — outlier
+// reads like `outdated`, `env`, tasks, plugins, doctor, and registry
+// keep their own dedicated Tauri commands): those reads route through
+// `run()` exactly like mutations do, and `run()` returns the
 // structured result so a read's caller can feed the query cache without
 // invoking mise a second time.
 //

@@ -16,8 +16,8 @@
 //                                 Global context)
 //
 // The page also surfaces the trust UX (issue #25): when the cwd's
-// `mise.toml` is not yet trusted, a `Banner tone="warning"` is
-// rendered at the top with a one-click `Trust` action that
+// `mise.toml` is not yet trusted, the shared `TrustBanner` (issues
+// #25 / #141) renders at the top with a one-click `Trust` action that
 // streams `mise trust` through the existing execution panel. The
 // banner disappears on success because the trust query
 // invalidates itself when the streaming run returns Ok.

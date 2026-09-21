@@ -84,6 +84,7 @@ export function PluginsPage() {
   // uninstall closes the loop here with a short-lived bar; failures are
   // unchanged — the panel still auto-opens.
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [successTick, setSuccessTick] = useState(0);
 
   const installPlugin = useCallback(
     async (name: string, gitUrl: string): Promise<"ok" | "err"> => {
@@ -92,6 +93,7 @@ export function PluginsPage() {
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["plugins", "ls", cwd] });
         setSuccessMessage(t(I18N_KEYS.plugins.success.installed, { name }));
+        setSuccessTick((n) => n + 1);
         return "ok";
       }
       return "err";
@@ -110,6 +112,7 @@ export function PluginsPage() {
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["plugins", "ls", cwd] });
         setSuccessMessage(t(I18N_KEYS.plugins.success.uninstalled, { name }));
+        setSuccessTick((n) => n + 1);
       }
     },
     [uninstall.isRunning, uninstall.run, cwd, queryClient, t],
@@ -196,6 +199,7 @@ export function PluginsPage() {
             a few seconds. Null renders nothing. */}
         <SuccessBar
           message={successMessage}
+          tick={successTick}
           onDismiss={() => setSuccessMessage(null)}
         />
 

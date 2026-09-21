@@ -8,8 +8,8 @@
 //
 // The `settings ls` read routes through the execution panel's runner
 // (ADR-0005, issue #162) rather than its own Tauri command (removed once
-// no callers remained, same as the tools `ls` family): every mise
-// invocation the app makes is visible in one place and runs once.
+// no callers remained, same as the tools `ls` family): the read is
+// visible in the execution panel and runs once.
 
 import { useCallback } from "react";
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";

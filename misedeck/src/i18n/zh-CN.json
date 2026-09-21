@@ -155,7 +155,8 @@
       "emptyInstalledBody": "`mise ls {{tool}}` 没有报告 {{tool}} 的任何已安装版本。",
       "emptyAvailableTitle": "没有可安装版本",
       "emptyAvailableBody": "`mise ls-remote {{tool}}` 没有返回任何版本。",
-      "activeUninstallTooltip": "先切换到其他版本才能删除此版本"
+      "activeUninstallTooltip": "先切换到其他版本才能删除此版本",
+      "retryButton": "重试"
     },
     "confirm": {
       "uninstall": {

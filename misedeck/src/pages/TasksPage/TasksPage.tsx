@@ -172,6 +172,7 @@ export function TasksPage() {
   // closes the loop here with a short-lived bar; failures are
   // unchanged — the panel still auto-opens.
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [successTick, setSuccessTick] = useState(0);
 
   // Top-toolbar refresh (issue #98).
   const onRefresh = useCallback(() => {
@@ -538,6 +539,7 @@ export function TasksPage() {
             Null renders nothing. */}
         <SuccessBar
           message={successMessage}
+          tick={successTick}
           onDismiss={() => setSuccessMessage(null)}
         />
 
@@ -657,6 +659,7 @@ export function TasksPage() {
                       { name },
                     ),
                   );
+                  setSuccessTick((n) => n + 1);
                   cancelForm();
                 }}
                 onCancel={cancelForm}

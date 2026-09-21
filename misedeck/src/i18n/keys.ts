@@ -237,6 +237,7 @@ export const I18N_KEYS = {
       emptyAvailableTitle: "tools.versionCenter.emptyAvailableTitle",
       emptyAvailableBody: "tools.versionCenter.emptyAvailableBody",
       activeUninstallTooltip: "tools.versionCenter.activeUninstallTooltip",
+      retryButton: "tools.versionCenter.retryButton",
     },
   },
   preview: {

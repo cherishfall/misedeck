@@ -167,3 +167,9 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* The retry action keeps its content width inside the column-flex
+   error block instead of stretching to the block's full width. */
+.errorRetry {
+  align-self: flex-start;
+}

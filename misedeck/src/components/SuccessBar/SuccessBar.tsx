@@ -18,15 +18,23 @@ const DISMISS_AFTER_MS = 4000;
 
 interface SuccessBarProps {
   /** What happened, already translated by the caller; null hides the
-   *  bar. A new message re-arms the auto-dismiss timer. */
+   *  bar. Every new success re-arms the auto-dismiss timer — see
+   *  `tick`. */
   message: ReactNode;
+  /** Bumped by the caller on every new success, even one whose message
+   *  is identical to the current one. Setting the same message twice is
+   *  a React state no-op, so without a bump the bar never hears about
+   *  the second success and its timer expires early (issue #172: two
+   *  rapid Adds of the same key must each get a full on-screen
+   *  window). */
+  tick?: number;
   /** Called when the auto-dismiss timer fires, so the parent can clear
    *  its state. Read through a ref at fire time, so callers may pass a
    *  fresh inline closure without restarting the timer on re-render. */
   onDismiss: () => void;
 }
 
-export function SuccessBar({ message, onDismiss }: SuccessBarProps) {
+export function SuccessBar({ message, tick, onDismiss }: SuccessBarProps) {
   const onDismissRef = useRef(onDismiss);
   useEffect(() => {
     onDismissRef.current = onDismiss;
@@ -36,7 +44,7 @@ export function SuccessBar({ message, onDismiss }: SuccessBarProps) {
     if (message === null || message === undefined) return;
     const timer = setTimeout(() => onDismissRef.current(), DISMISS_AFTER_MS);
     return () => clearTimeout(timer);
-  }, [message]);
+  }, [message, tick]);
 
   if (message === null || message === undefined) return null;
 

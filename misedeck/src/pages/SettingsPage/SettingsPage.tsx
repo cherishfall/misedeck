@@ -106,6 +106,7 @@ export function SettingsPage() {
   // closes the loop here with a short-lived bar; failures are
   // unchanged — the panel still auto-opens.
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [successTick, setSuccessTick] = useState(0);
 
   // Top-toolbar refresh (issue #98): the prefix key covers both the
   // explicit and the `--all` settings queries.
@@ -114,12 +115,17 @@ export function SettingsPage() {
   }, [queryClient, cwd]);
   useRegisterPageRefresh(onRefresh);
 
-  // Per-action run-lock (issue #138): `writeRun` wraps the panel runner and
-  // its in-flight flag is true only while the command *this* callback
-  // dispatched is running, so a long install elsewhere never disables
-  // this page's Save / Add. The read query refreshes on this run's own
-  // success (not on a global status transition). The optional
-  // `successMessage` closes the loop in-page (issue #145). Resolves to
+  // Family-level run-lock (issue #138): the whole set/unset family
+  // shares one `useOwnRun`, so this page's writes serialize — concurrent
+  // `mise settings set` / `mise settings unset` processes would race
+  // their read-modify-write on the same TOML (same rationale as the env
+  // page's rename sequencing, beta11 4.3-B1). The flag is true only
+  // while the command *this* callback dispatched is running, so a long
+  // install elsewhere never disables this page's Save / Add. The read
+  // query refreshes on this run's own success (not on a global status
+  // transition). The optional `successMessage` closes the loop in-page
+  // (issue #145) — `successTick` bumps with it so a repeated identical
+  // message still re-arms the bar's timer (issue #172). Resolves to
   // "ok" only when the command ran and succeeded, so callers can chain
   // form cleanup (clear-on-success, issue #153) on the result.
   const runWrite = useCallback(
@@ -132,7 +138,10 @@ export function SettingsPage() {
       const res = await writeRun.run({ cwd, args: builder(cwd) });
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["settings", "ls", cwd] });
-        if (successMessage !== undefined) setSuccessMessage(successMessage);
+        if (successMessage !== undefined) {
+          setSuccessMessage(successMessage);
+          setSuccessTick((n) => n + 1);
+        }
         return "ok";
       }
       return "err";
@@ -238,6 +247,7 @@ export function SettingsPage() {
             seconds. Null renders nothing. */}
         <SuccessBar
           message={successMessage}
+          tick={successTick}
           onDismiss={() => setSuccessMessage(null)}
         />
 
@@ -463,11 +473,14 @@ function RowActions({
 
   if (editing) {
     return (
+      // An empty value is legal — `mise settings set KEY ""` writes an
+      // empty string, the same ruling as the Add form (issue #172);
+      // only a dirty draft is required to Save.
       <KeyForm
         className={styles.rowEditor}
         onSubmit={() => void doSave()}
         onRevert={cancelEdit}
-        submitDisabled={disabled || !dirty || (!isBool && value.length === 0)}
+        submitDisabled={disabled || !dirty}
       >
         {isBool ? (
           <input
@@ -492,7 +505,7 @@ function RowActions({
           variant="primary"
           size="sm"
           onClick={() => void doSave()}
-          disabled={disabled || !dirty || (!isBool && value.length === 0)}
+          disabled={disabled || !dirty}
         >
           {t(I18N_KEYS.settings.saveButton)}
         </Button>

@@ -99,11 +99,27 @@ export function VersionCenter({
   // One cached `ls-remote` per (directory, tool): dispatch only when the
   // cache has nothing yet. The read runs in the background so it never
   // yanks the transcript the user is reading (ADR-0005).
+  //
+  // A failed read caches its `{kind:"err"}` result, and this effect
+  // dispatches only while the cache is empty — so without a recovery
+  // path the remote sub-list would sit on its error block forever
+  // (neither the page refresh nor a collapse/reopen retries, issue
+  // #172). The retry button drops the cached error and bumps
+  // `remoteRetryTick`, which re-runs this effect and dispatches the
+  // read again.
+  const [remoteRetryTick, setRemoteRetryTick] = useState(0);
+  const remoteKey = useMemo(() => ["tools", "ls-remote", cwd, tool], [cwd, tool]);
   useEffect(() => {
-    const key = ["tools", "ls-remote", cwd, tool];
-    if (queryClient.getQueryData(key) !== undefined) return;
-    void readIntoCache(key, cwd, ["ls-remote", "--json", tool], { background: true });
-  }, [cwd, tool, queryClient, readIntoCache]);
+    if (queryClient.getQueryData(remoteKey) !== undefined) return;
+    void readIntoCache(remoteKey, cwd, ["ls-remote", "--json", tool], { background: true });
+  }, [remoteKey, cwd, tool, queryClient, readIntoCache, remoteRetryTick]);
+
+  const onRetryRemote = () => {
+    // `type:"all"` — the query is still active (this component
+    // subscribes to it), and an inactive-only removal would no-op.
+    queryClient.removeQueries({ queryKey: remoteKey, type: "all" });
+    setRemoteRetryTick((n) => n + 1);
+  };
 
   // Only versions actually on disk count as installed: `mise ls --json`
   // can also report a requested-but-not-installed version.
@@ -362,6 +378,17 @@ export function VersionCenter({
             {remoteAppErr?.stderr ? (
               <pre className={styles.errorStderr}>{remoteAppErr.stderr}</pre>
             ) : null}
+            {/* The failed read is cached, so nothing retries it on its
+                own — this button is the recovery path (issue #172). */}
+            <Button
+              variant="secondary"
+              size="sm"
+              className={styles.errorRetry}
+              onClick={onRetryRemote}
+              data-testid={`center-remote-retry-${tool}`}
+            >
+              {t(I18N_KEYS.tools.versionCenter.retryButton)}
+            </Button>
           </div>
         )}
 

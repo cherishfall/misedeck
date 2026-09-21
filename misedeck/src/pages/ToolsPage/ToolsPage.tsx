@@ -230,6 +230,7 @@ export function ToolsPage() {
   // only signal to the panel's tone dot. The message is passed per
   // action; failures are unchanged — the panel still auto-opens.
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [successTick, setSuccessTick] = useState(0);
 
   // The Link form (`mise link`) is an advanced low-frequency flow, so it
   // lives in a collapsed "Advanced" section off the first screen
@@ -293,8 +294,13 @@ export function ToolsPage() {
         void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
         void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
         // Success closes the loop in-page (issue #144); the exact
-        // command stays in the execution panel's transcript.
-        if (successMessage !== undefined) setSuccessMessage(successMessage);
+        // command stays in the execution panel's transcript. The tick
+        // re-arms the bar's timer even when the message text repeats
+        // (issue #172).
+        if (successMessage !== undefined) {
+          setSuccessMessage(successMessage);
+          setSuccessTick((n) => n + 1);
+        }
       }
       return res;
     },
@@ -379,10 +385,16 @@ export function ToolsPage() {
   // The use-version dropdown (issue #132) lists exactly the tool's
   // installed versions from the live `mise ls` read — picking one runs
   // `mise use`, and a version not on disk can never be submitted.
+  // `mise ls` can also report a requested-but-not-installed version, so
+  // only `installed` items count (the version center's `installedOnDisk`
+  // filter, issue #133).
   const versionsByTool = useMemo(() => {
     const map = new Map<string, string[]>();
     for (const { tool, items } of tools.data ?? []) {
-      map.set(tool, items.map((it) => it.version));
+      map.set(
+        tool,
+        items.filter((it) => it.installed).map((it) => it.version),
+      );
     }
     return map;
   }, [tools.data]);
@@ -599,6 +611,7 @@ export function ToolsPage() {
             seconds. Null renders nothing. */}
         <SuccessBar
           message={successMessage}
+          tick={successTick}
           onDismiss={() => setSuccessMessage(null)}
         />
 

@@ -10,8 +10,8 @@
 // pattern-matches the same way it does for `useDetectMise` in App.tsx.
 //
 // The three `ls` family reads route through the execution panel's runner
-// (ADR-0005) rather than their own Tauri commands, so every mise
-// invocation the app makes is visible in one place and runs once.
+// (ADR-0005) rather than their own Tauri commands, so every read through
+// this hook is visible in the execution panel and runs once.
 
 import { useCallback } from "react";
 import {
