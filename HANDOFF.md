@@ -2,7 +2,31 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-21 — beta11 batch COMPLETE, all 26 work tickets closed)
+## CURRENT STATE (2026-09-21 — beta12 post-release review round COMPLETE, tickets #167–#172 closed)
+
+Owner released v1.0.0-beta.12 and asked for a professional code+doc review before his visual verification (beta11 had reversed/refined several decisions). Six parallel audit passes ran (docs-vs-code / zh-CN mirror / code-residue / interaction logic / i18n / doc-internal consistency), findings were ticketed and all six tickets are implemented, committed to master, and closed — every one `npm run ci` green, **NOT visually verified — owner verifies manually**.
+
+| Ticket | Commit | Scope |
+| --- | --- | --- |
+| #167 doc batch | `2025099` | Rule-doc revisions + zh-CN mirror sync (runner.md argv guard, ADR-0005:26 tools_ls, ui-ux-rules:44 Plugins, product-logic :49/:74/:79 + IA Home + Tasks create + Preview mise.lock, ui-ux-rules:68 empty delegation → new visual-language "Action buttons" section, zh release-template rewrite incl. Gatekeeper xattr cascade, misedeck/README dead link, HANDOFF:199, conventions Testing, domain.md tree, ADR-0008 plugin row) |
+| #168 CI | `83a37d7` | ci.yml + ci.md (both locales) gain `npm run test` and `lint:i18n-ellipsis` — frontend test baseline previously not run in CI |
+| #169 scratch 补票 | `e5765d8` | beta11-scratch finalized-but-never-ticketed items: DirectoryIndicator `.action` trio → shared Button (secondary/secondary/ghost) + cross-mode-stable order, Button ref-forwarding, Tasks description column hides when all empty, UseVersionCell single-version guard + tooltip, AddTool cap hint, 4× Global-mode hint variants (tools/env/settings/tasks), `--json-extended` out of 4 user strings |
+| #170 logic bugs | `117fb56` | Env rename-to-existing now opens an overwrite confirm (`env.confirm.renameOverwrite.*`); Tasks multi-line run editing disabled + flatten-confirm (`tasks.confirm.flattenRun.*`) — agent proved via CLI that `mise tasks add` has **no lossless path** for multi-line run (even depends-only edits flatten/delete it), so disable+confirm was extended beyond the ticket's original recommendation (rationale on the issue) |
+| #172 code hazards | `2c489bb` | Empty-value ban lifted in Env+Settings row editors (same ruling as #153 Add forms), run-lock comments corrected to family level, versionsByTool filters `it.installed`, VersionCenter ls-remote error gains retry button (`useLsRemote` uses skipToken so refresh-invalidate is a no-op — reasoned on issue), `run_install` nonzero exit → Err aligned with self-update, SuccessBar same-message timer reset via tick, header comments narrowed (useExecution/useToolsList/useIssue29/DirectoryPreview) |
+| #171 i18n polish | `1892305` | Lockfile error block renders real message (drops false "stderr below"), dead keys removed (`doctor.status.error`, `common.ok` — the latter caught by the new guard), `doctor.missing.*` replaces `tools.missing.*` reuse on DoctorPage, `labels.binary` → "Binary path", `doctor.summary.activatedValue`, drift alignment (`common.outdatedCount`, `activation.bannerBody`), StatusRow colon via i18n, 3× "Copied" merged to `common.copied`, **new dead-key reverse lint guard in check-i18n.ts** (dynamic-index whitelist: I18N_KEYS member access, KNOWN_MESSAGE_KEYS, plural suffixes) |
+
+**New in CI from this round:** dead-key guard (Guard 3 in check-i18n.ts) — json leaf keys must be referenced from src. Whitelist patterns: `I18N_KEYS.a.b` static access, dynamic member-access prefixes, `_one/_other` plural bases, KNOWN_MESSAGE_KEYS.
+
+**Flagged on issues, not ticketed (candidates for next cycle):**
+- #169 agent: `doctor.toolset.emptyBody` and `tasks.editForm.dependsHelp` — same class as the fixed hint strings (adjacent truthfulness).
+- #170: `mise tasks add` upstream shape means multi-line run arrays can never be edited losslessly in GUI — the disable+confirm is a floor, not a fix; revisit if upstream gains a structured edit path.
+- Review-round 🔵 items intentionally not ticketed: `/config` redirect "one release then remove" still present (five releases later), product-logic Preview hint exemption for `mise.lock` is doc'd now via product-logic:56 revision, Doctor keeps hand-written DoctorLoading (probe page, ListLoading scope doesn't cover it), Home timeout panel duplicate timeout copy (`errors.timeout` vs `states.timeoutBody`), trust.banner says "mise.toml" for what may be `.mise.toml`/`.config/mise.toml`, letter-spacing/copied-key/StatusRow leftovers all landed or judged fine.
+
+**Owner's next moves:** (1) visual verification now covers beta11 batch (#139 SPEC) **plus** this review round — notable new eyeball items: DirectoryIndicator button migration + order (#169), Env rename-overwrite dialog + Tasks flatten dialog (#170), VersionCenter retry button (#172), Tasks description-column hiding (#169), Global-mode hints (#169); (2) close #139 when satisfied; (3) beta.13 release decision (procedure below; ci.yml now runs 2 more steps).
+
+---
+
+## PREVIOUS STATE (2026-09-21 — beta11 batch COMPLETE, all 26 work tickets closed)
 
 **SPEC parent #139 stays OPEN awaiting the owner's manual visual verification** (same protocol as previous betas). The beta11 batch — tickets **#140–#164, #166** (there is no #165) — is fully implemented, committed to master, and pushed. Every ticket: `npm run ci` green (cargo test green where Rust touched, incl. new frontend node:test baseline from #159), **NOT visually verified — owner verifies manually**; each issue closed with its manual-verify list.
 
