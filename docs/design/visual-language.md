@@ -54,6 +54,19 @@ Semantic discipline:
 - **grove** is only success/ready states.
 - No `text-shadow` glow anywhere; emphasis comes from color and weight, not luminescence.
 
+### Action buttons
+
+The shared `Button` component (`src/components/Button/Button.module.css`) maps the four action variants onto tokens; usage rules live in `ui-ux-rules.md` → Action buttons. Every value below is a token or a `color-mix` of tokens — variants never introduce a color of their own:
+
+| Variant | Background | Border | Text | Emphasis |
+|---|---|---|---|---|
+| `primary` | `--beam` | `--beam` | `--void` | the "go" action — one per surface |
+| `secondary` | `--hull` at 80% | `--line-strong` | `--text` | routine actions (the default) |
+| `ghost` | transparent | `--line` | `--dim` | low-emphasis; hover lifts text to `--text`, border to `--line-strong` |
+| `danger` | `--tint-danger-bg` | `--tint-danger` | `--breach` | destructive only |
+
+Base states: the resting button is `--hull` at 80% on a `--line` border with `--text`; focus is a `--beam` border plus a `--beam` 30% ring; disabled and loading render at 0.55 opacity with the variant color kept — the reduction carries the state. Hovers are `color-mix` shifts of the same tokens, never new hues. `--breach` and the danger tints appear on buttons only in the `danger` variant: the semantic discipline above binds controls as much as surfaces.
+
 ## Typography
 
 | Role | Face | Usage |
@@ -94,7 +107,7 @@ Everything else is a ≤120ms ease-out state change (hover, focus, panel slide).
 - Borders are solid — no dashed or dotted borders anywhere.
 - No cool blue-gray palettes; surfaces are warm (parchment / charcoal) in both themes.
 - No sci-fi or display gimmick fonts; character comes from the serif display face + mono data.
-- No decorative numbering (01/02/03) in product UI, no emoji icons; the only decorative glyph is → (used in upgrade paths).
+- No decorative numbering (01/02/03) in product UI, no emoji icons; the only decorative glyph is → (used in upgrade paths). Text glyphs inside labeled buttons/links (`›` next-page, `←` back-to-Home) are not decoration — they are grandfathered in `ui-ux-rules.md` → Glyphs & icons, inheriting size and color.
 - Light theme is parchment, not a white corporate reskin: warm surfaces, wine accent, taupe secondary text.
 
 ### Chrome surface hierarchy (issue #78)

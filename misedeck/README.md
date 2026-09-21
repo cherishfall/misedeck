@@ -1,6 +1,6 @@
 # MiseDeck — Frontend
 
-> [简体中文](../zh-CN/misedeck-README.md)
+> [简体中文](../zh-CN/misedeck/README.md)
 
 The React + Tauri 2 frontend for [MiseDeck](https://github.com/cherishfall/misedeck).
 

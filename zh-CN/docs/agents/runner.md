@@ -9,7 +9,7 @@ Runner 层位于 Tauri command 与 mise CLI 之间，代码在 `misedeck/src-tau
 
 ## Argv 形态
 
-`run_mise_command` 总是传字面 argv —— 不走 shell、不做插值。`cwd` 为 `Some` 时前置 `-C <dir>`，后接用户传入的 args。Rust 端拒绝空 args 和任何包含 `;`、`|`、`&`、`` ` ``、`$`、`\n`、`\r` 的 arg。目的是从结构上杜绝 shell 注入。
+`run_mise_command` 总是传字面 argv —— 不走 shell、不做插值。`cwd` 为 `Some` 时前置 `-C <dir>`，后接用户传入的 args。`validate_run_args`（mise.rs）执行两条规则，都是 #160 在 #18 原始护栏上收窄的结果：args 不得为空；以 `-` 开头（flag/选项）的 token 不得包含 shell 元字符（`;`、`|`、`&`、`` ` ``、`$`、`\n`、`\r`）。其余一切 —— 子命令、位置参数、`run` 的值、`set` 的值 —— 在无 shell 的 spawn 里是惰性数据，原样放行，因此 `npm run build && npm run test` 这样的值、或含 `&` 的 `DATABASE_URL`，都能从 GUI 正常保存。shell 注入在构造上不可能发生（没有任何 shell 会看到这份 argv），而不是靠拒绝值来防。
 
 ## Streaming
 

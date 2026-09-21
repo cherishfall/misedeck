@@ -12,6 +12,7 @@
 | Install only | 仅安装 | `mise install <tool>@<version>` | 版本：仅文件——例外情形 |
 | Uninstall | 删除此版本 | `mise uninstall <tool>@<version>` | 版本：删除非激活版本的文件 |
 | Unuse | 卸载 | `mise unuse <tool>` | 工具：移出配置 + 清理安装 |
+| Uninstall | 卸载 | `mise plugins uninstall <plugin>` | 插件：移除插件（#164 追记） |
 
 对于未在任何 Config file 中声明的工具（孤儿安装，例如用户在 CLI 手动 `mise install` 过）,"卸载"动作改跑 `mise uninstall --all <tool>`——`unuse` 没有请求可删，会报错。按钮文案不变；确认对话框一律显示精确 argv（教学规则）。
 

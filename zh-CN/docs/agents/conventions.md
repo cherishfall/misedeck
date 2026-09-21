@@ -42,7 +42,7 @@ MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  TIMEOUT  TERMINAL_NO
 
 - 唯一的测试接缝是 mise CLI 边界：测试用一个 **fixture mise** 替换它 —— 一个小脚本，按 argv 提供录制的 JSON/stderr/退出码。fixture 布局：`tests/fixtures/mise/<slug>/`，其中 `<slug>` 是 argv 用 `-` 连接而成（例如 `ls---json/`），目录内含 `stdout`、`stderr` 和 `exit_code` 三个文件。runner 针对 fixture 做单元测试；runner 之上的一切在 Tauri 命令契约处 mock runner 来测试。
 - 只测试外部行为：给定这个 fixture 响应，命令返回这个形状 / 面板显示这个状态。不测试内部辅助函数。
-- 前端：针对类型化契约做组件测试；避免快照测试带来的无谓 churn。
+- 前端：用 node:test 对纯函数写单元测试 —— `npm run test`（`tsx --test "src/**/*.test.ts"`），已接入 `npm run ci`。现有测试：`src/utils/paths.test.ts`、`src/api/miseTools.test.ts`。组件测试设施不存在，UI 行为不做单元测试；新增纯逻辑须附带同目录的 `*.test.ts`。
 
 ## Definition of done（每个 ticket，无例外）
 

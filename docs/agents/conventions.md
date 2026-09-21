@@ -47,7 +47,7 @@ tickets should reuse the existing six when possible.
 
 - The single test seam is the mise CLI boundary: tests substitute a **fixture mise** — a small script that serves recorded JSON/stderr/exit codes per argv. Fixture layout: `tests/fixtures/mise/<slug>/` where `<slug>` is the argv joined by `-` (e.g. `ls---json/`), containing `stdout`, `stderr`, and `exit_code` files. The runner is unit-tested against fixtures; everything above the runner is tested with the runner mocked at the Tauri command contract.
 - Test external behavior only: given this fixture response, the command returns this shape / the panel shows this state. No tests of internal helpers.
-- Frontend: component tests against the typed contract; no snapshot churn.
+- Frontend: unit tests of pure functions with node:test — `npm run test` (`tsx --test "src/**/*.test.ts"`), wired into `npm run ci`. Existing suites: `src/utils/paths.test.ts`, `src/api/miseTools.test.ts`. No component harness exists, so UI behavior is not unit-tested; new pure logic ships with a colocated `*.test.ts`.
 
 ## Definition of done (every ticket, no exceptions)
 

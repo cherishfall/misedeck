@@ -12,6 +12,7 @@ The Tools page's row-level Uninstall ran `mise uninstall <tool>@<version>`. That
 | Install only | 仅安装 | `mise install <tool>@<version>` | Version: files only — the exception |
 | Uninstall | 删除此版本 | `mise uninstall <tool>@<version>` | Version: delete files of a non-active version |
 | Unuse | 卸载 | `mise unuse <tool>` | Tool: remove from config + prune installations |
+| Uninstall | 卸载 | `mise plugins uninstall <plugin>` | Plugin: remove a plugin (#164 addendum) |
 
 For a tool not declared in any Config file (an orphan installation, e.g. from a manual CLI `mise install`), the Unuse action runs `mise uninstall --all <tool>` instead — `unuse` has no request to remove and would error. The button copy does not change; the confirmation dialog shows the exact argv either way, per the teaching rule.
 

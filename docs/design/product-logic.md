@@ -15,7 +15,7 @@ North-star feeling: *"I always know which mise command this screen is showing me
 1. **Navigation mirrors mise's pillars.** mise is "dev tools, env vars, and tasks per project". The sidebar's main group is exactly those, plus the directory lens (Preview) and the extension surface (Plugins). Nothing else earns a top-level slot.
 2. **No invented concepts.** A page exists only if a mise command (or command family) backs it. Page nouns and verbs come from `CONTEXT.md` / mise's own CLI vocabulary (`use`, `install`, `set`, `run`, `trust`, `doctor`…).
 3. **The command is always visible.** Every page header names the CLI equivalent of what the page does (e.g. Tools → `mise ls` / `mise use`). Every invocation the user asks for — mutations and read queries alike — streams through the execution panel showing the exact argv (AGENTS.md non-negotiable; ADR-0005).
-4. **Chrome gets out of the way.** Navigation is a collapsible sidebar; the directory indicator appears only when relevant; the execution panel appears when the user runs something, not when a table refreshes itself in the background.
+4. **Chrome gets out of the way.** Navigation is a collapsible sidebar; the directory indicator renders in both modes with mode-appropriate content; the execution panel never opens on command start — it surfaces a failure once, success closes the loop in the page (opening behavior is bound in `ui-ux-rules.md` → Execution panel).
 5. **Data is data, labels are labels.** Typography styling (uppercase, tracking) belongs to the section eyebrow alone, never to data — paths, versions, commands, values render exactly as mise reports them.
 6. **Visual inheritance.** Light and dark themes both follow mise.jdx.dev's look, so the app reads as part of the mise family, not a generic hacker skin.
 7. **No "update everything" flows.** mise manages dev tool versions, not application software. Best practice for dev tools is LTS or a version a few behind latest — precisely to shield the dev environment from the big bugs and breaking changes a fresh release can ship. MiseDeck therefore has no batch upgrade and no multi-tool simultaneous update: every upgrade is a deliberate per-tool decision (`mise upgrade`). Usability is still the goal — package-manager-grade convenience is pursued everywhere it does not imply "newest is best"; the domain distinction (dev tools value stability) is the premise. Precedent: beta8 Issues 5/8 already ruled this way (batching commands invents beyond the CLI — the ADR-0007 boundary's first application; the "Upgrade all" button was removed then). This stance is codified so future feedback rounds do not re-propose it.
@@ -24,8 +24,8 @@ North-star feeling: *"I always know which mise command this screen is showing me
 
 ```
 ┌──────────────────────────┬────────────────────────────────┐
-│ MiseDeck                 │  [Directory indicator — only   │
-│ a faithful GUI for mise  │   when a directory is picked]  │
+│ MiseDeck                 │  [Directory indicator — both   │
+│ a faithful GUI for mise  │   modes, content switches]     │
 │                          ├────────────────────────────────┤
 │ ▸ Preview                │                                │
 │ ▸ Tools                  │         Page content           │
@@ -34,6 +34,7 @@ North-star feeling: *"I always know which mise command this screen is showing me
 │ ▸ Plugins                │                                │
 │                          │                                │
 │ ─────────                │                                │
+│ Home                     │                                │
 │ Doctor                   │                                │
 │ Settings                 │                                │
 │                          ├────────────────────────────────┤
@@ -46,17 +47,17 @@ North-star feeling: *"I always know which mise command this screen is showing me
 - **Main group**: Preview → Tools → Env → Tasks → Plugins (order = priority).
 - **Bottom group**: Home (mise status / guided install / self-update), Doctor, Settings — the app's own machinery.
 - **Footer**: language menu (compact dropdown: globe + current locale, scalable to more locales) and theme toggle (light / dark, default light — no system mode).
-- **Directory indicator**: a slim strip at the top of the content area, rendered **only when a directory context is active** (hidden in Global). Shows `当前目录 / Directory` + the real-case path, with Open-in-Terminal and pick/recent actions. The word "Context/上下文" is retired from UI copy (the domain term *Directory context* stays in the glossary).
+- **Directory indicator**: a slim strip at the top of the content area, rendered in **both** modes (PageShell mounts it unconditionally) — the content switches with the mode. Directory mode shows `当前目录 / Directory` + the real-case path, with Open-in-Terminal and pick/recent actions; Global mode shows the Global-mode label. The word "Context/上下文" is retired from UI copy (the domain term *Directory context* stays in the glossary).
 
 ## Page inventory (target state)
 
 | Page | Backs onto | Sells the workflow |
 |---|---|---|
 | Home | `mise version`, `mise self-update`, install script | mise detected? install/update it |
-| Preview | `mise -C <dir> ls` + `mise env` + `mise config` (file precedence) + `mise.lock` | "what mise resolves in this directory" — resolved tools, resolved env, loaded config files in precedence order, lockfile; trust state surfaced |
+| Preview | `mise -C <dir> ls` + `mise env` + `mise config` (file precedence); the lockfile renders as data | "what mise resolves in this directory" — resolved tools, resolved env, loaded config files in precedence order, lockfile content when present; trust state surfaced |
 | Tools | `mise ls`, `mise ls-remote`, `mise use`, `mise install`, `mise uninstall`, `mise upgrade`, `mise outdated` | installed ≠ active; switch/install/upgrade/uninstall |
 | Env | `mise env`, `mise set`, `mise unset` | env vars are first-class, per directory or global |
-| Tasks | `mise tasks ls`, `mise run`, `mise tasks add/edit` | list, run, light edit for the active directory |
+| Tasks | `mise tasks ls`, `mise run`, `mise tasks add/edit` | list, run, create, and lightly edit the active directory's tasks |
 | Plugins | `mise plugins ls`, `mise plugins install`, `mise plugins uninstall` | installed plugins; custom plugins installable by name + git URL |
 | Doctor | `mise doctor` | health check |
 | Settings | `mise settings ls/set/unset` | edit mise settings |
@@ -71,12 +72,12 @@ The `/config` route redirects to `/preview` for one release, then is removed.
 
 ## Interaction rules
 
-1. **Execution panel on demand.** Hidden by default. Slides up when the user runs a command (exact argv + live log), dismissible when idle, re-openable from anywhere. Pages that dispatch nothing (Doctor, Preview-aside-from-trust) never show it. Every invocation goes through it — mutations and read queries both (ADR-0005); only the reads a page issues for itself stay off the transcript, so a background refresh cannot erase the run the user is reading. It is also where copy-command lives, because the panel is the command history.
+1. **Execution panel on demand.** Hidden by default, and it never opens on command start — it opens once when a run fails while the panel is closed (so the error and its logs are visible); success closes the loop in the page instead. Every user-initiated invocation goes through it — mutations and read queries both (ADR-0005) — echoing the exact argv + live log; only the reads a page issues for itself stay off the transcript, so a background refresh cannot erase the run the user is reading. Pages that dispatch nothing (Doctor, Preview-aside-from-trust) never show it. Copy-command lives here too, because the panel is the command history. The opening trigger itself is bound in `ui-ux-rules.md` → Execution panel (one rule, one home).
 2. **Trust and activation banners stay in-page.** `mise trust` and `mise activate` are mise's own gates; banners surface them where they bite (Preview/Tools/Env/Tasks/Settings; activation banner global but dismissible).
 3. **Window discipline.** Body never scrolls horizontally; naturally wide content (JSON, tables, logs) scrolls inside its own container. A minimum window size applies; default and minimum sizes are content-aware — the exact mechanism (runtime measurement vs design-time constants) is an open question deferred to the implementing ticket.
 4. **Directory context is one thing.** The strip is the only place the directory is chosen or shown; every page consumes it (`mise -C <dir>`), no page hardcodes a directory (architecture.md).
 5. **i18n everywhere.** en + zh-CN for all copy; the language menu is the only locale control.
-6. **Empty states teach.** A page with nothing to show (no directory picked, no tools, no tasks) says which command would populate it.
+6. **Empty states teach.** A page with nothing to show (no directory picked, no tools, no tasks) guides the user to the next step inside the GUI — a button or the resolved data — with the mise command as a teaching echo, not as the instruction (the binding rule lives in `ui-ux-rules.md` → Teaching).
 
 ## Relationship to existing docs
 

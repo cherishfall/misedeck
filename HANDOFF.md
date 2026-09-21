@@ -196,7 +196,7 @@ Tag pushed, `release.yml` run 34143786713 building/publishing in the background 
 - **Typography:** the eyebrow is the only uppercase element; uppercase/tracking never on data — data components reset inheritance at their root (#93/#94, both docs locales).
 - **Tables:** the 6 fixed tables declare `min-width` so narrow windows scroll horizontally (#90); long cells ellipsis + Tooltip (#81/#89).
 - Chrome surface hierarchy: `--hull` / `--hull-soft` / `--hull-deep` + `--panel` as the elevated role — **ADR-0006** (#78).
-- No frontend component test harness (no vitest/jest). Rust tests live in `misedeck/src-tauri/tests/`.
+- Frontend test baseline is node:test over pure functions (`npm run test`, `tsx --test "src/**/*.test.ts"` — `src/utils/paths.test.ts`, `src/api/miseTools.test.ts`); no component harness (no vitest/jest). Rust tests live in `misedeck/src-tauri/tests/`.
 
 ## Feedback docs
 

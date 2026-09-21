@@ -1,53 +1,52 @@
 # MiseDeck v<version>
 
-[misè](https://mise.jdx.dev) 的忠实 GUI 客户端。跨平台（macOS 优先打磨，Windows / Linux 为 beta）。
-
-> **寻找你语言的 README？** [English](../README.md) · [简体中文](../zh-CN/README.md)
+MiseDeck 的首个稳定版本——[mise](https://mise.jdx.dev) 的忠实桌面 GUI。跨平台（macOS 优先打磨，Windows / Linux 为 beta）。
 
 ## 本期要点
 
-完整变更日志见 README：[CHANGELOG](../zh-CN/CHANGELOG.md)（在 #32 落地之前暂存于双语 README 中）。
+- **全局工具管理**：在一个表格里安装、卸载、切换、升级，并查看过期徽标。
+- **目录上下文**：解析后的工具、环境变量、lockfile 预览，附配置文件来源徽标。
+- **配置编辑器**：以表单方式编辑全局与按目录的 `mise.toml` 的 `[tools]` 与 `[env]`。
+- **任务**：列出、带实时输出地运行、简单编辑。
+- **信任交互**：未信任目录只读展示，一键信任。
+- **设置、诊断与插件/backend 浏览**。
+- **mise 自我管理**：mise 缺失时引导安装，一键自我更新。
+- **激活辅助**：在当前目录打开终端、复制激活命令、检查 shell 配置。
+- **英文与简体中文界面**。
+
+> [English](../../README.md) · [简体中文](../README.md)
 
 ## 安装
 
 ### macOS
 
-下载 `.dmg`，打开后将 MiseDeck 拖入 Applications。
+```bash
+brew install --cask cherishfall/tap/misedeck
+```
 
-> **首次启动（未签名）**：二进制**未做 Apple 公证**（参见
-> [ADR-0002 — 通过 GitHub Releases 与自托管 Homebrew tap 分发，未签名](../zh-CN/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)）。
-> macOS Gatekeeper 会拦截首次打开。在 Applications 中**右键**该应用 →
-> **打开** → 确认即可。后续启动不再拦截。
-> Homebrew 用户：自托管 tap `cherishfall/homebrew-tap` 提供的 cask
-> 也带同样的提示。
+或者从下方 assets 下载 `.dmg`，打开后把 MiseDeck 拖入 Applications。
+
+> **首次启动（未签名）**：二进制**未做 Apple 公证**（参见 [ADR-0002](../../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)）。macOS Gatekeeper 会拦截首次打开，并可能提示应用已损坏。把 `misedeck.app` 拖入 `/Applications` 后，在终端移除 quarantine 标记：
+>
+> ```bash
+> xattr -dr com.apple.quarantine /Applications/misedeck.app
+> ```
+>
+> 然后正常启动即可。后续启动不再需要的额外步骤。
 
 ### Windows（beta）
 
 下载 `.exe` 安装包并运行。
 
-> **SmartScreen（未签名）**：二进制**未做代码签名**（参见上面同一份
-> ADR-0002）。Windows SmartScreen 会显示"Windows 已保护你的电脑"——
-> 点击**更多信息** → **仍要运行**。本版本中 Windows / Linux 构建标记
-> 为 **beta**。
+> **SmartScreen（未签名）**：二进制**未做代码签名**。Windows SmartScreen 会显示「Windows 已保护你的电脑」——点击**更多信息** → **仍要运行**。
 
 ### Linux（beta）
 
-按发行版选择对应格式。三种格式均附在下方。
+按发行版选择对应格式：
 
 - `.deb` —— Debian / Ubuntu
 - `.rpm` —— Fedora / RHEL
 - `.AppImage` —— 便携，无需安装
-
-安装后，从应用启动器或终端运行 `misedeck`。
-
-## Gatekeeper / SmartScreen 说明
-
-MiseDeck v1 在所有平台上**均为未签名**分发，这是有意的设计选择。详见
-[ADR-0002 — 通过 GitHub Releases 与自托管 Homebrew tap 分发，未签名](../zh-CN/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)。
-代码签名与 Apple 公证在 v1 中超出范围；等项目跨过知名度门槛再重新评估。
-
-如果 macOS 或 Windows 的安全提示拦截了启动，请按上面各平台的步骤操作。
-这是预期行为，不是 bug。
 
 ## 校验
 
@@ -61,9 +60,8 @@ shasum -a 256 -c SHA256SUMS
 Get-FileHash -Algorithm SHA256 .\<你下载的文件>
 ```
 
-将 `SHA256SUMS` 中对应文件的哈希与命令输出比对。
+## 说明
 
-## 完整变更日志
-
-见双语 README 中的 [CHANGELOG](../zh-CN/CHANGELOG.md)，
-以及本 tag 与上一个 tag 之间的提交历史。
+- MiseDeck v1 在所有平台上**均为未签名**分发，这是有意的设计选择。代码签名与 Apple 公证在 v1 中超出范围。
+- Windows 与 Linux 构建在本版本中标记为 **beta**。
+- MiseDeck 是社区项目，与官方 mise 项目无隶属关系，亦未获其背书。

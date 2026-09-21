@@ -13,7 +13,13 @@
 ├── CONTEXT.md
 ├── docs/adr/
 │   ├── 0001-tauri-react-cross-platform.md
-│   └── 0002-distribution-github-releases-and-homebrew-tap.md
+│   ├── 0002-distribution-github-releases-and-homebrew-tap.md
+│   ├── 0003-v1-scope-core-plus-presentation.md
+│   ├── 0004-faithful-command-domain-presentation.md
+│   ├── 0005-execution-panel-is-the-single-runner-for-reads-too.md
+│   ├── 0006-split-panel-chrome-elevated-roles.md
+│   ├── 0007-gui-layer-affordances-are-orthogonal.md
+│   └── 0008-tool-removal-is-unuse-not-uninstall.md
 └── src/
 ```
 

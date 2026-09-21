@@ -9,7 +9,7 @@ The runner is the layer between the Tauri commands and the mise CLI. It lives in
 
 ## Argv shape
 
-`run_mise_command` always passes literal argv — no shell, no interpolation. The `-C <dir>` flag is prepended when `cwd` is `Some`, followed by the user-supplied args. The Rust side rejects empty args and any arg containing `;`, `|`, `&`, `` ` ``, `$`, `\n`, or `\r`. The intent is to make shell-injection impossible by construction.
+`run_mise_command` always passes literal argv — no shell, no interpolation. The `-C <dir>` flag is prepended when `cwd` is `Some`, followed by the user-supplied args. `validate_run_args` (mise.rs) enforces two rules, both narrowed from the original #18 guardrail by #160: args must be non-empty, and a token *starting with* `-` (a flag/option) must not contain a shell metacharacter (`;`, `|`, `&`, `` ` ``, `$`, `\n`, `\r`). Everything else — the subcommand, positionals, `run` values, `set` values — is inert data in a shell-less spawn and passes through untouched, so values like `npm run build && npm run test` or a `DATABASE_URL` containing `&` remain saveable from the GUI. Shell injection is impossible by construction (no shell ever sees the argv), not by rejecting values.
 
 ## Streaming
 

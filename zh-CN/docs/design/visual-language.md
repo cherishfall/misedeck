@@ -54,6 +54,19 @@ MiseDeck 界面的设计系统基础。在 issue #37 中重写：首个设计冲
 - **grove** 只用于成功/就绪状态。
 - 任何地方都不用 `text-shadow` 辉光；强调来自颜色与字重，而非发光。
 
+### 操作按钮
+
+共享的 `Button` 组件（`src/components/Button/Button.module.css`）把四个操作 variant 映射到 token；用法规则归 `ui-ux-rules.md` → 操作按钮。下表每个取值都是 token 或 token 的 `color-mix`——variant 绝不引入自己的颜色：
+
+| Variant | 背景 | 边框 | 文字 | 强调级别 |
+|---|---|---|---|---|
+| `primary` | `--beam` | `--beam` | `--void` | 「go」动作——每个表面至多一个 |
+| `secondary` | `--hull` 80% | `--line-strong` | `--text` | 常规操作（默认） |
+| `ghost` | 透明 | `--line` | `--dim` | 低强调；hover 时文字抬到 `--text`、边框抬到 `--line-strong` |
+| `danger` | `--tint-danger-bg` | `--tint-danger` | `--breach` | 仅限破坏性操作 |
+
+基础状态：静息按钮为 `--hull` 80% 底 + `--line` 边框 + `--text` 文字；焦点为 `--beam` 边框加 `--beam` 30% 光环；disabled 与 loading 以 0.55 不透明度渲染、保留 variant 颜色——用「减淡」承载状态。hover 均为同一组 token 的 `color-mix` 偏移，绝不引入新色相。`--breach` 与 danger 系 tint 只出现在 `danger` variant 的按钮上：上面的语义纪律对控件与对表面同样生效。
+
 ## 字体排印
 
 | 角色 | 字体 | 用途 |
@@ -94,7 +107,7 @@ MiseDeck 界面的设计系统基础。在 issue #37 中重写：首个设计冲
 - 边框一律实线——任何位置都不使用虚线或点线边框。
 - 无冷蓝灰调色板；两个主题的表面都是暖色（羊皮纸 / 炭黑）。
 - 无科幻或噱头展示字体；性格来自衬线 display 字体 + 等宽数据。
-- 产品 UI 中无装饰性编号（01/02/03），无 emoji 图标；唯一的装饰字形是 →（用于升级路径）。
+- 产品 UI 中无装饰性编号（01/02/03），无 emoji 图标；唯一的装饰字形是 →（用于升级路径）。带标签按钮/链接内的文字字形（`›` 下一页、`←` 返回首页）不算装饰——它们以保留豁免的形式归 `ui-ux-rules.md` → 字形与图标 管辖，继承字号与颜色。
 - 浅色主题是羊皮纸，不是白色企业换皮：暖色表面、酒红强调色、灰褐次级文本。
 
 ### 框架表面层级（issue #78）
