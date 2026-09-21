@@ -9,6 +9,10 @@
   padding: var(--space-6) var(--space-6) var(--space-6);
   max-width: 1200px;
   margin: 0 auto;
+  /* #177: a flex child's min-width is auto (min-content) — without this a
+   * table's min-width widens .page past .main and overflow-x:hidden clips
+   * it silently. The table's own scroller absorbs the min-width instead. */
+  min-width: 0;
 }
 
 .head {

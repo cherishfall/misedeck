@@ -61,7 +61,7 @@ The window has a minimum size; its job is preventing unusability, not preventing
 
 - Window: the minimum size keeps the layout usable; nothing downstream may rely on it to prevent squeezing.
 - Chrome: the sidebar keeps its fixed (collapsible) width; the toolbar path ellipsizes; toolbar actions wrap to a second line on narrow windows instead of overflowing into the path (beta11, issue #142); the content area clips — a page-level horizontal scrollbar is a bug (a table's own scroller, per the rule above, is not page-level).
-- Content: tables use fixed layout with declared column widths; action and input columns keep their intrinsic width; long data follows the ellipsis rule above; prose keeps soft wrapping.
+- Content: tables use fixed layout with declared column widths; action and input columns keep their intrinsic width; long data follows the ellipsis rule above; prose keeps soft wrapping. A page container never absorbs a table's min-width widening — the page root is a flex child of `.main`, so it sets `min-width: 0` and lets flex stretch hold it at the content width; a declared table `min-width` is absorbed only by the table's own scroller, never by widening the page past the viewport (beta12, issue #177).
 - Inputs: every input is wide enough for its full placeholder — a cut-off hint is a bug (half a convention teaches the wrong convention).
 
 ## Action buttons
