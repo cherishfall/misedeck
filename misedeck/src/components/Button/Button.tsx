@@ -11,7 +11,7 @@
 // a state change). Loading uses the same disabled treatment + a
 // mono label; we don't introduce a new animation just for the spinner.
 
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
 
 import styles from "./Button.module.css";
 
@@ -26,6 +26,9 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   leading?: ReactNode;
   /** Glyph rendered after the label, e.g. "›". Optional. */
   trailing?: ReactNode;
+  /** React 19 accepts `ref` as a plain prop on function components —
+   *  FloatingMenu triggers (e.g. the directory recents menu) need it. */
+  ref?: Ref<HTMLButtonElement>;
   children?: ReactNode;
 }
 
@@ -37,6 +40,7 @@ export function Button({
   trailing,
   className,
   disabled,
+  ref,
   children,
   type = "button",
   ...rest
@@ -54,6 +58,7 @@ export function Button({
   return (
     <button
       {...rest}
+      ref={ref}
       type={type}
       className={classes}
       disabled={disabled || loading}

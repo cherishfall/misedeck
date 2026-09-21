@@ -591,7 +591,7 @@ export function ToolsPage() {
         <header className={styles.head}>
           <h1 className={styles.title}>{t(I18N_KEYS.tools.title)}</h1>
           <CommandHint>{t(I18N_KEYS.tools.commandHint)}</CommandHint>
-          <p className={styles.hint}>{t(I18N_KEYS.tools.hint)}</p>
+          <p className={styles.hint}>{t(cwd === null ? I18N_KEYS.tools.hintGlobal : I18N_KEYS.tools.hint)}</p>
         </header>
 
         {/* In-page success confirmation (issue #144): set by every
@@ -815,11 +815,32 @@ interface UseVersionCellProps {
  * so the menu portals out of the table's scroller and follows the
  * WAI-ARIA Menu Button Pattern. Discoverability is the hover wash (the
  * option-hover language) plus a teaching Tooltip — never a caret glyph
- * (beta8, beta11 2-d).
+ * (beta8, beta11 2-d). With only the current version installed the cell
+ * renders a disabled trigger + teaching Tooltip instead of the menu,
+ * which would open all-disabled (beta11 3-h m1).
  */
 function UseVersionCell({ row, disabled, versions, onUse }: UseVersionCellProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  // Guard (beta11 3-h m1): with only the current version installed the
+  // menu would open as an all-disabled list — a reachable control that
+  // can do nothing (ui-ux-rules no-op rule). Render the version as a
+  // disabled trigger whose Tooltip teaches why; installing another
+  // version is the expanded row's version center's job (#133).
+  if (versions.length <= 1) {
+    return (
+      <Tooltip text={t(I18N_KEYS.tools.tooltip.singleVersion)}>
+        <button
+          type="button"
+          className={`${styles.cellVersion} ${styles.versionTrigger}`}
+          disabled
+          data-testid={`tools-use-${row.tool}`}
+        >
+          {row.version}
+        </button>
+      </Tooltip>
+    );
+  }
   return (
     <FloatingMenu
       open={open}
@@ -964,7 +985,7 @@ function AddToolEntry({ disabled, onUse }: AddToolEntryProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
 
-  const suggestions = useMemo<RegistryItem[]>(() => {
+  const matches = useMemo<RegistryItem[]>(() => {
     const q = query.trim().toLowerCase();
     if (q.length === 0) return [];
     // Tiered ranking (issue #149): an exact or prefix short-name match
@@ -985,9 +1006,12 @@ function AddToolEntry({ disabled, onUse }: AddToolEntryProps) {
           .toLowerCase()
           .includes(q),
       )
-      .sort((a, b) => tier(a) - tier(b))
-      .slice(0, ADD_TOOL_SUGGESTION_CAP);
+      .sort((a, b) => tier(a) - tier(b));
   }, [registry.data, query]);
+  const suggestions = matches.slice(0, ADD_TOOL_SUGGESTION_CAP);
+  // The cap truncates silently without a hint (beta11 3-h m5) — the
+  // tail row below says more matches exist.
+  const moreMatches = matches.length > suggestions.length;
 
   // Close on outside pointer-down. The list renders inside the entry
   // root (no portal), so a single contains() check covers input + list.
@@ -1125,6 +1149,11 @@ function AddToolEntry({ disabled, onUse }: AddToolEntryProps) {
               {suggestions.length === 0 && (
                 <p className={styles.addToolEmpty}>
                   {t(I18N_KEYS.tools.addTool.noMatches)}
+                </p>
+              )}
+              {moreMatches && (
+                <p className={styles.addToolEmpty}>
+                  {t(I18N_KEYS.tools.addTool.moreMatches)}
                 </p>
               )}
             </div>

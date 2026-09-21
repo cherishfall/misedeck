@@ -229,7 +229,7 @@ export function SettingsPage() {
         <header className={styles.head}>
           <h1 className={styles.title}>{t(I18N_KEYS.settings.title)}</h1>
           <CommandHint>{t(I18N_KEYS.settings.commandHint)}</CommandHint>
-          <p className={styles.hint}>{t(I18N_KEYS.settings.hint)}</p>
+          <p className={styles.hint}>{t(cwd === null ? I18N_KEYS.settings.hintGlobal : I18N_KEYS.settings.hint)}</p>
           <ScopeBadge cwd={cwd} />
         </header>
 

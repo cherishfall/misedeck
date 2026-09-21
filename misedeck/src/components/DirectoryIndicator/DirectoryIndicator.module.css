@@ -58,41 +58,6 @@
   gap: var(--space-2);
 }
 
-.action,
-.actionDisabled {
-  font-family: var(--font-mono);
-  font-size: var(--size-data);
-  padding: var(--space-1) var(--space-2-5);
-  border-radius: 4px;
-  background: transparent;
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    color var(--motion-state-change) ease,
-    border-color var(--motion-state-change) ease,
-    background var(--motion-state-change) ease;
-}
-
-.action {
-  border: 1px solid var(--line);
-  color: var(--text);
-}
-
-.action:hover:not(:disabled),
-.action:focus-visible {
-  color: var(--beam);
-  border-color: var(--line-strong);
-  background: color-mix(in srgb, var(--beam) 6%, transparent);
-  outline: none;
-}
-
-.actionDisabled {
-  border: 1px solid var(--line);
-  color: var(--text);
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .popover {
   min-width: 280px;
   max-width: 480px;
@@ -185,7 +150,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .action,
   .recentPick {
     transition: none;
   }

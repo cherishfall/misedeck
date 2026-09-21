@@ -90,7 +90,8 @@
       "tooltip": "No Config file requests this tool"
     },
     "tooltip": {
-      "switchVersion": "Click to switch version"
+      "switchVersion": "Click to switch version",
+      "singleVersion": "Only one version installed — expand the row and install another from the version center to switch."
     },
     "empty": {
       "title": "No tools installed",
@@ -117,7 +118,8 @@
       "title": "Add a tool",
       "searchPlaceholder": "Search tools (e.g. node)",
       "versionPlaceholder": "latest",
-      "noMatches": "No matches — a full backend:name (e.g. npm:prettier) still works."
+      "noMatches": "No matches — a full backend:name (e.g. npm:prettier) still works.",
+      "moreMatches": "More matches — keep typing to narrow down."
     },
     "linkForm": {
       "title": "Link a tool",
@@ -178,7 +180,8 @@
       "uninstalled": "{{tool}}@{{version}} uninstalled",
       "unused": "{{tool}} removed",
       "linked": "{{tool}}@{{version}} linked"
-    }
+    },
+    "hintGlobal": "Tools installed and active in Global mode — add one with the search below; Use installs and activates in one step."
   },
   "preview": {
     "title": "Directory Overview",
@@ -264,11 +267,11 @@
     },
     "empty": {
       "title": "No env vars",
-      "body": "`mise env --json-extended` returned an empty map. Use the form below to add your first env var; writes go to mise's config file for the current directory."
+      "body": "Use the form below to add your first env var; writes go to mise's config file for the current directory."
     },
     "error": {
       "title": "Failed to load env vars",
-      "body": "`mise env --json-extended` did not return. Stderr is shown below."
+      "body": "`mise env` did not return. Stderr is shown below."
     },
     "addLabel": "Add an env var",
     "addButton": "Add",
@@ -301,7 +304,8 @@
     "success": {
       "set": "{{name}} set",
       "unset": "{{name}} removed"
-    }
+    },
+    "hintGlobal": "Resolved environment variables for Global mode. Add, edit, or remove vars; every write goes through `mise set -g` / `mise unset -g` and streams into the panel."
   },
   "tasks": {
     "title": "Tasks",
@@ -360,7 +364,8 @@
     "success": {
       "saved": "Task {{name}} saved",
       "added": "Task {{name}} added"
-    }
+    },
+    "subtitleGlobal": "List, run, create, and edit the mise tasks for Global mode. Writes go through `mise tasks add` and stream into the panel."
   },
   "settings": {
     "title": "Settings",
@@ -375,11 +380,11 @@
     },
     "empty": {
       "title": "No settings configured",
-      "body": "`mise settings ls --json-extended` populates this list. Use the form below to add one."
+      "body": "Use the form below to add a setting."
     },
     "error": {
       "title": "Failed to load settings",
-      "body": "`mise settings ls --json-extended` did not return. Stderr is shown below."
+      "body": "`mise settings ls` did not return. Stderr is shown below."
     },
     "saveButton": "Save",
     "unsetButton": "Unset",
@@ -412,7 +417,8 @@
       "objectReadOnly": "Table-typed settings cannot be written by `mise settings set` — edit the config file directly.",
       "unsetOutOfScope": "Defined in {{source}}, outside the current write scope — Unset would not take effect.",
       "unsetDefault": "This key only carries a built-in default — there is nothing to unset."
-    }
+    },
+    "hintGlobal": "View and edit mise's global settings. Writes go through `mise settings set` / `mise settings unset` and stream into the panel."
   },
   "doctor": {
     "title": "Doctor",

@@ -409,6 +409,23 @@ export function TasksPage() {
 
   const tasksError = tasks.error?.kind === "err" ? tasks.error.err : null;
 
+  // The Description column exists only when at least one row carries a
+  // description (beta11 5-d): an all-empty column would render nothing
+  // but "—" — noise, not data. Same conditional-column logic as the
+  // Tools page's Backend / Latest columns.
+  const descriptionColumn: TableColumn<TaskRow> = {
+    key: "description",
+    header: t(I18N_KEYS.tasks.columns.description),
+    sortValue: (r) => r.description ?? "",
+    cell: (r) =>
+      r.description ? (
+        <span className={styles.cellDescription}>{r.description}</span>
+      ) : (
+        <span className={styles.cellDescriptionEmpty}>—</span>
+      ),
+  };
+  const showDescription = taskRows.some((r) => r.description);
+
   const columns: TableColumn<TaskRow>[] = [
     {
       key: "name",
@@ -437,17 +454,9 @@ export function TasksPage() {
           <span className={styles.cellRunEmpty}>—</span>
         ),
     },
-    {
-      key: "description",
-      header: t(I18N_KEYS.tasks.columns.description),
-      sortValue: (r) => r.description ?? "",
-      cell: (r) =>
-        r.description ? (
-          <span className={styles.cellDescription}>{r.description}</span>
-        ) : (
-          <span className={styles.cellDescriptionEmpty}>—</span>
-        ),
-    },
+    // The Description column renders only when at least one row has a
+    // description (see `descriptionColumn` / `showDescription` above).
+    ...(showDescription ? [descriptionColumn] : []),
     {
       key: "depends",
       header: t(I18N_KEYS.tasks.columns.depends),
@@ -519,7 +528,7 @@ export function TasksPage() {
         <header className={styles.head}>
           <h1 className={styles.title}>{t(I18N_KEYS.tasks.title)}</h1>
           <CommandHint>{t(I18N_KEYS.tasks.commandHint)}</CommandHint>
-          <p className={styles.hint}>{t(I18N_KEYS.tasks.subtitle)}</p>
+          <p className={styles.hint}>{t(cwd === null ? I18N_KEYS.tasks.subtitleGlobal : I18N_KEYS.tasks.subtitle)}</p>
         </header>
 
         {/* In-page success confirmation (issue #145): set by a

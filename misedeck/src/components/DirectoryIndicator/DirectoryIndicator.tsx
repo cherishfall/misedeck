@@ -140,32 +140,22 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
         </Tooltip>
 
         <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.action}
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={setGlobal}
             data-testid="directory-indicator-global"
           >
             {t(I18N_KEYS.directory.globalButton)}
-          </button>
-          <button
-            type="button"
-            className={styles.action}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onOpenInTerminal}
             data-testid="directory-indicator-open-in-terminal"
           >
             {t(I18N_KEYS.activation.openInTerminalLabel)}
-          </button>
-          {pageRefresh && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={pageRefresh}
-              data-testid="toolbar-refresh"
-            >
-              {t(I18N_KEYS.common.refresh)}
-            </Button>
-          )}
+          </Button>
           <FloatingMenu
             open={recentsOpen && recents.length > 0}
             onOpenChange={setRecentsOpen}
@@ -174,9 +164,9 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
             gap={6}
             aria-label={t(I18N_KEYS.directory.recentsHeader)}
             trigger={(tp) => (
-              <button
-                type="button"
-                className={recentsOpen || recents.length > 0 ? styles.action : styles.actionDisabled}
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={tp.onClick}
                 aria-haspopup={tp["aria-haspopup"]}
                 aria-expanded={tp["aria-expanded"]}
@@ -186,7 +176,7 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
                 data-testid="directory-indicator-recents"
               >
                 {t(I18N_KEYS.directory.recentsButton)}
-              </button>
+              </Button>
             )}
           >
             <div className={styles.popover}>
@@ -222,6 +212,16 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
               </ul>
             </div>
           </FloatingMenu>
+          {pageRefresh && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={pageRefresh}
+              data-testid="toolbar-refresh"
+            >
+              {t(I18N_KEYS.common.refresh)}
+            </Button>
+          )}
 
           <Button
             variant="primary"

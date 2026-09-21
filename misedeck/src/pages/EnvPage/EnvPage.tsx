@@ -243,7 +243,7 @@ export function EnvPage() {
         <header className={styles.head}>
           <h1 className={styles.title}>{t(I18N_KEYS.env.title)}</h1>
           <CommandHint>{t(I18N_KEYS.env.commandHint)}</CommandHint>
-          <p className={styles.hint}>{t(I18N_KEYS.env.hint)}</p>
+          <p className={styles.hint}>{t(cwd === null ? I18N_KEYS.env.hintGlobal : I18N_KEYS.env.hint)}</p>
           <ScopeBadge cwd={cwd} />
         </header>
 

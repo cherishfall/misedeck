@@ -90,7 +90,8 @@
       "tooltip": "没有 Config 文件请求此工具"
     },
     "tooltip": {
-      "switchVersion": "点击切换版本"
+      "switchVersion": "点击切换版本",
+      "singleVersion": "只安装了一个版本——展开该行，在版本中心安装其他版本后即可切换。"
     },
     "empty": {
       "title": "尚未安装任何工具",
@@ -117,7 +118,8 @@
       "title": "添加工具",
       "searchPlaceholder": "搜索工具（如 node）",
       "versionPlaceholder": "latest",
-      "noMatches": "没有匹配项——仍可直接输入 backend:name（如 npm:prettier）。"
+      "noMatches": "没有匹配项——仍可直接输入 backend:name（如 npm:prettier）。",
+      "moreMatches": "还有更多匹配——继续输入以缩小范围。"
     },
     "linkForm": {
       "title": "链接工具",
@@ -178,7 +180,8 @@
       "uninstalled": "{{tool}}@{{version}} 已删除",
       "unused": "{{tool}} 已卸载",
       "linked": "{{tool}}@{{version}} 已链接"
-    }
+    },
+    "hintGlobal": "全局模式下已安装并处于活动状态的工具——在下方搜索添加，「使用」一步完成安装并启用。"
   },
   "preview": {
     "title": "目录概览",
@@ -264,11 +267,11 @@
     },
     "empty": {
       "title": "没有环境变量",
-      "body": "`mise env --json-extended` 返回了空映射。使用下面的表单添加第一个环境变量；写入会进入当前目录的 mise 配置文件。"
+      "body": "使用下面的表单添加第一个环境变量；写入会进入当前目录的 mise 配置文件。"
     },
     "error": {
       "title": "加载环境变量失败",
-      "body": "`mise env --json-extended` 未返回结果。stderr 如下所示。"
+      "body": "`mise env` 未返回结果。stderr 如下所示。"
     },
     "addLabel": "添加环境变量",
     "addButton": "添加",
@@ -301,7 +304,8 @@
     "success": {
       "set": "{{name}} 已设置",
       "unset": "{{name}} 已移除"
-    }
+    },
+    "hintGlobal": "全局模式下解析出的环境变量。添加、编辑或移除变量；所有写入都通过 `mise set -g` / `mise unset -g` 并在执行面板中实时显示。"
   },
   "tasks": {
     "title": "任务",
@@ -360,7 +364,8 @@
     "success": {
       "saved": "任务 {{name}} 已保存",
       "added": "任务 {{name}} 已创建"
-    }
+    },
+    "subtitleGlobal": "列出、运行、创建并编辑全局模式下的 mise 任务。写入通过 `mise tasks add`，并在执行面板中实时显示。"
   },
   "settings": {
     "title": "设置",
@@ -375,11 +380,11 @@
     },
     "empty": {
       "title": "尚未配置任何设置",
-      "body": "`mise settings ls --json-extended` 填充此列表。使用下方表单添加一个。"
+      "body": "使用下方表单添加一个设置。"
     },
     "error": {
       "title": "加载设置失败",
-      "body": "`mise settings ls --json-extended` 未返回结果。stderr 如下所示。"
+      "body": "`mise settings ls` 未返回结果。stderr 如下所示。"
     },
     "saveButton": "保存",
     "unsetButton": "移除",
@@ -412,7 +417,8 @@
       "objectReadOnly": "整表设置无法通过 `mise settings set` 写入，请直接编辑配置文件。",
       "unsetOutOfScope": "该设置定义在 {{source}}，不在当前写入范围内——移除不会生效。",
       "unsetDefault": "该键只有内置默认值，没有可移除的设置。"
-    }
+    },
+    "hintGlobal": "查看并编辑 mise 的全局设置。写入通过 `mise settings set` / `mise settings unset` 并在执行面板中实时显示。"
   },
   "doctor": {
     "title": "诊断",

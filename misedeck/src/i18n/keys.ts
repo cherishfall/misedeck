@@ -131,6 +131,7 @@ export const I18N_KEYS = {
   tools: {
     title: "tools.title",
     hint: "tools.hint",
+    hintGlobal: "tools.hintGlobal",
     commandHint: "tools.commandHint",
     columns: {
       tool: "tools.columns.tool",
@@ -147,6 +148,7 @@ export const I18N_KEYS = {
     },
     tooltip: {
       switchVersion: "tools.tooltip.switchVersion",
+      singleVersion: "tools.tooltip.singleVersion",
     },
     empty: {
       title: "tools.empty.title",
@@ -198,6 +200,7 @@ export const I18N_KEYS = {
       searchPlaceholder: "tools.addTool.searchPlaceholder",
       versionPlaceholder: "tools.addTool.versionPlaceholder",
       noMatches: "tools.addTool.noMatches",
+      moreMatches: "tools.addTool.moreMatches",
     },
     linkForm: {
       title: "tools.linkForm.title",
@@ -298,6 +301,7 @@ export const I18N_KEYS = {
   env: {
     title: "env.title",
     hint: "env.hint",
+    hintGlobal: "env.hintGlobal",
     commandHint: "env.commandHint",
     listTitle: "env.listTitle",
     filterPlaceholder: "env.filterPlaceholder",
@@ -362,6 +366,7 @@ export const I18N_KEYS = {
   tasks: {
     title: "tasks.title",
     subtitle: "tasks.subtitle",
+    subtitleGlobal: "tasks.subtitleGlobal",
     commandHint: "tasks.commandHint",
     filterPlaceholder: "tasks.filterPlaceholder",
     count: "tasks.count",
@@ -419,6 +424,7 @@ export const I18N_KEYS = {
   settings: {
     title: "settings.title",
     hint: "settings.hint",
+    hintGlobal: "settings.hintGlobal",
     commandHint: "settings.commandHint",
     columns: {
       key: "settings.columns.key",
