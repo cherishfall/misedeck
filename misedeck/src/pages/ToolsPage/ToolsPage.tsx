@@ -723,19 +723,20 @@ export function ToolsPage() {
 
         {/* The Link form (`mise link`, issue #71) is an advanced
             low-frequency flow: it lives in a collapsed "Advanced"
-            section (issue #135). The toggle is browsing and never
-            run-locked; no caret glyph — expandability is shown by
-            interaction. */}
+            section (issue #135). The toggle is a shared ghost Button
+            (issue #184, the disclosure-trigger convention) — browsing
+            and never run-locked; no caret glyph — expandability is
+            shown by interaction. */}
         <section className={styles.advanced} data-testid="tools-advanced">
-          <button
-            type="button"
-            className={styles.advancedToggle}
-            onClick={() => setAdvancedOpen((open) => !open)}
+          <Button
+            variant="ghost"
+            size="sm"
             aria-expanded={advancedOpen}
+            onClick={() => setAdvancedOpen((open) => !open)}
             data-testid="tools-advanced-toggle"
           >
             {t(I18N_KEYS.tools.advanced.title)}
-          </button>
+          </Button>
           {advancedOpen && (
             <LinkToolForm
               onLink={onLink}

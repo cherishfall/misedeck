@@ -73,9 +73,10 @@ One vocabulary, four variants (color/type semantics owned by `visual-language.md
 | `primary` | The row's main action, when no higher-priority action competes | run, install, add, save, choose directory |
 | `secondary` | Routine actions | switch, edit |
 | `danger` | Destructive / sensitive | uninstall, remove |
-| `ghost` | Dismissive or low-frequency | cancel, open in editor |
+| `ghost` | Dismissive or low-frequency | cancel, open in editor, disclosure toggle |
 
 - One global action, one visual role: an action that appears on several surfaces (e.g. "choose directory") renders the same variant from the same shared component everywhere. A bespoke re-implementation of an existing button style is a bug.
+- A trigger that expands/collapses a region is the shared Button: `variant="ghost"` `size="sm"`, with `aria-expanded` wired to the region's open state — never a bespoke bare-text button, and never a caret/chevron glyph (beta12, issue #184; consistent with the caret rulings under Glyphs & icons).
 - Within a single button group, every button renders the same variant unless an explicit hierarchy reason says otherwise — one mixed-variant group reads as one broken group (beta12, issue #176).
 - "Choose directory" renders `primary` everywhere — toolbar, empty state, forms (beta9 supersedes the beta8 toolbar-fallback/empty-state exception: a split presentation of one action read as two different buttons, which was worse than a loud one).
 - Page-level primary buttons are right-aligned (toolbar convention: hint left, actions right, via `justify-content: space-between` or `margin-left: auto`) and always `size="sm"`; `md` is reserved for non-page-toolbar contexts.

@@ -546,6 +546,7 @@ function ConfigFileRow({ file, rank }: { file: ConfigFile; rank: number }) {
         <Button
           variant="ghost"
           size="sm"
+          aria-expanded={expanded}
           onClick={() => setExpanded((v) => !v)}
           data-testid="preview-config-toggle"
         >
