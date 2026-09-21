@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { parseRunInput } from "./miseTools";
+import { parseRunInput, isEnvWriteScopeMismatch } from "./miseTools";
 
 test("parseRunInput: splits a single line into shell words", () => {
   assert.deepEqual(parseRunInput("npm run build"), ["npm", "run", "build"]);
@@ -64,4 +64,23 @@ test("parseRunInput: apostrophe inside double quotes is ordinary text", () => {
 test("parseRunInput: unbalanced quote keeps the whole line as one literal word", () => {
   assert.deepEqual(parseRunInput("echo 'unclosed"), ["echo 'unclosed"]);
   assert.deepEqual(parseRunInput("echo it's fine"), ["echo it's fine"]);
+});
+
+// Write-scope check for env rows (issue #182): the write target is
+// chosen by the mode, so a row whose sourcePath sits on the other side
+// is a mismatch the confirm dialog must warn about.
+test("isEnvWriteScopeMismatch: directory mode flags a global config source", () => {
+  assert.equal(isEnvWriteScopeMismatch("/home/u/.config/mise/config.toml", "/repo"), true);
+  assert.equal(isEnvWriteScopeMismatch(String.raw`C:\Users\u\.config\mise\config.toml`, String.raw`C:\repo`), true);
+});
+
+test("isEnvWriteScopeMismatch: directory mode accepts a current-directory config source", () => {
+  assert.equal(isEnvWriteScopeMismatch("/repo/mise.toml", "/repo"), false);
+  assert.equal(isEnvWriteScopeMismatch("/repo/.mise/config.toml", "/repo"), false);
+});
+
+test("isEnvWriteScopeMismatch: global mode accepts only the global config", () => {
+  assert.equal(isEnvWriteScopeMismatch("/home/u/.config/mise/config.toml", null), false);
+  assert.equal(isEnvWriteScopeMismatch(String.raw`C:\Users\u\.config\mise\config.toml`, null), false);
+  assert.equal(isEnvWriteScopeMismatch("/repo/mise.toml", null), true);
 });

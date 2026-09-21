@@ -273,7 +273,7 @@ export function parseEnvPayload(value: unknown): EnvEntry[] {
   return out;
 }
 
-function isGlobalConfigPath(path: string): boolean {
+export function isGlobalConfigPath(path: string): boolean {
   // mise's global config path is conventionally
   // `~/.config/mise/config.toml`; the extended source reports the
   // absolute path. Match the tail (separator-normalized so Windows
@@ -281,6 +281,20 @@ function isGlobalConfigPath(path: string): boolean {
   // the user's home directory.
   const normalized = normalizePathForCompare(path, { caseInsensitive: false });
   return normalized.endsWith(".config/mise/config.toml") || normalized.endsWith("/mise/config.toml");
+}
+
+/**
+ * True when a config-sourced env row's sourcePath is outside the
+ * current write scope (issue #182). The write target is chosen by the
+ * mode — global mode (`cwd === null`) writes only the global config
+ * (`set -g` / `unset -g`), directory mode writes only non-global
+ * (current-directory / local) config — so a row defined on the other
+ * side would be written to a different config file than its definition:
+ * a shadow entry or a silent no-op. The env page's confirm dialogs warn
+ * before letting such a write through.
+ */
+export function isEnvWriteScopeMismatch(sourcePath: string, cwd: string | null): boolean {
+  return cwd === null ? !isGlobalConfigPath(sourcePath) : isGlobalConfigPath(sourcePath);
 }
 
 /**

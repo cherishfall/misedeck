@@ -304,7 +304,12 @@
       "renameOverwrite": {
         "title": "Rename {{from}} to {{to}}?",
         "body": "An env var named {{to}} already exists — the rename overwrites its current value with this one. Renaming runs the two exact commands below in order: first the old key is removed, then the new key is written. This cannot be undone."
-      }
+      },
+      "update": {
+        "title": "Update {{name}}?",
+        "body": "This will run the exact command below."
+      },
+      "outOfScopeWarning": "Defined in {{source}}, outside the current write scope — the command writes to a different config file and leaves this variable's actual definition unchanged."
     },
     "success": {
       "set": "{{name}} set",

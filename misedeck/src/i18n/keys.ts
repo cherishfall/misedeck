@@ -362,6 +362,11 @@ export const I18N_KEYS = {
         title: "env.confirm.renameOverwrite.title",
         body: "env.confirm.renameOverwrite.body",
       },
+      update: {
+        title: "env.confirm.update.title",
+        body: "env.confirm.update.body",
+      },
+      outOfScopeWarning: "env.confirm.outOfScopeWarning",
     },
     success: {
       set: "env.success.set",

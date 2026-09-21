@@ -244,3 +244,22 @@
   color: var(--dim);
   margin-right: var(--space-2);
 }
+
+/* ---------- Out-of-write-scope warning (issue #182) ---------- */
+
+/* Same tinted-callout pattern as the Doctor page's warning items: the
+   confirm dialog's body copy stays neutral, the warning reads as a
+   warning. Long source paths wrap mid-token — data honesty beats an
+   unbreakable token, same ruling as the dialog's command box. */
+.scopeWarning {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--tint-warning);
+  border-radius: var(--radius-panel);
+  background: var(--tint-warning-bg);
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  line-height: 1.5;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}

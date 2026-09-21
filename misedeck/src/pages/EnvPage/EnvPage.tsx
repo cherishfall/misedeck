@@ -42,7 +42,7 @@ import {
 } from "../../components";
 import { useParsedEnvList } from "../../hooks/useEnvList";
 import { useTableFilter } from "../../hooks/useTableFilter";
-import type { EnvSource } from "../../api/miseTools";
+import { isEnvWriteScopeMismatch, type EnvSource } from "../../api/miseTools";
 
 import styles from "./EnvPage.module.css";
 
@@ -463,6 +463,7 @@ function EnvRowActions({
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const [confirmingRename, setConfirmingRename] = useState(false);
   const [confirmingRenameOverwrite, setConfirmingRenameOverwrite] = useState(false);
+  const [confirmingOutOfScopeSet, setConfirmingOutOfScopeSet] = useState(false);
   const [name, setName] = useState(row.name);
   const [value, setValue] = useState(row.value);
   // Reset the draft only while not actively editing, so an open editor
@@ -482,6 +483,16 @@ function EnvRowActions({
   if (!isConfigSource(row.source)) {
     return <span className={styles.dim}>—</span>;
   }
+
+  // Write-scope check (issue #182): the write target is chosen by the
+  // mode (cwd === null → the global config via `-g`; otherwise the
+  // current directory's config), not by where the row is defined. A
+  // config row whose sourcePath falls outside that scope would be
+  // written to a different config file than its definition — a shadow
+  // entry or a silent no-op — so every confirm dialog for the row
+  // carries the out-of-scope warning below.
+  const outOfScope =
+    row.sourcePath !== undefined && isEnvWriteScopeMismatch(row.sourcePath, cwd);
 
   const dirty = name !== row.name || value !== row.value;
   const startEdit = () => {
@@ -509,6 +520,14 @@ function EnvRowActions({
       } else {
         setConfirmingRename(true);
       }
+      return;
+    }
+    // A value-only save normally runs without a dialog; an out-of-scope
+    // row confirms first (issue #182) — the write would land in a
+    // different config file than the row's definition, and the dialog
+    // says so before the command runs.
+    if (outOfScope) {
+      setConfirmingOutOfScopeSet(true);
       return;
     }
     void doSaveValue();
@@ -606,7 +625,9 @@ function EnvRowActions({
             void doRename();
           }}
           onCancel={() => setConfirmingRename(false)}
-        />
+        >
+          {outOfScope && <OutOfScopeWarning sourcePath={row.sourcePath} />}
+        </ConfirmDialog>
         {/* Renaming onto an existing key overwrites that var's value
             (issue #170), so this variant's copy says so honestly while
             still teaching both exact commands in execution order. Same
@@ -627,7 +648,30 @@ function EnvRowActions({
             void doRename();
           }}
           onCancel={() => setConfirmingRenameOverwrite(false)}
-        />
+        >
+          {outOfScope && <OutOfScopeWarning sourcePath={row.sourcePath} />}
+        </ConfirmDialog>
+        {/* A value-only save of an out-of-scope row (issue #182) gets the
+            confirmation the destructive paths already carry: without it
+            the write would land silently in a different config file than
+            the row's definition. Same doSaveValue as the direct path —
+            only the gate in front of it changes. */}
+        <ConfirmDialog
+          open={confirmingOutOfScopeSet}
+          confirmBusy={disabled}
+          title={t(I18N_KEYS.env.confirm.update.title, { name })}
+          body={t(I18N_KEYS.env.confirm.update.body)}
+          command={commandEcho("mise", cwd, miseEnvSetArgs(name, value, cwd))}
+          confirmLabel={t(I18N_KEYS.common.save)}
+          cancelLabel={t(I18N_KEYS.common.cancel)}
+          onConfirm={() => {
+            setConfirmingOutOfScopeSet(false);
+            void doSaveValue();
+          }}
+          onCancel={() => setConfirmingOutOfScopeSet(false)}
+        >
+          <OutOfScopeWarning sourcePath={row.sourcePath} />
+        </ConfirmDialog>
       </>
     );
   }
@@ -670,8 +714,24 @@ function EnvRowActions({
           );
         }}
         onCancel={() => setConfirmingRemove(false)}
-      />
+      >
+        {outOfScope && <OutOfScopeWarning sourcePath={row.sourcePath} />}
+      </ConfirmDialog>
     </span>
+  );
+}
+
+/** Out-of-write-scope warning (issue #182) rendered inside a row's
+ *  confirm dialogs when the row's sourcePath sits outside the current
+ *  write scope — the same pattern and tone as the Settings page's
+ *  `unsetOutOfScope` copy, naming the row's actual source path. */
+function OutOfScopeWarning({ sourcePath }: { sourcePath?: string }) {
+  const { t } = useTranslation();
+  if (!sourcePath) return null;
+  return (
+    <p className={styles.scopeWarning}>
+      {t(I18N_KEYS.env.confirm.outOfScopeWarning, { source: sourcePath })}
+    </p>
   );
 }
 
