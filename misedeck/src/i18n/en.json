@@ -92,11 +92,11 @@
     },
     "tooltip": {
       "switchVersion": "Click to switch version",
-      "singleVersion": "Only one version installed — expand the row and install another from the version center to switch."
+      "singleVersion": "Only one version installed — find the tool in Add a tool below and install another version to switch."
     },
     "empty": {
       "title": "No tools installed",
-      "body": "Search above and Use your first tool."
+      "body": "Use the Add a tool search below to install your first tool."
     },
     "missing": {
       "title": "Tools unavailable",
@@ -118,9 +118,22 @@
     "addTool": {
       "title": "Add a tool",
       "searchPlaceholder": "Search tools (e.g. node)",
-      "versionPlaceholder": "latest",
       "noMatches": "No matches — a full backend:name (e.g. npm:prettier) still works.",
-      "moreMatches": "More matches — keep typing to narrow down."
+      "moreMatches": "More matches — keep typing to narrow down.",
+      "inUseTitle": "In use",
+      "installedTitle": "Installed",
+      "notInstalledTitle": "Not installed",
+      "activeBadge": "active",
+      "created": "Created",
+      "filterPlaceholder": "Filter versions…",
+      "retryButton": "Retry",
+      "activeUninstallTooltip": "Switch to another version before deleting this one",
+      "emptyInUseTitle": "Not active in this directory",
+      "emptyInUseBody": "{{tool}} is not active in the current directory. Pick a version below to use it here.",
+      "emptyInstalledTitle": "No installed versions",
+      "emptyInstalledBody": "`mise ls {{tool}}` reports no installed versions of {{tool}} besides the one in use.",
+      "emptyAvailableTitle": "No available versions",
+      "emptyAvailableBody": "`mise ls-remote {{tool}}` returned no versions."
     },
     "linkForm": {
       "title": "Link a tool",
@@ -144,20 +157,6 @@
         "jumpTo": "Jump to",
         "jump": "Go"
       }
-    },
-    "versionCenter": {
-      "installedTitle": "Installed versions",
-      "availableTitle": "Available versions",
-      "activeBadge": "active",
-      "installedBadge": "Installed",
-      "created": "Created",
-      "filterPlaceholder": "Filter versions…",
-      "emptyInstalledTitle": "No installed versions",
-      "emptyInstalledBody": "`mise ls {{tool}}` reports no installed versions for {{tool}}.",
-      "emptyAvailableTitle": "No available versions",
-      "emptyAvailableBody": "`mise ls-remote {{tool}}` returned no versions.",
-      "activeUninstallTooltip": "Switch to another version before deleting this one",
-      "retryButton": "Retry"
     },
     "confirm": {
       "uninstall": {

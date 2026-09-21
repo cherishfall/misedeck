@@ -863,7 +863,7 @@ function TaskForm({
           // A multi-line run cannot round-trip through `mise tasks
           // add` (issue #170), so the field is disabled and the
           // Tooltip says why — the same disabled-control-plus-Tooltip
-          // language as the version center's active row (beta11 2-f).
+          // language as the add-tool section's in-use row (beta11 2-f).
           <Tooltip text={t(I18N_KEYS.tasks.editForm.runReadonlyTooltip)}>
             <textarea
               id={runId}

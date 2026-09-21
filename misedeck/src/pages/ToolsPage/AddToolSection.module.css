@@ -1,0 +1,330 @@
+/* AddToolSection — the "Add a tool" region below the Tools page table
+ * (issue #178). Layout, color, and motion consume design tokens only. */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--panel) 50%, transparent);
+}
+
+/* Section header row: disclosure toggle left, filter + clear right
+ * (the toolbar convention). */
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.headActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* ---------- The three version sections ---------- */
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.subList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.subTitle {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--size-base);
+  color: var(--text);
+  margin: 0;
+}
+
+/* ---------- Sub-list tables (fixed layout, issue #151) ---------- */
+
+/* min-width ≈ sum of declared column widths; the Source column takes
+ * the remaining width (issue #90 pattern). */
+.installedTable {
+  min-width: 520px;
+}
+
+.availableTable {
+  min-width: 510px;
+}
+
+/* ---------- Cells ---------- */
+
+.versionCell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.cellVersion {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--beam);
+  font-weight: 600;
+}
+
+/* The `latest` alias in the pinned row: mise's own vocabulary, mono
+ * like the version numbers around it. */
+.latestAlias {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--beam);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.latestValue {
+  color: var(--flare);
+  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.cellRequested {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+}
+
+.cellSource {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--dim);
+}
+
+.cellActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+/* An orphan tool's Requested cell: the dim "—" pairs with the orphan
+ * badge; the cell Tooltip teaches why no version is requested
+ * (beta11 3-g/5-b). */
+.cellOrphan {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.dim {
+  color: var(--dim);
+}
+
+/* ---------- Registry search (combobox) ---------- */
+
+.input {
+  font-family: var(--font-mono);
+  font-size: var(--size-base);
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: var(--space-1) var(--space-2);
+  transition:
+    border-color var(--motion-state-change) ease,
+    box-shadow var(--motion-state-change) ease;
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--beam);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--beam) 25%, transparent);
+}
+
+.input:hover:not(:disabled) {
+  border-color: var(--line-strong);
+}
+
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* The search box anchors its suggestion list; the wrapper stretches so
+ * the input and the list share a width. */
+.search {
+  position: relative;
+  min-width: 0;
+}
+
+.searchInput {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Combobox listbox (not a FloatingMenu — focus stays in the input).
+ * Same surface as the shared popover layer, anchored inline under the
+ * search input, above the tables via --z-popover. */
+.suggestionList {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  z-index: var(--z-popover);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-panel);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--void) 60%, transparent);
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.suggestion,
+.suggestionActive {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: var(--size-data);
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.suggestion:hover,
+.suggestion:focus-visible,
+.suggestionActive {
+  background: color-mix(in srgb, var(--beam) 6%, transparent);
+  outline: none;
+}
+
+.suggestionName {
+  font-family: var(--font-mono);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.suggestionDescription {
+  font-family: var(--font-ui);
+  color: var(--ice);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.suggestionEmpty {
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  color: var(--ice);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  line-height: 1.5;
+}
+
+/* ---------- Loading / error states ---------- */
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  color: var(--dim);
+}
+
+.loadingLabel {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  color: var(--dim);
+}
+
+.errorBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--tint-danger);
+  border-radius: var(--radius-panel);
+  background: var(--tint-danger-bg);
+}
+
+.errorLabel {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  color: var(--breach);
+}
+
+.errorBody {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--text);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.errorStderr {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--breach);
+  background: color-mix(in srgb, var(--breach) 8%, transparent);
+  border: 1px solid var(--tint-danger);
+  border-radius: 4px;
+  padding: var(--space-3);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* The retry action keeps its content width inside the column-flex
+   error block instead of stretching to the block's full width. */
+.errorRetry {
+  align-self: flex-start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .input,
+  .suggestion,
+  .suggestionActive {
+    transition: none;
+  }
+}

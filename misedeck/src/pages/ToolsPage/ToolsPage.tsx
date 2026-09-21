@@ -1,50 +1,45 @@
 // ToolsPage — the global tools list with mutations (issues #21 + #22).
 //
-//   * mise registry --json   → the top add-tool entry's search
-//                              autocomplete (tool names + descriptions,
-//                              issue #134)
 //   * mise ls --json         → table rows (tool, version+switch,
 //                              requested, backend, source, latest,
 //                              actions)
 //   * mise outdated --json   → the Latest column's current → latest
 //                              path on the rows that appear in the map
-//   * mise use -g            → the add-tool entry's one-step install +
-//                              activate (#134), and switching an installed
-//                              version (the Version cell is the trigger,
-//                              #132 + #151)
-//   * mise install           → install only a version (version center)
+//   * mise use -g            → switching an installed version (the
+//                              Version cell is the trigger, #132 + #151)
+//                              and the add-tool section's Use buttons
+//                              (#178)
+//   * mise install           → install only a version (add-tool section)
 //   * mise unuse             → remove a tool (config request + installs);
 //                              orphans run `mise uninstall --all` (ADR-0008)
 //   * mise uninstall         → delete one non-active version's files
 //   * mise upgrade --bump    → upgrade all or one outdated tool
-//   * mise ls-remote --json  → the expanded row's available-versions
-//                              sub-list (version center, #133)
+//   * mise registry --json   → the Add a tool section's search
+//                              autocomplete (tool names + descriptions)
+//   * mise ls-remote --json  → the Add a tool section's not-installed
+//                              version list (#178)
 //
-// The add-tool entry sits at the top of the page (#134): search the
-// registry, pick a version (default `latest`), and Use runs
-// `mise use <tool>@<version>` — install and activate in one step; on
-// success the new tool's row expands. Clicking a tool name expands its
-// row inline into the version center (installed + available versions,
-// one row at a time, #133). Every invocation — mutations and reads
-// alike — routes through the execution panel so the exact command and
-// live logs are visible (ADR-0005). The list refreshes when a run exits
-// successfully; the success closes the loop in-page with a short-lived
-// confirmation bar (issue #144); failures surface stderr and leave state
-// unchanged.
+// The "Add a tool" section sits below the tools table (issue #178,
+// beta12 2-c): search the registry, pick a tool, and its versions
+// render in three sections — in use, installed, not installed — newest
+// first with client-side filter and pagination. Searching and picking
+// never install anything; Use / Install only / Uninstall are explicit
+// per-version actions. The Link form lives in the collapsed Advanced
+// section. Every invocation — mutations and reads alike — routes
+// through the execution panel so the exact command and live logs are
+// visible (ADR-0005). The list refreshes when a run exits successfully;
+// the success closes the loop in-page with a short-lived confirmation
+// bar (issue #144); failures surface stderr and leave state unchanged.
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   useCallback,
-  useEffect,
-  useId,
   useMemo,
-  useRef,
   useState,
 } from "react";
 
 import { I18N_KEYS } from "../../i18n/keys";
-import type { MiseLsItem, RegistryItem } from "../../types/tauri";
 import { useDirectory } from "../../state/directoryContext";
 import { useTrustGuard } from "../../state/trustContext";
 import { detectMise, isAppError } from "../../api/mise";
@@ -53,9 +48,8 @@ import {
   useParsedOutdatedTools,
   useParsedToolsList,
 } from "../../hooks/useToolsList";
-import { useParsedRegistry } from "../../hooks/useIssue29";
 import { useTableFilter } from "../../hooks/useTableFilter";
-import { VersionCenter } from "./VersionCenter";
+import { AddToolSection } from "./AddToolSection";
 import { useQuery } from "@tanstack/react-query";
 import {
   Badge,
@@ -116,7 +110,7 @@ interface ToolRow {
  *  or `mise uninstall --all <tool>` when the tool is an orphan (no Config
  *  file requests it — `unuse` would error). `uninstall` is the
  *  per-version file deletion offered only on non-active versions; the
- *  expanded row's version center (issue #133) supplies its tool name. */
+ *  add-tool section (issue #178) supplies its tool name. */
 type PendingRemoval =
   | { kind: "unuse"; tool: string; orphan: boolean }
   | { kind: "uninstall"; tool: string; version: string };
@@ -211,16 +205,9 @@ export function ToolsPage() {
   // The removal confirmation (issues #56 + #131): clicking 卸载 / Unuse
   // or 删除此版本 / Uninstall opens a dialog showing the exact command
   // that will run; the mutation only dispatches after the user confirms.
-  // No removal runs without this confirmation. The expanded row's
-  // version center (issue #133) feeds the same dialog with its own
-  // version targets.
+  // No removal runs without this confirmation. The add-tool section
+  // (issue #178) feeds the same dialog with its own version targets.
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
-
-  // The expanded row's tool (issue #133): one row at a time. Expanding
-  // and collapsing are browsing of loaded data, so they stay enabled
-  // while a command runs (issue #135); only the version center's
-  // command-firing buttons lock.
-  const [expandedTool, setExpandedTool] = useState<string | null>(null);
 
   // Friendly message from the most recent link run (issue #71). Null
   // unless the last `mise link` failed with a recognized conflict.
@@ -250,30 +237,16 @@ export function ToolsPage() {
   const tools = useParsedToolsList();
   const outdated = useParsedOutdatedTools();
 
-  // The version center's reads are directory-scoped with no fetcher of
-  // their own (ADR-0005), so switching the directory context cannot
-  // silently refetch them. Collapse the expanded row instead of leaving
-  // a center showing the previous context's cache key.
-  useEffect(() => {
-    setExpandedTool(null);
-  }, [cwd]);
-
-  // Clicking a tool name toggles the row's inline version center
-  // (issue #133). Toggling is browsing, so it is never run-locked
-  // (issue #135); the center's own command buttons carry the lock.
-  const onToggleExpand = (tool: string) => {
-    setExpandedTool((current) => (current === tool ? null : tool));
-  };
-
   // Per-action run-lock (issues #138 + #152): every command family on
   // this page gets its own `useOwnRun()` hook, so a control freezes only
   // while the command *its own family* dispatched is in flight — a
   // multi-minute install of one tool never disables another row's
-  // Use/Upgrade, the add-tool entry, or the link form. The families are
-  // the mise commands: use, install, upgrade, link, and removal
-  // (unuse/uninstall, dispatched only by the confirm dialog). A
+  // Use/Upgrade, the add-tool section's buttons, or the link form. The
+  // families are the mise commands: use, install, upgrade, link, and
+  // removal (unuse/uninstall, dispatched only by the confirm dialog). A
   // successful mutation refreshes the tools + outdated reads (the
-  // version center's installed sub-list derives from the same read).
+  // add-tool section's in-use and installed sections derive from the
+  // same read).
   const useRun = useOwnRun();
   const installRun = useOwnRun();
   const upgradeRun = useOwnRun();
@@ -387,8 +360,7 @@ export function ToolsPage() {
   // installed versions from the live `mise ls` read — picking one runs
   // `mise use`, and a version not on disk can never be submitted.
   // `mise ls` can also report a requested-but-not-installed version, so
-  // only `installed` items count (the version center's `installedOnDisk`
-  // filter, issue #133).
+  // only `installed` items count.
   const versionsByTool = useMemo(() => {
     const map = new Map<string, string[]>();
     for (const { tool, items } of tools.data ?? []) {
@@ -399,24 +371,6 @@ export function ToolsPage() {
     }
     return map;
   }, [tools.data]);
-  // The expanded row's version center (issue #133) needs the full
-  // installed items (active flags, requested versions, sources), not
-  // just the version strings.
-  const itemsByTool = useMemo(() => {
-    const map = new Map<string, MiseLsItem[]>();
-    for (const { tool, items } of tools.data ?? []) {
-      map.set(tool, items);
-    }
-    return map;
-  }, [tools.data]);
-
-  // The expanded row is tracked by tool (stable across a successful
-  // `mise use`, which changes the row's id); the Table matches on the
-  // row key, so resolve it here.
-  const expandedKey = useMemo(
-    () => rows.find((r) => r.tool === expandedTool)?.id ?? null,
-    [rows, expandedTool],
-  );
 
   // Mise-missing or list-loading state. The list-level gate (issue
   // #146) covers the `mise ls` read too: while it is pending — first
@@ -497,20 +451,7 @@ export function ToolsPage() {
       cell: (r) => (
         <span className={styles.cellTool}>
           <Tooltip text={r.tool}>
-            {/* Clicking the tool name toggles the row's inline version
-                center (issue #133). Toggling is browsing of loaded data,
-                so it stays enabled while a command runs (issue #135).
-                No caret glyph — expandability is shown by interaction
-                (beta8). */}
-            <button
-              type="button"
-              className={`${styles.toolName} ${styles.toolNameButton}`}
-              onClick={() => onToggleExpand(r.tool)}
-              aria-expanded={expandedTool === r.tool}
-              data-testid={`tools-expand-${r.tool}`}
-            >
-              {r.tool}
-            </button>
+            <span className={styles.toolName}>{r.tool}</span>
           </Tooltip>
         </span>
       ),
@@ -624,30 +565,6 @@ export function ToolsPage() {
           body={I18N_KEYS.tools.guard.untrustedBody}
         />
 
-        {/* The single add-tool entry (issue #134): registry search +
-            version (default `latest`) + one Use action running
-            `mise use <tool>@<version>` — install and activate in one
-            step. On success the new tool's row expands. */}
-        <AddToolEntry
-          disabled={useRun.isRunning}
-          onUse={async (tool, version) => {
-            // Mirror fireMutation's gates so a blocked run never leaves
-            // a stale pending expansion behind; a trust-blocked run
-            // focuses the banner instead of silently returning.
-            if (!guard.allowed) {
-              focusTrustBanner();
-              return;
-            }
-            if (useRun.isRunning) return;
-            const res = await fireMutation(
-              useRun,
-              (cwd) => miseUseArgs(tool, version, cwd),
-              t(I18N_KEYS.tools.success.used, { tool, version }),
-            );
-            if (res?.kind === "ok") setExpandedTool(tool);
-          }}
-        />
-
         <div className={styles.toolbar}>
           {/* F13 (issue #98): the hint renders in every state — loading
               included — so it never pops in/out. */}
@@ -679,32 +596,6 @@ export function ToolsPage() {
             fixed
             resizeKey="tools"
             className={styles.toolsTable}
-            expandedKey={expandedKey}
-            renderExpanded={(r) => (
-              <VersionCenter
-                tool={r.tool}
-                installed={itemsByTool.get(r.tool) ?? []}
-                useDisabled={useRun.isRunning}
-                installDisabled={installRun.isRunning}
-                onUse={(version) =>
-                  void fireMutation(
-                    useRun,
-                    (cwd) => miseUseArgs(r.tool, version, cwd),
-                    t(I18N_KEYS.tools.success.used, { tool: r.tool, version }),
-                  )
-                }
-                onInstallOnly={(version) =>
-                  void fireMutation(
-                    installRun,
-                    () => miseInstallArgs(r.tool, version),
-                    t(I18N_KEYS.tools.success.installed, { tool: r.tool, version }),
-                  )
-                }
-                onUninstall={(version) =>
-                  setPendingRemoval({ kind: "uninstall", tool: r.tool, version })
-                }
-              />
-            )}
             empty={
               filter.active ? (
                 <EmptyState
@@ -720,6 +611,35 @@ export function ToolsPage() {
             }
           />
         )}
+
+        {/* The "Add a tool" section below the table (issue #178, beta12
+            2-c): registry search → three version sections (in use →
+            installed → not installed). Searching never installs — the
+            browse step is mandatory between search and any Use /
+            Install. The toggle and the Clear button are browsing and
+            never run-locked; only the section's command-firing buttons
+            carry the locks (issues #135 + #138). */}
+        <AddToolSection
+          useDisabled={useRun.isRunning}
+          installDisabled={installRun.isRunning}
+          onUse={(tool, version) =>
+            void fireMutation(
+              useRun,
+              (cwd) => miseUseArgs(tool, version, cwd),
+              t(I18N_KEYS.tools.success.used, { tool, version }),
+            )
+          }
+          onInstallOnly={(tool, version) =>
+            void fireMutation(
+              installRun,
+              () => miseInstallArgs(tool, version),
+              t(I18N_KEYS.tools.success.installed, { tool, version }),
+            )
+          }
+          onUninstall={(tool, version) =>
+            setPendingRemoval({ kind: "uninstall", tool, version })
+          }
+        />
 
         {/* The Link form (`mise link`, issue #71) is an advanced
             low-frequency flow: it lives in a collapsed "Advanced"
@@ -823,8 +743,8 @@ interface UseVersionCellProps {
  * Version column in #151): the Version cell itself is the FloatingMenu
  * trigger — the version number renders once, as data and control at
  * once. No typing, no datalist — a version that does not exist on disk
- * can never be submitted; installing a new version is the expanded
- * row's version center's job (#133). The current version is marked
+ * can never be submitted; installing a new version is the Add a tool
+ * section's job (#178). The current version is marked
  * (`aria-current`) and disabled in the menu, since re-selecting it
  * would be a no-op. Rendered through the shared FloatingMenu primitive,
  * so the menu portals out of the table's scroller and follows the
@@ -841,7 +761,7 @@ function UseVersionCell({ row, disabled, versions, onUse }: UseVersionCellProps)
   // menu would open as an all-disabled list — a reachable control that
   // can do nothing (ui-ux-rules no-op rule). Render the version as a
   // disabled trigger whose Tooltip teaches why; installing another
-  // version is the expanded row's version center's job (#133).
+  // version is the Add a tool section's job (#178).
   if (versions.length <= 1) {
     return (
       <Tooltip text={t(I18N_KEYS.tools.tooltip.singleVersion)}>
@@ -955,247 +875,6 @@ function RowActions({
         {t(I18N_KEYS.tools.actions.unuse)}
       </Button>
     </span>
-  );
-}
-
-// ---------- Add-tool entry (issue #134) ----------
-
-/** Suggestions shown at once under the registry search box. */
-const ADD_TOOL_SUGGESTION_CAP = 10;
-
-interface AddToolEntryProps {
-  /** True while a foreground command runs; locks only the Use submit
-   *  (run-locking, issue #135) — drafting the search/version inputs
-   *  never locks. */
-  disabled: boolean;
-  /** Dispatch `mise use [-g] <tool>@<version>` through the panel. */
-  onUse: (tool: string, version: string) => void;
-}
-
-/**
- * The single add-tool entry at the top of the Tools page (issue #134):
- * a search box autocompleting from `mise registry --json` (tool names +
- * descriptions), a version field defaulting to `latest`, and one
- * primary Use action that runs `mise use <tool>@<version>` — install
- * and activate in one step. Free text stays submittable: a
- * `backend:name` the registry does not list (e.g. `npm:prettier`) is a
- * valid mise tool spec.
- *
- * The suggestion list is a combobox listbox, not a menu: focus stays in
- * the input while Arrow keys move the active option, so neither shared
- * floating primitive fits (FloatingMenu implements the Menu Button
- * pattern and moves focus into the menu; Tooltip is non-interactive).
- * It renders inline-absolute inside the entry (no portal needed — the
- * list never leaves its own container), carries the shared popover
- * surface + `--z-popover`, and closes on outside pointer-down judged
- * against the whole entry root.
- */
-function AddToolEntry({ disabled, onUse }: AddToolEntryProps) {
-  const { t } = useTranslation();
-  const registry = useParsedRegistry();
-  const [query, setQuery] = useState("");
-  const [version, setVersion] = useState("latest");
-  const [open, setOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const listId = useId();
-
-  const matches = useMemo<RegistryItem[]>(() => {
-    const q = query.trim().toLowerCase();
-    if (q.length === 0) return [];
-    // Tiered ranking (issue #149): an exact or prefix short-name match
-    // always outranks a description hit, so typing "java" puts `java`
-    // first instead of `ant` (alphabetically first via its "Java
-    // library" description). Ties keep the registry's own order.
-    const tier = (r: RegistryItem): number => {
-      const short = r.short.toLowerCase();
-      if (short === q) return 0;
-      if (short.startsWith(q)) return 1;
-      if ((r.aliases ?? []).some((a) => a.toLowerCase().includes(q))) return 2;
-      return 3;
-    };
-    return (registry.data ?? [])
-      .filter((r) =>
-        [r.short, r.description ?? "", ...(r.aliases ?? [])]
-          .join("\n")
-          .toLowerCase()
-          .includes(q),
-      )
-      .sort((a, b) => tier(a) - tier(b));
-  }, [registry.data, query]);
-  const suggestions = matches.slice(0, ADD_TOOL_SUGGESTION_CAP);
-  // The cap truncates silently without a hint (beta11 3-h m5) — the
-  // tail row below says more matches exist.
-  const moreMatches = matches.length > suggestions.length;
-
-  // Close on outside pointer-down. The list renders inside the entry
-  // root (no portal), so a single contains() check covers input + list.
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open]);
-
-  const tool = query.trim();
-  const canSubmit = tool.length > 0 && !disabled;
-
-  const onSubmit = () => {
-    if (!canSubmit) return;
-    setOpen(false);
-    // An empty version means latest — `mise use <tool>@latest`.
-    onUse(tool, version.trim() || "latest");
-  };
-
-  const pickSuggestion = (item: RegistryItem) => {
-    setQuery(item.short);
-    setOpen(false);
-  };
-
-  return (
-    <div className={styles.installForm} ref={rootRef} data-testid="tools-add-tool">
-      <h2 className={styles.installFormTitle}>
-        {t(I18N_KEYS.tools.addTool.title)}
-      </h2>
-      <KeyForm
-        className={styles.installFormRow}
-        onSubmit={onSubmit}
-        onRevert={() => {
-          setQuery("");
-          setVersion("latest");
-          setOpen(false);
-        }}
-        submitDisabled={!canSubmit}
-      >
-        <div className={styles.addToolSearch}>
-          <input
-            type="text"
-            className={`${styles.input} ${styles.addToolSearchInput}`}
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setOpen(true);
-              setActiveIndex(0);
-            }}
-            onFocus={() => setOpen(true)}
-            onKeyDown={(e) => {
-              if (!open || suggestions.length === 0) return;
-              if (e.key === "ArrowDown") {
-                e.preventDefault();
-                setActiveIndex((i) => (i + 1) % suggestions.length);
-              } else if (e.key === "ArrowUp") {
-                e.preventDefault();
-                setActiveIndex((i) => (i - 1 + suggestions.length) % suggestions.length);
-              } else if (e.key === "Enter") {
-                const exact = suggestions.find(
-                  (s) => s.short.toLowerCase() === query.trim().toLowerCase(),
-                );
-                if (exact && !disabled) {
-                  // The query is already an exact tool name — submit
-                  // it directly instead of picking the suggestion and
-                  // requiring a second Enter (issue #149).
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setQuery(exact.short);
-                  setOpen(false);
-                  // An empty version means latest — `mise use <tool>@latest`.
-                  onUse(exact.short, version.trim() || "latest");
-                } else {
-                  // Enter with an open list picks the active suggestion
-                  // instead of submitting; the form's own Enter handles
-                  // the closed-list submit.
-                  e.preventDefault();
-                  e.stopPropagation();
-                  pickSuggestion(suggestions[activeIndex]);
-                }
-              } else if (e.key === "Escape") {
-                // Escape closes the list first; KeyForm's revert clears
-                // the draft on the next press.
-                e.stopPropagation();
-                setOpen(false);
-              }
-            }}
-            placeholder={t(I18N_KEYS.tools.addTool.searchPlaceholder)}
-            aria-label={t(I18N_KEYS.tools.addTool.searchPlaceholder)}
-            role="combobox"
-            aria-expanded={open && suggestions.length > 0}
-            aria-controls={listId}
-            aria-activedescendant={
-              open && suggestions.length > 0 ? `${listId}-${activeIndex}` : undefined
-            }
-            aria-autocomplete="list"
-            data-testid="tools-add-tool-search"
-            spellCheck={false}
-            autoComplete="off"
-          />
-          {open && query.trim().length > 0 && (
-            <div className={styles.addToolList} role="listbox" id={listId}>
-              {suggestions.map((item, i) => (
-                <button
-                  key={item.short}
-                  type="button"
-                  id={`${listId}-${i}`}
-                  role="option"
-                  aria-selected={i === activeIndex}
-                  className={
-                    i === activeIndex ? styles.addToolOptionActive : styles.addToolOption
-                  }
-                  // pointerdown picks before the outside-close listener
-                  // or the input's blur can unmount the list.
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    pickSuggestion(item);
-                  }}
-                  onMouseEnter={() => setActiveIndex(i)}
-                  data-testid={`tools-add-tool-option-${item.short}`}
-                >
-                  <span className={styles.addToolOptionName}>{item.short}</span>
-                  {item.description && (
-                    <span className={styles.addToolOptionDescription}>
-                      {item.description}
-                    </span>
-                  )}
-                </button>
-              ))}
-              {suggestions.length === 0 && (
-                <p className={styles.addToolEmpty}>
-                  {t(I18N_KEYS.tools.addTool.noMatches)}
-                </p>
-              )}
-              {moreMatches && (
-                <p className={styles.addToolEmpty}>
-                  {t(I18N_KEYS.tools.addTool.moreMatches)}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-        <input
-          type="text"
-          className={styles.input}
-          value={version}
-          onChange={(e) => setVersion(e.target.value)}
-          placeholder={t(I18N_KEYS.tools.addTool.versionPlaceholder)}
-          aria-label={t(I18N_KEYS.tools.columns.version)}
-          data-testid="tools-add-tool-version"
-          spellCheck={false}
-          autoComplete="off"
-        />
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={onSubmit}
-          disabled={!canSubmit}
-          data-testid="tools-add-tool-use"
-        >
-          {t(I18N_KEYS.tools.actions.use)}
-        </Button>
-      </KeyForm>
-    </div>
   );
 }
 

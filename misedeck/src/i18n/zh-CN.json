@@ -92,11 +92,11 @@
     },
     "tooltip": {
       "switchVersion": "点击切换版本",
-      "singleVersion": "只安装了一个版本——展开该行，在版本中心安装其他版本后即可切换。"
+      "singleVersion": "只安装了一个版本——在下方「添加工具」中找到该工具，安装其他版本后即可切换。"
     },
     "empty": {
       "title": "尚未安装任何工具",
-      "body": "在上方搜索并「使用」你的第一个工具。"
+      "body": "在下方「添加工具」中搜索并安装你的第一个工具。"
     },
     "missing": {
       "title": "工具列表不可用",
@@ -118,9 +118,22 @@
     "addTool": {
       "title": "添加工具",
       "searchPlaceholder": "搜索工具（如 node）",
-      "versionPlaceholder": "latest",
       "noMatches": "没有匹配项——仍可直接输入 backend:name（如 npm:prettier）。",
-      "moreMatches": "还有更多匹配——继续输入以缩小范围。"
+      "moreMatches": "还有更多匹配——继续输入以缩小范围。",
+      "inUseTitle": "在用",
+      "installedTitle": "已安装",
+      "notInstalledTitle": "未安装",
+      "activeBadge": "活动",
+      "created": "发布时间",
+      "filterPlaceholder": "过滤版本…",
+      "retryButton": "重试",
+      "activeUninstallTooltip": "先切换到其他版本才能删除此版本",
+      "emptyInUseTitle": "当前目录未启用",
+      "emptyInUseBody": "{{tool}} 在当前目录未启用，可在下方选择一个版本在此使用。",
+      "emptyInstalledTitle": "没有已安装版本",
+      "emptyInstalledBody": "除在用版本外，`mise ls {{tool}}` 没有报告 {{tool}} 的其他已安装版本。",
+      "emptyAvailableTitle": "没有可安装版本",
+      "emptyAvailableBody": "`mise ls-remote {{tool}}` 没有返回任何版本。"
     },
     "linkForm": {
       "title": "链接工具",
@@ -144,20 +157,6 @@
         "jumpTo": "跳转到",
         "jump": "前往"
       }
-    },
-    "versionCenter": {
-      "installedTitle": "已安装版本",
-      "availableTitle": "可安装版本",
-      "activeBadge": "活动",
-      "installedBadge": "已安装",
-      "created": "发布时间",
-      "filterPlaceholder": "过滤版本…",
-      "emptyInstalledTitle": "没有已安装版本",
-      "emptyInstalledBody": "`mise ls {{tool}}` 没有报告 {{tool}} 的任何已安装版本。",
-      "emptyAvailableTitle": "没有可安装版本",
-      "emptyAvailableBody": "`mise ls-remote {{tool}}` 没有返回任何版本。",
-      "activeUninstallTooltip": "先切换到其他版本才能删除此版本",
-      "retryButton": "重试"
     },
     "confirm": {
       "uninstall": {
