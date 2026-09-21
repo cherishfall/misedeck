@@ -4,7 +4,7 @@ This document is a continuation marker between autonomous driver sessions.
 
 ## CURRENT STATE (2026-09-22 — beta13 RELEASED, beta12 batch fully closed: #176–#186)
 
-**v1.0.0-beta.13 released** (tag `v1.0.0-beta.13` pushed + verified on remote, bump commit `66df64c`, release run `35630355246`). Carries the complete beta12 feedback batch: SPEC #175 with all 11 tickets closed, every one `npm run ci` green (cargo green where Rust touched), **NOT visually verified — owner verifies manually**.
+**v1.0.0-beta.13 released** (tag `v1.0.0-beta.13` pushed + verified on remote, bump commit `66df64c`, release run `35630355246` — **success, all 6 assets on the GitHub Pre-release**). Carries the complete beta12 feedback batch: SPEC #175 with all 11 tickets closed, every one `npm run ci` green (cargo green where Rust touched), **NOT visually verified — owner verifies manually**.
 
 | Ticket | Commit | Scope |
 | --- | --- | --- |
