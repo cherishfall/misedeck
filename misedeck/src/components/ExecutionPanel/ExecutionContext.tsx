@@ -33,6 +33,13 @@ interface ExecutionContextValue {
   activeRunId: string | null;
   /** Switch the panel's transcript to the given run. */
   selectRun: (id: string) => void;
+  /** Remove a finished run from the switcher history (#180). Running runs
+   *  are protected — the panel is the only surface for an in-flight
+   *  command (ADR-0005). */
+  removeRun: (id: string) => void;
+  /** Clear every finished run from the switcher history (#180); running
+   *  runs always survive. */
+  clearRuns: () => void;
   /** Run an arbitrary `mise <args>` command and return its structured
    *  result, so read queries can cache what the panel already ran
    *  instead of invoking mise again (ADR-0005). Never rejects because
@@ -65,6 +72,8 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
     runs,
     activeRunId,
     selectRun,
+    removeRun,
+    clearRuns,
     run,
     runInstall,
     runSelfUpdate,
@@ -79,6 +88,8 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
       runs,
       activeRunId,
       selectRun,
+      removeRun,
+      clearRuns,
       run,
       runInstall,
       runSelfUpdate,
@@ -92,6 +103,8 @@ export function ExecutionProvider({ children }: { children: ReactNode }) {
       runs,
       activeRunId,
       selectRun,
+      removeRun,
+      clearRuns,
       run,
       runInstall,
       runSelfUpdate,

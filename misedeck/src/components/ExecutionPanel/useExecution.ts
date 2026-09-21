@@ -1,5 +1,6 @@
-// useExecution — a small reducer that drives the execution panel.
-// Holds the current request, streamed lines, status, and a cancel handle.
+// useExecution — the hook that drives the execution panel.
+// Holds the current request, streamed lines, status, and a cancel handle;
+// the pure reducer behind it lives in executionState.ts.
 //
 // It is also the panel runner for the reads routed through it
 // (ADR-0005: the `ls` family, `ls-remote`, and `settings ls` — outlier
@@ -23,18 +24,21 @@ import { Channel, invoke } from "@tauri-apps/api/core";
 import type { AppError, JsonResult } from "../../types/tauri";
 import { isAppError } from "../../api/mise";
 import { loadPersistent, savePersistent } from "../../hooks/usePersistentState";
+import { executionReducer } from "./executionState";
+import type {
+  Action,
+  ExecutionKind,
+  ExecutionStatus,
+  LogLine,
+  RunRequest,
+} from "./executionState";
+
+// The pure state machine (runs, history cap, remove/clear lifecycle) lives
+// in `executionState.ts` next to this hook, colocated with its node:test
+// suite; this file wires it to React, the IPC channel, and persistence.
 
 /** localStorage key for the panel's persisted open state (issue #108). */
 const PANEL_OPEN_KEY = "misedeck.panelOpen.v1";
-
-/** Most finished runs to keep in history so an idle app does not grow
- *  logs forever (issue #138). Running runs are never pruned. */
-const MAX_FINISHED_RUNS = 5;
-
-export interface RunRequest {
-  cwd: string | null;
-  args: string[];
-}
 
 /** Per-call modifiers for the runner (ADR-0005). */
 export interface RunOptions {
@@ -49,37 +53,6 @@ export interface RunOptions {
    * and is transcribed in its own run entry.
    */
   background?: boolean;
-}
-
-export type LogLine = {
-  stream: "stdout" | "stderr";
-  text: string;
-};
-
-export type ExecutionStatus = "idle" | "running" | "ok" | "failed" | "cancelled";
-
-/** What the panel is currently running. `mise` runs an arbitrary mise
- *  command; `install` runs the official install script; `selfUpdate`
- *  runs `mise self-update`. The reducer + state are the same — only
- *  the IPC command and the displayed echo differ. */
-export type ExecutionKind = "mise" | "install" | "selfUpdate";
-
-/** A single run, isolated from every other run (issue #138). A
- *  foreground run owns its own transcript; a background run never
- *  becomes a `RunEntry`. */
-export interface RunEntry {
-  id: string;
-  kind: ExecutionKind;
-  request: RunRequest;
-  lines: LogLine[];
-  status: ExecutionStatus;
-  exitCode: number | null;
-  durationMs: number;
-  error: AppError | null;
-  /** Post-update version string when `kind === "selfUpdate"`. */
-  newVersion: string | null;
-  /** Epoch ms when the run started, for history ordering. */
-  startedAt: number;
 }
 
 /** Projected view of the active run, kept so existing consumers
@@ -108,12 +81,6 @@ export interface ExecutionState {
   isOpen: boolean;
 }
 
-interface ExecState {
-  runs: RunEntry[];
-  activeRunId: string | null;
-  isOpen: boolean;
-}
-
 const idleState: ExecutionState = {
   status: "idle",
   kind: "mise",
@@ -125,126 +92,6 @@ const idleState: ExecutionState = {
   newVersion: null,
   isOpen: false,
 };
-
-function pruneRuns(runs: RunEntry[], maxFinished: number): RunEntry[] {
-  const finished = runs.filter((r) => r.status !== "running");
-  if (finished.length <= maxFinished) return runs;
-  const drop = new Set(
-    finished.slice(0, finished.length - maxFinished).map((r) => r.id),
-  );
-  return runs.filter((r) => !drop.has(r.id));
-}
-
-type Action =
-  | { type: "start"; id: string; kind: ExecutionKind; request: RunRequest }
-  | { type: "line"; id: string; stream: "stdout" | "stderr"; text: string }
-  | { type: "exit"; id: string; exitCode: number; durationMs: number }
-  | { type: "complete"; id: string; newVersion: string | null }
-  | { type: "fail"; id: string; error: AppError }
-  | { type: "cancel"; id: string }
-  | { type: "select"; id: string }
-  | { type: "close" }
-  | { type: "open" };
-
-function reducer(state: ExecState, action: Action): ExecState {
-  switch (action.type) {
-    case "start":
-      return {
-        ...state,
-        runs: pruneRuns(
-          [
-            ...state.runs,
-            {
-              id: action.id,
-              kind: action.kind,
-              request: action.request,
-              lines: [],
-              status: "running",
-              exitCode: null,
-              durationMs: 0,
-              error: null,
-              newVersion: null,
-              startedAt: Date.now(),
-            },
-          ],
-          MAX_FINISHED_RUNS,
-        ),
-        // A new foreground run becomes the active one and claims the
-        // panel's transcript; it never resets another entry's lines.
-        activeRunId: action.id,
-        // Preserve the current visibility rather than forcing the panel
-        // open: a command starting must not yank the user's attention. A
-        // closed panel stays closed (the reopen affordance surfaces the
-        // activity); an open panel stays open so a user mid-read isn't
-        // interrupted. Failure is the only thing that may open a closed
-        // panel — see the `exit`/`fail` cases below.
-        isOpen: state.isOpen,
-      };
-    case "line":
-      return {
-        ...state,
-        runs: state.runs.map((r) =>
-          r.id === action.id
-            ? { ...r, lines: [...r.lines, { stream: action.stream, text: action.text }] }
-            : r,
-        ),
-      };
-    case "exit":
-      return {
-        ...state,
-        runs: state.runs.map((r) =>
-          r.id === action.id
-            ? {
-                ...r,
-                status: action.exitCode === 0 ? "ok" : "failed",
-                exitCode: action.exitCode,
-                durationMs: action.durationMs,
-              }
-            : r,
-        ),
-        // Auto-open once on failure if the panel is closed, so the error
-        // and its logs are immediately visible (failure exception to the
-        // "no auto-open on start" rule). Success never auto-opens, so we
-        // keep whatever visibility the panel already had. Because a single
-        // run produces exactly one failed-state transition, this opens the
-        // panel at most once per run and cannot re-open a panel the user
-        // dismissed after seeing the failure — there is no re-open loop.
-        isOpen: action.exitCode === 0 ? state.isOpen : true,
-      };
-    case "complete":
-      return {
-        ...state,
-        runs: state.runs.map((r) =>
-          r.id === action.id ? { ...r, newVersion: action.newVersion } : r,
-        ),
-      };
-    case "fail":
-      return {
-        ...state,
-        runs: state.runs.map((r) =>
-          r.id === action.id ? { ...r, status: "failed", error: action.error } : r,
-        ),
-        // A failed run whose panel is closed pops open so the error is
-        // visible; an already-open panel (or one the user closed) is left
-        // untouched. A run that fails via this path issues a single `fail`
-        // action, so it can never fight the user with a loop.
-        isOpen: true,
-      };
-    case "cancel":
-      return {
-        ...state,
-        runs: state.runs.map((r) =>
-          r.id === action.id ? { ...r, status: "cancelled" } : r,
-        ),
-      };
-    case "select":
-      return { ...state, activeRunId: action.id };
-    case "close":
-      return { ...state, isOpen: false };
-    case "open":
-      return { ...state, isOpen: true };
-  }
-}
 
 /** The captured result of a run, mirroring Rust's `RunOutcome`. */
 export interface RunOutcome {
@@ -360,7 +207,7 @@ function discardingChannel(): Channel<unknown> {
 }
 
 export function useExecution() {
-  const [state, dispatch] = useReducer(reducer, undefined, () => ({
+  const [state, dispatch] = useReducer(executionReducer, undefined, () => ({
     runs: [],
     activeRunId: null,
     isOpen: loadPersistent(PANEL_OPEN_KEY, false),
@@ -516,6 +363,22 @@ export function useExecution() {
     dispatch({ type: "select", id });
   }, []);
 
+  /** Remove a finished run from the switcher history (#180). Running runs
+   *  are protected — the panel is the only surface for an in-flight
+   *  command (ADR-0005) — so this is a no-op for them. Removing the
+   *  active run falls back to the most recent remaining run, or the idle
+   *  empty state when history is empty. */
+  const removeRun = useCallback((id: string) => {
+    dispatch({ type: "removeRun", id });
+  }, []);
+
+  /** Clear every finished run from the switcher history (#180). Running
+   *  runs always survive; if the active run was finished, the selection
+   *  falls back to the most recent running run, or the idle empty state. */
+  const clearRuns = useCallback(() => {
+    dispatch({ type: "clearRuns" });
+  }, []);
+
   /** Hide the panel without clearing its history. The next run does NOT
    *  re-open it automatically — `start` preserves whatever visibility the
    *  panel already had. It only pops open if that run fails while closed. */
@@ -549,6 +412,8 @@ export function useExecution() {
     runs: state.runs,
     activeRunId: state.activeRunId,
     selectRun,
+    removeRun,
+    clearRuns,
     run,
     runInstall,
     runSelfUpdate,
@@ -558,3 +423,13 @@ export function useExecution() {
     openPanel,
   };
 }
+
+// Re-export the state-machine types moved to executionState.ts so existing
+// consumers importing from "./useExecution" keep compiling.
+export type {
+  ExecutionKind,
+  ExecutionStatus,
+  LogLine,
+  RunEntry,
+  RunRequest,
+} from "./executionState";

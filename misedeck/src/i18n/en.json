@@ -588,7 +588,8 @@
     "reopen": "Execution",
     "reopenRunning": "Execution · running",
     "runsRunning": "{{count}} running",
-    "runsRecent": "{{count}} recent"
+    "runsRecent": "{{count}} recent",
+    "closeRun": "Close"
   },
   "tooltip": {
     "copy": "Copy"

@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { I18N_KEYS } from "../../i18n/keys";
 import { usePersistentState } from "../../hooks/usePersistentState";
 import { Tooltip } from "../Tooltip";
+import { IconButton } from "../IconButton/IconButton";
 import { writeClipboard } from "../../utils/clipboard";
 import { useExecutionContext } from "./ExecutionContext";
 import type { ExecutionStatus } from "./useExecution";
@@ -93,7 +94,8 @@ function runTone(status: ExecutionStatus): "beam" | "ok" | "fail" | "dim" {
 
 export function ExecutionPanel() {
   const { t } = useTranslation();
-  const { state, runs, activeRunId, selectRun, cancel, dismiss } = useExecutionContext();
+  const { state, runs, activeRunId, selectRun, removeRun, clearRuns, cancel, dismiss } =
+    useExecutionContext();
   const logRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
   // Transient "Copied" / "Copy failed" acknowledgement for the copy
@@ -182,6 +184,7 @@ export function ExecutionPanel() {
 
   const showSwitcher = runs.length > 1;
   const runningCount = runs.filter((r) => r.status === "running").length;
+  const finishedCount = runs.length - runningCount;
 
   return (
     <div className={styles.deck}>
@@ -204,23 +207,45 @@ export function ExecutionPanel() {
             </span>
             {runs.map((r) => {
               const echo = commandEcho(r.kind, r.request.cwd, r.request.args);
+              const finished = r.status !== "running";
               return (
-                <button
-                  key={r.id}
-                  type="button"
-                  role="tab"
-                  className={styles.runChip}
-                  data-active={r.id === activeRunId}
-                  aria-selected={r.id === activeRunId}
-                  onClick={() => selectRun(r.id)}
-                  title={echo}
-                  data-testid="execution-run-chip"
-                >
-                  <span className={styles.statusDot} data-tone={runTone(r.status)} />
-                  <span className={styles.runChipLabel}>{echo}</span>
-                </button>
+                <span key={r.id} className={styles.runChipWrap}>
+                  <button
+                    type="button"
+                    role="tab"
+                    className={styles.runChip}
+                    data-active={r.id === activeRunId}
+                    aria-selected={r.id === activeRunId}
+                    onClick={() => selectRun(r.id)}
+                    title={echo}
+                    data-testid="execution-run-chip"
+                  >
+                    <span className={styles.statusDot} data-tone={runTone(r.status)} />
+                    <span className={styles.runChipLabel}>{echo}</span>
+                  </button>
+                  {finished && (
+                    <IconButton
+                      aria-label={t(I18N_KEYS.execution.closeRun)}
+                      size="sm"
+                      onClick={() => removeRun(r.id)}
+                      data-testid="execution-run-close"
+                    >
+                      ×
+                    </IconButton>
+                  )}
+                </span>
               );
             })}
+            {finishedCount > 0 && (
+              <button
+                type="button"
+                className={styles.actionBtn}
+                onClick={clearRuns}
+                data-testid="execution-clear-finished"
+              >
+                {t(I18N_KEYS.common.clear)}
+              </button>
+            )}
           </div>
         )}
         <div className={styles.header}>

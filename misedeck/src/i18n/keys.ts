@@ -85,6 +85,8 @@ export const I18N_KEYS = {
     reopenRunning: "execution.reopenRunning",
     runsRunning: "execution.runsRunning",
     runsRecent: "execution.runsRecent",
+    /** Close one finished run entry from the switcher (issue #180). */
+    closeRun: "execution.closeRun",
   },
   tooltip: {
     copy: "tooltip.copy",

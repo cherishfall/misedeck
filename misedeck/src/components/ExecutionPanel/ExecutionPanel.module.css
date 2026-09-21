@@ -52,7 +52,9 @@
 
 /* Compact run switcher (issue #138): shows how many commands are in
  * flight and lets the user switch the transcribed run. Reuses the panel's
- * existing status-dot tone and tokens — no new visual language. */
+ * existing status-dot tone and tokens — no new visual language. Finished
+ * runs also carry a single-entry close and the row a clear-finished
+ * action (issue #180). */
 .switcher {
   display: flex;
   align-items: center;
@@ -63,6 +65,12 @@
 .switcherCount {
   color: var(--dim);
   font-size: var(--size-data);
+}
+
+.runChipWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .runChip {
