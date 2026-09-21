@@ -270,7 +270,7 @@ export function ExecutionPanel() {
                 title={t(I18N_KEYS.execution.copyHint)}
                 data-testid="execution-copy-command"
               >
-                {copied ? t(I18N_KEYS.execution.copied) : t(I18N_KEYS.execution.copy)}
+                {copied ? t(I18N_KEYS.common.copied) : t(I18N_KEYS.execution.copy)}
               </button>
             )}
             {state.status === "running" && (

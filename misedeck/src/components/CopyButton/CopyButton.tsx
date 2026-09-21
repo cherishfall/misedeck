@@ -48,9 +48,9 @@ export function CopyButton({ text, className }: CopyButtonProps) {
       type="button"
       className={`${styles.copy}${className ? ` ${className}` : ""}`}
       onClick={() => void onCopy()}
-      aria-label={copied ? t(I18N_KEYS.tooltip.copied) : t(I18N_KEYS.tooltip.copy)}
+      aria-label={copied ? t(I18N_KEYS.common.copied) : t(I18N_KEYS.tooltip.copy)}
     >
-      {copied ? t(I18N_KEYS.tooltip.copied) : t(I18N_KEYS.tooltip.copy)}
+      {copied ? t(I18N_KEYS.common.copied) : t(I18N_KEYS.tooltip.copy)}
     </button>
   );
 }

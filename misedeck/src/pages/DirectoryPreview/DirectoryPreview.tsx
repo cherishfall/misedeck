@@ -49,6 +49,7 @@ import {
   useLockfile,
 } from "../../hooks/useToolsList";
 import { isPathUnder } from "../../utils/paths";
+import { resolveAppErrorMessage } from "../../utils/appError";
 import {
   Badge,
   Button,
@@ -448,9 +449,13 @@ export function DirectoryPreview() {
             <div className={styles.errorState}>
               <div className={styles.errorLabel}>{t(I18N_KEYS.preview.lockfile.errorTitle)}</div>
               <p className={styles.errorBody}>{t(I18N_KEYS.preview.lockfile.errorBody)}</p>
-              {lockfileError.stderr && (
-                <pre className={styles.errorStderr}>{lockfileError.stderr}</pre>
-              )}
+              {/* `read_mise_lockfile` is a plain file read: stderr is
+                  always empty, so the only real signal is `message`
+                  (e.g. "Permission denied") — resolved, never dropped
+                  (issue #171). */}
+              <pre className={styles.errorStderr}>
+                {resolveAppErrorMessage(lockfileError.message, t)}
+              </pre>
             </div>
           )}
           {!lockfileError && lockfileContent === "" && (

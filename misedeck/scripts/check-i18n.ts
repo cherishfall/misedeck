@@ -21,6 +21,18 @@
 // so the uninstall dialog rendered a literal "{tool}". Dynamically
 // keyed calls are skipped on purpose: a guard that false-positives is
 // a guard that gets ignored.
+//
+// Guard 3 — dead-key reverse check (issue #171): the parity check
+// proves keys.ts ⊆ json, but the opposite direction — a json key that
+// nothing references — had no guard, so dead keys (e.g. the deleted
+// `doctor.status.error`) survived every review. Guard 3 requires every
+// json leaf key to be referenced in src/ outside keys.ts, either as a
+// quoted string literal, as an `I18N_KEYS.a.b.c` property access, or
+// under a dynamically indexed prefix (`I18N_KEYS.env.source[row]`).
+// i18next plural forms (`_one` / `_other` suffixes) count as used when
+// their base key is used. This is a text scan, not a parser; when it
+// reports a key, either delete the key or add the genuine dynamic
+// usage to the whitelist below with a reason.
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -387,13 +399,75 @@ function checkInterpolation(): number {
   return 0;
 }
 
+// ---------------------------------------------------------------------------
+// Guard 3 — dead-key reverse check (issue #171)
+// ---------------------------------------------------------------------------
+
+const KEYS_TS = join(I18N_DIR, "keys.ts");
+
+/** i18next CLDR plural suffixes; a suffixed key is used when its base is. */
+const PLURAL_SUFFIX = /_(zero|one|two|few|many|other)$/;
+
+function checkDeadKeys(): number {
+  const known = new Set<string>(walkKeys(loadJson(EN_FILE)));
+
+  const usedKeys = new Set<string>();
+  const dynamicPrefixes = new Set<string>();
+
+  const propAccess = /\bI18N_KEYS\.([a-zA-Z][a-zA-Z0-9_]*(?:\.[a-zA-Z][a-zA-Z0-9_]*)*)/g;
+  const dynamicIndex = /\bI18N_KEYS\.([a-zA-Z][a-zA-Z0-9_]*(?:\.[a-zA-Z][a-zA-Z0-9_]*)*)\s*\[/g;
+
+  for (const file of listFiles(SRC_DIR, [".ts", ".tsx"])) {
+    if (file === KEYS_TS) continue; // the catalog definition is not a usage
+    const text = stripComments(readFileSync(file, "utf8"));
+    for (const match of text.matchAll(propAccess)) {
+      usedKeys.add(match[1]!);
+    }
+    for (const match of text.matchAll(dynamicIndex)) {
+      dynamicPrefixes.add(match[1]!);
+    }
+    for (const key of known) {
+      if (text.includes(`"${key}"`) || text.includes(`'${key}'`)) {
+        usedKeys.add(key);
+      }
+    }
+  }
+
+  const isUsed = (key: string): boolean => {
+    if (usedKeys.has(key)) return true;
+    for (const prefix of dynamicPrefixes) {
+      if (key.startsWith(`${prefix}.`)) return true;
+    }
+    const base = key.replace(PLURAL_SUFFIX, "");
+    if (base !== key && usedKeys.has(base)) return true;
+    return false;
+  };
+
+  const dead = [...known].filter((k) => !isUsed(k)).sort();
+  if (dead.length > 0) {
+    console.error(
+      "i18n dead-key check FAILED — every json leaf key must be referenced in src/ (issue #171).",
+    );
+    for (const k of dead) console.error(`  - ${k}`);
+    console.error(
+      "\n  Delete the key (en.json + zh-CN.json + keys.ts in the same commit), or — if it" +
+        " is genuinely used through a dynamic path the scanner cannot see — whitelist the" +
+        " usage in scripts/check-i18n.ts with a reason.",
+    );
+    return 1;
+  }
+  console.log(`i18n dead-key check OK — all ${known.size} leaf key(s) are referenced.`);
+  return 0;
+}
+
 function main(): void {
   const en = loadJson(EN_FILE);
   const zh = loadJson(ZH_CN_FILE);
   const parityExit = checkParity(en, zh);
   const literalExit = checkLiteralCallSites();
   const interpolationExit = checkInterpolation();
-  process.exit(parityExit || literalExit || interpolationExit);
+  const deadKeyExit = checkDeadKeys();
+  process.exit(parityExit || literalExit || interpolationExit || deadKeyExit);
 }
 
 main();

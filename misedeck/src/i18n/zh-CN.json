@@ -1,12 +1,12 @@
 {
   "common": {
-    "ok": "确定",
     "cancel": "取消",
     "save": "保存",
     "refresh": "刷新",
     "loading": "加载中…",
     "back": "返回",
     "clear": "清除",
+    "copied": "已复制",
     "outdatedCount": "{{count}} 个工具可更新",
     "allUpToDate": "所有已安装工具均为最新版本。",
     "filter": {
@@ -240,7 +240,7 @@
       "title": "mise.lock",
       "empty": "（空文件）",
       "errorTitle": "读取 lockfile 失败",
-      "errorBody": "MiseDeck 无法读取当前目录的 mise.lock。stderr 如下所示。"
+      "errorBody": "MiseDeck 无法读取当前目录的 mise.lock。错误信息如下所示。"
     }
   },
   "env": {
@@ -439,14 +439,19 @@
     "statusLabel": "健康检查",
     "status": {
       "ok": "正常",
-      "warn": "警告",
-      "error": "错误"
+      "warn": "警告"
+    },
+    "missing": {
+      "title": "诊断不可用",
+      "body": "MiseDeck 需要 mise CLI 才能运行健康检查。请返回并安装 mise 以填充此页面。"
     },
     "summary": {
       "status": "状态",
       "shell": "Shell",
       "activated": "Shell 激活",
-      "notActivated": "未激活"
+      "activatedValue": "已激活",
+      "notActivated": "未激活",
+      "labelWithColon": "{{label}}："
     },
     "warnings": {
       "title": "警告"
@@ -571,7 +576,6 @@
     "statusCancelled": "已取消",
     "copy": "复制命令",
     "copyHint": "复制确切命令到剪贴板",
-    "copied": "已复制",
     "cancel": "取消",
     "dismiss": "关闭",
     "emptyHint": "尚未执行任何命令。",
@@ -581,14 +585,12 @@
     "runsRecent": "{{count}} 条历史"
   },
   "tooltip": {
-    "copy": "复制",
-    "copied": "已复制"
+    "copy": "复制"
   },
   "activation": {
     "openInTerminalLabel": "在终端中打开",
     "openInTerminalError": "无法在 {{path}} 打开终端。请复制命令后手动执行。",
     "openInTerminalSuccess": "已通过 {{terminal}} 在 {{path}} 打开终端。",
-    "copiedHint": "已复制",
     "bannerLabel": "Shell 激活缺失",
     "bannerBody": "你的 {{shell}} 配置文件 {{rcPath}} 中没有 `mise activate`。请在下方添加该行，以便在 shell 中使用 mise。",
     "bannerBodyUnknownShell": "MiseDeck 无法识别你的 shell（{{name}}）。请在对应 shell 的 rc 文件中添加 `mise activate <shell>` 行，以在交互式 shell 中使用 mise。",

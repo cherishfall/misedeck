@@ -20,13 +20,16 @@
 
 export const I18N_KEYS = {
   common: {
-    ok: "common.ok",
     cancel: "common.cancel",
     save: "common.save",
     refresh: "common.refresh",
     loading: "common.loading",
     back: "common.back",
     clear: "common.clear",
+    /** The transient "Copied" confirmation shown by every copy
+        affordance — one shared key (issue #171); was duplicated as
+        `execution.copied` / `tooltip.copied` / `activation.copiedHint`. */
+    copied: "common.copied",
     outdatedCount: "common.outdatedCount",
     allUpToDate: "common.allUpToDate",
     filter: {
@@ -71,7 +74,6 @@ export const I18N_KEYS = {
     statusCancelled: "execution.statusCancelled",
     copy: "execution.copy",
     copyHint: "execution.copyHint",
-    copied: "execution.copied",
     cancel: "execution.cancel",
     dismiss: "execution.dismiss",
     emptyHint: "execution.emptyHint",
@@ -82,13 +84,11 @@ export const I18N_KEYS = {
   },
   tooltip: {
     copy: "tooltip.copy",
-    copied: "tooltip.copied",
   },
   activation: {
     openInTerminalLabel: "activation.openInTerminalLabel",
     openInTerminalError: "activation.openInTerminalError",
     openInTerminalSuccess: "activation.openInTerminalSuccess",
-    copiedHint: "activation.copiedHint",
     bannerLabel: "activation.bannerLabel",
     bannerBody: "activation.bannerBody",
     bannerBodyUnknownShell: "activation.bannerBodyUnknownShell",
@@ -494,13 +494,23 @@ export const I18N_KEYS = {
     status: {
       ok: "doctor.status.ok",
       warn: "doctor.status.warn",
-      error: "doctor.status.error",
+    },
+    /** The mise-missing empty state (issue #171): "health check"
+        wording — `tools.missing.*` promises tool listing, which a
+        doctor page never does. */
+    missing: {
+      title: "doctor.missing.title",
+      body: "doctor.missing.body",
     },
     summary: {
       status: "doctor.summary.status",
       shell: "doctor.summary.shell",
       activated: "doctor.summary.activated",
+      activatedValue: "doctor.summary.activatedValue",
       notActivated: "doctor.summary.notActivated",
+      /** Label-colon format, locale-owned (issue #171) — zh uses the
+          fullwidth colon, mirroring `theme.switcherCurrent`. */
+      labelWithColon: "doctor.summary.labelWithColon",
     },
     updateNotice: {
       title: "doctor.updateNotice.title",

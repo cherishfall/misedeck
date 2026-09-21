@@ -75,7 +75,7 @@ export function ActivationBanner() {
                 data-testid="activation-banner-copy-line"
               >
                 {copied
-                  ? t(I18N_KEYS.activation.copiedHint)
+                  ? t(I18N_KEYS.common.copied)
                   : t(I18N_KEYS.activation.copyLineButton)}
               </Button>
               <Button
@@ -117,7 +117,7 @@ export function ActivationBanner() {
               data-testid="activation-banner-copy-line"
             >
               {copied
-                ? t(I18N_KEYS.activation.copiedHint)
+                ? t(I18N_KEYS.common.copied)
                 : t(I18N_KEYS.activation.copyLineButton)}
             </Button>
             <Button

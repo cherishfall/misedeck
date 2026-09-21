@@ -1,13 +1,13 @@
 {
   "common": {
-    "ok": "Ok",
     "cancel": "Cancel",
     "save": "Save",
     "refresh": "Refresh",
     "loading": "Loading…",
     "back": "Back",
     "clear": "Clear",
-    "outdatedCount": "{{count}} outdated",
+    "copied": "Copied",
+    "outdatedCount": "{{count}} tools outdated",
     "allUpToDate": "All installed tools are up to date.",
     "filter": {
       "noMatchTitle": "No matching rows",
@@ -240,7 +240,7 @@
       "title": "mise.lock",
       "empty": "(empty file)",
       "errorTitle": "Failed to read lockfile",
-      "errorBody": "MiseDeck could not read the current directory's mise.lock. Stderr is shown below."
+      "errorBody": "MiseDeck could not read the current directory's mise.lock. The error message is shown below."
     }
   },
   "env": {
@@ -439,14 +439,19 @@
     "statusLabel": "Health check",
     "status": {
       "ok": "Ok",
-      "warn": "Warn",
-      "error": "Error"
+      "warn": "Warn"
+    },
+    "missing": {
+      "title": "Doctor unavailable",
+      "body": "MiseDeck needs the mise CLI to run the health check. Go back and install mise to populate this page."
     },
     "summary": {
       "status": "Status",
       "shell": "Shell",
       "activated": "Shell activation",
-      "notActivated": "Not activated"
+      "activatedValue": "Activated",
+      "notActivated": "Not activated",
+      "labelWithColon": "{{label}}:"
     },
     "warnings": {
       "title": "Warnings"
@@ -541,7 +546,7 @@
   },
   "labels": {
     "version": "Version",
-    "binary": "Binary",
+    "binary": "Binary path",
     "latestVersion": "Latest"
   },
   "errors": {
@@ -571,7 +576,6 @@
     "statusCancelled": "cancelled",
     "copy": "Copy command",
     "copyHint": "Copy the exact command to your clipboard",
-    "copied": "Copied",
     "cancel": "Cancel",
     "dismiss": "Dismiss",
     "emptyHint": "No command has been run yet.",
@@ -581,16 +585,14 @@
     "runsRecent": "{{count}} recent"
   },
   "tooltip": {
-    "copy": "Copy",
-    "copied": "Copied"
+    "copy": "Copy"
   },
   "activation": {
     "openInTerminalLabel": "Open in terminal",
     "openInTerminalError": "Could not open a terminal at {{path}}. Copy the command and run it yourself.",
     "openInTerminalSuccess": "Opened {{terminal}} at {{path}}.",
-    "copiedHint": "Copied",
     "bannerLabel": "Shell activation missing",
-    "bannerBody": "Your {{shell}} config at {{rcPath}} does not have `mise activate`. Add the line below so mise can manage your shell's tools.",
+    "bannerBody": "Your {{shell}} config at {{rcPath}} does not have `mise activate`. Add the line below to use mise in interactive sessions.",
     "bannerBodyUnknownShell": "MiseDeck could not detect your shell ({{name}}). Add the appropriate `mise activate <shell>` line to your shell's rc file to use mise in interactive sessions.",
     "copyLineButton": "Copy the line",
     "dismissButton": "Dismiss"

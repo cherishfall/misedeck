@@ -65,8 +65,8 @@ export function DoctorPage() {
           <div className={styles.page}>
             <EmptyState
               eyebrow={t(I18N_KEYS.states.notInstalled.title)}
-              title={t(I18N_KEYS.tools.missing.title)}
-              body={t(I18N_KEYS.tools.missing.body)}
+              title={t(I18N_KEYS.doctor.missing.title)}
+              body={t(I18N_KEYS.doctor.missing.body)}
             />
           </div>
         </PageShell>
@@ -200,7 +200,7 @@ function DoctorContent({
   return (
     <>
       <section className={styles.summary}>
-        <StatusRow label={t(I18N_KEYS.doctor.summary.status)}>
+        <StatusRow label={t(I18N_KEYS.doctor.summary.status)} t={t}>
           <Badge
             variant={status.variant}
             size="inline"
@@ -210,12 +210,12 @@ function DoctorContent({
           </Badge>
         </StatusRow>
         {data.version && (
-          <StatusRow label={t(I18N_KEYS.labels.version)}>
+          <StatusRow label={t(I18N_KEYS.labels.version)} t={t}>
             <Tooltip text={data.version}><span className={styles.statusValueText}>{data.version}</span></Tooltip>
           </StatusRow>
         )}
         {data.shell?.name && (
-          <StatusRow label={t(I18N_KEYS.doctor.summary.shell)}>
+          <StatusRow label={t(I18N_KEYS.doctor.summary.shell)} t={t}>
             <Tooltip text={`${data.shell.name} ${data.shell.version ?? ""}`.trim()}>
               <span className={styles.statusValueText}>
                 {data.shell.name} {data.shell.version ?? ""}
@@ -223,12 +223,12 @@ function DoctorContent({
             </Tooltip>
           </StatusRow>
         )}
-        <StatusRow label={t(I18N_KEYS.doctor.summary.activated)}>
+        <StatusRow label={t(I18N_KEYS.doctor.summary.activated)} t={t}>
           {rcActivated === null ? (
             <span className={styles.muted}>—</span>
           ) : (
             <Badge variant={rcActivated ? "success" : "warning"} size="inline">
-              {rcActivated ? t(I18N_KEYS.common.ok) : t(I18N_KEYS.doctor.summary.notActivated)}
+              {rcActivated ? t(I18N_KEYS.doctor.summary.activatedValue) : t(I18N_KEYS.doctor.summary.notActivated)}
             </Badge>
           )}
         </StatusRow>
@@ -302,8 +302,8 @@ function doctorStatus(
   data: DoctorPayload,
   rcActivated: boolean | null,
 ): {
-  variant: "success" | "warning" | "danger";
-  dotTone: "beam" | "flare" | "breach";
+  variant: "success" | "warning";
+  dotTone: "beam" | "flare";
   labelKey: string;
 } {
   // Note: the raw-text fallback (`data.rawLines`) early-returns its own
@@ -320,18 +320,24 @@ type TFn = (key: string, options?: Record<string, unknown>) => string;
 
 /** A single `label: value` health row. The badge (or value) sits
  *  immediately after the label so its ownership is never ambiguous.
- *  The colon is part of the label (no gap between label and colon);
- *  the row's flex gap separates "label:" from the value. */
+ *  The colon is locale-owned via `doctor.summary.labelWithColon`
+ *  (ASCII `: ` in en, fullwidth `：` in zh — same precedent as
+ *  `theme.switcherCurrent`); the row's flex gap separates "label:"
+ *  from the value. */
 function StatusRow({
   label,
+  t,
   children,
 }: {
   label: string;
+  t: TFn;
   children: ReactNode;
 }) {
   return (
     <div className={styles.statusRow}>
-      <span className={styles.statusLabel}>{label}:</span>
+      <span className={styles.statusLabel}>
+        {t(I18N_KEYS.doctor.summary.labelWithColon, { label })}
+      </span>
       <span className={styles.statusValue}>{children}</span>
     </div>
   );
