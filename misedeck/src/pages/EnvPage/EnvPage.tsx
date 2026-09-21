@@ -411,7 +411,9 @@ function EnvSourceCell({ row }: { row: EnvRow }) {
   // `mise set`; a config-requested tool var CAN — `mise set`
   // overrides it. The shared Tooltip is the only hover-detail layer
   // (ui-ux-rules: layout/typography) — the badge's native `title`
-  // exception is retired (issue #154).
+  // exception is retired (issue #154). For rows with no reachable
+  // action this is the secondary contact only: the action cell's "—"
+  // carries the same reason on its own Tooltip (issue #185).
   const tooltip = !isConfigSource(row.source)
     ? row.source === "tool" && row.sourceDetail
       ? t(I18N_KEYS.env.tooltip.tool, { tool: row.sourceDetail })
@@ -478,10 +480,19 @@ function EnvRowActions({
   // Tool- and host-sourced rows are read-only: `mise set` / `mise unset`
   // can only target config-file-sourced rows, so the action cell carries
   // no buttons — a dim "—" placeholder instead of a blank cell (issue
-  // #148). Why the row is not writable is discoverable on the row's
-  // source-badge Tooltip (see EnvSourceCell).
+  // #148). The "—" itself must carry the no-action reason on its own
+  // Tooltip (issue #185; ui-ux-rules: hover on "—" must say why); the
+  // source-badge Tooltip in EnvSourceCell stays as a secondary contact.
   if (!isConfigSource(row.source)) {
-    return <span className={styles.dim}>—</span>;
+    const reason =
+      row.source === "tool" && row.sourceDetail
+        ? t(I18N_KEYS.env.tooltip.tool, { tool: row.sourceDetail })
+        : t(I18N_KEYS.env.tooltip.default);
+    return (
+      <Tooltip text={reason}>
+        <span className={styles.dim}>—</span>
+      </Tooltip>
+    );
   }
 
   // Write-scope check (issue #182): the write target is chosen by the
