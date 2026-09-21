@@ -19,9 +19,6 @@ Owner released v1.0.0-beta.12 and asked for a professional code+doc review befor
 **New in CI from this round:** dead-key guard (Guard 3 in check-i18n.ts) — json leaf keys must be referenced from src. Whitelist patterns: `I18N_KEYS.a.b` static access, dynamic member-access prefixes, `_one/_other` plural bases, KNOWN_MESSAGE_KEYS.
 
 **Flagged on issues, not ticketed (candidates for next cycle):**
-- #169 agent: `doctor.toolset.emptyBody` and `tasks.editForm.dependsHelp` — same class as the fixed hint strings (adjacent truthfulness).
-- #170: `mise tasks add` upstream shape means multi-line run arrays can never be edited losslessly in GUI — the disable+confirm is a floor, not a fix; revisit if upstream gains a structured edit path.
-- Deliberately deferred (owner-decision class): tools row unuse/uninstall zh vocabulary crossing (`卸载`↔Unuse vs `删除此版本`↔Uninstall) — touches ADR-0008's verb table, needs owner ruling.
 
 **Owner's next moves:** (1) visual verification now covers beta11 batch (#139 SPEC) **plus** this review round — notable new eyeball items: DirectoryIndicator button migration + order (#169), Env rename-overwrite dialog + Tasks flatten dialog (#170), VersionCenter retry button (#172), Tasks description-column hiding (#169), Global-mode hints (#169); (2) close #139 when satisfied; (3) beta.13 release decision (procedure below; ci.yml now runs 2 more steps).
 
