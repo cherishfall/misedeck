@@ -278,7 +278,7 @@
     "addButton": "Add",
     "editButton": "Edit",
     "removeButton": "Remove",
-    "namePlaceholder": "Key (UPPER_SNAKE)",
+    "namePlaceholder": "Key",
     "valuePlaceholder": "value",
     "guard": {
       "untrustedBody": "Trust this directory before mutating its env vars."

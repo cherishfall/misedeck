@@ -278,7 +278,7 @@
     "addButton": "添加",
     "editButton": "编辑",
     "removeButton": "移除",
-    "namePlaceholder": "变量名（大写下划线）",
+    "namePlaceholder": "变量名",
     "valuePlaceholder": "值",
     "guard": {
       "untrustedBody": "在修改此目录的环境变量之前，请先信任它。"
