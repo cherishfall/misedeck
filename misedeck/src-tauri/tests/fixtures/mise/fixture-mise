@@ -12,10 +12,12 @@
 #       exit_code             ← integer exit code
 #
 # The default slug is the argv joined by `-` (e.g. argv `version --json` →
-# slug `version---json`). Tests can override the slug with the
-# FIXTURE_MISE_SLUG environment variable so the same argv can drive
-# multiple scenarios (success, too-old, parse-failed, command-failed)
-# without duplicating the script.
+# slug `version---json`), after stripping a leading `-C <dir>` pair — the
+# runner always prepends the directory context (issue #179), and the
+# fixture dirs are named by payload, not by context. Tests can override
+# the slug with the FIXTURE_MISE_SLUG environment variable so the same
+# argv can drive multiple scenarios (success, too-old, parse-failed,
+# command-failed) without duplicating the script.
 
 set -u
 
@@ -24,6 +26,11 @@ FIXTURE_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [[ -n "${FIXTURE_MISE_SLUG:-}" ]]; then
   SLUG="$FIXTURE_MISE_SLUG"
 else
+  # Drop the runner's leading `-C <dir>` (always present since #179)
+  # before deriving the slug from the payload argv.
+  if [[ "${1:-}" == "-C" ]]; then
+    shift 2
+  fi
   SLUG="$(
     IFS=-
     echo "$*"

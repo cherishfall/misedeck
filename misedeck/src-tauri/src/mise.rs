@@ -193,8 +193,11 @@ pub enum RunEvent {
     },
 }
 
-/// A request to run the mise CLI. `cwd` becomes `-C <dir>`; `args` is the
-/// rest of the argv passed verbatim.
+/// A request to run the mise CLI. `cwd` selects the resolution context:
+/// `Some(dir)` is Directory mode and becomes `-C <dir>`; `None` is Global
+/// mode and becomes `-C $HOME` — mise resolves from the user's home
+/// directory either way, never from the process cwd (issue #179). `args`
+/// is the rest of the argv passed verbatim.
 #[derive(Debug, Clone)]
 pub struct RunRequest {
     pub cwd: Option<PathBuf>,
@@ -257,6 +260,25 @@ pub fn validate_run_args(args: &[String]) -> Result<(), AppError> {
     Ok(())
 }
 
+/// Resolve the `-C` anchor for a run (issue #179). Directory mode
+/// (`Some`) anchors at the given directory; Global mode (`None`)
+/// anchors at the user's home directory — the same resolution as
+/// running mise in `$HOME` — so a dev process cwd on a project
+/// directory can never leak project config into Global mode. A Global
+/// run without a resolvable home is an error: silently falling back
+/// to the process cwd would reintroduce the leak.
+pub fn resolve_cwd_anchor(cwd: Option<&Path>) -> Result<PathBuf, AppError> {
+    match cwd {
+        Some(dir) => Ok(dir.to_path_buf()),
+        None => dirs::home_dir().ok_or_else(|| {
+            AppError::command_failed(
+                "cannot resolve the home directory to anchor Global mode",
+                String::new(),
+            )
+        }),
+    }
+}
+
 /// Spawn the mise binary and capture its output, enforcing a finite
 /// `timeout`. This is the low-level entry point the runner routes every
 /// call through.
@@ -274,9 +296,8 @@ where
     F: FnMut(RunEvent) + Send + 'static,
 {
     let mut cmd = Command::new(mise_path);
-    if let Some(cwd) = &req.cwd {
-        cmd.arg("-C").arg(cwd);
-    }
+    let anchor = resolve_cwd_anchor(req.cwd.as_deref())?;
+    cmd.arg("-C").arg(anchor);
     for a in &req.args {
         cmd.arg(a);
     }
@@ -1571,8 +1592,24 @@ mod tests {
     }
 
     #[test]
-    fn candidate_paths_includes_known_macos_locations() {
-        let paths = candidate_paths();
+    fn resolve_cwd_anchor_directory_mode_returns_the_dir() {
+        // Directory mode anchors at the given directory, unchanged
+        // (issue #179: only the Global anchor is new).
+        let dir = PathBuf::from("/tmp/misedeck-anchor-test");
+        assert_eq!(resolve_cwd_anchor(Some(&dir)).unwrap(), dir);
+    }
+
+    #[test]
+    fn resolve_cwd_anchor_global_mode_anchors_at_home() {
+        // Global mode (cwd: None) anchors at the user's home directory,
+        // matching what `dirs` resolves — never at the process cwd.
+        let home = dirs::home_dir().expect("test environment has a home dir");
+        assert_eq!(resolve_cwd_anchor(None).unwrap(), home);
+        assert!(resolve_cwd_anchor(None).unwrap().is_absolute());
+    }
+
+    #[test]
+    fn candidate_paths_includes_known_macos_locations() {        let paths = candidate_paths();
         let s: Vec<String> = paths.iter().map(|p| p.to_string_lossy().to_string()).collect();
         assert!(s.iter().any(|p| p.ends_with("/.local/bin/mise")), "paths = {s:?}");
         assert!(s.iter().any(|p| p == "/opt/homebrew/bin/mise"), "paths = {s:?}");

@@ -14,7 +14,7 @@ React UI (src/)
 ## Rules
 
 - **应用绝不直接编辑 mise 配置文件，也绝不解析 mise 内部结构。** 所有状态读取走 `mise ... --json`；所有写入走 mise 的写命令（`mise use`、`mise config set`、`mise settings set`、`mise trust` 等）。已知的 JSON 缺口（`plugins ls`、`search`、`tool-alias ls`）在 runner 内部回退到表格解析，绝不在 UI 代码中处理。
-- **Directory context**（见 CONTEXT.md）：一个应用级状态，默认为 Global。每次 runner 调用都接收它，并在设置时传递 `-C <dir>`。任何页面都不硬编码目录。
+- **Directory context**（见 CONTEXT.md）：一个应用级状态，默认为 Global。每次 runner 调用都接收它并为其传递 `-C`：目录模式传 `-C <dir>`；Global 模式传 `-C $HOME`，使 mise 从用户主目录解析——绝不使用进程 cwd（issue #179）。任何页面都不硬编码目录。
 - **命令层是可分离的**（ADR-0003，issue #11）：Tauri 命令很薄 —— 校验输入、调用 runner、整形结果。任何无需 UI 即可复用的东西都属于 runner，这样未来的公开 CLI 可以建立在同一层之上。
 - **执行面板**（issue #15，ADR-0005）是**每一次** mise 调用的唯一路径，读查询同样不例外：它展示正在执行的确切命令并流式输出日志，且 `run()` 返回结果，让读查询能直接喂给查询缓存，无需再调用 mise 一次。应用替自己发起的读（表格首次加载、变更后的刷新）以后台方式运行 —— 同一个 runner，但绝不替换用户正在阅读的执行记录。
 - **Trust**（issue #6）：对不受信任目录的只读视图以 `MISE_SAFE=1` 运行；变更或求值环境变量的操作先检查信任状态，并把用户引导到信任横幅。

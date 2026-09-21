@@ -2093,6 +2093,7 @@ dependencies = [
 name = "misedeck"
 version = "1.0.0-beta.12"
 dependencies = [
+ "dirs",
  "objc",
  "once_cell",
  "serde",

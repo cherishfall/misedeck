@@ -37,6 +37,12 @@ const MAX_PANEL_HEIGHT = 600;
  * platform-specific command is built in Rust); `selfUpdate` runs
  * `mise self-update`.
  *
+ * The runner anchors every mise invocation at a directory context:
+ * Directory mode passes `-C <cwd>`; Global mode (`cwd === null`)
+ * passes `-C $HOME` (issue #179) — the echo renders exactly what
+ * runs, so Global-mode commands teach `-C $HOME`, not a bare command
+ * that would resolve from the terminal's cwd instead.
+ *
  * Exported so confirmations (e.g. the uninstall dialog, issue #56) can
  * show the exact command that will run — identical to what the deck
  * echoes once the mutation dispatches.
@@ -51,14 +57,14 @@ export function commandEcho(
   }
   if (kind === "selfUpdate") {
     const parts: string[] = ["mise"];
-    if (cwd) parts.push("-C", cwd);
+    parts.push("-C", cwd ?? "$HOME");
     // `--yes` is what the runner really passes (issue #125): the CLI's
     // own `[Y/n]` prompt is bypassed, the GUI confirms first instead.
     parts.push("self-update", "--yes");
     return parts.join(" ");
   }
   const parts: string[] = ["mise"];
-  if (cwd) parts.push("-C", cwd);
+  parts.push("-C", cwd ?? "$HOME");
   for (const a of args) {
     if (a.includes(" ") || a.includes("\t")) {
       parts.push(JSON.stringify(a));

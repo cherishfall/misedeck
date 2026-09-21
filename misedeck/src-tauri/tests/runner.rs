@@ -5,6 +5,7 @@
 //   - capturing stdout/stderr
 //   - non-zero exit mapping to COMMAND_FAILED
 //   - the -C <cwd> arg being prepended in front of the user's args
+//   - Global mode (cwd: None) prepending -C <home> (issue #179)
 //   - streaming emits Stdout/Stderr/Exit events in order
 //   - missing binary maps to MISE_NOT_FOUND
 
@@ -88,6 +89,29 @@ fn cwd_is_passed_as_dash_c() {
         assert!(
             combined.contains(cwd_marker) || combined.contains("-C"),
             "expected cwd in runner output, got stdout={:?} stderr={:?}",
+            outcome.stdout,
+            outcome.stderr
+        );
+    });
+}
+
+#[test]
+#[serial]
+fn cwd_none_anchors_to_home() {
+    let script = fixture_script();
+    with_slug("no-such-fixture", || {
+        // Unknown slug: the fixture echoes the full argv to stderr and
+        // exits 127. Global mode (cwd: None) must prepend `-C <home>`
+        // so mise resolves from the user's home directory, never from
+        // the process cwd (issue #179).
+        let home = dirs::home_dir().expect("test environment has a home dir");
+        let req = RunRequest::new(vec!["env".to_string(), "--json".to_string()]);
+        let outcome = run_mise(&script, &req, |_| {}).expect("runner returns Ok even on non-zero exit");
+        assert_eq!(outcome.exit_code, 127);
+        let combined = format!("{}{}", outcome.stdout, outcome.stderr);
+        assert!(
+            combined.contains(&format!("-C {}", home.display())),
+            "expected `-C <home>` in argv, got stdout={:?} stderr={:?}",
             outcome.stdout,
             outcome.stderr
         );

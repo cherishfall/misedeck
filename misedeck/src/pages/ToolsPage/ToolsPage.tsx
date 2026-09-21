@@ -132,8 +132,9 @@ type PendingRemoval =
 //
 // Only `mise use` accepts a `-g` flag; `install`, `uninstall`,
 // `unuse`, and `upgrade` operate on the active directory context. The runner adds
-// `-C <dir>` when cwd !== null, so the global context naturally targets
-// the global config without extra flags for those three commands.
+// `-C <dir>` in Directory mode and `-C $HOME` in Global mode (issue
+// #179), so the global context naturally targets the global config
+// without extra flags for those three commands.
 
 function miseInstallArgs(tool: string, version: string): string[] {
   // An empty version means latest (issue #111): `mise install <tool>`.

@@ -6,9 +6,9 @@
 // The hook is keyed by the directory context (`["tasks", "ls", cwd]`)
 // so switching Global ↔ a directory refetches the data, the same
 // way the tools / preview hooks do. Enabled in both contexts: in the
-// Global context the runner runs without `-C`, which resolves the
-// global tasks exactly like `mise tasks ls` in the home directory
-// (issue #48).
+// Global context the runner anchors at `$HOME` (`-C $HOME`, issue
+// #179), which resolves the global task list exactly like
+// `mise tasks ls` run in the home directory (issue #48).
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
@@ -20,7 +20,8 @@ import type { JsonResult, MiseTask } from "../types/tauri";
 /**
  * Read-only task list (`mise tasks ls --json`). Cache key is
  * `["tasks", "ls", cwd]`. Runs in the Global context too (issue
- * #48): without `-C`, mise resolves the global task list.
+ * #48): the runner anchors Global mode at `$HOME` (`-C $HOME`,
+ * issue #179), so mise resolves the global task list.
  */
 export function useTasksList(): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
