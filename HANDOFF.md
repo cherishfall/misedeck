@@ -2,7 +2,29 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-21 — beta12 post-release review round COMPLETE, tickets #167–#173 closed)
+## CURRENT STATE (2026-09-22 — beta12 feedback batch COMPLETE, tickets #176–#184 closed, SPEC #175 open awaiting owner verification)
+
+Owner's beta12 usage feedback (4 issue groups, all 定稿, authoritative decision log `docs/feedback/beta12-feedback-scratch.md`) was implemented as **SPEC #175** + 9 tickets — all closed, every one `npm run ci` green (cargo green where Rust touched), **NOT visually verified — owner verifies manually**.
+
+| Ticket | Commit | Scope |
+| --- | --- | --- |
+| #179 | `6981182` | runner `resolve_cwd_anchor`：cwd:None → `-C $HOME`（dirs crate），五页全局模式一次修正；fixture 剥 `-C` slug；architecture.md:17 + product-logic policy 8 双语 |
+| #182 | `ef3b46b` | `isEnvWriteScopeMismatch` 纯函数 + 3 tests；越界行 remove/rename/value-save 确认框警示（移植 Settings unsetOutOfScope 模式）；`env.confirm.update.*`/`env.confirm.outOfScopeWarning` 双语 |
+| #183 | `b25b960` | writeClipboard 切 `@tauri-apps/plugin-clipboard-manager`（capability `allow-write-text`——`allow-write` 在 v2.3.3 不存在，构建期被拒后修正）；三处失败瞬时反馈 `common.copyFailed`；ui-ux-rules「复制失败不得静默」双语 |
+| #177 | `28ba974` | 9 个 `.page`/`ListLoading` 容器 `min-width:0`（一处修 8 页，表格 scroller 接管）；ui-ux-rules「页面容器不得承接表格 min-width 撑宽」双语 |
+| #176 | `a023c60` | 工具栏恒两行（`.pathRow` 新行、去 flex-wrap、.actions 内部 wrap 兜底极端窄窗）；Open in terminal ghost→secondary；Chrome 条倒转 + ellipsis 豁免 + 同组 variant 规则双语；全局模式仍一行（无路径不渲染第二行） |
+| #184 | `893dbc3` | 「高级」迁移共享 ghost Button + aria-expanded（`.advancedToggle` 删除）；Preview config 触发器补 aria-expanded；disclosure 触发器规则双语 |
+| #180 | `955dc0d` | 纯 reducer 抽 `executionState.ts`（13 tests）；MAX_FINISHED_RUNS 3；removeRun/clearRuns（running 双重保护、移除 active 回退）；chip × 关闭 + common.clear 清空；ui-ux-rules 上限条文 + product-logic 并发意图条文双语 |
+| #178 | `9f25dea` | 最大票：AddToolSection 三段视图（在用/已安装/未安装，各段分页共享页大小）替代 AddToolEntry+VersionCenter（Table expansion props 一并删）；新比较器 `compareToolVersions`（字母前缀+LTS/元数据，6 tests）；latest 行派发解析后的具体版本且已装则不渲染；i18n versionCenter 组清除；ui-ux-rules :39/:40/:44 重写双语 |
+| #181 | `29cb37f` | pageRefresh 头注释漂移修正；Tools onRefresh 补 `["registry",cwd]` |
+
+**Owner verification list (beta.13 gate):** #176 toolbar two-line look（重点）、#178 add-tool section（重点，含 latest 行/三段/分页/清空收起）、#177 narrow-window clipping fixed、#183 RAW+Tooltip 复制（二分）、#182 越界行确认框、#180 历史关闭/清空、#184「高级」ghost 形态、#179 全局模式表格内容。
+
+**Owner's next moves:** (1) `cd misedeck && npm run tauri dev` build & verify the list above against SPEC #175; (2) close #175 (and #139 if the beta11 batch is also satisfied); (3) beta.13 release decision (procedure below).
+
+---
+
+## PREVIOUS STATE (2026-09-21 — beta12 post-release review round COMPLETE, tickets #167–#173 closed)
 
 Owner released v1.0.0-beta.12 and asked for a professional code+doc review before his visual verification (beta11 had reversed/refined several decisions). Six parallel audit passes ran (docs-vs-code / zh-CN mirror / code-residue / interaction logic / i18n / doc-internal consistency), findings were ticketed and all seven tickets are implemented, committed to master, and closed — every one `npm run ci` green, **NOT visually verified — owner verifies manually**. Owner then asked for the 🔵 observation items too; they shipped as #173.
 
