@@ -51,6 +51,10 @@ jobs:
         working-directory: misedeck
         run: npx tsc --noEmit
 
+      - name: Frontend tests
+        working-directory: misedeck
+        run: npm run test
+
       - name: i18n parity + call-site guard
         working-directory: misedeck
         run: npm run lint:i18n
@@ -74,6 +78,10 @@ jobs:
       - name: CSS letter-spacing token check
         working-directory: misedeck
         run: npm run lint:css-tracking
+
+      - name: i18n ellipsis guard
+        working-directory: misedeck
+        run: npm run lint:i18n-ellipsis
 
       - name: Command-hint guard
         working-directory: misedeck
