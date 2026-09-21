@@ -172,6 +172,26 @@
 
 ---
 
+### Issue 6【Env 操作列「—」无操作理由不可发现（理由挂在来源徽标而非「—」本身）】→ #185
+
+**来源**：用户报告（2026-09-21，截图：GOBIN/GOROOT/JAVA_HOME/PATH 操作列「—」）。原话：「不要简单显示个 - 线，要有无操作理由提示，为什么无操作，否则让人产生困惑」。
+
+**调查结论**：理由 Tooltip 存在但挂错位置——`EnvPage.tsx:483-485` 的「—」是裸 dash；理由文案（`env.tooltip.tool`/`env.tooltip.default`）包在来源列徽标上（`EnvSourceCell` :425），与「—」隔两列，用户 hover dash 无反应；Tooltip 纯 hover 无焦点支持；规则 ui-ux-rules:36 的「typically on that row's source-badge Tooltip」口子正是漏洞。**同类排查**：全站唯一问题实例（Settings 页「—」已带 Tooltip `settings.tooltip.objectReadOnly` 是先例；Tools/AddToolSection 的「—」是 orphan 徽标包裹；其余「—」是数据缺失非操作列）。
+
+**定稿（2026-09-21，用户指示+证据直接支撑）**：「—」本身包 Tooltip（复用/新增 dash 专用 key，Settings :444 同构）；ui-ux-rules:36 收紧为「理由必须挂在「—」自身的 Tooltip 上，徽标 tooltip 保留为补充」（中英双语）。
+
+---
+
+### Issue 7【Env 添加变量名「（大写下划线）」提示是 mise 并无要求的格式断言】→ #186
+
+**来源**：用户报告（2026-09-21）。原话：「添加环境变量的提示语里有大写下划线，有必要的理由吗，如果有的话，在添加的时候就要校验是否符合格式，如果没必要的话，提示语就改一下」。
+
+**调查结论**（mise 2026.9.12 实证）：mise 对变量名**零格式要求**——小写 `foo=1` 完全正常导出可用；数字开头/横线/空格/点/空名也照收（其中部分在 shell source 路径下产生 invalid identifier 报错——属 mise 上游「收但不拒绝」缺口，非格式要求）。按 ui-ux-rules:41「submit-and-catch 不做提交前校验」既有规则：**改文案、不加校验**——en `Key (UPPER_SNAKE)` → `Key`，zh `变量名（大写下划线）` → `变量名`（与相邻 值/value 风格一致）。**同类排查**：全站表单 placeholder × 校验逐一核对，仅 `env.namePlaceholder` 一处同病（Tools/Plugins/Settings/Tasks/AddToolSection 的 placeholder 均为真实举例或形态示例，无格式断言）。
+
+**定稿（2026-09-21，用户条件指示+实证支撑「没必要」）**：改文案去格式暗示；不加校验；无其它同类项。
+
+---
+
 ### Issue 1 → #176【Chrome 工具栏：「在终端中打开」按钮样式不一致 + 长路径时按钮组掉行】两条一组
 
 **来源**：用户报告（2026-09-21，附两张截图：zh/en 同窗口宽度的 Home 页工具栏）。原话：「这个在终端中打开的样式为什么和其他的不一样，而且切换到英文模式下，路径太长导致工具栏按钮在下一行，如果必须要换，也是工具栏保持原来的位置，然后路径在下面且可以换行吧，毕竟路径确实可能很长」。

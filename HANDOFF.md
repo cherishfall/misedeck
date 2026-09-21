@@ -2,25 +2,25 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-22 — beta12 feedback batch COMPLETE, tickets #176–#184 closed, SPEC #175 open awaiting owner verification)
+## CURRENT STATE (2026-09-22 — beta13 RELEASED, beta12 batch fully closed: #176–#186)
 
-Owner's beta12 usage feedback (4 issue groups, all 定稿, authoritative decision log `docs/feedback/beta12-feedback-scratch.md`) was implemented as **SPEC #175** + 9 tickets — all closed, every one `npm run ci` green (cargo green where Rust touched), **NOT visually verified — owner verifies manually**.
+**v1.0.0-beta.13 released** (tag `v1.0.0-beta.13` pushed + verified on remote, bump commit `66df64c`, release run `35630355246`). Carries the complete beta12 feedback batch: SPEC #175 with all 11 tickets closed, every one `npm run ci` green (cargo green where Rust touched), **NOT visually verified — owner verifies manually**.
 
 | Ticket | Commit | Scope |
 | --- | --- | --- |
-| #179 | `6981182` | runner `resolve_cwd_anchor`：cwd:None → `-C $HOME`（dirs crate），五页全局模式一次修正；fixture 剥 `-C` slug；architecture.md:17 + product-logic policy 8 双语 |
-| #182 | `ef3b46b` | `isEnvWriteScopeMismatch` 纯函数 + 3 tests；越界行 remove/rename/value-save 确认框警示（移植 Settings unsetOutOfScope 模式）；`env.confirm.update.*`/`env.confirm.outOfScopeWarning` 双语 |
-| #183 | `b25b960` | writeClipboard 切 `@tauri-apps/plugin-clipboard-manager`（capability `allow-write-text`——`allow-write` 在 v2.3.3 不存在，构建期被拒后修正）；三处失败瞬时反馈 `common.copyFailed`；ui-ux-rules「复制失败不得静默」双语 |
-| #177 | `28ba974` | 9 个 `.page`/`ListLoading` 容器 `min-width:0`（一处修 8 页，表格 scroller 接管）；ui-ux-rules「页面容器不得承接表格 min-width 撑宽」双语 |
-| #176 | `a023c60` | 工具栏恒两行（`.pathRow` 新行、去 flex-wrap、.actions 内部 wrap 兜底极端窄窗）；Open in terminal ghost→secondary；Chrome 条倒转 + ellipsis 豁免 + 同组 variant 规则双语；全局模式仍一行（无路径不渲染第二行） |
-| #184 | `893dbc3` | 「高级」迁移共享 ghost Button + aria-expanded（`.advancedToggle` 删除）；Preview config 触发器补 aria-expanded；disclosure 触发器规则双语 |
-| #180 | `955dc0d` | 纯 reducer 抽 `executionState.ts`（13 tests）；MAX_FINISHED_RUNS 3；removeRun/clearRuns（running 双重保护、移除 active 回退）；chip × 关闭 + common.clear 清空；ui-ux-rules 上限条文 + product-logic 并发意图条文双语 |
-| #178 | `9f25dea` | 最大票：AddToolSection 三段视图（在用/已安装/未安装，各段分页共享页大小）替代 AddToolEntry+VersionCenter（Table expansion props 一并删）；新比较器 `compareToolVersions`（字母前缀+LTS/元数据，6 tests）；latest 行派发解析后的具体版本且已装则不渲染；i18n versionCenter 组清除；ui-ux-rules :39/:40/:44 重写双语 |
-| #181 | `29cb37f` | pageRefresh 头注释漂移修正；Tools onRefresh 补 `["registry",cwd]` |
+| #179 | `6981182` | runner `resolve_cwd_anchor`：cwd:None → `-C $HOME`，五页全局模式一次修正；architecture.md:17 + product-logic policy 8 双语 |
+| #182 | `ef3b46b` | `isEnvWriteScopeMismatch` + 越界行确认框警示（移植 Settings unsetOutOfScope 模式） |
+| #183 | `b25b960` | writeClipboard 切 `@tauri-apps/plugin-clipboard-manager`（capability `allow-write-text`）；三处失败反馈 `common.copyFailed`；「复制失败不得静默」双语 |
+| #177 | `28ba974` | 9 个页面容器 `min-width:0`（一处修 8 页）+ ui-ux-rules 撑宽条文双语 |
+| #176 | `a023c60` | 工具栏恒两行 + Open in terminal secondary + 同组 variant 规则；Chrome 条倒转双语 |
+| #184 | `893dbc3` | 「高级」等 disclosure 触发器统一共享 ghost Button + aria-expanded；规则双语 |
+| #180 | `955dc0d` | 纯 reducer `executionState.ts`（13 tests）；finished 上限 3；removeRun/clearRuns；ui-ux-rules 上限条文 + product-logic 并发意图条文双语 |
+| #178 | `9f25dea` | AddToolSection 三段版本视图替代 AddToolEntry+VersionCenter；`compareToolVersions` 新比较器（6 tests）；ui-ux-rules :39/:40/:44 重写双语 |
+| #181 | `29cb37f` | pageRefresh 注释漂移 + Tools 刷新补 registry 失效 |
+| #185 | `bfe096c` | Env「—」本身挂理由 Tooltip（徽标降为第二触点）；ui-ux-rules:36 收紧双语 |
+| #186 | `0284658` | `env.namePlaceholder` 去「大写下划线」格式断言（mise 实证无此要求；submit-and-catch 不加校验） |
 
-**Owner verification list (beta.13 gate):** #176 toolbar two-line look（重点）、#178 add-tool section（重点，含 latest 行/三段/分页/清空收起）、#177 narrow-window clipping fixed、#183 RAW+Tooltip 复制（二分）、#182 越界行确认框、#180 历史关闭/清空、#184「高级」ghost 形态、#179 全局模式表格内容。
-
-**Owner's next moves:** (1) `cd misedeck && npm run tauri dev` build & verify the list above against SPEC #175; (2) close #175 (and #139 if the beta11 batch is also satisfied); (3) beta.13 release decision (procedure below).
+**Owner's next moves:** (1) install beta.13 and work the manual-verify list on SPEC #175 (notable: #176 toolbar two-line, #178 add-tool section, #183 RAW+Tooltip copy, #177 narrow windows); (2) close #175 (and #139 if the beta11 batch is also satisfied); (3) next feedback cycle → new scratch + new SPEC parent.
 
 ---
 
