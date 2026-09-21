@@ -135,9 +135,6 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
     <div className={styles.strip} role="region" aria-label={t(I18N_KEYS.directory.regionLabel)}>
       <div className={styles.row}>
         <span className={styles.modeLabel}>{t(I18N_KEYS.directory.eyebrow)}</span>
-        <Tooltip text={path}>
-          <span className={styles.path} data-testid="directory-indicator-path">{path}</span>
-        </Tooltip>
 
         <div className={styles.actions}>
           <Button
@@ -149,7 +146,7 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
             {t(I18N_KEYS.directory.globalButton)}
           </Button>
           <Button
-            variant="ghost"
+            variant="secondary"
             size="sm"
             onClick={onOpenInTerminal}
             data-testid="directory-indicator-open-in-terminal"
@@ -232,6 +229,15 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
             {t(I18N_KEYS.directory.chooseAnother)}
           </Button>
         </div>
+      </div>
+
+      {/* Second line of the fixed two-line toolbar (issue #176): the
+       *  path owns the full width — truncate + Tooltip for the full
+       *  value, never wrapping. */}
+      <div className={styles.pathRow}>
+        <Tooltip text={path}>
+          <span className={styles.path} data-testid="directory-indicator-path">{path}</span>
+        </Tooltip>
       </div>
 
       {openHint && (

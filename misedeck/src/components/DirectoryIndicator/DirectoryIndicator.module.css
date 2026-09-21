@@ -14,10 +14,13 @@
   border-bottom: 1px solid var(--line);
 }
 
+/* Fixed two-line toolbar (issue #176, superseding the beta11 #142
+ * drop-line mechanism): the first line holds the mode eyebrow and the
+ * action group (pinned to the right end); the path owns the second
+ * line at full width. No flex-wrap here — the group never drops. */
 .row {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: var(--space-4);
   min-width: 0;
 }
@@ -39,6 +42,17 @@
   text-transform: none;
 }
 
+/* Second line of the fixed two-line toolbar: the path at full width.
+ * The flex context blockifies the Tooltip trigger into a shrinkable
+ * flex item (Tooltip.module.css), so the inner .path ellipsis applies
+ * across the whole line. */
+.pathRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
 .path {
   flex: 1;
   min-width: 0;
@@ -51,9 +65,16 @@
 }
 
 .actions {
-  flex: none;
+  /* The group may shrink (min-content = its widest button) and wraps
+   * its buttons internally as the last-resort fallback when even the
+   * first line cannot fit at the minimum window size — the group
+   * still never leaves the toolbar's first line as a unit. */
+  flex-shrink: 1;
+  min-width: 0;
   margin-left: auto;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: var(--space-2);
 }
