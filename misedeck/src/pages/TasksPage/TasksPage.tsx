@@ -50,7 +50,9 @@ import {
 } from "../../api/miseTools";
 import {
   Button,
+  commandEcho,
   CommandHint,
+  ConfirmDialog,
   EmptyState,
   KeyForm,
   ListLoading,
@@ -642,6 +644,7 @@ export function TasksPage() {
               <TaskForm
                 key={formFor.key}
                 task={formFor.task}
+                cwd={cwd}
                 dependsListId="tasks-depends-suggestions"
                 onSave={async (name, runWords, depends, description) => {
                   const ok = await saveTask(name, description, depends, runWords);
@@ -703,6 +706,14 @@ export function TasksPage() {
  * form is local state only. The page closes the form only when
  * the save ran — a failed run or a trust block keeps the draft.
  *
+ * A task whose run has multiple lines (`task.run.length > 1`)
+ * cannot be edited losslessly through `mise tasks add`: the
+ * command always writes run as a single line (verified against
+ * the CLI, issue #170), so the run textarea renders disabled
+ * with a Tooltip explaining why, and saving such a task —
+ * even a depends-only edit rewrites run — confirms first with
+ * the exact command and an honest consequence warning.
+ *
  * Run-locking (issue #135): `disabled` gates only the Save /
  * submit control — the command-firing part. The draft inputs
  * and Cancel stay editable through a running command because
@@ -710,6 +721,7 @@ export function TasksPage() {
  */
 function TaskForm({
   task,
+  cwd,
   dependsListId,
   onSave,
   onCancel,
@@ -718,6 +730,9 @@ function TaskForm({
   /** The task being edited, or `null` when creating a new task
    *  (the empty state's entry point). */
   task: MiseTask | null;
+  /** Active directory context, echoed in the flatten confirmation's
+   *  command line. */
+  cwd: string | null;
   /** Datalist id the depends input references for task-name completion
    *  (issue #109); the page renders the shared <datalist> once. */
   dependsListId: string;
@@ -732,6 +747,12 @@ function TaskForm({
 }) {
   const { t } = useTranslation();
   const isNew = task === null;
+  // A multi-line run cannot round-trip through `mise tasks add` (it
+  // always writes run as a single line), so the run draft is locked
+  // for such tasks and any save confirms the rewrite first (issue
+  // #170). Single-line runs round-trip losslessly and stay editable.
+  const runMultiLine = !isNew && task.run.length > 1;
+  const [confirmingFlatten, setConfirmingFlatten] = useState(false);
   const [name, setName] = useState(task?.name ?? "");
   const [run, setRun] = useState(task ? task.run.join("\n") : "");
   const [description, setDescription] = useState(task?.description ?? "");
@@ -764,11 +785,22 @@ function TaskForm({
   const saveTestId = isNew ? "tasks-add-save" : `tasks-edit-save-${task.name}`;
   const cancelTestId = isNew ? "tasks-add-cancel" : `tasks-edit-cancel-${task.name}`;
 
+  const submit = () => {
+    // Saving a multi-line-run task rewrites its run as a single line
+    // (even when only depends/description changed), so it confirms
+    // first with the exact command and the consequence (issue #170).
+    if (runMultiLine) {
+      setConfirmingFlatten(true);
+      return;
+    }
+    void onSave(name.trim(), runWords, depends, description.trim());
+  };
+
   return (
     <KeyForm
       className={styles.editForm}
       testId={isNew ? "tasks-add-form" : `tasks-edit-form-${task.name}`}
-      onSubmit={() => void onSave(name.trim(), runWords, depends, description.trim())}
+      onSubmit={() => void submit()}
       onRevert={onCancel}
       submitDisabled={disabled || !dirty || !valid}
     >
@@ -824,17 +856,39 @@ function TaskForm({
         <label className={styles.editFormLabel} htmlFor={runId}>
           {t(I18N_KEYS.tasks.editForm.runLabel)}
         </label>
-        <textarea
-          id={runId}
-          name="run"
-          className={styles.editFormTextarea}
-          value={run}
-          onChange={(e) => setRun(e.target.value)}
-          placeholder={t(I18N_KEYS.tasks.editForm.runPlaceholder)}
-          spellCheck={false}
-          autoComplete="off"
-          rows={4}
-        />
+        {runMultiLine ? (
+          // A multi-line run cannot round-trip through `mise tasks
+          // add` (issue #170), so the field is disabled and the
+          // Tooltip says why — the same disabled-control-plus-Tooltip
+          // language as the version center's active row (beta11 2-f).
+          <Tooltip text={t(I18N_KEYS.tasks.editForm.runReadonlyTooltip)}>
+            <textarea
+              id={runId}
+              name="run"
+              className={styles.editFormTextarea}
+              value={run}
+              onChange={(e) => setRun(e.target.value)}
+              placeholder={t(I18N_KEYS.tasks.editForm.runPlaceholder)}
+              spellCheck={false}
+              autoComplete="off"
+              rows={4}
+              disabled
+              data-testid={`tasks-edit-run-${task.name}`}
+            />
+          </Tooltip>
+        ) : (
+          <textarea
+            id={runId}
+            name="run"
+            className={styles.editFormTextarea}
+            value={run}
+            onChange={(e) => setRun(e.target.value)}
+            placeholder={t(I18N_KEYS.tasks.editForm.runPlaceholder)}
+            spellCheck={false}
+            autoComplete="off"
+            rows={4}
+          />
+        )}
       </div>
 
       <div className={styles.editFormField}>
@@ -875,7 +929,7 @@ function TaskForm({
         <Button
           variant="primary"
           size="sm"
-          onClick={() => void onSave(name.trim(), runWords, depends, description.trim())}
+          onClick={() => void submit()}
           disabled={disabled || !dirty || !valid}
           data-testid={saveTestId}
         >
@@ -899,6 +953,31 @@ function TaskForm({
           </span>
         )}
       </div>
+
+      {/* Saving a multi-line-run task rewrites run as a single line —
+          an overwrite, so it confirms first and teaches the exact
+          `mise tasks add` command that will run (ui-ux-rules; issue
+          #170). The draft stays open on cancel so the depends /
+          description edits are not lost. Same ConfirmDialog the env
+          page uses for rename-overwrite. */}
+      <ConfirmDialog
+        open={confirmingFlatten}
+        confirmBusy={disabled}
+        title={t(I18N_KEYS.tasks.confirm.flattenRun.title)}
+        body={t(I18N_KEYS.tasks.confirm.flattenRun.body)}
+        command={commandEcho(
+          "mise",
+          cwd,
+          miseTasksAddArgs(name.trim(), description.trim(), depends, runWords),
+        )}
+        confirmLabel={t(I18N_KEYS.tasks.editForm.saveButton)}
+        cancelLabel={t(I18N_KEYS.tasks.editForm.cancelButton)}
+        onConfirm={() => {
+          setConfirmingFlatten(false);
+          void onSave(name.trim(), runWords, depends, description.trim());
+        }}
+        onCancel={() => setConfirmingFlatten(false)}
+      />
     </KeyForm>
   );
 }

@@ -265,6 +265,14 @@
   border-color: var(--beam);
 }
 
+/* A multi-line run is not editable in the GUI (issue #170): the
+ * textarea renders dimmed like the env page's locked inputs, and the
+ * reason is discoverable on the field's Tooltip. */
+.editFormTextarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .editFormActions {
   display: flex;
   gap: var(--space-2);

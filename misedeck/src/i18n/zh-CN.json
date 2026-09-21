@@ -299,6 +299,10 @@
       "rename": {
         "title": "将 {{from}} 重命名为 {{to}}？",
         "body": "重命名将按顺序运行以下两条确切命令：先移除旧键，再写入新键。仅当第一条命令成功后才执行第二条。此操作无法撤销。"
+      },
+      "renameOverwrite": {
+        "title": "将 {{from}} 重命名为 {{to}}？",
+        "body": "名为 {{to}} 的环境变量已存在——重命名会用当前值覆盖它的现有值。重命名将按顺序运行以下两条确切命令：先移除旧键，再写入新键。此操作无法撤销。"
       }
     },
     "success": {
@@ -345,7 +349,14 @@
       "saveButton": "保存",
       "cancelButton": "取消",
       "runRequired": "必须填写运行命令",
-      "nameRequired": "必须填写任务名称"
+      "nameRequired": "必须填写任务名称",
+      "runReadonlyTooltip": "该任务的 run 有多行。GUI 通过 `mise tasks add` 保存任务，它会把 run 存为单行，因此在这里编辑会改变任务的实际行为。请改为在配置文件中编辑 run（在编辑器中打开）。"
+    },
+    "confirm": {
+      "flattenRun": {
+        "title": "重写多行 run？",
+        "body": "该任务的 run 有多行。保存会将其写回为下方显示的单行内容，从而改变任务的实际行为。若要保留多行 run，请取消并改为在配置文件中编辑（在编辑器中打开）。"
+      }
     },
     "guard": {
       "untrustedBody": "在修改此目录的任务之前，请先信任它。"

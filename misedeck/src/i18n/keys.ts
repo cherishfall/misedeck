@@ -357,6 +357,10 @@ export const I18N_KEYS = {
         title: "env.confirm.rename.title",
         body: "env.confirm.rename.body",
       },
+      renameOverwrite: {
+        title: "env.confirm.renameOverwrite.title",
+        body: "env.confirm.renameOverwrite.body",
+      },
     },
     success: {
       set: "env.success.set",
@@ -401,6 +405,13 @@ export const I18N_KEYS = {
       cancelButton: "tasks.editForm.cancelButton",
       runRequired: "tasks.editForm.runRequired",
       nameRequired: "tasks.editForm.nameRequired",
+      runReadonlyTooltip: "tasks.editForm.runReadonlyTooltip",
+    },
+    confirm: {
+      flattenRun: {
+        title: "tasks.confirm.flattenRun.title",
+        body: "tasks.confirm.flattenRun.body",
+      },
     },
     guard: {
       untrustedBody: "tasks.guard.untrustedBody",

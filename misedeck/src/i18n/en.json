@@ -299,6 +299,10 @@
       "rename": {
         "title": "Rename {{from}} to {{to}}?",
         "body": "Renaming runs the two exact commands below in order: first the old key is removed, then the new key is written. The second command runs only when the first succeeds. This cannot be undone."
+      },
+      "renameOverwrite": {
+        "title": "Rename {{from}} to {{to}}?",
+        "body": "An env var named {{to}} already exists — the rename overwrites its current value with this one. Renaming runs the two exact commands below in order: first the old key is removed, then the new key is written. This cannot be undone."
       }
     },
     "success": {
@@ -345,7 +349,14 @@
       "saveButton": "Save",
       "cancelButton": "Cancel",
       "runRequired": "A run command is required",
-      "nameRequired": "A task name is required"
+      "nameRequired": "A task name is required",
+      "runReadonlyTooltip": "This task's run has multiple lines. The GUI saves tasks through `mise tasks add`, which stores run as a single line — editing it here would change what the task does. Edit the run in the config file instead (Open in editor)."
+    },
+    "confirm": {
+      "flattenRun": {
+        "title": "Rewrite the multi-line run?",
+        "body": "This task's run has multiple lines. Saving writes it back as the single line below, which changes what the task does. To keep the run as multiple lines, cancel and edit the config file instead (Open in editor)."
+      }
     },
     "guard": {
       "untrustedBody": "Trust this directory before mutating its tasks."

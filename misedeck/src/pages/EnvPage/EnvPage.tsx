@@ -168,6 +168,12 @@ export function EnvPage() {
     [envRows],
   );
 
+  // Every resolved env var name. An Add or a rename onto one of these
+  // overwrites that var's value, so both paths confirm first (issue
+  // #170); read-only injected / host-inherited names are included on
+  // purpose — `mise set` overwrites those too.
+  const existingNames = useMemo(() => envRows.map((r) => r.name), [envRows]);
+
   // Text filter over the full row set (issue #106), shared with the
   // tools / tasks / settings tables via `useTableFilter`.
   const filter = useTableFilter(envRows, (r) =>
@@ -229,7 +235,13 @@ export function EnvPage() {
       key: "actions",
       header: t(I18N_KEYS.env.columns.actions),
       cell: (r) => (
-        <EnvRowActions row={r} cwd={cwd} onWrite={runWrite} disabled={envWrite.isRunning} />
+        <EnvRowActions
+          row={r}
+          cwd={cwd}
+          onWrite={runWrite}
+          disabled={envWrite.isRunning}
+          existingNames={existingNames}
+        />
       ),
       // Sized for the two rest-state buttons (Edit / Remove) — the
       // inline editor wraps inside the cell (beta11, issue #148).
@@ -311,7 +323,7 @@ export function EnvPage() {
             onWrite={runWrite}
             disabled={envWrite.isRunning}
             cwd={cwd}
-            existingNames={envRows.map((r) => r.name)}
+            existingNames={existingNames}
           />
 
           {/* Existing keys, referenced as completion by the Add form's
@@ -416,6 +428,7 @@ function EnvRowActions({
   cwd,
   onWrite,
   disabled,
+  existingNames,
 }: {
   row: EnvRow;
   cwd: string | null;
@@ -429,11 +442,16 @@ function EnvRowActions({
    *  and neither does Remove: it only opens the confirm dialog, whose
    *  own Confirm button is run-aware (see ConfirmDialog). */
   disabled: boolean;
+  /** Every resolved env var name. A rename onto one of these
+   *  overwrites that var's value, so the confirm copy says so
+   *  honestly before the two commands run (issue #170). */
+  existingNames: string[];
 }) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const [confirmingRename, setConfirmingRename] = useState(false);
+  const [confirmingRenameOverwrite, setConfirmingRenameOverwrite] = useState(false);
   const [name, setName] = useState(row.name);
   const [value, setValue] = useState(row.value);
   // Reset the draft only while not actively editing, so an open editor
@@ -472,7 +490,14 @@ function EnvRowActions({
       // lost a key (beta11 4.3-B1), and the unset ran without a confirm
       // (ui-ux-rules: "uninstall, unset, overwrite always confirm first").
       // It confirms first, then runs the two commands sequentially.
-      setConfirmingRename(true);
+      // Renaming onto a key that already exists also overwrites that
+      // var's value — a silent data loss until the rename checked for
+      // it (issue #170) — so that variant gets its own overwrite copy.
+      if (existingNames.includes(name)) {
+        setConfirmingRenameOverwrite(true);
+      } else {
+        setConfirmingRename(true);
+      }
       return;
     }
     void doSaveValue();
@@ -567,6 +592,27 @@ function EnvRowActions({
             void doRename();
           }}
           onCancel={() => setConfirmingRename(false)}
+        />
+        {/* Renaming onto an existing key overwrites that var's value
+            (issue #170), so this variant's copy says so honestly while
+            still teaching both exact commands in execution order. Same
+            sequential doRename as the plain rename confirm. */}
+        <ConfirmDialog
+          open={confirmingRenameOverwrite}
+          confirmBusy={disabled}
+          title={t(I18N_KEYS.env.confirm.renameOverwrite.title, { from: row.name, to: name })}
+          body={t(I18N_KEYS.env.confirm.renameOverwrite.body, { to: name })}
+          command={[
+            commandEcho("mise", cwd, miseEnvUnsetArgs(row.name, cwd)),
+            commandEcho("mise", cwd, miseEnvSetArgs(name, value, cwd)),
+          ]}
+          confirmLabel={t(I18N_KEYS.common.save)}
+          cancelLabel={t(I18N_KEYS.common.cancel)}
+          onConfirm={() => {
+            setConfirmingRenameOverwrite(false);
+            void doRename();
+          }}
+          onCancel={() => setConfirmingRenameOverwrite(false)}
         />
       </>
     );
