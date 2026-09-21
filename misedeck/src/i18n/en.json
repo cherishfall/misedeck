@@ -7,6 +7,7 @@
     "back": "Back",
     "clear": "Clear",
     "copied": "Copied",
+    "copyFailed": "Copy failed",
     "outdatedCount": "{{count}} tools outdated",
     "allUpToDate": "All installed tools are up to date.",
     "filter": {

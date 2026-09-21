@@ -41,9 +41,11 @@ export function ActivationBanner() {
     dismissBanner,
     activationLine,
   } = useActivation();
-  // The transient "copied" hint that flashes after the copy
-  // button is pressed. Resets on its own after 1.5s.
+  // The transient "copied" / "copy failed" hints that flash after the
+  // copy button is pressed. Resets on its own after 1.5s. A failed copy
+  // must not be silent (issue #183).
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   // Only render when the probe has resolved. While loading or
   // on error we stay quiet — the page is otherwise usable,
@@ -71,12 +73,14 @@ export function ActivationBanner() {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => copyToClipboard(line, setCopied)}
+                onClick={() => copyToClipboard(line, setCopied, setCopyFailed)}
                 data-testid="activation-banner-copy-line"
               >
-                {copied
-                  ? t(I18N_KEYS.common.copied)
-                  : t(I18N_KEYS.activation.copyLineButton)}
+                {copyFailed
+                  ? t(I18N_KEYS.common.copyFailed)
+                  : copied
+                    ? t(I18N_KEYS.common.copied)
+                    : t(I18N_KEYS.activation.copyLineButton)}
               </Button>
               <Button
                 variant="ghost"
@@ -113,12 +117,14 @@ export function ActivationBanner() {
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => copyToClipboard(line, setCopied)}
+              onClick={() => copyToClipboard(line, setCopied, setCopyFailed)}
               data-testid="activation-banner-copy-line"
             >
-              {copied
-                ? t(I18N_KEYS.common.copied)
-                : t(I18N_KEYS.activation.copyLineButton)}
+              {copyFailed
+                ? t(I18N_KEYS.common.copyFailed)
+                : copied
+                  ? t(I18N_KEYS.common.copied)
+                  : t(I18N_KEYS.activation.copyLineButton)}
             </Button>
             <Button
               variant="ghost"
@@ -144,13 +150,13 @@ export function ActivationBanner() {
 async function copyToClipboard(
   text: string,
   onCopied: (v: boolean) => void,
+  onCopyFailed: (v: boolean) => void,
 ): Promise<void> {
   const ok = await writeClipboard(text);
-  if (!ok) {
-    // Silent failure — the banner stays put, the user can
-    // re-click. Surfacing a toast here would be noise.
-    return;
-  }
-  onCopied(true);
-  window.setTimeout(() => onCopied(false), 1500);
+  onCopied(ok);
+  onCopyFailed(!ok);
+  window.setTimeout(() => {
+    onCopied(false);
+    onCopyFailed(false);
+  }, 1500);
 }

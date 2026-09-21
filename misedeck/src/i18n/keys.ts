@@ -30,6 +30,10 @@ export const I18N_KEYS = {
         affordance — one shared key (issue #171); was duplicated as
         `execution.copied` / `tooltip.copied` / `activation.copiedHint`. */
     copied: "common.copied",
+    /** The transient "Copy failed" acknowledgement shown by every copy
+        affordance when the clipboard write did not land — copy failure
+        must never be silent (issue #183). */
+    copyFailed: "common.copyFailed",
     outdatedCount: "common.outdatedCount",
     allUpToDate: "common.allUpToDate",
     filter: {

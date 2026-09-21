@@ -29,6 +29,7 @@ once_cell = "1"
 # Windows). Already in the lockfile as a tauri transitive; promoted to a
 # direct dependency to anchor Global-mode runs at $HOME (issue #179).
 dirs = "6"
+tauri-plugin-clipboard-manager = "2.3.3"
 
 # macOS-only: used to bridge the WKWebView into the macOS accessibility tree
 # (see issue #53). Gated to macOS so non-Apple builds never pull it in.

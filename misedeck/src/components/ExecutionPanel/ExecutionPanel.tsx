@@ -96,8 +96,10 @@ export function ExecutionPanel() {
   const { state, runs, activeRunId, selectRun, cancel, dismiss } = useExecutionContext();
   const logRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
-  // Transient "Copied" acknowledgement for the copy affordance.
+  // Transient "Copied" / "Copy failed" acknowledgement for the copy
+  // affordance. A failed copy must not be silent (issue #183).
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   const copiedTimerRef = useRef<number | null>(null);
 
   // Log height is user-adjustable via the top-edge drag handle and
@@ -163,13 +165,15 @@ export function ExecutionPanel() {
   // line, never a paraphrase.
   const onCopy = async () => {
     if (!echo) return;
-    if (!(await writeClipboard(echo))) return;
-    setCopied(true);
+    const ok = await writeClipboard(echo);
+    setCopied(ok);
+    setCopyFailed(!ok);
     if (copiedTimerRef.current !== null) {
       window.clearTimeout(copiedTimerRef.current);
     }
     copiedTimerRef.current = window.setTimeout(() => {
       setCopied(false);
+      setCopyFailed(false);
       copiedTimerRef.current = null;
     }, 1500);
   };
@@ -276,7 +280,11 @@ export function ExecutionPanel() {
                 title={t(I18N_KEYS.execution.copyHint)}
                 data-testid="execution-copy-command"
               >
-                {copied ? t(I18N_KEYS.common.copied) : t(I18N_KEYS.execution.copy)}
+                {copyFailed
+                  ? t(I18N_KEYS.common.copyFailed)
+                  : copied
+                    ? t(I18N_KEYS.common.copied)
+                    : t(I18N_KEYS.execution.copy)}
               </button>
             )}
             {state.status === "running" && (

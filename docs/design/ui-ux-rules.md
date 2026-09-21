@@ -42,6 +42,7 @@ Before shipping any screen, ask: **could a mise CLI user predict what this scree
 - An inline form closes or clears its draft only when the write resolves ok (`res.kind === "ok"`); a failed run or a trust-blocked attempt keeps the draft open — nothing the user typed is lost (beta11, issue #163).
 - Every feature stays reachable in every layout state. Collapsing the sidebar hides labels, not capabilities — language, theme, and every page keep an icon entry.
 - No dead ends: anything the user can browse offers its natural next step. The add-tool entry is the Tools page's top registry search (`mise use`, issue #134); the Plugins page pairs installed-plugin management with the custom-plugin install form (`mise plugins install <name> <git-url>`, #164) — registry short names install from the Tools search, git-URL plugins from the Plugins form.
+- Copy failure must never be silent: any copy affordance whose clipboard write does not land shows visible feedback — a transient "Copy failed" state, same mechanism as the "Copied" acknowledgement. A click with no acknowledgement reads as a broken button (beta12, issue #183).
 
 ## Layout & typography
 
