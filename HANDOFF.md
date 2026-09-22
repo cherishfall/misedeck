@@ -2,7 +2,22 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-22 — beta13 RELEASED, beta12 batch fully closed: #176–#186)
+## CURRENT STATE (2026-09-23 — beta13 batch fully closed: #188–#191, beta14 RELEASE RUN TRIGGERED)
+
+**v1.0.0-beta.14 released** (tag `v1.0.0-beta.14` pushed + verified on remote, bump commit `9d19ca1`, release run `35771312219` — **status to be confirmed; ~9 min build, 6 assets expected on the GitHub Pre-release**). Carries the complete beta13 feedback batch: SPEC #187 with all 4 tickets closed, every one `npm run ci` green (cargo green where Rust touched), **NOT visually verified — owner verifies manually**. Source of truth: `docs/feedback/beta13-feedback-scratch.md` (committed `577b8bc`).
+
+| Ticket | Commit | Scope |
+| --- | --- | --- |
+| #188 | `30f8f25` | 版本管理区重设计：标题「版本管理」(Manage versions)、TableFilter `hideClear` 单一清除、三段分区裸动词操作（取消使用/使用/卸载/安装）、五个解释弹窗、in-config-range upgrade 不带 `--bump`（JS+Rust argv 同步退役）、Global 模式 unuse 带 `-g`、三张表 Actions 列对齐 |
+| #189 | `78dc7e3` | 主表 Actions 只剩 ghost「版本管理」入口（RowActions/unuse 弹窗 orphan 分支删除）；`focusTool` 受控展开 API（seq bump → 展开+搜索+滚动）；可升级 chip（Badge，Latest 列退役、Version 列 220px）；Rust `mise_uninstall_all_argv` + fixture 彻底移除 |
+| #190 | `b9db3cb` | ADR-0008 动词表按落地文案重定 + beta13 Amendment（含不做批量卸载的产品决策）；ui-ux-rules :39/:40/:44/:93/:104 + 变体表两条新规则；product-logic policy 7 扩展 —— 全部双语镜像；「标签绝不配 uninstall」字面被取代的原则在 issue 上注明 |
+| #191 | `80b654f` | `commandEcho.ts` 纯模块 + 5 tests：全局模式回显隐藏 `-C $HOME`（执行层 `-C $HOME` 锚点保留，#179 未回退）、目录模式内联 `-C <dir>`；ConfirmDialog 新增 `cwd` prop + `execution.workingDirHome` 行（10 处调用点接入，self-update 例外）；规则固化 ui-ux-rules 双语 |
+
+**Owner's next moves:** (1) install beta.14 and work the manual-verify list on SPEC #187 (notable: #188 three-section actions + explanatory dialogs, #189 manage-versions expand flow + upgrade chip, #191 global-mode echo + working-dir line); (2) close #187 when satisfied; (3) next feedback cycle → new scratch + new SPEC parent.
+
+---
+
+## PREVIOUS STATE (2026-09-22 — beta13 RELEASED, beta12 batch fully closed: #176–#186)
 
 **v1.0.0-beta.13 released** (tag `v1.0.0-beta.13` pushed + verified on remote, bump commit `66df64c`, release run `35630355246` — **success, all 6 assets on the GitHub Pre-release**). Carries the complete beta12 feedback batch: SPEC #175 with all 11 tickets closed, every one `npm run ci` green (cargo green where Rust touched), **NOT visually verified — owner verifies manually**.
 
