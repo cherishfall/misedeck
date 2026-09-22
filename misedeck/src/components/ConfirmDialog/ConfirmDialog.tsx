@@ -24,7 +24,9 @@
 // command-firing controls and never run-lock.
 
 import { useEffect, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
+import { I18N_KEYS } from "../../i18n/keys";
 import { Button } from "../Button/Button";
 import styles from "./ConfirmDialog.module.css";
 
@@ -47,6 +49,15 @@ export interface ConfirmDialogProps {
   danger?: boolean;
   /** True only while the specific command this dialog dispatches runs. */
   confirmBusy: boolean;
+  /**
+   * The directory context the confirmed command runs in. Global mode
+   * (`null`) renders a "Working directory: ~ (home)" context line under
+   * the command, because the terminal-perspective echo omits `-C $HOME`
+   * there (issue #191); Directory mode shows the directory inline in
+   * the `-C <dir>` echo and gets no extra line. Omit for non-mise
+   * commands (e.g. the self-update confirmation).
+   */
+  cwd?: string | null;
   onConfirm: () => void;
   onCancel: () => void;
   /** Optional extra node rendered under the command (e.g. a warning). */
@@ -62,10 +73,13 @@ export function ConfirmDialog({
   cancelLabel,
   danger = true,
   confirmBusy,
+  cwd,
   onConfirm,
   onCancel,
   children,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation();
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -102,6 +116,11 @@ export function ConfirmDialog({
             <code className={styles.command}>{c}</code>
           </div>
         ))}
+        {cwd === null && (
+          <p className={styles.workingDir}>
+            {t(I18N_KEYS.execution.workingDirHome)}
+          </p>
+        )}
         {children}
         <div className={styles.actions}>
           <Button variant="secondary" size="sm" onClick={onCancel}>

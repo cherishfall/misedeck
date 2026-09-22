@@ -10,7 +10,8 @@
 //
 // The state machine is lifted to `useExecutionContext` so any page can
 // trigger an install, self-update, or arbitrary mise command. The
-// panel itself is presentational.
+// panel itself is presentational. The command echo itself lives in
+// `commandEcho.ts` (pure, unit-tested; issue #191).
 
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useTranslation } from "react-i18next";
@@ -21,8 +22,11 @@ import { Tooltip } from "../Tooltip";
 import { IconButton } from "../IconButton/IconButton";
 import { writeClipboard } from "../../utils/clipboard";
 import { useExecutionContext } from "./ExecutionContext";
+import { commandEcho } from "./commandEcho";
 import type { ExecutionStatus } from "./useExecution";
 import styles from "./ExecutionPanel.module.css";
+
+export { commandEcho } from "./commandEcho";
 
 /** localStorage key for the persisted panel height (issue #108). */
 const PANEL_HEIGHT_KEY = "misedeck.panelHeight.v1";
@@ -30,51 +34,6 @@ const PANEL_HEIGHT_KEY = "misedeck.panelHeight.v1";
 const DEFAULT_PANEL_HEIGHT = 240;
 const MIN_PANEL_HEIGHT = 120;
 const MAX_PANEL_HEIGHT = 600;
-
-/**
- * Build the human-readable command echo (what the user would type in
- * a terminal) for the active execution. `mise` runs an arbitrary
- * command; `install` runs the official install script (the actual
- * platform-specific command is built in Rust); `selfUpdate` runs
- * `mise self-update`.
- *
- * The runner anchors every mise invocation at a directory context:
- * Directory mode passes `-C <cwd>`; Global mode (`cwd === null`)
- * passes `-C $HOME` (issue #179) — the echo renders exactly what
- * runs, so Global-mode commands teach `-C $HOME`, not a bare command
- * that would resolve from the terminal's cwd instead.
- *
- * Exported so confirmations (e.g. the uninstall dialog, issue #56) can
- * show the exact command that will run — identical to what the deck
- * echoes once the mutation dispatches.
- */
-export function commandEcho(
-  kind: "mise" | "install" | "selfUpdate",
-  cwd: string | null,
-  args: string[],
-): string {
-  if (kind === "install") {
-    return "curl -fsSL https://mise.jdx.dev/install.sh | sh";
-  }
-  if (kind === "selfUpdate") {
-    const parts: string[] = ["mise"];
-    parts.push("-C", cwd ?? "$HOME");
-    // `--yes` is what the runner really passes (issue #125): the CLI's
-    // own `[Y/n]` prompt is bypassed, the GUI confirms first instead.
-    parts.push("self-update", "--yes");
-    return parts.join(" ");
-  }
-  const parts: string[] = ["mise"];
-  parts.push("-C", cwd ?? "$HOME");
-  for (const a of args) {
-    if (a.includes(" ") || a.includes("\t")) {
-      parts.push(JSON.stringify(a));
-    } else {
-      parts.push(a);
-    }
-  }
-  return parts.join(" ");
-}
 
 /** Map a run's status to the status-dot tone used by the run switcher. */
 function runTone(status: ExecutionStatus): "beam" | "ok" | "fail" | "dim" {
@@ -336,6 +295,11 @@ export function ExecutionPanel() {
             )}
           </div>
         </div>
+        {echo && state.kind === "mise" && state.request?.cwd === null && (
+          <div className={styles.workingDir}>
+            {t(I18N_KEYS.execution.workingDirHome)}
+          </div>
+        )}
         <div
           ref={logRef}
           onScroll={handleScroll}

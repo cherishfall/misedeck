@@ -687,6 +687,7 @@ export function ToolsPage() {
                     ? upgradeRun.isRunning
                     : removalRun.isRunning
           }
+          cwd={cwd}
           danger={pendingAction?.kind === "unuse" || pendingAction?.kind === "uninstall"}
           title={
             pendingAction?.kind === "unuse"

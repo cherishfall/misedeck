@@ -967,6 +967,7 @@ function TaskForm({
       <ConfirmDialog
         open={confirmingFlatten}
         confirmBusy={disabled}
+        cwd={cwd}
         title={t(I18N_KEYS.tasks.confirm.flattenRun.title)}
         body={t(I18N_KEYS.tasks.confirm.flattenRun.body)}
         command={commandEcho(

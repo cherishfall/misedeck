@@ -624,6 +624,7 @@ function EnvRowActions({
         <ConfirmDialog
           open={confirmingRename}
           confirmBusy={disabled}
+          cwd={cwd}
           title={t(I18N_KEYS.env.confirm.rename.title, { from: row.name, to: name })}
           body={t(I18N_KEYS.env.confirm.rename.body)}
           command={[
@@ -646,6 +647,7 @@ function EnvRowActions({
         <ConfirmDialog
           open={confirmingRenameOverwrite}
           confirmBusy={disabled}
+          cwd={cwd}
           title={t(I18N_KEYS.env.confirm.renameOverwrite.title, { from: row.name, to: name })}
           body={t(I18N_KEYS.env.confirm.renameOverwrite.body, { to: name })}
           command={[
@@ -670,6 +672,7 @@ function EnvRowActions({
         <ConfirmDialog
           open={confirmingOutOfScopeSet}
           confirmBusy={disabled}
+          cwd={cwd}
           title={t(I18N_KEYS.env.confirm.update.title, { name })}
           body={t(I18N_KEYS.env.confirm.update.body)}
           command={commandEcho("mise", cwd, miseEnvSetArgs(name, value, cwd))}
@@ -712,6 +715,7 @@ function EnvRowActions({
       <ConfirmDialog
         open={confirmingUnset}
         confirmBusy={disabled}
+        cwd={cwd}
         title={t(I18N_KEYS.env.confirm.unset.title, { name: row.name })}
         body={t(I18N_KEYS.env.confirm.unset.body)}
         command={commandEcho("mise", cwd, miseEnvUnsetArgs(row.name, cwd))}
@@ -843,6 +847,7 @@ function AddEnvForm({
       <ConfirmDialog
         open={confirmingOverwrite}
         confirmBusy={disabled}
+        cwd={cwd}
         title={t(I18N_KEYS.env.confirm.overwrite.title, { name })}
         body={t(I18N_KEYS.env.confirm.overwrite.body, { name })}
         command={commandEcho("mise", cwd, miseEnvSetArgs(name, value, cwd))}

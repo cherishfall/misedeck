@@ -87,6 +87,11 @@ export const I18N_KEYS = {
     runsRecent: "execution.runsRecent",
     /** Close one finished run entry from the switcher (issue #180). */
     closeRun: "execution.closeRun",
+    /**
+     * Working-directory context line paired with the terminal-perspective
+     * echo in Global mode, where the echo omits `-C $HOME` (issue #191).
+     */
+    workingDirHome: "execution.workingDirHome",
   },
   tooltip: {
     copy: "tooltip.copy",

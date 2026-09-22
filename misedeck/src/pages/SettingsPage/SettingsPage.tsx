@@ -555,6 +555,7 @@ function RowActions({
       <ConfirmDialog
         open={confirmingUnset}
         confirmBusy={disabled}
+        cwd={cwd}
         title={t(I18N_KEYS.settings.confirm.unset.title, { key: row.key })}
         body={t(I18N_KEYS.settings.confirm.unset.body, { key: row.key })}
         command={commandEcho("mise", cwd, miseSettingsUnsetArgs(row.key, cwd))}
@@ -671,6 +672,7 @@ function AddSettingForm({
       <ConfirmDialog
         open={confirmingOverwrite}
         confirmBusy={disabled}
+        cwd={cwd}
         title={t(I18N_KEYS.settings.confirm.overwrite.title, { key })}
         body={t(I18N_KEYS.settings.confirm.overwrite.body, { key })}
         command={commandEcho("mise", cwd, miseSettingsSetArgs(key, value, cwd))}

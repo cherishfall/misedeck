@@ -254,6 +254,7 @@ export function PluginsPage() {
         <ConfirmDialog
           open={pendingUninstall !== null}
           confirmBusy={uninstall.isRunning}
+          cwd={cwd}
           title={
             pendingUninstall
               ? t(I18N_KEYS.plugins.confirm.uninstall.title, { name: pendingUninstall })

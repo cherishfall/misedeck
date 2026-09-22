@@ -601,7 +601,8 @@
     "reopenRunning": "Execution · running",
     "runsRunning": "{{count}} running",
     "runsRecent": "{{count}} recent",
-    "closeRun": "Close"
+    "closeRun": "Close",
+    "workingDirHome": "Working directory: ~ (home)"
   },
   "tooltip": {
     "copy": "Copy"

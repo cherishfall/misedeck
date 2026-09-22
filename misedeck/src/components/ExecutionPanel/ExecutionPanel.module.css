@@ -113,6 +113,11 @@
   min-width: 0;
 }
 
+.workingDir {
+  color: var(--dim);
+  font-size: var(--size-data);
+}
+
 .statusLabel {
   color: var(--text);
 }

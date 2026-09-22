@@ -62,6 +62,12 @@
   overflow-wrap: anywhere;
 }
 
+.workingDir {
+  margin: 0;
+  font-size: var(--size-data);
+  color: var(--dim);
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;
