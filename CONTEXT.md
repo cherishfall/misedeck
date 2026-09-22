@@ -69,5 +69,5 @@ _Avoid_: setup
 _Avoid_: remove, delete (at version level)
 
 **Orphan installation**:
-A Tool that is installed but requested by no Config file (e.g. from a manual CLI `mise install`). `mise ls` reports it as an unrequested item; in the GUI its row carries an orphan badge, and its tool-level removal runs `mise uninstall --all <tool>` instead of `mise unuse` (ADR-0008). UI copy: "Orphan" / 孤立安装.
+A Tool that is installed but requested by no Config file (e.g. from a manual CLI `mise install`). `mise ls` reports it as an unrequested item; in the GUI its row carries an orphan badge, and its versions are removed one by one in the version-management section — `mise uninstall --all` never enters the GUI (beta13 batch-operation ban, #189). UI copy: "Orphan" / 孤立安装.
 _Avoid_: stray, unused tool

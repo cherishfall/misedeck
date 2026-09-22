@@ -69,5 +69,5 @@ _Avoid_: setup
 _Avoid_: remove, delete（版本级）
 
 **Orphan installation**（孤立安装）:
-已安装但没有任何 Config file 请求的 Tool（例如手动执行 CLI `mise install` 装上的）。`mise ls` 会将其报告为未请求项；GUI 中该行带有孤立安装徽标，其工具级移除运行 `mise uninstall --all <tool>` 而非 `mise unuse`（ADR-0008）。UI 文案："Orphan" / 孤立安装。
+已安装但没有任何 Config file 请求的 Tool（例如手动执行 CLI `mise install` 装上的）。`mise ls` 会将其报告为未请求项；GUI 中该行带有孤立安装徽标，其版本在「版本管理」区逐版本卸载——`mise uninstall --all` 不进入 GUI（beta13 批量禁令，#189）。UI 文案："Orphan" / 孤立安装。
 _Avoid_: stray, unused tool

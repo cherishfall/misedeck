@@ -48,12 +48,22 @@
 
 /* ---------- Table cells ---------- */
 
-/* min-width = sum of declared column widths (160 tool + 140 version +
- * 160 requested + 120 backend (conditional) + 100 source + 150 latest
- * (conditional) + 220 actions): below this the shared scroller scrolls
- * horizontally instead of crushing columns (issues #90, #103). */
+/* min-width = sum of declared column widths (160 tool + 220 version +
+ * 160 requested + 120 backend (conditional) + 100 source + 160
+ * actions): below this the shared scroller scrolls horizontally instead
+ * of crushing columns (issues #90, #103). */
 .toolsTable {
-  min-width: 1050px;
+  min-width: 920px;
+}
+
+/* The Version cell's wrapper (#189): the version-switch trigger renders
+ * beside the upgrade chip. Both sit on one line; the chip is the 10px
+ * in-cell size and never wraps. */
+.versionCell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .cellTool {
@@ -147,22 +157,6 @@
   color: var(--dim);
 }
 
-.cellLatest {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-  font-family: var(--font-mono);
-  font-size: var(--size-data);
-  color: var(--text);
-}
-
-.latestValue {
-  color: var(--flare);
-  font-weight: 600;
-}
-
 .dim {
   color: var(--dim);
 }
@@ -213,13 +207,6 @@
   .useOptionCurrent {
     transition: none;
   }
-}
-
-.cellActions {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  white-space: nowrap;
 }
 
 /* ---------- Loading / error states ---------- */

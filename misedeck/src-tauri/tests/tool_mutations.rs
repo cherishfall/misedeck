@@ -7,7 +7,6 @@
 //   * `mise_install_argv(tool, version)`  → argv for `mise install <tool>@<version>`
 //   * `mise_uninstall_argv(tool, version)` → argv for `mise uninstall <tool>@<version>`
 //   * `mise_unuse_argv(tool)`              → argv for `mise unuse <tool>`
-//   * `mise_uninstall_all_argv(tool)`      → argv for `mise uninstall --all <tool>`
 //   * `mise_upgrade_argv(tool)`            → argv for `mise upgrade [<tool>]`
 //
 // These helpers exist so the JS side has a typed builder for the
@@ -18,7 +17,6 @@
 //   `mise install <tool>@<version>`      → ["install", "<tool>@<version>"]
 //   `mise uninstall <tool>@<version>`     → ["uninstall", "<tool>@<version>"]
 //   `mise unuse <tool>`                   → ["unuse", "<tool>"]
-//   `mise uninstall --all <tool>`         → ["uninstall", "--all", "<tool>"]
 //   `mise upgrade`                        → ["upgrade"]
 //   `mise upgrade <tool>`                 → ["upgrade", "<tool>"]
 //
@@ -30,7 +28,7 @@
 use std::path::PathBuf;
 
 use misedeck_lib::mise::{
-    mise_install_argv, mise_link_argv, mise_uninstall_all_argv, mise_uninstall_argv,
+    mise_install_argv, mise_link_argv, mise_uninstall_argv,
     mise_unuse_argv, mise_upgrade_argv, run_mise, RunEvent, RunRequest,
 };
 use serial_test::serial;
@@ -92,17 +90,6 @@ fn mise_unuse_argv_builds_unuse_command() {
     // Tool-level removal (ADR-0008): drop the config request and prune.
     let argv = mise_unuse_argv("node");
     assert_eq!(argv, vec!["unuse".to_string(), "node".to_string()]);
-}
-
-#[test]
-fn mise_uninstall_all_argv_builds_orphan_removal_command() {
-    // Orphan installations have no config request for `unuse` to
-    // remove, so the same UI action dispatches `mise uninstall --all`.
-    let argv = mise_uninstall_all_argv("node");
-    assert_eq!(
-        argv,
-        vec!["uninstall".to_string(), "--all".to_string(), "node".to_string()]
-    );
 }
 
 #[test]
@@ -213,26 +200,6 @@ fn run_mise_with_unuse_argv_streams_to_exit() {
             events2.lock().unwrap().push(e);
         })
         .expect("unuse fixture should yield Ok");
-        assert_eq!(outcome.exit_code, 0, "outcome = {outcome:?}");
-        let evs = events.lock().unwrap();
-        assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));
-        assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
-    });
-}
-
-#[test]
-#[serial]
-fn run_mise_with_uninstall_all_argv_streams_to_exit() {
-    let script = fixture_script();
-    with_slug("uninstall---all---node", || {
-        let events: std::sync::Arc<std::sync::Mutex<Vec<RunEvent>>> =
-            std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
-        let events2 = std::sync::Arc::clone(&events);
-        let req = RunRequest::new(mise_uninstall_all_argv("node"));
-        let outcome = run_mise(&script, &req, move |e| {
-            events2.lock().unwrap().push(e);
-        })
-        .expect("uninstall --all fixture should yield Ok");
         assert_eq!(outcome.exit_code, 0, "outcome = {outcome:?}");
         let evs = events.lock().unwrap();
         assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));

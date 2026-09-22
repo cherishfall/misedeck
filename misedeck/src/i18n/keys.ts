@@ -145,7 +145,6 @@ export const I18N_KEYS = {
       requested: "tools.columns.requested",
       backend: "tools.columns.backend",
       source: "tools.columns.source",
-      latest: "tools.columns.latest",
       actions: "tools.columns.actions",
     },
     orphan: {
@@ -156,6 +155,9 @@ export const I18N_KEYS = {
       switchVersion: "tools.tooltip.switchVersion",
       singleVersion: "tools.tooltip.singleVersion",
     },
+    /** The in-cell chip naming the newest version on an outdated row
+     *  (#189): pure information, not a control. */
+    upgradeChip: "tools.upgradeChip",
     empty: {
       title: "tools.empty.title",
       body: "tools.empty.body",
@@ -176,6 +178,10 @@ export const I18N_KEYS = {
       upgrade: "tools.actions.upgrade",
       use: "tools.actions.use",
       link: "tools.actions.link",
+      /** The main-table action cell's single button (#189): navigates
+       *  to the version-management region — distinct from the region's
+       *  own title (`addTool.title`) even though the words match. */
+      manageVersions: "tools.actions.manageVersions",
     },
     confirm: {
       use: {

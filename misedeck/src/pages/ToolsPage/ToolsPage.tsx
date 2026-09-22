@@ -12,7 +12,7 @@
 //   * mise install           → install only a version (version-management
 //                              section, confirmed since #188)
 //   * mise unuse             → remove a tool (config request + installs);
-//                              orphans run `mise uninstall --all` (ADR-0008)
+//                              version-management section only (#189)
 //   * mise uninstall         → delete one version's files (#188: offered
 //                              on in-use rows too, except not-installed)
 //   * mise upgrade           → upgrade an outdated tool within its
@@ -102,25 +102,24 @@ interface ToolRow {
   /** The latest version from the outdated map (empty when up to date). */
   latest: string;
   /** True when no Config file requests this tool (an orphan
-   *  installation, e.g. from a manual CLI `mise install`) — its Unuse
-   *  action runs `mise uninstall --all` instead of `mise unuse`
-   *  (ADR-0008). */
+   *  installation, e.g. from a manual CLI `mise install`) — its row
+   *  carries the orphan badge and a dim "—" request. Tool-level removal
+   *  stays in the version-management section's in-use rows (#189). */
   orphan: boolean;
   /** Stable key. */
   id: string;
 }
 
 /** The pending action behind the confirmation dialog (ADR-0008, issue
- *  #131; #188 extends it to every version-management action). `unuse`
- *  is the tool-level removal: it runs `mise unuse <tool>`, or `mise
- *  uninstall --all <tool>` when the tool is an orphan (no Config file
- *  requests it — `unuse` would error; the orphan branch retires with
- *  the main-table rework, #189). `uninstall` is the per-version file
- *  deletion; `use` / `install` / `upgrade` are the version-management
- *  section's remaining actions. The dialog shows the exact argv for
- *  every kind. */
+ *  #131; #188 extends it to every version-management action; #189
+ *  removes the main table's actions, so `unuse` now comes only from the
+ *  version-management section's in-use rows — where a config request
+ *  always exists, so there is no orphan branch and no `uninstall --all`
+ *  path anywhere). `uninstall` is the per-version file deletion; `use` /
+ *  `install` / `upgrade` are the version-management section's remaining
+ *  actions. The dialog shows the exact argv for every kind. */
 type PendingAction =
-  | { kind: "unuse"; tool: string; orphan: boolean }
+  | { kind: "unuse"; tool: string }
   | { kind: "uninstall"; tool: string; version: string }
   | { kind: "use"; tool: string; version: string }
   | { kind: "install"; tool: string; version: string }
@@ -156,15 +155,14 @@ function miseUninstallArgs(tool: string, version: string): string[] {
 }
 
 // Tool-level removal (ADR-0008, issue #131): `mise unuse <tool>` drops
-// the tool from the Config file and prunes its installations. Orphan
-// installations (no Config file requests the tool) have no request for
-// `unuse` to remove, so the same action runs `mise uninstall --all
-// <tool>` instead — the confirmation dialog shows the exact argv either
-// way. In Global mode the command carries `-g` explicitly (beta13): the
-// echo must read as a dispatchable command, not rely on the runner's
-// hidden `-C $HOME` anchoring.
-function miseUnuseArgs(tool: string, orphan: boolean, cwd: string | null): string[] {
-  if (orphan) return ["uninstall", "--all", tool];
+// the tool from the Config file and prunes its installations. Only the
+// version-management section's in-use rows reach this — a row there
+// always carries a config request, so no orphan branch exists (#189:
+// `mise uninstall --all` does not enter the GUI, the beta13
+// batch-operation ban). In Global mode the command carries `-g`
+// explicitly (beta13): the echo must read as a dispatchable command,
+// not rely on the runner's hidden `-C $HOME` anchoring.
+function miseUnuseArgs(tool: string, cwd: string | null): string[] {
   return cwd === null ? ["unuse", "-g", tool] : ["unuse", tool];
 }
 
@@ -226,6 +224,16 @@ export function ToolsPage() {
   // confirms. No action runs without this confirmation.
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
+  // The main table's single action (#189): a "Manage versions" request
+  // to the region below. `seq` bumps on every click — including a repeat
+  // click on the same row — so the region re-expands, re-searches, and
+  // re-scrolls every time. The region owns the disclosure/search state;
+  // this is just the controlled input it reacts to.
+  const [manageFocus, setManageFocus] = useState<{ tool: string; seq: number } | null>(null);
+  const onManageVersions = useCallback((tool: string) => {
+    setManageFocus((f) => ({ tool, seq: (f?.seq ?? 0) + 1 }));
+  }, []);
+
   // Friendly message from the most recent link run (issue #71). Null
   // unless the last `mise link` failed with a recognized conflict.
   const [linkConflict, setLinkConflict] = useState<string | null>(null);
@@ -258,8 +266,8 @@ export function ToolsPage() {
   // this page gets its own `useOwnRun()` hook, so a control freezes only
   // while the command *its own family* dispatched is in flight — a
   // multi-minute install of one tool never disables another row's
-  // Upgrade, the version-management section's confirm dialogs, or the
-  // link form. The families are the mise commands: use, install,
+  // version switch, the version-management section's confirm dialogs,
+  // or the link form. The families are the mise commands: use, install,
   // upgrade, link, and removal (unuse/uninstall, dispatched only by the
   // confirm dialog). A successful mutation refreshes the tools +
   // outdated reads (the version-management section's in-use and
@@ -435,34 +443,6 @@ export function ToolsPage() {
   };
   const showBackend = rows.some((r) => r.backend !== undefined);
 
-  // The Latest column exists only when at least one row is outdated
-  // (beta11 2-c): with every tool up to date the column would render
-  // nothing but "—" — noise, not data. Same conditional-column logic as
-  // the Backend column; the OutdatedHint counter still communicates
-  // "all up to date" when the column is absent.
-  const latestColumn: TableColumn<ToolRow> = {
-    key: "latest",
-    header: t(I18N_KEYS.tools.columns.latest),
-    width: "150px",
-    sortValue: (r) => (r.outdated ? r.latest : ""),
-    sortVersion: true,
-    cell: (r) =>
-      // The full current → latest upgrade path; the shared
-      // `upgrade-arrow` span carries the --flare arrow (issue #110).
-      r.outdated ? (
-        <Tooltip text={`${r.version} → ${r.latest}`}>
-          <span className={styles.cellLatest}>
-            {r.version}{" "}
-            <span className="upgrade-arrow" aria-hidden="true">→</span>{" "}
-            <span className={styles.latestValue}>{r.latest}</span>
-          </span>
-        </Tooltip>
-      ) : (
-        <span className={styles.dim}>—</span>
-      ),
-  };
-  const showLatest = rows.some((r) => r.outdated);
-
   const columns: TableColumn<ToolRow>[] = [
     {
       key: "tool",
@@ -483,26 +463,41 @@ export function ToolsPage() {
       // #151, merging the retired Use column): the data renders once,
       // and the cell doubles as the control — hover shows the option
       // hover wash and the Tooltip teaches "click to switch version"
-      // instead of repeating the value (beta11 2-d/3-f).
+      // instead of repeating the value (beta11 2-d/3-f). An outdated row
+      // additionally carries the upgrade chip — pure information naming
+      // the newest version (`mise outdated`), not a control (#189: the
+      // upgrade action lives in the version-management section's in-use
+      // header; the main table's action column only navigates there).
       key: "version",
       header: t(I18N_KEYS.tools.columns.version),
-      width: "140px",
+      // Wide enough for the version plus the upgrade chip's full text —
+      // an ellipsized chip would be data cut off, and the cell's
+      // ellipsis defence (`.versionCell`) shrinks the version text
+      // first, never the chip.
+      width: "220px",
       minWidth: "96px",
       sortValue: (r) => r.version,
       sortVersion: true,
       cell: (r) => (
-        <UseVersionCell
-          row={r}
-          disabled={useRun.isRunning}
-          versions={versionsByTool.get(r.tool) ?? []}
-          onUse={(version) =>
-            void fireMutation(
-              useRun,
-              (cwd) => miseUseArgs(r.tool, version, cwd),
-              t(I18N_KEYS.tools.success.used, { tool: r.tool, version }),
-            )
-          }
-        />
+        <span className={styles.versionCell}>
+          <UseVersionCell
+            row={r}
+            disabled={useRun.isRunning}
+            versions={versionsByTool.get(r.tool) ?? []}
+            onUse={(version) =>
+              void fireMutation(
+                useRun,
+                (cwd) => miseUseArgs(r.tool, version, cwd),
+                t(I18N_KEYS.tools.success.used, { tool: r.tool, version }),
+              )
+            }
+          />
+          {r.outdated && (
+            <Badge variant="warning" data-testid={`tools-upgrade-chip-${r.tool}`}>
+              {t(I18N_KEYS.tools.upgradeChip, { latest: r.latest })}
+            </Badge>
+          )}
+        </span>
       ),
     },
     {
@@ -535,28 +530,24 @@ export function ToolsPage() {
       sortValue: (r) => r.source,
       cell: (r) => <Tooltip text={r.source}><span className={styles.cellSource}>{r.source}</span></Tooltip>,
     },
-    // The Latest column renders only when at least one row is outdated
-    // (see `latestColumn` / `showLatest` above).
-    ...(showLatest ? [latestColumn] : []),
     {
+      // The action column's single control (#189): a ghost "Manage
+      // versions" button — navigation, not a mutation. Clicking expands
+      // the version-management region below (when collapsed), searches
+      // the tool there, and scrolls to it; every actual version action
+      // lives in that region and confirms through the dialog below.
       key: "actions",
       header: t(I18N_KEYS.tools.columns.actions),
-      width: "220px",
+      width: "160px",
       cell: (r) => (
-        <RowActions
-          row={r}
-          disabled={upgradeRun.isRunning}
-          onUnuse={() =>
-            setPendingAction({ kind: "unuse", tool: r.tool, orphan: r.orphan })
-          }
-          onUpgrade={() =>
-            void fireMutation(
-              upgradeRun,
-              () => miseUpgradeArgs(r.tool),
-              t(I18N_KEYS.tools.success.upgraded, { tool: r.tool }),
-            )
-          }
-        />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onManageVersions(r.tool)}
+          data-testid={`tools-manage-${r.tool}`}
+        >
+          {t(I18N_KEYS.tools.actions.manageVersions)}
+        </Button>
       ),
     },
   ];
@@ -642,12 +633,13 @@ export function ToolsPage() {
             above. The toggle and the Clear button are browsing and
             never run-locked (issues #135 + #138). */}
         <AddToolSection
+          focusTool={manageFocus}
           onUse={(tool, version) => setPendingAction({ kind: "use", tool, version })}
           onInstall={(tool, version) => setPendingAction({ kind: "install", tool, version })}
           onUninstall={(tool, version) =>
             setPendingAction({ kind: "uninstall", tool, version })
           }
-          onUnuse={(tool) => setPendingAction({ kind: "unuse", tool, orphan: false })}
+          onUnuse={(tool) => setPendingAction({ kind: "unuse", tool })}
           onUpgrade={(tool) => setPendingAction({ kind: "upgrade", tool })}
         />
 
@@ -677,12 +669,11 @@ export function ToolsPage() {
         </section>
 
         {/* The five-action confirmation dialog (beta13 #188): every
-            version-management action — and the main table's Unuse until
-            #189 — explains what changes, shows the exact command, and
-            dispatches only on confirm. Destructive actions (Unuse,
-            Uninstall) confirm danger; Use / Install / Upgrade confirm
-            primary. The confirm button locks only while its own
-            family's command runs. */}
+            version-management action explains what changes, shows the
+            exact command, and dispatches only on confirm. Destructive
+            actions (Unuse, Uninstall) confirm danger; Use / Install /
+            Upgrade confirm primary. The confirm button locks only while
+            its own family's command runs. */}
         <ConfirmDialog
           open={pendingAction !== null}
           confirmBusy={
@@ -738,7 +729,7 @@ export function ToolsPage() {
                   "mise",
                   cwd,
                   pendingAction.kind === "unuse"
-                    ? miseUnuseArgs(pendingAction.tool, pendingAction.orphan, cwd)
+                    ? miseUnuseArgs(pendingAction.tool, cwd)
                     : pendingAction.kind === "uninstall"
                       ? miseUninstallArgs(pendingAction.tool, pendingAction.version)
                       : pendingAction.kind === "use"
@@ -767,7 +758,7 @@ export function ToolsPage() {
             if (target?.kind === "unuse") {
               void fireMutation(
                 removalRun,
-                (cwd) => miseUnuseArgs(target.tool, target.orphan, cwd),
+                (cwd) => miseUnuseArgs(target.tool, cwd),
                 t(I18N_KEYS.tools.success.unused, { tool: target.tool }),
               );
             } else if (target?.kind === "uninstall") {
@@ -809,7 +800,7 @@ export function ToolsPage() {
   );
 }
 
-// ---------- Row actions ----------
+// ---------- Version cell (issues #132 + #151) ----------
 
 interface UseVersionCellProps {
   row: ToolRow;
@@ -909,53 +900,6 @@ function UseVersionCell({ row, disabled, versions, onUse }: UseVersionCellProps)
         })}
       </div>
     </FloatingMenu>
-  );
-}
-
-interface RowActionsProps {
-  row: ToolRow;
-  disabled: boolean;
-  onUnuse: () => void;
-  onUpgrade: () => void;
-}
-
-/**
- * The mutation buttons for one tool row. An outdated row gets an
- * Upgrade button (`mise upgrade <tool>`, within the config's range
- * since beta13); Unuse (ADR-0008, issue #131) dispatches `mise unuse
- * <tool>` — or `mise uninstall --all <tool>` for an orphan
- * installation — via the confirmation dialog. Version selection lives
- * in the Version cell itself (UseVersionCell, issues #132 + #151).
- */
-function RowActions({
-  row,
-  disabled,
-  onUnuse,
-  onUpgrade,
-}: RowActionsProps) {
-  const { t } = useTranslation();
-  return (
-    <span className={styles.cellActions}>
-      {row.outdated && (
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onUpgrade}
-          disabled={disabled}
-          data-testid={`tools-upgrade-${row.tool}`}
-        >
-          {t(I18N_KEYS.tools.actions.upgrade)}
-        </Button>
-      )}
-      <Button
-        variant="danger"
-        size="sm"
-        onClick={onUnuse}
-        data-testid={`tools-unuse-${row.tool}`}
-      >
-        {t(I18N_KEYS.tools.actions.unuse)}
-      </Button>
-    </span>
   );
 }
 

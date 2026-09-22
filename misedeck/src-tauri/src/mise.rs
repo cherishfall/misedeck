@@ -1327,11 +1327,12 @@ pub fn mise_plugins_ls(
 //   * `mise install <tool>@<version>`  → install a tool/version
 //   * `mise uninstall <tool>@<version>`→ delete one non-active version's files
 //   * `mise unuse <tool>`              → remove a tool from config + prune
-//   * `mise uninstall --all <tool>`    → remove an orphan tool (no config
-//                                        request, so `unuse` would error)
 //   * `mise link <tool>@<version> <path>` → symlink a local dir as a version
 //   `mise upgrade`                        → upgrade all outdated tools
 //   `mise upgrade <tool>`                 → upgrade a single tool
+//
+// The beta13 batch-operation ban: `mise uninstall --all` has no GUI
+// path — an orphan tool's versions are removed one by one (#189).
 //
 // The JS side prepends `-g` to `use`/`unuse` when the active context
 // is global, so the helpers here emit the pure argv and leave the
@@ -1352,28 +1353,20 @@ pub fn mise_install_argv(tool: &str, version: &str) -> Vec<String> {
 
 /// Build the argv for `mise uninstall <tool>@<version>`. Targeting the
 /// exact version keeps the dispatched command identical to the
-/// confirmation (issue #56). Per ADR-0008 this deletes one *non-active*
-/// version's files only — tool-level removal is `mise_unuse_argv`
-/// (or `mise_uninstall_all_argv` for orphan installations).
+/// confirmation (issue #56). This deletes one version's files only —
+/// tool-level removal is `mise_unuse_argv`.
 pub fn mise_uninstall_argv(tool: &str, version: &str) -> Vec<String> {
     vec!["uninstall".to_string(), format!("{tool}@{version}")]
 }
 
 /// Build the argv for `mise unuse <tool>` (ADR-0008, issue #131): the
 /// real tool-level removal — drops the tool from the Config file and
-/// prunes installations no longer referenced. A tool not declared in
-/// any Config file has no request to remove; `unuse` would error, so
-/// orphans route through `mise_uninstall_all_argv` instead.
+/// prunes installations no longer referenced. Reachable only from the
+/// version-management section's in-use rows, where a config request
+/// always exists (issue #189 removed the orphan branch and with it the
+/// `mise uninstall --all` path — the GUI never batch-deletes).
 pub fn mise_unuse_argv(tool: &str) -> Vec<String> {
     vec!["unuse".to_string(), tool.to_string()]
-}
-
-/// Build the argv for `mise uninstall --all <tool>` (ADR-0008, issue
-/// #131): the orphan-removal path — deletes every installed version of
-/// a tool that no Config file requests. The UI label stays Unuse /
-/// 卸载; the confirmation dialog shows this exact argv (teaching rule).
-pub fn mise_uninstall_all_argv(tool: &str) -> Vec<String> {
-    vec!["uninstall".to_string(), "--all".to_string(), tool.to_string()]
 }
 
 /// Build the argv for `mise link <tool>@<version> <path>` (issue #71).

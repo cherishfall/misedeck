@@ -83,7 +83,6 @@
       "requested": "Requested version",
       "backend": "Backend",
       "source": "Source",
-      "latest": "Latest",
       "actions": "Actions"
     },
     "orphan": {
@@ -94,6 +93,7 @@
       "switchVersion": "Click to switch version",
       "singleVersion": "Only one version installed — find the tool in Manage versions below and install another version to switch."
     },
+    "upgradeChip": "Update available · {{latest}}",
     "empty": {
       "title": "No tools installed",
       "body": "Use the Manage versions search below to install your first tool."
@@ -113,7 +113,8 @@
       "unuse": "Unuse",
       "upgrade": "Upgrade",
       "use": "Use",
-      "link": "Link"
+      "link": "Link",
+      "manageVersions": "Manage versions"
     },
     "addTool": {
       "title": "Manage versions",

@@ -83,7 +83,6 @@
       "requested": "请求版本",
       "backend": "后端",
       "source": "来源",
-      "latest": "最新",
       "actions": "操作"
     },
     "orphan": {
@@ -94,6 +93,7 @@
       "switchVersion": "点击切换版本",
       "singleVersion": "只安装了一个版本——在下方「版本管理」中找到该工具，安装其他版本后即可切换。"
     },
+    "upgradeChip": "可升级 · {{latest}}",
     "empty": {
       "title": "尚未安装任何工具",
       "body": "在下方「版本管理」中搜索并安装你的第一个工具。"
@@ -113,7 +113,8 @@
       "unuse": "取消使用",
       "upgrade": "升级",
       "use": "使用",
-      "link": "链接"
+      "link": "链接",
+      "manageVersions": "版本管理"
     },
     "addTool": {
       "title": "版本管理",

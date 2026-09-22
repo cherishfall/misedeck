@@ -37,6 +37,10 @@
 // #138 + #152, ADR-0005). Browsing — the disclosure, the search, the
 // filter, the pagers — is never run-locked (issue #135).
 //
+// The one exception to internal state: the main table's "Manage
+// versions" button (#189) drives the region through the controlled
+// `focusTool` prop — expand, search the tool, scroll into view.
+//
 // The version sort uses `compareToolVersions`, which handles vendor
 // prefixes and metadata suffixes (`graalvm-community-17.0.7`,
 // `temurin-jre-21.0.0+35.0.LTS`) where the old segment comparator
@@ -97,6 +101,11 @@ interface AddToolSectionProps {
   onUnuse: (tool: string) => void;
   /** Opens the page's Upgrade confirmation (exact command shown). */
   onUpgrade: (tool: string) => void;
+  /** The main table's "Manage versions" request (#189): when `seq`
+   *  changes, the region expands (if collapsed), searches this tool,
+   *  and scrolls itself into view. The disclosure/search state stays
+   *  internal — this is the one controlled input the page drives. */
+  focusTool?: { tool: string; seq: number } | null;
 }
 
 export function AddToolSection({
@@ -105,6 +114,7 @@ export function AddToolSection({
   onUninstall,
   onUnuse,
   onUpgrade,
+  focusTool,
 }: AddToolSectionProps) {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
@@ -145,6 +155,25 @@ export function AddToolSection({
     setInstalledPage(1);
     setAvailablePage(1);
   };
+
+  // The main table's "Manage versions" button reaches this region only
+  // through the `focusTool` prop (#189). The `seq` bump is the trigger —
+  // repeat clicks on the same row re-expand, re-search, and re-scroll.
+  // selectTool fills the search box with the tool name and fires the
+  // ls-remote read; the scroll waits a frame so the expanded body (and
+  // the page's new height) exists before measuring. Default behavior is
+  // instant — ambient motion stays limited to the two system motions.
+  const sectionRef = useRef<HTMLElement>(null);
+  const lastFocusSeq = useRef(0);
+  useEffect(() => {
+    if (focusTool == null || focusTool.seq === lastFocusSeq.current) return;
+    lastFocusSeq.current = focusTool.seq;
+    setOpen(true);
+    selectTool(focusTool.tool);
+    requestAnimationFrame(() => {
+      sectionRef.current?.scrollIntoView({ block: "start" });
+    });
+  }, [focusTool]);
 
   // One cached `ls-remote` per (directory, tool): dispatch only when a
   // tool is picked and the cache has nothing yet. The read runs in the
@@ -528,7 +557,7 @@ export function AddToolSection({
   ];
 
   return (
-    <section className={styles.section} data-testid="tools-add-tool">
+    <section className={styles.section} data-testid="tools-add-tool" ref={sectionRef}>
       <div className={styles.head}>
         {/* The disclosure trigger is the shared ghost Button (issue
             #184, the disclosure-trigger convention) — browsing, never
