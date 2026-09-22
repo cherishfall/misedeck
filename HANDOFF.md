@@ -4,7 +4,7 @@ This document is a continuation marker between autonomous driver sessions.
 
 ## CURRENT STATE (2026-09-23 — beta13 batch fully closed: #188–#191, beta14 RELEASE RUN TRIGGERED)
 
-**v1.0.0-beta.14 released** (tag `v1.0.0-beta.14` pushed + verified on remote, bump commit `9d19ca1`, release run `35771312219` — **status to be confirmed; ~9 min build, 6 assets expected on the GitHub Pre-release**). Carries the complete beta13 feedback batch: SPEC #187 with all 4 tickets closed, every one `npm run ci` green (cargo green where Rust touched), **NOT visually verified — owner verifies manually**. Source of truth: `docs/feedback/beta13-feedback-scratch.md` (committed `577b8bc`).
+**v1.0.0-beta.14 released** (tag `v1.0.0-beta.14` pushed + verified on remote, bump commit `9d19ca1`, release run `35771312219` — **success, all 4 build jobs + release job green, 6 assets on the GitHub Pre-release**: macOS aarch64 dmg, Windows x64 setup, Linux AppImage/deb/rpm + SHA256SUMS). Carries the complete beta13 feedback batch: SPEC #187 with all 4 tickets closed, every one `npm run ci` green (cargo green where Rust touched), **NOT visually verified — owner verifies manually**. Source of truth: `docs/feedback/beta13-feedback-scratch.md` (committed `577b8bc`).
 
 | Ticket | Commit | Scope |
 | --- | --- | --- |
