@@ -277,7 +277,7 @@
     "addLabel": "Add an env var",
     "addButton": "Add",
     "editButton": "Edit",
-    "removeButton": "Remove",
+    "unsetButton": "Unset",
     "namePlaceholder": "Key",
     "valuePlaceholder": "value",
     "guard": {
@@ -289,8 +289,8 @@
       "configTool": "Requested by the config file and injected by {{tool}}; overridable via `mise set`."
     },
     "confirm": {
-      "remove": {
-        "title": "Remove {{name}}?",
+      "unset": {
+        "title": "Unset {{name}}?",
         "body": "This will run the exact command below. The env var will be removed from mise's config for this context and this cannot be undone."
       },
       "overwrite": {

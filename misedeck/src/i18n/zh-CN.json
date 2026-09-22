@@ -277,7 +277,7 @@
     "addLabel": "添加环境变量",
     "addButton": "添加",
     "editButton": "编辑",
-    "removeButton": "移除",
+    "unsetButton": "移除",
     "namePlaceholder": "变量名",
     "valuePlaceholder": "值",
     "guard": {
@@ -289,7 +289,7 @@
       "configTool": "由配置文件请求、{{tool}} 注入；可通过 `mise set` 覆盖。"
     },
     "confirm": {
-      "remove": {
+      "unset": {
         "title": "移除 {{name}}？",
         "body": "将运行以下确切命令。该环境变量会从当前上下文的 mise 配置中移除，此操作无法撤销。"
       },

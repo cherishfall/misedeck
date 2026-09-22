@@ -253,7 +253,7 @@ export function EnvPage() {
           existingNames={existingNames}
         />
       ),
-      // Sized for the two rest-state buttons (Edit / Remove) — the
+      // Sized for the two rest-state buttons (Edit / Unset) — the
       // inline editor wraps inside the cell (beta11, issue #148).
       width: "220px",
     },
@@ -452,7 +452,7 @@ function EnvRowActions({
   /** True while a foreground command runs. Run-locking (issue #135)
    *  gates only command-firing controls — the draft's Save / submit.
    *  Opening and editing the draft (Edit, inputs, Cancel) never locks,
-   *  and neither does Remove: it only opens the confirm dialog, whose
+   *  and neither does Unset: it only opens the confirm dialog, whose
    *  own Confirm button is run-aware (see ConfirmDialog). */
   disabled: boolean;
   /** Every resolved env var name. A rename onto one of these
@@ -462,7 +462,7 @@ function EnvRowActions({
 }) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
-  const [confirmingRemove, setConfirmingRemove] = useState(false);
+  const [confirmingUnset, setConfirmingUnset] = useState(false);
   const [confirmingRename, setConfirmingRename] = useState(false);
   const [confirmingRenameOverwrite, setConfirmingRenameOverwrite] = useState(false);
   const [confirmingOutOfScopeSet, setConfirmingOutOfScopeSet] = useState(false);
@@ -700,31 +700,31 @@ function EnvRowActions({
       <Button
         variant="danger"
         size="sm"
-        onClick={() => setConfirmingRemove(true)}
-        data-testid={`env-remove-${row.name}`}
+        onClick={() => setConfirmingUnset(true)}
+        data-testid={`env-unset-${row.name}`}
       >
-        {t(I18N_KEYS.env.removeButton)}
+        {t(I18N_KEYS.env.unsetButton)}
       </Button>
       {/* Removing an env var is destructive, so it confirms first and the
           dialog teaches the exact command that will run (ui-ux-rules:
           "uninstall, unset, overwrite always confirm"). Same ConfirmDialog
           the tools page uses for uninstall. */}
       <ConfirmDialog
-        open={confirmingRemove}
+        open={confirmingUnset}
         confirmBusy={disabled}
-        title={t(I18N_KEYS.env.confirm.remove.title, { name: row.name })}
-        body={t(I18N_KEYS.env.confirm.remove.body)}
+        title={t(I18N_KEYS.env.confirm.unset.title, { name: row.name })}
+        body={t(I18N_KEYS.env.confirm.unset.body)}
         command={commandEcho("mise", cwd, miseEnvUnsetArgs(row.name, cwd))}
-        confirmLabel={t(I18N_KEYS.env.removeButton)}
+        confirmLabel={t(I18N_KEYS.env.unsetButton)}
         cancelLabel={t(I18N_KEYS.common.cancel)}
         onConfirm={() => {
-          setConfirmingRemove(false);
+          setConfirmingUnset(false);
           void onWrite(
             (cwd) => miseEnvUnsetArgs(row.name, cwd),
             t(I18N_KEYS.env.success.unset, { name: row.name }),
           );
         }}
-        onCancel={() => setConfirmingRemove(false)}
+        onCancel={() => setConfirmingUnset(false)}
       >
         {outOfScope && <OutOfScopeWarning sourcePath={row.sourcePath} />}
       </ConfirmDialog>

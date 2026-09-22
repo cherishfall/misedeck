@@ -339,7 +339,7 @@ export const I18N_KEYS = {
     addLabel: "env.addLabel",
     addButton: "env.addButton",
     editButton: "env.editButton",
-    removeButton: "env.removeButton",
+    unsetButton: "env.unsetButton",
     namePlaceholder: "env.namePlaceholder",
     valuePlaceholder: "env.valuePlaceholder",
     guard: {
@@ -351,9 +351,9 @@ export const I18N_KEYS = {
       configTool: "env.tooltip.configTool",
     },
     confirm: {
-      remove: {
-        title: "env.confirm.remove.title",
-        body: "env.confirm.remove.body",
+      unset: {
+        title: "env.confirm.unset.title",
+        body: "env.confirm.unset.body",
       },
       overwrite: {
         title: "env.confirm.overwrite.title",
