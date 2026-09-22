@@ -7,29 +7,34 @@
 //                              path on the rows that appear in the map
 //   * mise use -g            → switching an installed version (the
 //                              Version cell is the trigger, #132 + #151)
-//                              and the add-tool section's Use buttons
-//                              (#178)
-//   * mise install           → install only a version (add-tool section)
+//                              and the version-management section's Use
+//                              buttons (#178 + #188)
+//   * mise install           → install only a version (version-management
+//                              section, confirmed since #188)
 //   * mise unuse             → remove a tool (config request + installs);
 //                              orphans run `mise uninstall --all` (ADR-0008)
-//   * mise uninstall         → delete one non-active version's files
-//   * mise upgrade --bump    → upgrade all or one outdated tool
-//   * mise registry --json   → the Add a tool section's search
+//   * mise uninstall         → delete one version's files (#188: offered
+//                              on in-use rows too, except not-installed)
+//   * mise upgrade           → upgrade an outdated tool within its
+//                              config range (no `--bump`, beta13 Q9)
+//   * mise registry --json   → the version-management section's search
 //                              autocomplete (tool names + descriptions)
-//   * mise ls-remote --json  → the Add a tool section's not-installed
-//                              version list (#178)
+//   * mise ls-remote --json  → the version-management section's
+//                              not-installed version list (#178)
 //
-// The "Add a tool" section sits below the tools table (issue #178,
-// beta12 2-c): search the registry, pick a tool, and its versions
-// render in three sections — in use, installed, not installed — newest
-// first with client-side filter and pagination. Searching and picking
-// never install anything; Use / Install only / Uninstall are explicit
-// per-version actions. The Link form lives in the collapsed Advanced
-// section. Every invocation — mutations and reads alike — routes
-// through the execution panel so the exact command and live logs are
-// visible (ADR-0005). The list refreshes when a run exits successfully;
-// the success closes the loop in-page with a short-lived confirmation
-// bar (issue #144); failures surface stderr and leave state unchanged.
+// The "Manage versions" section sits below the tools table (issue
+// #178, redesign #188, beta12 2-c): search the registry, pick a tool,
+// and its versions render in three sections — in use, installed, not
+// installed — newest first with client-side filter and pagination.
+// Searching never installs anything; every action (Use / Install /
+// Uninstall / Unuse / Upgrade) opens an explanatory confirm dialog
+// showing the exact command (beta13). The Link form lives in the
+// collapsed Advanced section. Every invocation — mutations and reads
+// alike — routes through the execution panel so the exact command and
+// live logs are visible (ADR-0005). The list refreshes when a run
+// exits successfully; the success closes the loop in-page with a
+// short-lived confirmation bar (issue #144); failures surface stderr
+// and leave state unchanged.
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -105,15 +110,21 @@ interface ToolRow {
   id: string;
 }
 
-/** The pending removal behind the confirmation dialog (ADR-0008, issue
- *  #131). `unuse` is the tool-level removal: it runs `mise unuse <tool>`,
- *  or `mise uninstall --all <tool>` when the tool is an orphan (no Config
- *  file requests it — `unuse` would error). `uninstall` is the
- *  per-version file deletion offered only on non-active versions; the
- *  add-tool section (issue #178) supplies its tool name. */
-type PendingRemoval =
+/** The pending action behind the confirmation dialog (ADR-0008, issue
+ *  #131; #188 extends it to every version-management action). `unuse`
+ *  is the tool-level removal: it runs `mise unuse <tool>`, or `mise
+ *  uninstall --all <tool>` when the tool is an orphan (no Config file
+ *  requests it — `unuse` would error; the orphan branch retires with
+ *  the main-table rework, #189). `uninstall` is the per-version file
+ *  deletion; `use` / `install` / `upgrade` are the version-management
+ *  section's remaining actions. The dialog shows the exact argv for
+ *  every kind. */
+type PendingAction =
   | { kind: "unuse"; tool: string; orphan: boolean }
-  | { kind: "uninstall"; tool: string; version: string };
+  | { kind: "uninstall"; tool: string; version: string }
+  | { kind: "use"; tool: string; version: string }
+  | { kind: "install"; tool: string; version: string }
+  | { kind: "upgrade"; tool: string };
 
 // ---------- Args builders (mirror the Rust helpers) ----------
 //
@@ -124,11 +135,11 @@ type PendingRemoval =
 // only Rust call is `useExecutionContext().run({cwd, args})`. Keep the
 // two in lockstep with the Rust `tests/tool_mutations.rs` assertions.
 //
-// Only `mise use` accepts a `-g` flag; `install`, `uninstall`,
-// `unuse`, and `upgrade` operate on the active directory context. The runner adds
-// `-C <dir>` in Directory mode and `-C $HOME` in Global mode (issue
-// #179), so the global context naturally targets the global config
-// without extra flags for those three commands.
+// Only `mise use` and `mise unuse` accept a `-g` flag; `install`,
+// `uninstall`, and `upgrade` operate on the active directory context.
+// The runner adds `-C <dir>` in Directory mode and `-C $HOME` in Global
+// mode (issue #179), so the global context naturally targets the global
+// config without extra flags for those three commands.
 
 function miseInstallArgs(tool: string, version: string): string[] {
   // An empty version means latest (issue #111): `mise install <tool>`.
@@ -149,9 +160,12 @@ function miseUninstallArgs(tool: string, version: string): string[] {
 // installations (no Config file requests the tool) have no request for
 // `unuse` to remove, so the same action runs `mise uninstall --all
 // <tool>` instead — the confirmation dialog shows the exact argv either
-// way.
-function miseUnuseArgs(tool: string, orphan: boolean): string[] {
-  return orphan ? ["uninstall", "--all", tool] : ["unuse", tool];
+// way. In Global mode the command carries `-g` explicitly (beta13): the
+// echo must read as a dispatchable command, not rely on the runner's
+// hidden `-C $HOME` anchoring.
+function miseUnuseArgs(tool: string, orphan: boolean, cwd: string | null): string[] {
+  if (orphan) return ["uninstall", "--all", tool];
+  return cwd === null ? ["unuse", "-g", tool] : ["unuse", tool];
 }
 
 /**
@@ -173,7 +187,10 @@ function miseUseArgs(tool: string, version: string, cwd: string | null): string[
 }
 
 function miseUpgradeArgs(tool: string): string[] {
-  return ["upgrade", "--bump", tool];
+  // No `--bump` (beta13 Q9): the default upgrades within the range the
+  // config file writes (node@20 → newest 20.x) without rewriting the
+  // config — matching the `latest` field of `mise outdated`.
+  return ["upgrade", tool];
 }
 
 /**
@@ -202,12 +219,12 @@ export function ToolsPage() {
   // banner instead of silently doing nothing.
   const { ref: bannerRef, focus: focusTrustBanner } = useTrustBannerFocus();
 
-  // The removal confirmation (issues #56 + #131): clicking 卸载 / Unuse
-  // or 删除此版本 / Uninstall opens a dialog showing the exact command
-  // that will run; the mutation only dispatches after the user confirms.
-  // No removal runs without this confirmation. The add-tool section
-  // (issue #178) feeds the same dialog with its own version targets.
-  const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
+  // The action confirmation (issues #56 + #131, redesign #188):
+  // clicking 取消使用 / Unuse, 卸载 / Uninstall, 使用 / Use, 安装 /
+  // Install, or 升级 / Upgrade opens a dialog showing the exact command
+  // that will run; the mutation only dispatches after the user
+  // confirms. No action runs without this confirmation.
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
   // Friendly message from the most recent link run (issue #71). Null
   // unless the last `mise link` failed with a recognized conflict.
@@ -241,12 +258,12 @@ export function ToolsPage() {
   // this page gets its own `useOwnRun()` hook, so a control freezes only
   // while the command *its own family* dispatched is in flight — a
   // multi-minute install of one tool never disables another row's
-  // Use/Upgrade, the add-tool section's buttons, or the link form. The
-  // families are the mise commands: use, install, upgrade, link, and
-  // removal (unuse/uninstall, dispatched only by the confirm dialog). A
-  // successful mutation refreshes the tools + outdated reads (the
-  // add-tool section's in-use and installed sections derive from the
-  // same read).
+  // Upgrade, the version-management section's confirm dialogs, or the
+  // link form. The families are the mise commands: use, install,
+  // upgrade, link, and removal (unuse/uninstall, dispatched only by the
+  // confirm dialog). A successful mutation refreshes the tools +
+  // outdated reads (the version-management section's in-use and
+  // installed sections derive from the same read).
   const useRun = useOwnRun();
   const installRun = useOwnRun();
   const upgradeRun = useOwnRun();
@@ -284,8 +301,8 @@ export function ToolsPage() {
   const onRefresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
-    // The registry query backs the add-tool search suggestions
-    // (AddToolSection, `["registry", cwd]` in useIssue29); invalidate it
+    // The registry query backs the version-management search
+    // suggestions (AddToolSection, `["registry", cwd]` in useIssue29); invalidate it
     // too so the toolbar refresh covers every query this page fetches
     // (issue #181).
     void queryClient.invalidateQueries({ queryKey: ["registry", cwd] });
@@ -530,7 +547,7 @@ export function ToolsPage() {
           row={r}
           disabled={upgradeRun.isRunning}
           onUnuse={() =>
-            setPendingRemoval({ kind: "unuse", tool: r.tool, orphan: r.orphan })
+            setPendingAction({ kind: "unuse", tool: r.tool, orphan: r.orphan })
           }
           onUpgrade={() =>
             void fireMutation(
@@ -617,33 +634,21 @@ export function ToolsPage() {
           />
         )}
 
-        {/* The "Add a tool" section below the table (issue #178, beta12
-            2-c): registry search → three version sections (in use →
-            installed → not installed). Searching never installs — the
-            browse step is mandatory between search and any Use /
-            Install. The toggle and the Clear button are browsing and
-            never run-locked; only the section's command-firing buttons
-            carry the locks (issues #135 + #138). */}
+        {/* The "Manage versions" section below the table (issue #178,
+            redesign #188, beta12 2-c): registry search → three version
+            sections (in use → installed → not installed). Searching
+            never installs — the browse step is mandatory between search
+            and any action, and every action opens the confirm dialog
+            above. The toggle and the Clear button are browsing and
+            never run-locked (issues #135 + #138). */}
         <AddToolSection
-          useDisabled={useRun.isRunning}
-          installDisabled={installRun.isRunning}
-          onUse={(tool, version) =>
-            void fireMutation(
-              useRun,
-              (cwd) => miseUseArgs(tool, version, cwd),
-              t(I18N_KEYS.tools.success.used, { tool, version }),
-            )
-          }
-          onInstallOnly={(tool, version) =>
-            void fireMutation(
-              installRun,
-              () => miseInstallArgs(tool, version),
-              t(I18N_KEYS.tools.success.installed, { tool, version }),
-            )
-          }
+          onUse={(tool, version) => setPendingAction({ kind: "use", tool, version })}
+          onInstall={(tool, version) => setPendingAction({ kind: "install", tool, version })}
           onUninstall={(tool, version) =>
-            setPendingRemoval({ kind: "uninstall", tool, version })
+            setPendingAction({ kind: "uninstall", tool, version })
           }
+          onUnuse={(tool) => setPendingAction({ kind: "unuse", tool, orphan: false })}
+          onUpgrade={(tool) => setPendingAction({ kind: "upgrade", tool })}
         />
 
         {/* The Link form (`mise link`, issue #71) is an advanced
@@ -671,48 +676,98 @@ export function ToolsPage() {
           )}
         </section>
 
+        {/* The five-action confirmation dialog (beta13 #188): every
+            version-management action — and the main table's Unuse until
+            #189 — explains what changes, shows the exact command, and
+            dispatches only on confirm. Destructive actions (Unuse,
+            Uninstall) confirm danger; Use / Install / Upgrade confirm
+            primary. The confirm button locks only while its own
+            family's command runs. */}
         <ConfirmDialog
-          open={pendingRemoval !== null}
-          confirmBusy={removalRun.isRunning}
+          open={pendingAction !== null}
+          confirmBusy={
+            pendingAction === null
+              ? false
+              : pendingAction.kind === "use"
+                ? useRun.isRunning
+                : pendingAction.kind === "install"
+                  ? installRun.isRunning
+                  : pendingAction.kind === "upgrade"
+                    ? upgradeRun.isRunning
+                    : removalRun.isRunning
+          }
+          danger={pendingAction?.kind === "unuse" || pendingAction?.kind === "uninstall"}
           title={
-            pendingRemoval?.kind === "unuse"
-              ? t(I18N_KEYS.tools.confirm.unuse.title, { tool: pendingRemoval.tool })
-              : pendingRemoval?.kind === "uninstall"
+            pendingAction?.kind === "unuse"
+              ? t(I18N_KEYS.tools.confirm.unuse.title, { tool: pendingAction.tool })
+              : pendingAction?.kind === "uninstall"
                 ? t(I18N_KEYS.tools.confirm.uninstall.title, {
-                    tool: pendingRemoval.tool,
-                    version: pendingRemoval.version,
+                    tool: pendingAction.tool,
+                    version: pendingAction.version,
                   })
-                : ""
+                : pendingAction?.kind === "use"
+                  ? t(I18N_KEYS.tools.confirm.use.title, {
+                      tool: pendingAction.tool,
+                      version: pendingAction.version,
+                    })
+                  : pendingAction?.kind === "install"
+                    ? t(I18N_KEYS.tools.confirm.install.title, {
+                        tool: pendingAction.tool,
+                        version: pendingAction.version,
+                      })
+                    : pendingAction?.kind === "upgrade"
+                      ? t(I18N_KEYS.tools.confirm.upgrade.title, { tool: pendingAction.tool })
+                      : ""
           }
           body={
-            pendingRemoval?.kind === "unuse"
+            pendingAction?.kind === "unuse"
               ? t(I18N_KEYS.tools.confirm.unuse.body)
-              : t(I18N_KEYS.tools.confirm.uninstall.body)
+              : pendingAction?.kind === "uninstall"
+                ? t(I18N_KEYS.tools.confirm.uninstall.body)
+                : pendingAction?.kind === "use"
+                  ? t(I18N_KEYS.tools.confirm.use.body)
+                  : pendingAction?.kind === "install"
+                    ? t(I18N_KEYS.tools.confirm.install.body)
+                    : pendingAction?.kind === "upgrade"
+                      ? t(I18N_KEYS.tools.confirm.upgrade.body)
+                      : ""
           }
           command={
-            pendingRemoval
+            pendingAction
               ? commandEcho(
                   "mise",
                   cwd,
-                  pendingRemoval.kind === "unuse"
-                    ? miseUnuseArgs(pendingRemoval.tool, pendingRemoval.orphan)
-                    : miseUninstallArgs(pendingRemoval.tool, pendingRemoval.version),
+                  pendingAction.kind === "unuse"
+                    ? miseUnuseArgs(pendingAction.tool, pendingAction.orphan, cwd)
+                    : pendingAction.kind === "uninstall"
+                      ? miseUninstallArgs(pendingAction.tool, pendingAction.version)
+                      : pendingAction.kind === "use"
+                        ? miseUseArgs(pendingAction.tool, pendingAction.version, cwd)
+                        : pendingAction.kind === "install"
+                          ? miseInstallArgs(pendingAction.tool, pendingAction.version)
+                          : miseUpgradeArgs(pendingAction.tool),
                 )
               : ""
           }
           confirmLabel={
-            pendingRemoval?.kind === "unuse"
+            pendingAction?.kind === "unuse"
               ? t(I18N_KEYS.tools.actions.unuse)
-              : t(I18N_KEYS.tools.actions.uninstall)
+              : pendingAction?.kind === "uninstall"
+                ? t(I18N_KEYS.tools.actions.uninstall)
+                : pendingAction?.kind === "use"
+                  ? t(I18N_KEYS.tools.actions.use)
+                  : pendingAction?.kind === "install"
+                    ? t(I18N_KEYS.tools.actions.install)
+                    : t(I18N_KEYS.tools.actions.upgrade)
           }
           cancelLabel={t(I18N_KEYS.common.cancel)}
           onConfirm={() => {
-            const target = pendingRemoval;
-            setPendingRemoval(null);
+            const target = pendingAction;
+            setPendingAction(null);
             if (target?.kind === "unuse") {
               void fireMutation(
                 removalRun,
-                () => miseUnuseArgs(target.tool, target.orphan),
+                (cwd) => miseUnuseArgs(target.tool, target.orphan, cwd),
                 t(I18N_KEYS.tools.success.unused, { tool: target.tool }),
               );
             } else if (target?.kind === "uninstall") {
@@ -724,9 +779,30 @@ export function ToolsPage() {
                   version: target.version,
                 }),
               );
+            } else if (target?.kind === "use") {
+              void fireMutation(
+                useRun,
+                (cwd) => miseUseArgs(target.tool, target.version, cwd),
+                t(I18N_KEYS.tools.success.used, { tool: target.tool, version: target.version }),
+              );
+            } else if (target?.kind === "install") {
+              void fireMutation(
+                installRun,
+                () => miseInstallArgs(target.tool, target.version),
+                t(I18N_KEYS.tools.success.installed, {
+                  tool: target.tool,
+                  version: target.version,
+                }),
+              );
+            } else if (target?.kind === "upgrade") {
+              void fireMutation(
+                upgradeRun,
+                () => miseUpgradeArgs(target.tool),
+                t(I18N_KEYS.tools.success.upgraded, { tool: target.tool }),
+              );
             }
           }}
-          onCancel={() => setPendingRemoval(null)}
+          onCancel={() => setPendingAction(null)}
         />
       </div>
     </PageShell>
@@ -748,8 +824,8 @@ interface UseVersionCellProps {
  * Version column in #151): the Version cell itself is the FloatingMenu
  * trigger — the version number renders once, as data and control at
  * once. No typing, no datalist — a version that does not exist on disk
- * can never be submitted; installing a new version is the Add a tool
- * section's job (#178). The current version is marked
+ * can never be submitted; installing a new version is the Manage
+ * versions section's job (#178). The current version is marked
  * (`aria-current`) and disabled in the menu, since re-selecting it
  * would be a no-op. Rendered through the shared FloatingMenu primitive,
  * so the menu portals out of the table's scroller and follows the
@@ -766,7 +842,7 @@ function UseVersionCell({ row, disabled, versions, onUse }: UseVersionCellProps)
   // menu would open as an all-disabled list — a reachable control that
   // can do nothing (ui-ux-rules no-op rule). Render the version as a
   // disabled trigger whose Tooltip teaches why; installing another
-  // version is the Add a tool section's job (#178).
+  // version is the Manage versions section's job (#178).
   if (versions.length <= 1) {
     return (
       <Tooltip text={t(I18N_KEYS.tools.tooltip.singleVersion)}>
@@ -845,11 +921,11 @@ interface RowActionsProps {
 
 /**
  * The mutation buttons for one tool row. An outdated row gets an
- * Upgrade button (`mise upgrade --bump <tool>`); Unuse (ADR-0008,
- * issue #131) dispatches `mise unuse <tool>` — or `mise uninstall
- * --all <tool>` for an orphan installation — via the confirmation
- * dialog. Version selection lives in the Version cell itself
- * (UseVersionCell, issues #132 + #151).
+ * Upgrade button (`mise upgrade <tool>`, within the config's range
+ * since beta13); Unuse (ADR-0008, issue #131) dispatches `mise unuse
+ * <tool>` — or `mise uninstall --all <tool>` for an orphan
+ * installation — via the confirmation dialog. Version selection lives
+ * in the Version cell itself (UseVersionCell, issues #132 + #151).
  */
 function RowActions({
   row,

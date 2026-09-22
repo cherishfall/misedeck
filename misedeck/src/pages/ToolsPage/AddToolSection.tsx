@@ -1,6 +1,6 @@
-// AddToolSection — the "Add a tool" region below the Tools page table
-// (issue #178, replacing the top add-tool entry #134 and the expanded
-// row's version center #133).
+// AddToolSection — the "Manage versions" region below the Tools page
+// table (issue #178, redesign issue #188; replacing the top add-tool
+// entry #134 and the expanded row's version center #133).
 //
 //   * Registry search — `mise registry --json` filtered client-side
 //     (tiered ranking, issue #149). Picking a tool is the ONLY way
@@ -17,20 +17,25 @@
 //     re-sorted. In directory mode a globally-requested tool's active
 //     row is excluded (source.path filter) so "in use here" is not
 //     polluted by the global config mixing into `mise ls` (beta12 2-c).
-//     ② installed — the other on-disk versions: Use (switch) and
-//     Uninstall (via the page's ConfirmDialog, ADR-0008). ③ not
-//     installed — remote minus the on-disk set: Use (primary — installs
-//     and activates) and Install only (secondary). A `latest` row is
-//     pinned to ③'s top, annotated with the concrete version the
-//     comparator resolves it to (`latest → 27.0.0`); it renders only
-//     when that version is not already on disk, so the sections never
-//     overlap. Section order is constant: in use → installed → not
-//     installed.
+//     The section header carries the upgrade affordance: when `mise
+//     outdated` reports a newer version within the config's range and
+//     an in-use request exists, a hint names the target version and a
+//     secondary Upgrade button opens the page's confirm dialog
+//     (`mise upgrade <tool>`, no `--bump` — beta13 Q9). ② installed —
+//     the other on-disk versions: Use (switch) and Uninstall, both
+//     confirmed by the page's dialog. ③ not installed — remote minus
+//     the on-disk set: Use (primary — installs and activates) and
+//     Install (secondary), both confirmed. A `latest` row is pinned
+//     to ③'s top, annotated with the concrete version the comparator
+//     resolves it to (`latest → 27.0.0`); it renders only when that
+//     version is not already on disk, so the sections never overlap.
+//     Section order is constant: in use → installed → not installed.
 //
-// Mutations are the page's job: the section reports intent through
-// callbacks so the trust gate and the per-action run-locks apply
-// unchanged (issues #138 + #152). Browsing — the disclosure, the
-// search, the filter, the pagers — is never run-locked (issue #135).
+// Every section action merely OPENS the page's confirm dialog — the
+// dialog shows the exact command and dispatches the mutation, so the
+// trust gate and the per-action run-locks apply unchanged (issues
+// #138 + #152, ADR-0005). Browsing — the disclosure, the search, the
+// filter, the pagers — is never run-locked (issue #135).
 //
 // The version sort uses `compareToolVersions`, which handles vendor
 // prefixes and metadata suffixes (`graalvm-community-17.0.7`,
@@ -47,7 +52,7 @@ import { isGlobalConfigPath } from "../../api/miseTools";
 import type { MiseLsItem, RegistryItem } from "../../types/tauri";
 import { useDirectory } from "../../state/directoryContext";
 import { usePersistentState } from "../../hooks/usePersistentState";
-import { useParsedLsRemote, useParsedToolsList, useReadIntoCache } from "../../hooks/useToolsList";
+import { useParsedLsRemote, useParsedOutdatedTools, useParsedToolsList, useReadIntoCache } from "../../hooks/useToolsList";
 import { useParsedRegistry } from "../../hooks/useIssue29";
 import {
   Badge,
@@ -82,26 +87,24 @@ type AvailableRow =
   | { kind: "version"; version: string; createdAt?: string };
 
 interface AddToolSectionProps {
-  /** True while the page's own `mise use` runs; disables only the Use
-   *  buttons (run-locking, issues #138 + #152). */
-  useDisabled: boolean;
-  /** True while the page's own `mise install` runs; disables only the
-   *  Install buttons. */
-  installDisabled: boolean;
-  /** Dispatch `mise use [-g] <tool>@<version>` through the panel. */
+  /** Opens the page's Use confirmation (exact command shown). */
   onUse: (tool: string, version: string) => void;
-  /** Dispatch `mise install <tool>@<version>` through the panel. */
-  onInstallOnly: (tool: string, version: string) => void;
+  /** Opens the page's Install confirmation (exact command shown). */
+  onInstall: (tool: string, version: string) => void;
   /** Opens the page's removal confirmation (exact command shown). */
   onUninstall: (tool: string, version: string) => void;
+  /** Opens the page's Unuse confirmation (exact command shown). */
+  onUnuse: (tool: string) => void;
+  /** Opens the page's Upgrade confirmation (exact command shown). */
+  onUpgrade: (tool: string) => void;
 }
 
 export function AddToolSection({
-  useDisabled,
-  installDisabled,
   onUse,
-  onInstallOnly,
+  onInstall,
   onUninstall,
+  onUnuse,
+  onUpgrade,
 }: AddToolSectionProps) {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
@@ -217,6 +220,23 @@ export function AddToolSection({
   // request.
   const orphanTool = toolItems.length > 0 && toolItems.every((it) => it.requestedVersion == null);
 
+  // The in-use section header carries the upgrade affordance (beta13
+  // Q9): `mise outdated` reports the newest version within the config's
+  // range — exactly what `mise upgrade <tool>` (no `--bump`) reaches.
+  // The hint renders only while an in-use request exists in this scope:
+  // upgrade acts on a request, so an orphan or elsewhere-requested tool
+  // has nothing to upgrade here.
+  const outdated = useParsedOutdatedTools();
+  const upgradeInfo = useMemo(() => {
+    if (selectedTool === null || activeRows.length === 0) return null;
+    const entry = (outdated.data ?? []).find((o) => o.name === selectedTool);
+    const latest = entry?.latest;
+    if (latest === undefined || latest === "" || latest === activeRows[0]!.version) {
+      return null;
+    }
+    return { latest };
+  }, [outdated.data, selectedTool, activeRows]);
+
   // ③ Not installed: remote minus the on-disk set, newest first, with
   // the `latest` alias pinned on top annotated by its resolved version.
   const newestRemote = useMemo(() => {
@@ -321,11 +341,12 @@ export function AddToolSection({
     </span>
   );
 
-  // The active version offers neither action: re-using it is a no-op,
-  // and deleting its files invites an immediate reinstall — tool-level
-  // Unuse is the way out of an active version. Its single blocked
-  // action renders as a disabled Uninstall whose Tooltip says why
-  // (beta11 2-f C).
+  // ① In use: Unuse is the tool-level way out (danger — destructive,
+  // ADR-0008); Uninstall deletes this version's files and is ENABLED
+  // here (beta13 — the old hardcoded disable is gone). The exception is
+  // a requested-but-not-installed row: no files exist on disk, so its
+  // Uninstall renders disabled (the quiet secondary disabled state) with
+  // a Tooltip stating why.
   const inUseColumns: TableColumn<MiseLsItem>[] = [
     {
       key: "version",
@@ -350,25 +371,46 @@ export function AddToolSection({
       header: t(I18N_KEYS.tools.columns.actions),
       width: "220px",
       cell: (r) => (
-        <Tooltip text={t(I18N_KEYS.tools.addTool.activeUninstallTooltip)}>
-          <span className={styles.cellActions}>
+        <span className={styles.cellActions}>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => onUnuse(selectedTool ?? "")}
+            data-testid={`add-tool-active-unuse-${r.version}`}
+          >
+            {t(I18N_KEYS.tools.actions.unuse)}
+          </Button>
+          {r.installed ? (
             <Button
               variant="danger"
               size="sm"
-              disabled
+              onClick={() => onUninstall(selectedTool ?? "", r.version)}
               data-testid={`add-tool-active-uninstall-${r.version}`}
             >
               {t(I18N_KEYS.tools.actions.uninstall)}
             </Button>
-          </span>
-        </Tooltip>
+          ) : (
+            <Tooltip text={t(I18N_KEYS.tools.addTool.notInstalledUninstallTooltip)}>
+              <span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled
+                  data-testid={`add-tool-active-uninstall-${r.version}`}
+                >
+                  {t(I18N_KEYS.tools.actions.uninstall)}
+                </Button>
+              </span>
+            </Tooltip>
+          )}
+        </span>
       ),
     },
   ];
 
   // Use switches to another on-disk version (`mise use`); Uninstall
-  // deletes a version's files — confirmed by the page's dialog
-  // (non-active only, ADR-0008).
+  // deletes a version's files — both confirmed by the page's dialog
+  // (beta13: every section action confirms, ADR-0005 teaching echo).
   const installedColumns: TableColumn<MiseLsItem>[] = [
     {
       key: "version",
@@ -397,7 +439,6 @@ export function AddToolSection({
           <Button
             variant="primary"
             size="sm"
-            disabled={useDisabled}
             onClick={() => onUse(selectedTool ?? "", r.version)}
             data-testid={`add-tool-installed-use-${r.version}`}
           >
@@ -441,9 +482,11 @@ export function AddToolSection({
         ),
     },
     {
+      // No fixed width: the Created column is this table's flex column,
+      // mirroring the Source column of the in-use/installed tables so
+      // all three Actions columns land on the same x (beta13).
       key: "created",
       header: t(I18N_KEYS.tools.addTool.created),
-      width: "150px",
       cell: (r) =>
         r.kind === "version" ? (
           <Tooltip text={r.createdAt ?? "—"}>
@@ -466,7 +509,6 @@ export function AddToolSection({
           <Button
             variant="primary"
             size="sm"
-            disabled={useDisabled}
             onClick={() => onUse(selectedTool ?? "", r.version)}
             data-testid={`add-tool-remote-use-${r.kind === "latest" ? "latest" : r.version}`}
           >
@@ -475,8 +517,7 @@ export function AddToolSection({
           <Button
             variant="secondary"
             size="sm"
-            disabled={installDisabled}
-            onClick={() => onInstallOnly(selectedTool ?? "", r.version)}
+            onClick={() => onInstall(selectedTool ?? "", r.version)}
             data-testid={`add-tool-remote-install-${r.kind === "latest" ? "latest" : r.version}`}
           >
             {t(I18N_KEYS.tools.actions.install)}
@@ -508,11 +549,13 @@ export function AddToolSection({
               onChange={setVersionQuery}
               placeholder={t(I18N_KEYS.tools.addTool.filterPlaceholder)}
               testId="add-tool-filter"
+              hideClear
             />
           )}
-          {/* Clear resets the search draft and the picked tool back to
-              the default empty state; disabled when there is nothing to
-              clear (the no-op rule). */}
+          {/* The region's single Clear (beta13): a full reset of the
+              search draft, the picked tool, the filter, and both
+              pagers. The filter's built-in per-field Clear is hidden
+              here so only one Clear ever renders. */}
           <Button
             variant="ghost"
             size="sm"
@@ -543,7 +586,26 @@ export function AddToolSection({
           {selectedTool !== null && (
             <div className={styles.sections}>
               <section className={styles.subList}>
-                <h3 className={styles.subTitle}>{t(I18N_KEYS.tools.addTool.inUseTitle)}</h3>
+                <div className={styles.subHead}>
+                  <h3 className={styles.subTitle}>{t(I18N_KEYS.tools.addTool.inUseTitle)}</h3>
+                  {upgradeInfo !== null && (
+                    <div className={styles.subHeadActions}>
+                      <span className={styles.upgradeHint}>
+                        {t(I18N_KEYS.tools.addTool.upgradeAvailable, {
+                          latest: upgradeInfo.latest,
+                        })}
+                      </span>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => onUpgrade(selectedTool ?? "")}
+                        data-testid="add-tool-upgrade"
+                      >
+                        {t(I18N_KEYS.tools.actions.upgrade)}
+                      </Button>
+                    </div>
+                  )}
+                </div>
                 <Table<MiseLsItem>
                   columns={inUseColumns}
                   rows={activeRows}
@@ -552,10 +614,13 @@ export function AddToolSection({
                   resizeKey="tools.add-tool.in-use"
                   className={styles.installedTable}
                   empty={
-                    <EmptyState
-                      title={t(I18N_KEYS.tools.addTool.emptyInUseTitle)}
-                      body={t(I18N_KEYS.tools.addTool.emptyInUseBody, { tool: selectedTool })}
-                    />
+                    // Explanatory copy only — no action buttons here
+                    // (the beta13 batch-operation ban; the orphan /
+                    // elsewhere-requested cases both read through this
+                    // scope wording).
+                    <p className={styles.emptyInUse}>
+                      {t(I18N_KEYS.tools.addTool.emptyInUse)}
+                    </p>
                   }
                 />
               </section>

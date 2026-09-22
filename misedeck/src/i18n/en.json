@@ -92,11 +92,11 @@
     },
     "tooltip": {
       "switchVersion": "Click to switch version",
-      "singleVersion": "Only one version installed — find the tool in Add a tool below and install another version to switch."
+      "singleVersion": "Only one version installed — find the tool in Manage versions below and install another version to switch."
     },
     "empty": {
       "title": "No tools installed",
-      "body": "Use the Add a tool search below to install your first tool."
+      "body": "Use the Manage versions search below to install your first tool."
     },
     "missing": {
       "title": "Tools unavailable",
@@ -108,7 +108,7 @@
     },
     "filterPlaceholder": "Filter tools…",
     "actions": {
-      "install": "Install only",
+      "install": "Install",
       "uninstall": "Uninstall",
       "unuse": "Unuse",
       "upgrade": "Upgrade",
@@ -116,7 +116,7 @@
       "link": "Link"
     },
     "addTool": {
-      "title": "Add a tool",
+      "title": "Manage versions",
       "searchPlaceholder": "Search tools (e.g. node)",
       "noMatches": "No matches — a full backend:name (e.g. npm:prettier) still works.",
       "moreMatches": "More matches — keep typing to narrow down.",
@@ -127,9 +127,9 @@
       "created": "Created",
       "filterPlaceholder": "Filter versions…",
       "retryButton": "Retry",
-      "activeUninstallTooltip": "Switch to another version before deleting this one",
-      "emptyInUseTitle": "Not active in this directory",
-      "emptyInUseBody": "{{tool}} is not active in the current directory. Pick a version below to use it here.",
+      "notInstalledUninstallTooltip": "This version is not installed — there is nothing to delete",
+      "upgradeAvailable": "New version {{latest}} available",
+      "emptyInUse": "No version is in use in the current scope.",
       "emptyInstalledTitle": "No installed versions",
       "emptyInstalledBody": "`mise ls {{tool}}` reports no installed versions of {{tool}} besides the one in use.",
       "emptyAvailableTitle": "No available versions",
@@ -159,13 +159,25 @@
       }
     },
     "confirm": {
+      "use": {
+        "title": "Use {{tool}}@{{version}}?",
+        "body": "Makes this version the one in use; it is installed first if missing."
+      },
+      "install": {
+        "title": "Install {{tool}}@{{version}}?",
+        "body": "Installs this version; the config file stays unchanged."
+      },
       "uninstall": {
         "title": "Uninstall {{tool}}@{{version}}?",
-        "body": "This will run the exact command below. It deletes this version's files only — the Config file keeps its request, so a still-requested version is reinstalled on the next install. This cannot be undone."
+        "body": "Deletes this version's installation files; the config file stays unchanged. If it is the version in use, it is reinstalled automatically the next time."
       },
       "unuse": {
         "title": "Unuse {{tool}}?",
-        "body": "This will run the exact command below. It removes the tool from the Config file and prunes its installations; for an orphan installation (requested by no Config file) it deletes every installed version instead. This cannot be undone."
+        "body": "The tool is no longer used: it is removed from the config file, and installation files no other config uses are deleted as well."
+      },
+      "upgrade": {
+        "title": "Upgrade {{tool}}?",
+        "body": "Upgrades to the newest version within the range written in the config file, and installs it."
       },
       "link": {
         "directoryNotFound": "Directory not found: {{path}}. Pick again."

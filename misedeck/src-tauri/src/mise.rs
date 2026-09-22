@@ -1330,12 +1330,12 @@ pub fn mise_plugins_ls(
 //   * `mise uninstall --all <tool>`    → remove an orphan tool (no config
 //                                        request, so `unuse` would error)
 //   * `mise link <tool>@<version> <path>` → symlink a local dir as a version
-//   * `mise upgrade`                    → upgrade all outdated tools
-//   * `mise upgrade <tool>`             → upgrade a single tool
+//   `mise upgrade`                        → upgrade all outdated tools
+//   `mise upgrade <tool>`                 → upgrade a single tool
 //
-// The JS side prepends `-g` when the active context is global, so the
-// helpers here emit the pure argv and leave the global flag to the
-// caller.
+// The JS side prepends `-g` to `use`/`unuse` when the active context
+// is global, so the helpers here emit the pure argv and leave the
+// global flag to the caller.
 
 /// Build the argv for `mise install <tool>@<version>`. An empty version
 /// means latest (issue #111): `mise install <tool>`.
@@ -1398,13 +1398,15 @@ pub fn mise_link_argv(tool: &str, version: &str, path: &str) -> Vec<String> {
     ]
 }
 
-/// Build the argv for `mise upgrade --bump [<tool>]`. The `--bump`
-/// flag is required so the upgrade respects the latest version
-/// reported by `mise outdated --json --bump` and bumps the version
-/// in the config file. When `tool` is `None` the command upgrades
-/// every outdated tool; when `Some` it targets a single tool.
+/// Build the argv for `mise upgrade [<tool>]`. The default mode
+/// upgrades within the range the config file writes (node@20 → newest
+/// 20.x) without rewriting the config — matching the `latest` field of
+/// `mise outdated --json`. The retired `--bump` mode (beta13 Q9:
+/// dev tools favor stability over chasing major versions) is not
+/// emitted. When `tool` is `None` the command upgrades every outdated
+/// tool; when `Some` it targets a single tool.
 pub fn mise_upgrade_argv(tool: Option<&str>) -> Vec<String> {
-    let mut argv = vec!["upgrade".to_string(), "--bump".to_string()];
+    let mut argv = vec!["upgrade".to_string()];
     if let Some(tool) = tool {
         argv.push(tool.to_string());
     }

@@ -1,5 +1,6 @@
-/* AddToolSection — the "Add a tool" region below the Tools page table
- * (issue #178). Layout, color, and motion consume design tokens only. */
+/* AddToolSection — the "Manage versions" region below the Tools page
+ * table (issue #178, redesign issue #188). Layout, color, and motion
+ * consume design tokens only. */
 
 .section {
   display: flex;
@@ -56,6 +57,38 @@
   margin: 0;
 }
 
+/* Section header with a right-side affordance (the in-use section's
+ * upgrade hint + button): title left, actions right (the toolbar
+ * convention). */
+.subHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.subHeadActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* The "New version X available" hint shares its baseline with the
+ * Upgrade button, so it renders at data size, not the label size. */
+.upgradeHint {
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  color: var(--dim);
+}
+
+/* The in-use empty state: explanatory copy only (beta13). */
+.emptyInUse {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  color: var(--dim);
+}
+
 /* ---------- Sub-list tables (fixed layout, issue #151) ---------- */
 
 /* min-width ≈ sum of declared column widths; the Source column takes
@@ -64,8 +97,12 @@
   min-width: 520px;
 }
 
+/* The not-installed table shares the in-use/installed template:
+ * declared Version + Actions widths with the Created column taking
+ * the remaining width, so all three Actions columns align on the same
+ * x (beta13). */
 .availableTable {
-  min-width: 510px;
+  min-width: 480px;
 }
 
 /* ---------- Cells ---------- */

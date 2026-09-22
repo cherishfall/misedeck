@@ -55,17 +55,17 @@ _Avoid_: symlinks, wrappers
 `mise use <tool>@<version>` —— 使用一个 Tool 版本：缺失则自动安装，并把请求写入 Config file。首要的写操作；只安装不使用是例外。UI 文案："Use" / 使用。
 _Avoid_: enable, activate, set as default
 
-**Unuse**（卸载）:
-`mise unuse <tool>` —— 将 Tool 从 Config file 移除，并清理不再被引用的安装。这是真正的工具级移除；`mise uninstall` 只删文件。见 ADR-0008。UI 文案："Unuse" / 卸载。
-「卸载」涵盖两个层级：tool 级（`mise unuse <tool>`）与 plugin 级（`mise plugins uninstall <plugin>`）；version 级移除恒为 "Uninstall" / 删除此版本（`mise uninstall <tool>@<version>`）。
+**Unuse**（取消使用）:
+`mise unuse <tool>` —— 将 Tool 从 Config file 移除，并清理不再被引用的安装。这是真正的工具级移除；`mise uninstall` 只删文件。见 ADR-0008。UI 文案："Unuse" / 取消使用。
+移除词汇按层级区分（beta13，#188）：工具级移除为 "Unuse" / 取消使用（`mise unuse <tool>`）；文件级移除为 "Uninstall" / 卸载——某个版本（`mise uninstall <tool>@<version>`）或某个插件（`mise plugins uninstall <plugin>`）。
 _Avoid_: uninstall, remove, delete（工具级）
 
-**Install**（仅安装）:
-`mise install <tool>@<version>` —— 只下载 Tool 版本的文件；不写 Config file，因此仅此一步 Tool 不会出现在 PATH 上。UI 文案："Install only" / 仅安装。
+**Install**（安装）:
+`mise install <tool>@<version>` —— 只下载 Tool 版本的文件；不写 Config file，因此仅此一步 Tool 不会出现在 PATH 上。UI 文案："Install" / 安装。
 _Avoid_: setup
 
-**Uninstall**（删除此版本）:
-`mise uninstall <tool>@<version>` —— 只删除某个已安装 Tool 版本的文件；Config file 中的请求保留，因此仍被请求的版本会在下次 install 时被装回。UI 文案："Uninstall" / 删除此版本。
+**Uninstall**（卸载）:
+`mise uninstall <tool>@<version>` —— 只删除某个已安装 Tool 版本的文件；Config file 中的请求保留，因此仍被请求的版本会在下次 install 时被装回。UI 文案："Uninstall" / 卸载。
 _Avoid_: remove, delete（版本级）
 
 **Orphan installation**（孤立安装）:

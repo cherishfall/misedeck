@@ -1,6 +1,6 @@
 // Tests for the version comparators. `compareToolVersions` is the
-// prefix-aware comparator the Tools page add-tool section sorts with
-// (issue #178); `compareVersions` is the legacy date-based comparator.
+// prefix-aware comparator the Tools page version-management section
+// sorts with (issue #178); `compareVersions` is the legacy date-based comparator.
 // Run via `npm run test` (node:test through tsx — no extra framework).
 
 import assert from "node:assert/strict";

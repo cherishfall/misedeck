@@ -56,16 +56,16 @@ _Avoid_: symlinks, wrappers
 _Avoid_: enable, activate, set as default
 
 **Unuse**:
-`mise unuse <tool>` — remove a Tool from the Config file and prune installations no longer referenced. The real tool-level removal; `mise uninstall` only deletes files. See ADR-0008. UI copy: "Unuse" / 卸载.
-卸载 spans two scopes: tool level (`mise unuse <tool>`) and plugin level (`mise plugins uninstall <plugin>`); version-level removal is always "Uninstall" / 删除此版本 (`mise uninstall <tool>@<version>`).
+`mise unuse <tool>` — remove a Tool from the Config file and prune installations no longer referenced. The real tool-level removal; `mise uninstall` only deletes files. See ADR-0008. UI copy: "Unuse" / 取消使用.
+Removal vocabulary splits by scope (beta13, issue #188): tool-level removal is Unuse / 取消使用 (`mise unuse <tool>`); file-level removal is Uninstall / 卸载 — one version (`mise uninstall <tool>@<version>`) or a plugin (`mise plugins uninstall <plugin>`).
 _Avoid_: uninstall, remove, delete (at tool level)
 
 **Install**:
-`mise install <tool>@<version>` — download a Tool version's files only; does not write the Config file, so the Tool is not on PATH from this alone. UI copy: "Install only" / 仅安装.
+`mise install <tool>@<version>` — download a Tool version's files only; does not write the Config file, so the Tool is not on PATH from this alone. UI copy: "Install" / 安装.
 _Avoid_: setup
 
 **Uninstall**:
-`mise uninstall <tool>@<version>` — delete one installed Tool version's files only; the Config file keeps its request, so a still-requested version will be reinstalled on the next install. UI copy: "Uninstall" / 删除此版本.
+`mise uninstall <tool>@<version>` — delete one installed Tool version's files only; the Config file keeps its request, so a still-requested version will be reinstalled on the next install. UI copy: "Uninstall" / 卸载.
 _Avoid_: remove, delete (at version level)
 
 **Orphan installation**:

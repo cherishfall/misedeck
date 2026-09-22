@@ -66,7 +66,7 @@ function usePanelRead(): (
 /**
  * Same as `usePanelRead`, plus writing the result into a query cache
  * entry. Used by the queries whose fetch *is* the panel run (the Tools
- * page add-tool section's `ls-remote` read, issue #178): their `useQuery`
+ * page version-management section's `ls-remote` read, issue #178): their `useQuery`
  * has no query function, so the command's result is what populates the
  * cache.
  */
@@ -128,7 +128,7 @@ export function useOutdatedTools(): UseQueryResult<JsonResult> {
  * Cache key is `["tools", "ls-remote", cwd, tool]`.
  *
  * The query has no fetcher of its own: picking a tool in the Tools
- * page's add-tool section dispatches `mise ls-remote --json <tool>`
+ * page's version-management section dispatches `mise ls-remote --json <tool>`
  * through the execution panel's runner (background) and writes the
  * result here via `useReadIntoCache` (ADR-0005, issue #178). Until then
  * the query reports `isPending`, which is what drives the not-installed

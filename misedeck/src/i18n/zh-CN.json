@@ -92,11 +92,11 @@
     },
     "tooltip": {
       "switchVersion": "点击切换版本",
-      "singleVersion": "只安装了一个版本——在下方「添加工具」中找到该工具，安装其他版本后即可切换。"
+      "singleVersion": "只安装了一个版本——在下方「版本管理」中找到该工具，安装其他版本后即可切换。"
     },
     "empty": {
       "title": "尚未安装任何工具",
-      "body": "在下方「添加工具」中搜索并安装你的第一个工具。"
+      "body": "在下方「版本管理」中搜索并安装你的第一个工具。"
     },
     "missing": {
       "title": "工具列表不可用",
@@ -108,15 +108,15 @@
     },
     "filterPlaceholder": "过滤工具…",
     "actions": {
-      "install": "仅安装",
-      "uninstall": "删除此版本",
-      "unuse": "卸载",
+      "install": "安装",
+      "uninstall": "卸载",
+      "unuse": "取消使用",
       "upgrade": "升级",
       "use": "使用",
       "link": "链接"
     },
     "addTool": {
-      "title": "添加工具",
+      "title": "版本管理",
       "searchPlaceholder": "搜索工具（如 node）",
       "noMatches": "没有匹配项——仍可直接输入 backend:name（如 npm:prettier）。",
       "moreMatches": "还有更多匹配——继续输入以缩小范围。",
@@ -127,9 +127,9 @@
       "created": "发布时间",
       "filterPlaceholder": "过滤版本…",
       "retryButton": "重试",
-      "activeUninstallTooltip": "先切换到其他版本才能删除此版本",
-      "emptyInUseTitle": "当前目录未启用",
-      "emptyInUseBody": "{{tool}} 在当前目录未启用，可在下方选择一个版本在此使用。",
+      "notInstalledUninstallTooltip": "该版本尚未安装，没有可删除的安装文件",
+      "upgradeAvailable": "新版本 {{latest}} 可用",
+      "emptyInUse": "当前范围内没有正在使用的版本。",
       "emptyInstalledTitle": "没有已安装版本",
       "emptyInstalledBody": "除在用版本外，`mise ls {{tool}}` 没有报告 {{tool}} 的其他已安装版本。",
       "emptyAvailableTitle": "没有可安装版本",
@@ -141,7 +141,7 @@
       "toolPlaceholder": "工具名（如 node）",
       "versionPlaceholder": "版本（如 22.11.0）",
       "noPath": "未选择目录",
-      "duplicateVersion": "{{tool}}@{{version}} 已存在，无法重复链接。请先删除此版本，再重新链接。"
+      "duplicateVersion": "{{tool}}@{{version}} 已存在，无法重复链接。请先卸载该版本，再重新链接。"
     },
     "advanced": {
       "title": "高级"
@@ -159,13 +159,25 @@
       }
     },
     "confirm": {
+      "use": {
+        "title": "使用 {{tool}}@{{version}}？",
+        "body": "让该版本成为当前使用的版本；未安装时会先安装。"
+      },
+      "install": {
+        "title": "安装 {{tool}}@{{version}}？",
+        "body": "安装该版本；配置文件不变。"
+      },
       "uninstall": {
-        "title": "删除 {{tool}}@{{version}}？",
-        "body": "将运行以下确切命令。该命令仅删除此版本的文件——Config 文件中的请求保持不变，因此仍被请求的版本会在下次安装时被重新装回。此操作无法撤销。"
+        "title": "卸载 {{tool}}@{{version}}？",
+        "body": "删除该版本的安装文件，配置文件不变；正在使用时，下次会自动重新安装。"
       },
       "unuse": {
-        "title": "卸载 {{tool}}？",
-        "body": "将运行以下确切命令。该命令会将此工具从 Config 文件中移除并清理其安装；对于孤立安装（没有任何 Config 文件请求它），则改为删除其全部已安装版本。此操作无法撤销。"
+        "title": "取消使用 {{tool}}？",
+        "body": "让该工具不再被使用：从配置文件移除，其他配置不再使用的安装文件一并删除。"
+      },
+      "upgrade": {
+        "title": "升级 {{tool}}？",
+        "body": "将配置文件所写范围内的版本升级到最新并安装。"
       },
       "link": {
         "directoryNotFound": "目录路径不存在：{{path}}。请检查后重新选择。"
@@ -178,8 +190,8 @@
       "used": "{{tool}}@{{version}} 已安装并启用",
       "installed": "{{tool}}@{{version}} 已安装",
       "upgraded": "{{tool}} 已升级",
-      "uninstalled": "{{tool}}@{{version}} 已删除",
-      "unused": "{{tool}} 已卸载",
+      "uninstalled": "{{tool}}@{{version}} 已卸载",
+      "unused": "{{tool}} 已取消使用",
       "linked": "{{tool}}@{{version}} 已链接"
     },
     "hintGlobal": "全局模式下已安装并处于活动状态的工具——在下方搜索添加，「使用」一步完成安装并启用。"

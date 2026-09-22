@@ -19,8 +19,8 @@
 //   `mise uninstall <tool>@<version>`     → ["uninstall", "<tool>@<version>"]
 //   `mise unuse <tool>`                   → ["unuse", "<tool>"]
 //   `mise uninstall --all <tool>`         → ["uninstall", "--all", "<tool>"]
-//   `mise upgrade --bump`                 → ["upgrade", "--bump"]
-//   `mise upgrade --bump <tool>`          → ["upgrade", "--bump", "<tool>"]
+//   `mise upgrade`                        → ["upgrade"]
+//   `mise upgrade <tool>`                 → ["upgrade", "<tool>"]
 //
 // The fixture-mise script serves the same recorded stdout/stderr
 // for every argv, so the streaming-surface tests are the same
@@ -142,7 +142,7 @@ fn mise_upgrade_argv_builds_upgrade_all_command() {
     let argv = mise_upgrade_argv(None);
     assert_eq!(
         argv,
-        vec!["upgrade".to_string(), "--bump".to_string()]
+        vec!["upgrade".to_string()]
     );
 }
 
@@ -153,7 +153,6 @@ fn mise_upgrade_argv_builds_upgrade_single_command() {
         argv,
         vec![
             "upgrade".to_string(),
-            "--bump".to_string(),
             "go".to_string(),
         ]
     );
@@ -268,7 +267,7 @@ fn run_mise_with_link_argv_streams_to_exit() {
 #[serial]
 fn run_mise_with_upgrade_all_argv_streams_to_exit() {
     let script = fixture_script();
-    with_slug("upgrade---bump", || {
+    with_slug("upgrade", || {
         let events: std::sync::Arc<std::sync::Mutex<Vec<RunEvent>>> =
             std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
         let events2 = std::sync::Arc::clone(&events);
@@ -288,7 +287,7 @@ fn run_mise_with_upgrade_all_argv_streams_to_exit() {
 #[serial]
 fn run_mise_with_upgrade_single_argv_streams_to_exit() {
     let script = fixture_script();
-    with_slug("upgrade---bump---go", || {
+    with_slug("upgrade-go", || {
         let events: std::sync::Arc<std::sync::Mutex<Vec<RunEvent>>> =
             std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
         let events2 = std::sync::Arc::clone(&events);

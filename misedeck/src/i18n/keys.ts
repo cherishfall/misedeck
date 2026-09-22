@@ -178,6 +178,14 @@ export const I18N_KEYS = {
       link: "tools.actions.link",
     },
     confirm: {
+      use: {
+        title: "tools.confirm.use.title",
+        body: "tools.confirm.use.body",
+      },
+      install: {
+        title: "tools.confirm.install.title",
+        body: "tools.confirm.install.body",
+      },
       uninstall: {
         title: "tools.confirm.uninstall.title",
         body: "tools.confirm.uninstall.body",
@@ -185,6 +193,10 @@ export const I18N_KEYS = {
       unuse: {
         title: "tools.confirm.unuse.title",
         body: "tools.confirm.unuse.body",
+      },
+      upgrade: {
+        title: "tools.confirm.upgrade.title",
+        body: "tools.confirm.upgrade.body",
       },
       link: {
         directoryNotFound: "tools.confirm.link.directoryNotFound",
@@ -213,9 +225,15 @@ export const I18N_KEYS = {
       created: "tools.addTool.created",
       filterPlaceholder: "tools.addTool.filterPlaceholder",
       retryButton: "tools.addTool.retryButton",
-      activeUninstallTooltip: "tools.addTool.activeUninstallTooltip",
-      emptyInUseTitle: "tools.addTool.emptyInUseTitle",
-      emptyInUseBody: "tools.addTool.emptyInUseBody",
+      /** Why the in-use row's Uninstall is disabled: the requested
+          version has no files on disk yet (beta13). */
+      notInstalledUninstallTooltip: "tools.addTool.notInstalledUninstallTooltip",
+      /** The in-use section header hint naming the upgrade target
+          version from `mise outdated` (beta13). */
+      upgradeAvailable: "tools.addTool.upgradeAvailable",
+      /** In-use empty state: explanatory copy only, no action
+          buttons (beta13 batch-operation ban). */
+      emptyInUse: "tools.addTool.emptyInUse",
       emptyInstalledTitle: "tools.addTool.emptyInstalledTitle",
       emptyInstalledBody: "tools.addTool.emptyInstalledBody",
       emptyAvailableTitle: "tools.addTool.emptyAvailableTitle",
