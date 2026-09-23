@@ -2,7 +2,24 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-23 — beta14 batch implemented & closed: #194/#195, awaiting owner visual verification)
+## CURRENT STATE (2026-09-23, afternoon — beta14 wave 2 implemented & closed: #197–#200, awaiting owner visual verification)
+
+**beta14 wave-2 feedback (5 issues settled, 4 ticketed — Issue 6 verified as by-design, no ticket):** SPEC parent **#196** + tickets **#197–#200**, all implemented serially by per-ticket subagents, every one `npm run ci` + `npm run test` (54) green. Decision records: `docs/feedback/beta14-feedback-scratch.md` Issue 3–8 (committed `a838630`).
+
+| Ticket | Commit | Scope |
+| --- | --- | --- |
+| #197 | `a69cdf5` | 执行面板 header 重构：Dismiss 恒渲染（含 running，语义=最小化，与 Cancel 独立）且恒在最右；Cancel 改 shared Button secondary；ExecutionPanelAffordance 核验无 running 隐藏分支（天然满足回路）；executionState.test +3 close-回路用例；`workingDirHome` zh 家目录→主目录（审定术语）；ui-ux-rules 执行面板条文双语重写 |
+| #198 | `6b876e1` | useOwnRun mounted 守卫一行修复（effect setup 恢复 true）——StrictMode dev 双跑后 isRunning 永久卡 true 导致 8 页 14+ 控件 ConfirmDialog 恒禁用；正式包无此路径，dev 验收主战场必修 |
+| #199 | `d86be0f` | OutdatedHint 扩四态（loading/N outdated/all up to date/**failed**+retry）；失败不再渲染成 loading（根因：`count==null` 吞掉 error/err 两类失败，retry:false 无自愈）；outdated 查询 staleTime 5min；ui-ux-rules「加载与空状态」补异步 hint 四态条文双语 |
+| #200 | `f90258d` | 删 Env/Settings 页内 ScopeBadge（含 CSS/`env.scope.*` keys 退役，dead-key 守卫绿）——顶栏 strip 在滚动容器外恒可见，徽标信息 100% 冗余且违反 product-logic 原则 4；ui-ux-rules 补「目录上下文唯一展示位」条文双语 |
+
+**NOT visually verified — owner verifies manually.** Manual-verify lists on each closed issue（重点：#197 running 态四元素顺序+running 中收起后可回、#198 tauri dev 连续卸载第二次 Confirm 可点、#199 断网/超时显示失败+重试、#200 两页页头无徽标且顶栏不受影响）。
+
+**Open issues are all owner-verification gates / SPEC parents:** #193 (wave 1) + #196 (wave 2) + #187 (beta13). No implementable tickets remain. Next feedback cycle → new scratch + new SPEC parent.
+
+---
+
+## PREVIOUS STATE (2026-09-23, morning — beta14 wave 1 implemented & closed: #194/#195)
 
 **beta14 feedback cycle (2 issues, both owner-settled via SVG candidates + recommendations):** SPEC parent **#193** + tickets **#194/#195** (both ready-for-agent, no blockers, implemented serially by per-ticket subagents). Decision records: `docs/feedback/beta14-feedback-scratch.md` (committed `701a02f`).
 
