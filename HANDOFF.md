@@ -2,7 +2,22 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-23 — beta13 batch fully closed: #188–#191, beta14 RELEASE RUN TRIGGERED)
+## CURRENT STATE (2026-09-23 — beta14 batch implemented & closed: #194/#195, awaiting owner visual verification)
+
+**beta14 feedback cycle (2 issues, both owner-settled via SVG candidates + recommendations):** SPEC parent **#193** + tickets **#194/#195** (both ready-for-agent, no blockers, implemented serially by per-ticket subagents). Decision records: `docs/feedback/beta14-feedback-scratch.md` (committed `701a02f`).
+
+| Ticket | Commit | Scope |
+| --- | --- | --- |
+| #194 | `f4c111c` | 目录选择文案统一（en Choose 家族）：`directory.pickerLabel` "Pick a directory"→"Choose directory"（Link 表单共享 key 连带，预期内）、`pickerTitle`→"Choose a directory for MiseDeck"；DirectoryIndicator 头注释同步；zh 全不动。`npm run ci` 一次通过 |
+| #195 | `912f253` | 工具页「高级」改同构全宽 disclosure panel（触发器在 panel 头部 + aria-expanded，LinkToolForm 收入 panel 内，`.installForm` 降级内容容器避免 panel 套 panel；`.advanced` flex-start 旧结构退役）；「disclosure 含 panel 内容 → 触发器在 panel 头部」规则固化进 ui-ux-rules 双语。`npm run ci` + `npm run test`（51）全绿 |
+
+**NOT visually verified — owner verifies manually.** Manual-verify lists on each closed issue (#194: en 顶栏/空态/目录模式按钮 + 对话框标题 + Link 表单按钮；#195: 收起/展开两态 panel 宽度对齐 + 双语条文)。
+
+**Open issues are all owner-verification gates, no implementable tickets:** #193 (this batch) + #187 (beta13 batch — owner said beta14「基本上可以了」，likely closable). Next feedback cycle → new scratch + new SPEC parent.
+
+---
+
+## PREVIOUS STATE (2026-09-23 — beta13 batch fully closed: #188–#191, beta14 RELEASE RUN TRIGGERED)
 
 **v1.0.0-beta.14 released** (tag `v1.0.0-beta.14` pushed + verified on remote, bump commit `9d19ca1`, release run `35771312219` — **success, all 4 build jobs + release job green, 6 assets on the GitHub Pre-release**: macOS aarch64 dmg, Windows x64 setup, Linux AppImage/deb/rpm + SHA256SUMS). Carries the complete beta13 feedback batch: SPEC #187 with all 4 tickets closed, every one `npm run ci` green (cargo green where Rust touched), **NOT visually verified — owner verifies manually**. Source of truth: `docs/feedback/beta13-feedback-scratch.md` (committed `577b8bc`).
 
