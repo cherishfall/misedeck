@@ -22,8 +22,8 @@
     "globalMode": "GLOBAL MODE",
     "recentsButton": "Recent",
     "recentsHeader": "Recent directories",
-    "pickerLabel": "Pick a directory",
-    "pickerTitle": "Pick a directory for MiseDeck",
+    "pickerLabel": "Choose directory",
+    "pickerTitle": "Choose a directory for MiseDeck",
     "chooseAnother": "Choose another directory",
     "removeRecentLabel": "Remove from recents"
   },

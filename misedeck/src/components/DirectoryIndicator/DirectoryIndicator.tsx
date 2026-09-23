@@ -10,10 +10,11 @@
 //
 // The trailing "…" pick button was removed: in directory mode the
 // "Choose another directory" button replaces it, and in global mode the
-// "Pick a directory" button is the entry point. Both render `primary`
-// — choose-directory has one visual role everywhere, toolbar included
-// (ui-ux-rules.md variant mapping, beta9). The shared pick
-// handler lives in `directory/pickDirectory.ts`.
+// "Choose directory" button is the entry point (issue #194 unified the
+// en copy on the Choose family; the Tools page Link form shares the
+// same key). Both render `primary` — choose-directory has one visual
+// role everywhere, toolbar included (ui-ux-rules.md variant mapping,
+// beta9). The shared pick handler lives in `directory/pickDirectory.ts`.
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
