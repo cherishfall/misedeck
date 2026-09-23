@@ -60,7 +60,9 @@
     "banner": {
       "label": "Untrusted config",
       "body": "This directory's mise config file has not been trusted. Env and tasks will not run until you trust it.",
-      "action": "Trust this directory"
+      "action": "Trust this directory",
+      "errorLabel": "Directory check failed",
+      "errorBody": "MiseDeck could not determine this directory's trust state, so write actions are disabled."
     },
     "busy": "Trusting…",
     "error": "Could not trust the directory. Check the execution panel for details.",

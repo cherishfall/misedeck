@@ -5,7 +5,7 @@
 // capability keeps a tooltip-labeled icon entry.
 
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router";
 
@@ -25,8 +25,10 @@ const SIDEBAR_COLLAPSED_KEY = "misedeck.sidebarCollapsed.v1";
 
 /** Pages that carry no mutating actions and therefore start without the
  *  execution panel visible. Preview is read-only apart from its trust
- *  action; when trust runs the panel opens on demand like any mutation. */
-const READ_ONLY_PATHS = ["/doctor", "/plugins", "/preview"];
+ *  action; when trust runs the panel opens on demand like any mutation.
+ *  Plugins is NOT read-only: it carries foreground install/uninstall
+ *  mutations (issue #202). */
+const READ_ONLY_PATHS = ["/doctor", "/preview"];
 
 function isReadOnlyPath(path: string): boolean {
   return READ_ONLY_PATHS.some((p) => path === p);
@@ -44,10 +46,17 @@ export function PageShell({ children }: PageShellProps) {
   const { state: execState, dismiss } = useExecutionContext();
   const { context } = useDirectory();
 
-  // Read-only pages render without the panel. If the user navigates to one
-  // while no command is running, hide the panel while preserving history so
-  // the persistent affordance can still reopen it.
+  // Read-only pages render without the panel: when the user *enters* one
+  // (mount or navigation) and no command is running, hide the panel while
+  // preserving history so the persistent affordance can still reopen it.
+  // The decision is made once per path — the effect must not follow
+  // `execState.status`, or it would dismiss the panel the reducer just
+  // auto-opened for a failure (and panels the user opened manually) on
+  // this very page (issue #202).
+  const enteredPathRef = useRef<string | null>(null);
   useEffect(() => {
+    if (enteredPathRef.current === location.pathname) return;
+    enteredPathRef.current = location.pathname;
     if (isReadOnlyPath(location.pathname) && execState.status !== "running") {
       dismiss();
     }

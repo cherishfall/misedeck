@@ -30,9 +30,9 @@
 //                      allowed.
 //   * `error`       — the probe failed (mise missing, IPC error,
 //                      etc.); the trust gate errs on the side of
-//                      safety and reports `allowed: false`, but
-//                      the banner is not shown because the page
-//                      likely can't talk to mise anyway.
+//                      safety and reports `allowed: false`, and the
+//                      banner renders a muted explanation so blocked
+//                      writes have a visible reason (issue #202).
 
 import {
   createContext,

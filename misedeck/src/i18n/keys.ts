@@ -139,6 +139,11 @@ export const I18N_KEYS = {
       label: "trust.banner.label",
       body: "trust.banner.body",
       action: "trust.banner.action",
+      /** The muted error-state banner (issue #202): the trust probe
+          itself failed, so writes are disabled without a Trust
+          action — distinct wording from the `untrusted` banner. */
+      errorLabel: "trust.banner.errorLabel",
+      errorBody: "trust.banner.errorBody",
     },
     busy: "trust.busy",
     error: "trust.error",

@@ -8,17 +8,21 @@
 // when `useTrustGuard()` blocks a mutation, the page calls `focus()`
 // so the user lands on the banner instead of a silently dead button.
 //
-// Renders nothing in every state except `untrusted`, so it is safe to
-// drop into a page unconditionally. The one-click `Trust` action
-// routes through the execution panel (so the `mise trust` attempt is
-// visible alongside any other panel activity); on success the trust
-// query invalidates itself, the banner disappears, and the success
-// closes the loop in-page with the shared SuccessBar (issue #145) —
-// the bar lives outside the banner's `untrusted` early return because
-// the re-probe flips the trust state within milliseconds, which made
-// the old in-banner note vanish before it could be read. Failures are
-// unchanged: the panel auto-opens and the error note stays under the
-// banner.
+// Renders nothing in every state except `untrusted` and `error`, so it
+// is safe to drop into a page unconditionally. `untrusted` renders the
+// warning banner with the one-click `Trust` action (which routes
+// through the execution panel, so the `mise trust` attempt is visible
+// alongside any other panel activity); on success the trust query
+// invalidates itself, the banner disappears, and the success closes
+// the loop in-page with the shared SuccessBar (issue #145) — the bar
+// lives outside the banner's early return because the re-probe flips
+// the trust state within milliseconds, which made the old in-banner
+// note vanish before it could be read. Failures are unchanged: the
+// panel auto-opens and the error note stays under the banner.
+// `error` (probe failure — directory deleted, permission lost, mise
+// unreachable) renders a muted banner explaining that writes are
+// disabled, so the guard's blocked mutations have a visible reason
+// instead of silently dead buttons (issue #202).
 
 import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -53,9 +57,16 @@ export const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(
       if (lastResult !== "ok") setDismissed(false);
     }, [lastResult]);
     const justTrusted = lastResult === "ok" && !dismissed;
-    if (trust.kind !== "untrusted" && !justTrusted) return null;
+    if (trust.kind !== "untrusted" && trust.kind !== "error" && !justTrusted) {
+      return null;
+    }
     return (
       <div ref={ref} data-testid="trust-banner">
+        {trust.kind === "error" && (
+          <Banner tone="info" label={t(I18N_KEYS.trust.banner.errorLabel)}>
+            {t(I18N_KEYS.trust.banner.errorBody)}
+          </Banner>
+        )}
         {trust.kind === "untrusted" && (
           <>
             <Banner
