@@ -264,10 +264,6 @@
     "commandHint": "mise env · mise set · mise unset",
     "listTitle": "已解析的环境变量",
     "filterPlaceholder": "过滤环境变量…",
-    "scope": {
-      "global": "全局",
-      "project": "当前目录"
-    },
     "columns": {
       "name": "名称",
       "value": "值",

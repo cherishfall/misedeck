@@ -22,7 +22,7 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
    *  reported (docs/design/ui-ux-rules.md data honesty). */
   data?: boolean;
   /** Inline size: for badges that share a line or baseline with 12px+
-   *  text (Settings/Env scope badges, Doctor status rows), render at
+   *  text (Doctor status rows), render at
    *  `--size-data` instead of the 10px chip size (ui-ux-rules.md shared-
    *  line balance). Default "chip" stays 10px for in-cell chips. */
   size?: "chip" | "inline";

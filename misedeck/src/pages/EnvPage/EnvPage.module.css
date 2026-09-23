@@ -35,29 +35,6 @@
   max-width: 70ch;
 }
 
-.scopeRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.scopePath {
-  font-family: var(--font-mono);
-  font-size: var(--size-data);
-  color: var(--text);
-  background: color-mix(in srgb, var(--hull) 60%, transparent);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: var(--space-1) var(--space-3);
-  /* Long paths never break mid-token: ellipsis + title tooltip
-   * (issue #57). */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
 /* ---------- Section panels ---------- */
 
 .section {

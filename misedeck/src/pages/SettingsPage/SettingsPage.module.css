@@ -38,28 +38,6 @@
   max-width: 70ch;
 }
 
-.scopeRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.scopePath {
-  display: inline-block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
-  font-family: var(--font-mono);
-  font-size: var(--size-data);
-  color: var(--text);
-  background: color-mix(in srgb, var(--hull) 60%, transparent);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: var(--space-1) var(--space-3);
-}
-
 .toolbar {
   display: flex;
   align-items: center;

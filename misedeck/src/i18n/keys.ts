@@ -345,10 +345,6 @@ export const I18N_KEYS = {
     commandHint: "env.commandHint",
     listTitle: "env.listTitle",
     filterPlaceholder: "env.filterPlaceholder",
-    scope: {
-      global: "env.scope.global",
-      project: "env.scope.project",
-    },
     columns: {
       name: "env.columns.name",
       value: "env.columns.value",

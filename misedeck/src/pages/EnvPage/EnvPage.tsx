@@ -266,7 +266,6 @@ export function EnvPage() {
           <h1 className={styles.title}>{t(I18N_KEYS.env.title)}</h1>
           <CommandHint>{t(I18N_KEYS.env.commandHint)}</CommandHint>
           <p className={styles.hint}>{t(cwd === null ? I18N_KEYS.env.hintGlobal : I18N_KEYS.env.hint)}</p>
-          <ScopeBadge cwd={cwd} />
         </header>
 
         {/* In-page success confirmation (issue #145): set by every
@@ -344,25 +343,6 @@ export function EnvPage() {
         </section>
       </div>
     </PageShell>
-  );
-}
-
-// ---------- Scope badge ----------
-
-function ScopeBadge({ cwd }: { cwd: string | null }) {
-  const { t } = useTranslation();
-  const isGlobal = cwd === null;
-  return (
-    <div className={styles.scopeRow}>
-      <Badge variant={isGlobal ? "default" : "info"} size="inline">
-        {isGlobal ? t(I18N_KEYS.env.scope.global) : t(I18N_KEYS.env.scope.project)}
-      </Badge>
-      {!isGlobal && (
-        <Tooltip text={cwd}>
-          <span className={styles.scopePath} data-testid="env-cwd">{cwd}</span>
-        </Tooltip>
-      )}
-    </div>
   );
 }
 

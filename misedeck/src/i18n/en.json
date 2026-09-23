@@ -264,10 +264,6 @@
     "commandHint": "mise env · mise set · mise unset",
     "listTitle": "Resolved env vars",
     "filterPlaceholder": "Filter env vars…",
-    "scope": {
-      "global": "Global",
-      "project": "Current directory"
-    },
     "columns": {
       "name": "Name",
       "value": "Value",

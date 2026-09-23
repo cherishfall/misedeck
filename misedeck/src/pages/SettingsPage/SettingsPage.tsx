@@ -239,7 +239,6 @@ export function SettingsPage() {
           <h1 className={styles.title}>{t(I18N_KEYS.settings.title)}</h1>
           <CommandHint>{t(I18N_KEYS.settings.commandHint)}</CommandHint>
           <p className={styles.hint}>{t(cwd === null ? I18N_KEYS.settings.hintGlobal : I18N_KEYS.settings.hint)}</p>
-          <ScopeBadge cwd={cwd} />
         </header>
 
         {/* In-page success confirmation (issue #145): set by every
@@ -327,25 +326,6 @@ export function SettingsPage() {
         )}
       </div>
     </PageShell>
-  );
-}
-
-function ScopeBadge({ cwd }: { cwd: string | null }) {
-  const { t } = useTranslation();
-  const isGlobal = cwd === null;
-  return (
-    <div className={styles.scopeRow}>
-      <Badge variant={isGlobal ? "default" : "info"} size="inline">
-        {isGlobal
-          ? t(I18N_KEYS.env.scope.global)
-          : t(I18N_KEYS.env.scope.project)}
-      </Badge>
-      {!isGlobal && (
-        <Tooltip text={cwd}>
-          <span className={styles.scopePath} data-testid="settings-cwd">{cwd}</span>
-        </Tooltip>
-      )}
-    </div>
   );
 }
 
