@@ -305,7 +305,8 @@
     "confirm": {
       "unset": {
         "title": "Unset {{name}}?",
-        "body": "This will run the exact command below. The env var will be removed from mise's config for this scope and this cannot be undone."
+        "bodyGlobal": "This will run the exact command below. The env var will be removed from the global mise config and this cannot be undone.",
+        "bodyDirectory": "This will run the exact command below. The env var will be removed from the current directory's mise config and this cannot be undone."
       },
       "overwrite": {
         "title": "Overwrite {{name}}?",
@@ -442,7 +443,8 @@
       },
       "unset": {
         "title": "Unset {{key}}?",
-        "body": "This will run the exact command below. The setting {{key}} will be removed from its config file and this cannot be undone."
+        "bodyGlobal": "This will run the exact command below. The setting {{key}} will be removed from the global mise config and this cannot be undone.",
+        "bodyDirectory": "This will run the exact command below. The setting {{key}} will be removed from the current directory's mise config and this cannot be undone."
       }
     },
     "tooltip": {

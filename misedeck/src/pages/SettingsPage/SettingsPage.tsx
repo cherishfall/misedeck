@@ -549,7 +549,9 @@ function RowActions({
         confirmBusy={disabled}
         cwd={cwd}
         title={t(I18N_KEYS.settings.confirm.unset.title, { key: row.key })}
-        body={t(I18N_KEYS.settings.confirm.unset.body, { key: row.key })}
+        body={cwd === null
+          ? t(I18N_KEYS.settings.confirm.unset.bodyGlobal, { key: row.key })
+          : t(I18N_KEYS.settings.confirm.unset.bodyDirectory, { key: row.key })}
         command={commandEcho("mise", cwd, miseSettingsUnsetArgs(row.key, cwd))}
         confirmLabel={t(I18N_KEYS.settings.unsetButton)}
         cancelLabel={t(I18N_KEYS.common.cancel)}

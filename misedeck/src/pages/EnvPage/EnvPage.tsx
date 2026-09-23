@@ -697,7 +697,9 @@ function EnvRowActions({
         confirmBusy={disabled}
         cwd={cwd}
         title={t(I18N_KEYS.env.confirm.unset.title, { name: row.name })}
-        body={t(I18N_KEYS.env.confirm.unset.body)}
+        body={cwd === null
+          ? t(I18N_KEYS.env.confirm.unset.bodyGlobal)
+          : t(I18N_KEYS.env.confirm.unset.bodyDirectory)}
         command={commandEcho("mise", cwd, miseEnvUnsetArgs(row.name, cwd))}
         confirmLabel={t(I18N_KEYS.env.unsetButton)}
         cancelLabel={t(I18N_KEYS.common.cancel)}

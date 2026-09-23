@@ -391,7 +391,8 @@ export const I18N_KEYS = {
     confirm: {
       unset: {
         title: "env.confirm.unset.title",
-        body: "env.confirm.unset.body",
+        bodyGlobal: "env.confirm.unset.bodyGlobal",
+        bodyDirectory: "env.confirm.unset.bodyDirectory",
       },
       overwrite: {
         title: "env.confirm.overwrite.title",
@@ -521,7 +522,8 @@ export const I18N_KEYS = {
       },
       unset: {
         title: "settings.confirm.unset.title",
-        body: "settings.confirm.unset.body",
+        bodyGlobal: "settings.confirm.unset.bodyGlobal",
+        bodyDirectory: "settings.confirm.unset.bodyDirectory",
       },
     },
     tooltip: {
