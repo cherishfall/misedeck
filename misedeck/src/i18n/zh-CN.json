@@ -132,7 +132,6 @@
       "activeBadge": "活动",
       "created": "发布时间",
       "filterPlaceholder": "过滤版本…",
-      "retryButton": "重试",
       "notInstalledUninstallTooltip": "该版本尚未安装，没有可删除的安装文件",
       "upgradeAvailable": "新版本 {{latest}} 可用",
       "emptyInUse": "当前范围内没有正在使用的版本。",

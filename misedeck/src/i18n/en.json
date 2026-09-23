@@ -132,7 +132,6 @@
       "activeBadge": "active",
       "created": "Created",
       "filterPlaceholder": "Filter versions…",
-      "retryButton": "Retry",
       "notInstalledUninstallTooltip": "This version is not installed — there is nothing to delete",
       "upgradeAvailable": "New version {{latest}} available",
       "emptyInUse": "No version is in use in the current scope.",

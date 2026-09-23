@@ -70,16 +70,16 @@
 .errorState {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-4);
-  border: 1px solid var(--line);
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--tint-danger);
   border-radius: var(--radius-panel);
-  background: color-mix(in srgb, var(--hull) 60%, transparent);
+  background: var(--tint-danger-bg);
 }
 
 .errorLabel {
-  font-family: var(--font-ui);
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
   color: var(--breach);
 }
 
@@ -92,14 +92,14 @@
 .errorStderr {
   font-family: var(--font-mono);
   font-size: var(--size-data);
-  color: var(--text);
-  background: color-mix(in srgb, var(--void) 60%, transparent);
-  border: 1px solid var(--line);
+  color: var(--breach);
+  background: color-mix(in srgb, var(--breach) 8%, transparent);
+  border: 1px solid var(--tint-danger);
   border-radius: 4px;
   padding: var(--space-3);
   margin: 0;
   white-space: pre-wrap;
-  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* ---------- Cells ---------- */

@@ -249,7 +249,6 @@ export const I18N_KEYS = {
       activeBadge: "tools.addTool.activeBadge",
       created: "tools.addTool.created",
       filterPlaceholder: "tools.addTool.filterPlaceholder",
-      retryButton: "tools.addTool.retryButton",
       /** Why the in-use row's Uninstall is disabled: the requested
           version has no files on disk yet (beta13). */
       notInstalledUninstallTooltip: "tools.addTool.notInstalledUninstallTooltip",

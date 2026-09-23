@@ -95,13 +95,12 @@
 
 .errorStderr {
   font-family: var(--font-mono);
-  font-size: var(--size-label);
+  font-size: var(--size-data);
   color: var(--breach);
   background: color-mix(in srgb, var(--breach) 8%, transparent);
   border: 1px solid var(--tint-danger);
   border-radius: 4px;
   padding: var(--space-3);
-  overflow-x: auto;
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;

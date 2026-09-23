@@ -709,13 +709,13 @@ export function AddToolSection({
                         on its own — this button is the recovery path
                         (issue #172). */}
                     <Button
-                      variant="secondary"
+                      variant="ghost"
                       size="sm"
                       className={styles.errorRetry}
                       onClick={onRetryRemote}
                       data-testid="add-tool-remote-retry"
                     >
-                      {t(I18N_KEYS.tools.addTool.retryButton)}
+                      {t(I18N_KEYS.common.retry)}
                     </Button>
                   </div>
                 )}
