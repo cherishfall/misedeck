@@ -2,7 +2,17 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-23, afternoon — beta14 wave 2 implemented & closed: #197–#200, awaiting owner visual verification)
+## CURRENT STATE (2026-09-23, evening — ALL SPEC parents closed by owner verification, frontier EMPTY)
+
+**Owner visually verified everything (2026-09-23「基本验收通过」) and all three open SPEC parents were closed: #187 (beta13 batch), #193 (beta14 wave 1: #194/#195), #196 (beta14 wave 2: #197–#200).** The issue tracker has zero open issues. Both beta14 waves carried `npm run ci` + `npm run test` (54) green; commits `a69cdf5` `6b876e1` `d86be0f` `f90258d` (wave 2) + `f4c111c` `912f253` (wave 1). Decision records: `docs/feedback/beta14-feedback-scratch.md` Issue 1–8.
+
+**Owner's next move: beta.15 release decision.** Both waves + the previous `1feb11d` streaming-fix are candidates for the tag. Release procedure below (6 places / 5 files bump, annotated tag = Release body, proxy push, verify `git ls-remote`).
+
+**Next feedback cycle → new scratch + new SPEC parent.** Nothing implementable is open.
+
+---
+
+## PREVIOUS STATE (2026-09-23, afternoon — beta14 wave 2 implemented & closed: #197–#200, awaiting owner visual verification)
 
 **beta14 wave-2 feedback (5 issues settled, 4 ticketed — Issue 6 verified as by-design, no ticket):** SPEC parent **#196** + tickets **#197–#200**, all implemented serially by per-ticket subagents, every one `npm run ci` + `npm run test` (54) green. Decision records: `docs/feedback/beta14-feedback-scratch.md` Issue 3–8 (committed `a838630`).
 
