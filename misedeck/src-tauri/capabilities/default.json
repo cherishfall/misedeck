@@ -8,6 +8,7 @@
     "clipboard-manager:allow-write-text",
     "dialog:allow-open",
     "opener:default",
+    "opener:allow-open-path",
     "shell:default"
   ]
 }
