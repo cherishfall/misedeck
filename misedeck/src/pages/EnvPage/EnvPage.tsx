@@ -728,10 +728,19 @@ function EnvRowActions({
  *  `unsetOutOfScope` copy, naming the row's actual source path. */
 function OutOfScopeWarning({ sourcePath }: { sourcePath?: string }) {
   const { t } = useTranslation();
+  const { cwd } = useDirectory();
   if (!sourcePath) return null;
   return (
     <p className={styles.scopeWarning}>
-      {t(I18N_KEYS.env.confirm.outOfScopeWarning, { source: sourcePath })}
+      {/* Write-target sentence: names the config the command actually
+          writes to, per mode (#201) — the neutral「写入范围」wording
+          is not allowed in confirm dialogs. */}
+      {t(
+        cwd === null
+          ? I18N_KEYS.env.confirm.outOfScopeWarningGlobal
+          : I18N_KEYS.env.confirm.outOfScopeWarningDirectory,
+        { source: sourcePath },
+      )}
     </p>
   );
 }

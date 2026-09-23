@@ -203,11 +203,12 @@
     "hintGlobal": "全局模式下已安装并处于活动状态的工具——在下方搜索添加，「使用」一步完成安装并启用。"
   },
   "preview": {
-    "title": "目录概览",
+    "titleGlobal": "全局概览",
+    "titleDirectory": "目录概览",
     "hint": "当前目录解析出的工具、环境变量、配置文件与 lockfile。",
     "hintGlobal": "全局模式下解析出的环境变量与配置文件。",
     "commandHint": "mise trust · mise -C <dir> ls · mise env · mise config",
-    "nav": "目录概览",
+    "nav": "概览",
     "empty": {
       "body": "环境变量与配置文件两节已展示全局解析结果；此列表按目录解析。选择一个目录，查看 `mise -C <dir> ls` 在该目录的结果。",
       "action": "选择目录"
@@ -219,7 +220,8 @@
     },
     "config": {
       "orderNote": "按优先级从高到低排列——与 `mise config ls --json` 输出的顺序一致。",
-      "empty": "`mise config ls` 没有在作用域内找到配置文件。",
+      "emptyGlobal": "`mise config ls` 没有找到全局配置文件。",
+      "emptyDirectory": "`mise config ls` 没有在当前目录找到配置文件。",
       "view": "查看内容",
       "hide": "收起内容",
       "unreadable": "（无法读取此文件）",
@@ -325,7 +327,8 @@
         "title": "更新 {{name}}？",
         "body": "将运行以下确切命令。"
       },
-      "outOfScopeWarning": "该变量定义在 {{source}}，不在当前写入范围内——命令会写入另一个配置文件，该变量的实际定义不会改变。"
+      "outOfScopeWarningGlobal": "该变量定义在 {{source}}，不在全局 mise 配置中——命令会写入全局配置，该变量的实际定义不会改变。",
+      "outOfScopeWarningDirectory": "该变量定义在 {{source}}，不在当前目录的 mise 配置中——命令会写入当前目录的配置，该变量的实际定义不会改变。"
     },
     "success": {
       "set": "{{name}} 已设置",
@@ -368,7 +371,8 @@
       "descriptionPlaceholder": "这个任务的作用",
       "dependsLabel": "依赖（逗号分隔）",
       "dependsPlaceholder": "lint, test",
-      "dependsHelp": "每个名称是作用域内配置文件中的一个任务，使用逗号分隔。",
+      "dependsHelpGlobal": "每个名称是全局 mise 配置中的一个任务，使用逗号分隔。",
+      "dependsHelpDirectory": "每个名称是当前目录的配置文件中的一个任务，使用逗号分隔。",
       "saveButton": "保存",
       "cancelButton": "取消",
       "runRequired": "必须填写运行命令",
@@ -483,12 +487,13 @@
     },
     "configFiles": {
       "title": "配置文件",
-      "none": "当前范围内没有配置文件。"
+      "none": "作用域内没有配置文件。"
     },
     "toolset": {
       "title": "已解析工具集",
       "emptyTitle": "没有已解析工具",
-      "emptyBody": "`mise doctor --json` 报告当前作用域的工具集为空。"
+      "emptyBodyGlobal": "`mise doctor --json` 报告全局工具集为空。",
+      "emptyBodyDirectory": "`mise doctor --json` 报告当前目录的工具集为空。"
     },
     "rawTitle": "原始 doctor 输出",
     "error": {

@@ -126,6 +126,7 @@ function DoctorContent({
   data: DoctorPayload;
   t: (key: string, options?: Record<string, unknown>) => string;
 }) {
+  const { cwd } = useDirectory();
   // The activation row answers "did I activate mise in my shell?" — that
   // is the rc-file probe (`shell_activation_check`, issue #28), not
   // `mise doctor`'s own `activated` field, which describes the GUI
@@ -291,7 +292,11 @@ function DoctorContent({
           empty={
             <EmptyState
               title={t(I18N_KEYS.doctor.toolset.emptyTitle)}
-              body={t(I18N_KEYS.doctor.toolset.emptyBody)}
+              body={t(
+                cwd === null
+                  ? I18N_KEYS.doctor.toolset.emptyBodyGlobal
+                  : I18N_KEYS.doctor.toolset.emptyBodyDirectory,
+              )}
             />
           }
         />

@@ -288,10 +288,17 @@ export const I18N_KEYS = {
     },
   },
   preview: {
-    title: "preview.title",
+    /** Page-head title split per mode (#201 decision 2): the nav
+     *  label is the stable spatial anchor, the page head describes
+     *  the content, so the head follows `cwd === null`. */
+    titleGlobal: "preview.titleGlobal",
+    titleDirectory: "preview.titleDirectory",
     hint: "preview.hint",
     hintGlobal: "preview.hintGlobal",
     commandHint: "preview.commandHint",
+    /** Mode-neutral nav label (#201 decision 3): a navigation entry
+     *  is a spatial anchor and must not rename per mode — and this
+     *  retires the app's only Title Case multi-word heading. */
     nav: "preview.nav",
     empty: {
       body: "preview.empty.body",
@@ -304,7 +311,10 @@ export const I18N_KEYS = {
     },
     config: {
       orderNote: "preview.config.orderNote",
-      empty: "preview.config.empty",
+      /** Empty-state copy split per mode (#201): which config files
+          `mise config ls` reports depends on `cwd === null`. */
+      emptyGlobal: "preview.config.emptyGlobal",
+      emptyDirectory: "preview.config.emptyDirectory",
       view: "preview.config.view",
       hide: "preview.config.hide",
       unreadable: "preview.config.unreadable",
@@ -414,7 +424,12 @@ export const I18N_KEYS = {
         title: "env.confirm.update.title",
         body: "env.confirm.update.body",
       },
-      outOfScopeWarning: "env.confirm.outOfScopeWarning",
+      /** Out-of-scope warning split per mode (#201): a confirm is a
+          write-target sentence, so it names the actual target config
+          instead of the neutral「写入范围」wording (ADR-0008 term
+          stays reserved for informative copy). */
+      outOfScopeWarningGlobal: "env.confirm.outOfScopeWarningGlobal",
+      outOfScopeWarningDirectory: "env.confirm.outOfScopeWarningDirectory",
     },
     success: {
       set: "env.success.set",
@@ -458,7 +473,11 @@ export const I18N_KEYS = {
       descriptionPlaceholder: "tasks.editForm.descriptionPlaceholder",
       dependsLabel: "tasks.editForm.dependsLabel",
       dependsPlaceholder: "tasks.editForm.dependsPlaceholder",
-      dependsHelp: "tasks.editForm.dependsHelp",
+      /** Help copy split per mode (#201): the config file the task
+          names live in is the global one in Global mode, the current
+          directory's otherwise. */
+      dependsHelpGlobal: "tasks.editForm.dependsHelpGlobal",
+      dependsHelpDirectory: "tasks.editForm.dependsHelpDirectory",
       saveButton: "tasks.editForm.saveButton",
       cancelButton: "tasks.editForm.cancelButton",
       runRequired: "tasks.editForm.runRequired",
@@ -589,7 +608,10 @@ export const I18N_KEYS = {
     toolset: {
       title: "doctor.toolset.title",
       emptyTitle: "doctor.toolset.emptyTitle",
-      emptyBody: "doctor.toolset.emptyBody",
+      /** Empty-state copy split per mode (#201): doctor resolves the
+          global toolset in Global mode, the directory's otherwise. */
+      emptyBodyGlobal: "doctor.toolset.emptyBodyGlobal",
+      emptyBodyDirectory: "doctor.toolset.emptyBodyDirectory",
     },
     rawTitle: "doctor.rawTitle",
     error: {

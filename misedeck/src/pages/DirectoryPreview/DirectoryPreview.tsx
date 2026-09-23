@@ -324,7 +324,15 @@ export function DirectoryPreview() {
                 source: t(I18N_KEYS.preview.source.tool),
                 detail: r.sourceDetail,
               })
-            : t(I18N_KEYS.preview.source[r.source]);
+            : // The flat `mise env --json` payload carries no source
+              // path, so a config-sourced row falls back to "project".
+              // In Global mode there is no project context — such a
+              // row can only come from the global config — so the
+              // directory-only "Current directory" label must not
+              // render there (#201).
+              cwd === null && r.source === "project"
+              ? t(I18N_KEYS.preview.source.global)
+              : t(I18N_KEYS.preview.source[r.source]);
         // Same explanation as the Env page's source badge (issue #154);
         // the wording lives in the env.* keys so both pages cannot drift.
         const tooltip = !isConfigSource(r.source)
@@ -342,7 +350,11 @@ export function DirectoryPreview() {
     <PageShell>
       <div className={styles.page}>
         <header className={styles.head}>
-          <h1 className={styles.title}>{t(I18N_KEYS.preview.title)}</h1>
+          {/* Page head follows the mode (#201): the nav label stays a
+              stable anchor; the head describes the content. */}
+          <h1 className={styles.title}>
+            {t(cwd === null ? I18N_KEYS.preview.titleGlobal : I18N_KEYS.preview.titleDirectory)}
+          </h1>
           <CommandHint>{t(I18N_KEYS.preview.commandHint)}</CommandHint>
           <p className={styles.hint}>
             {t(cwd === null ? I18N_KEYS.preview.hintGlobal : I18N_KEYS.preview.hint)}
@@ -487,6 +499,7 @@ export function DirectoryPreview() {
  */
 function ConfigFilesSection() {
   const { t } = useTranslation();
+  const { cwd } = useDirectory();
   const configFiles = useConfigFiles();
 
   const configError =
@@ -516,7 +529,11 @@ function ConfigFilesSection() {
       )}
       {!configError && files !== null && files.length === 0 && (
         <div className={styles.lockfileMuted} data-testid="preview-config-empty">
-          {t(I18N_KEYS.preview.config.empty)}
+          {t(
+            cwd === null
+              ? I18N_KEYS.preview.config.emptyGlobal
+              : I18N_KEYS.preview.config.emptyDirectory,
+          )}
         </div>
       )}
       {!configError && files !== null && files.length > 0 && (

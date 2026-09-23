@@ -834,7 +834,11 @@ function TaskForm({
         )}
       </h3>
       <p className={styles.editFormSub}>
-        {t(I18N_KEYS.tasks.editForm.dependsHelp)}
+        {t(
+          cwd === null
+            ? I18N_KEYS.tasks.editForm.dependsHelpGlobal
+            : I18N_KEYS.tasks.editForm.dependsHelpDirectory,
+        )}
       </p>
 
       <div className={styles.editFormField}>
