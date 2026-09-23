@@ -80,6 +80,7 @@ MiseDeck 每个页面、组件、样式和文案都必须遵守的交互与呈�
 
 - 一个全局动作只有一个视觉角色：出现在多个表面的动作（如「选择目录」）在全站用同一 variant、同一共享组件渲染。对已有按钮样式做定制复刻是 bug。
 - 展开/收起一块区域的触发器就是共享 Button：`variant="ghost"` `size="sm"`，并用 `aria-expanded` 接好区域的展开状态——绝不用定制裸文字按钮，也绝不带尖角/chevron 图形（beta12，issue #184；与「字形与图标」下的尖角裁决一致）。
+- 展开内容为 panel 级（带边框/内边距的面板）的 disclosure 渲染为一个全宽 disclosure panel：触发器位于 panel 头部行（即上面的 ghost Button），展开内容随 panel 全宽——绝不出现悬空触发器漂在独立内容 panel 上方的组合，也绝不让 panel 因父级对齐方式收缩为内容宽（beta14，issue #195）。非 panel 级内容（`<pre>` 转储、数据块）可以折叠在内联触发器之下。
 - 同一按钮组内所有按钮使用同一 variant，除非有显式层级理由——一组里混入异 variant 读起来像坏掉的一组（beta12，issue #176）。
 - 「选择目录」全站渲染 `primary`——工具栏、空态、表单一律如此（beta9 取代 beta8 的工具栏回落/空态例外条款：同一动作两种呈现读起来像两个不同的按钮，比一个抢眼的按钮更糟）。
 - 页面级主按钮一律右对齐（工具栏约定：提示在左、动作在右，用 `justify-content: space-between` 或 `margin-left: auto` 实现），且永远 `size="sm"`；`md` 只保留给非页面工具栏的语境。

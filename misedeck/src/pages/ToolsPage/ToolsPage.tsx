@@ -645,20 +645,24 @@ export function ToolsPage() {
 
         {/* The Link form (`mise link`, issue #71) is an advanced
             low-frequency flow: it lives in a collapsed "Advanced"
-            section (issue #135). The toggle is a shared ghost Button
+            section (issue #135). The section renders as one full-width
+            disclosure panel, isomorphic to AddToolSection above (issue
+            #195): the trigger is the panel's header ghost Button
             (issue #184, the disclosure-trigger convention) — browsing
             and never run-locked; no caret glyph — expandability is
             shown by interaction. */}
         <section className={styles.advanced} data-testid="tools-advanced">
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-expanded={advancedOpen}
-            onClick={() => setAdvancedOpen((open) => !open)}
-            data-testid="tools-advanced-toggle"
-          >
-            {t(I18N_KEYS.tools.advanced.title)}
-          </Button>
+          <div className={styles.advancedHead}>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-expanded={advancedOpen}
+              onClick={() => setAdvancedOpen((open) => !open)}
+              data-testid="tools-advanced-toggle"
+            >
+              {t(I18N_KEYS.tools.advanced.title)}
+            </Button>
+          </div>
           {advancedOpen && (
             <LinkToolForm
               onLink={onLink}

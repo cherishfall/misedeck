@@ -282,13 +282,12 @@
 }
 
 .installForm {
+  /* Content container inside the Advanced disclosure panel (issue
+   * #195): the panel chrome (border/padding/radius/background) lives
+   * on the section itself — this wrapper must not panel-in-panel. */
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-panel);
-  background: color-mix(in srgb, var(--panel) 50%, transparent);
 }
 
 .installFormTitle {
@@ -317,16 +316,33 @@
   flex-wrap: wrap;
 }
 
-/* ---------- Advanced section (issue #135, toggle unified in #184) ---------- */
+/* ---------- Advanced section (issue #135, toggle unified in #184,
+ * panel rework in #195) ---------- */
 
-/* The collapsed section holding the low-frequency Link form. The toggle
- * is the shared ghost Button (the disclosure-trigger convention) — no
+/* The collapsed section holding the low-frequency Link form: one
+ * full-width disclosure panel, same recipe as AddToolSection's
+ * `.section` (issue #195). The toggle is the shared ghost Button in
+ * the panel's header row (the disclosure-trigger convention) — no
  * caret glyph. */
 .advanced {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--panel) 50%, transparent);
+}
+
+/* Panel header row: disclosure toggle left; the right side is kept
+ * for future actions (none today — same slot as AddToolSection's
+ * `.head`). */
+.advancedHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
 /* The link form's directory path is read-only text: it comes only from
