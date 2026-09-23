@@ -9,6 +9,7 @@
     "copied": "已复制",
     "copyFailed": "复制失败",
     "outdatedCount": "{{count}} 个工具可更新",
+    "outdatedCount_one": "{{count}} 个工具可更新",
     "allUpToDate": "所有已安装工具均为最新版本。",
     "outdatedError": "无法获取可更新信息",
     "loadFailed": "无法加载数据",
@@ -304,7 +305,7 @@
     "confirm": {
       "unset": {
         "title": "移除 {{name}}？",
-        "body": "将运行以下确切命令。该环境变量会从当前上下文的 mise 配置中移除，此操作无法撤销。"
+        "body": "将运行以下确切命令。该环境变量会从当前范围的 mise 配置中移除，此操作无法撤销。"
       },
       "overwrite": {
         "title": "覆盖 {{name}}？",
@@ -316,7 +317,7 @@
       },
       "renameOverwrite": {
         "title": "将 {{from}} 重命名为 {{to}}？",
-        "body": "名为 {{to}} 的环境变量已存在——重命名会用当前值覆盖它的现有值。重命名将按顺序运行以下两条确切命令：先移除旧键，再写入新键。此操作无法撤销。"
+        "body": "名为 {{to}} 的环境变量已存在——重命名会用新值覆盖它的现有值。重命名将按顺序运行以下两条确切命令：先移除旧键，再写入新键。此操作无法撤销。"
       },
       "update": {
         "title": "更新 {{name}}？",
@@ -432,7 +433,7 @@
     },
     "success": {
       "set": "{{key}} 已保存",
-      "unset": "{{key}} 已取消设置"
+      "unset": "{{key}} 已移除"
     },
     "confirm": {
       "overwrite": {

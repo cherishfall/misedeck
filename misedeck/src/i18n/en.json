@@ -9,6 +9,7 @@
     "copied": "Copied",
     "copyFailed": "Copy failed",
     "outdatedCount": "{{count}} tools outdated",
+    "outdatedCount_one": "{{count}} tool outdated",
     "allUpToDate": "All installed tools are up to date.",
     "outdatedError": "Couldn't check for updates",
     "loadFailed": "Couldn't load the data",
@@ -185,7 +186,7 @@
         "body": "Upgrades to the newest version within the range written in the config file, and installs it."
       },
       "link": {
-        "directoryNotFound": "Directory not found: {{path}}. Pick again."
+        "directoryNotFound": "Directory not found: {{path}}. Choose again."
       }
     },
     "guard": {
@@ -304,7 +305,7 @@
     "confirm": {
       "unset": {
         "title": "Unset {{name}}?",
-        "body": "This will run the exact command below. The env var will be removed from mise's config for this context and this cannot be undone."
+        "body": "This will run the exact command below. The env var will be removed from mise's config for this scope and this cannot be undone."
       },
       "overwrite": {
         "title": "Overwrite {{name}}?",
