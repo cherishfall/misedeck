@@ -368,7 +368,11 @@ export const I18N_KEYS = {
     },
     empty: {
       title: "env.empty.title",
-      body: "env.empty.body",
+      /** Write-target copy split per mode (#201): in Global mode the
+          write lands in the global config (`mise set -g`), not the
+          current directory's config file. */
+      bodyGlobal: "env.empty.bodyGlobal",
+      bodyDirectory: "env.empty.bodyDirectory",
     },
     error: {
       title: "env.error.title",
@@ -414,7 +418,11 @@ export const I18N_KEYS = {
     },
     success: {
       set: "env.success.set",
-      unset: "env.success.unset",
+      /** Removal-source copy split per mode (#201), same split as
+          `env.confirm.unset` (a1dd173): which config loses the key
+          depends on `cwd === null`. */
+      unsetGlobal: "env.success.unsetGlobal",
+      unsetDirectory: "env.success.unsetDirectory",
     },
   },
   tasks: {
@@ -533,7 +541,11 @@ export const I18N_KEYS = {
     },
     success: {
       set: "settings.success.set",
-      unset: "settings.success.unset",
+      /** Removal-source copy split per mode (#201), same split as
+          `settings.confirm.unset` (a1dd173): which config loses the
+          key depends on `cwd === null`. */
+      unsetGlobal: "settings.success.unsetGlobal",
+      unsetDirectory: "settings.success.unsetDirectory",
     },
   },
   doctor: {

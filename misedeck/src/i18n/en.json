@@ -93,7 +93,7 @@
     },
     "orphan": {
       "badge": "Orphan",
-      "tooltip": "No Config file requests this tool"
+      "tooltip": "No Config file in scope requests this tool"
     },
     "tooltip": {
       "switchVersion": "Click to switch version",
@@ -205,11 +205,11 @@
   "preview": {
     "title": "Directory Overview",
     "hint": "Resolved tools, env, config files, and lockfile for the current directory.",
-    "hintGlobal": "Resolved env, config files, and lockfile for Global mode.",
+    "hintGlobal": "Resolved env and config files for Global mode.",
     "commandHint": "mise trust · mise -C <dir> ls · mise env · mise config",
     "nav": "Directory Overview",
     "empty": {
-      "body": "The env, config, and lockfile sections already show the global resolution; this list is directory-scoped. Choose a directory to see what `mise -C <dir> ls` reports there.",
+      "body": "The env and config sections already show the global resolution; this list is directory-scoped. Choose a directory to see what `mise -C <dir> ls` reports there.",
       "action": "Choose directory"
     },
     "sections": {
@@ -219,7 +219,7 @@
     },
     "config": {
       "orderNote": "In precedence order, highest first — the same order `mise config ls --json` reports.",
-      "empty": "`mise config ls` found no config files in scope for the current directory.",
+      "empty": "`mise config ls` found no config files in scope.",
       "view": "View content",
       "hide": "Hide content",
       "unreadable": "(could not read this file)",
@@ -282,7 +282,8 @@
     },
     "empty": {
       "title": "No env vars",
-      "body": "Use the form below to add your first env var; writes go to mise's config file for the current directory."
+      "bodyGlobal": "Use the form below to add your first env var; writes go to mise's global config.",
+      "bodyDirectory": "Use the form below to add your first env var; writes go to mise's config file for the current directory."
     },
     "error": {
       "title": "Failed to load env vars",
@@ -328,7 +329,8 @@
     },
     "success": {
       "set": "{{name}} set",
-      "unset": "{{name}} removed"
+      "unsetGlobal": "{{name}} removed from the global config",
+      "unsetDirectory": "{{name}} removed from the current directory's config"
     },
     "hintGlobal": "Resolved environment variables for Global mode. Add, edit, or remove vars; every write goes through `mise set -g` / `mise unset -g` and streams into the panel."
   },
@@ -366,7 +368,7 @@
       "descriptionPlaceholder": "What this task does",
       "dependsLabel": "Depends on (comma-separated)",
       "dependsPlaceholder": "lint, test",
-      "dependsHelp": "Each name is a task in the current directory's `mise.toml`. Separate with commas.",
+      "dependsHelp": "Each name is a task in the config file in scope. Separate with commas.",
       "saveButton": "Save",
       "cancelButton": "Cancel",
       "runRequired": "A run command is required",
@@ -434,7 +436,8 @@
     },
     "success": {
       "set": "{{key}} saved",
-      "unset": "{{key}} unset"
+      "unsetGlobal": "{{key}} removed from the global config",
+      "unsetDirectory": "{{key}} removed from the current directory's config"
     },
     "confirm": {
       "overwrite": {
@@ -485,7 +488,7 @@
     "toolset": {
       "title": "Resolved toolset",
       "emptyTitle": "No resolved tools",
-      "emptyBody": "`mise doctor --json` reported an empty toolset for the current directory."
+      "emptyBody": "`mise doctor --json` reported an empty toolset for the current scope."
     },
     "rawTitle": "Raw doctor output",
     "error": {

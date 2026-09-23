@@ -559,7 +559,9 @@ function RowActions({
           setConfirmingUnset(false);
           void onWrite(
             (cwd) => miseSettingsUnsetArgs(row.key, cwd),
-            t(I18N_KEYS.settings.success.unset, { key: row.key }),
+            t(cwd === null
+              ? I18N_KEYS.settings.success.unsetGlobal
+              : I18N_KEYS.settings.success.unsetDirectory, { key: row.key }),
           );
         }}
         onCancel={() => setConfirmingUnset(false)}

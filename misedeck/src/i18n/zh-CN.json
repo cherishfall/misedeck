@@ -93,7 +93,7 @@
     },
     "orphan": {
       "badge": "孤立安装",
-      "tooltip": "没有 Config 文件请求此工具"
+      "tooltip": "作用域内没有 Config 文件请求此工具"
     },
     "tooltip": {
       "switchVersion": "点击切换版本",
@@ -205,11 +205,11 @@
   "preview": {
     "title": "目录概览",
     "hint": "当前目录解析出的工具、环境变量、配置文件与 lockfile。",
-    "hintGlobal": "全局模式下解析出的环境变量、配置文件与 lockfile。",
+    "hintGlobal": "全局模式下解析出的环境变量与配置文件。",
     "commandHint": "mise trust · mise -C <dir> ls · mise env · mise config",
     "nav": "目录概览",
     "empty": {
-      "body": "环境变量、配置文件与 lockfile 各节已展示全局解析结果；此列表按目录解析。选择一个目录，查看 `mise -C <dir> ls` 在该目录的结果。",
+      "body": "环境变量与配置文件两节已展示全局解析结果；此列表按目录解析。选择一个目录，查看 `mise -C <dir> ls` 在该目录的结果。",
       "action": "选择目录"
     },
     "sections": {
@@ -219,7 +219,7 @@
     },
     "config": {
       "orderNote": "按优先级从高到低排列——与 `mise config ls --json` 输出的顺序一致。",
-      "empty": "`mise config ls` 在当前目录中没有找到配置文件。",
+      "empty": "`mise config ls` 没有在作用域内找到配置文件。",
       "view": "查看内容",
       "hide": "收起内容",
       "unreadable": "（无法读取此文件）",
@@ -282,7 +282,8 @@
     },
     "empty": {
       "title": "没有环境变量",
-      "body": "使用下面的表单添加第一个环境变量；写入会进入当前目录的 mise 配置文件。"
+      "bodyGlobal": "使用下面的表单添加第一个环境变量；写入会进入 mise 的全局配置。",
+      "bodyDirectory": "使用下面的表单添加第一个环境变量；写入会进入当前目录的 mise 配置文件。"
     },
     "error": {
       "title": "加载环境变量失败",
@@ -328,7 +329,8 @@
     },
     "success": {
       "set": "{{name}} 已设置",
-      "unset": "{{name}} 已移除"
+      "unsetGlobal": "{{name}} 已从全局配置移除",
+      "unsetDirectory": "{{name}} 已从当前目录的配置移除"
     },
     "hintGlobal": "全局模式下解析出的环境变量。添加、编辑或移除变量；所有写入都通过 `mise set -g` / `mise unset -g` 并在执行面板中实时显示。"
   },
@@ -366,7 +368,7 @@
       "descriptionPlaceholder": "这个任务的作用",
       "dependsLabel": "依赖（逗号分隔）",
       "dependsPlaceholder": "lint, test",
-      "dependsHelp": "每个名称是当前目录 `mise.toml` 中的一个任务，使用逗号分隔。",
+      "dependsHelp": "每个名称是作用域内配置文件中的一个任务，使用逗号分隔。",
       "saveButton": "保存",
       "cancelButton": "取消",
       "runRequired": "必须填写运行命令",
@@ -434,7 +436,8 @@
     },
     "success": {
       "set": "{{key}} 已保存",
-      "unset": "{{key}} 已移除"
+      "unsetGlobal": "{{key}} 已从全局配置移除",
+      "unsetDirectory": "{{key}} 已从当前目录的配置移除"
     },
     "confirm": {
       "overwrite": {
@@ -485,7 +488,7 @@
     "toolset": {
       "title": "已解析工具集",
       "emptyTitle": "没有已解析工具",
-      "emptyBody": "`mise doctor --json` 报告当前目录的工具集为空。"
+      "emptyBody": "`mise doctor --json` 报告当前作用域的工具集为空。"
     },
     "rawTitle": "原始 doctor 输出",
     "error": {

@@ -321,7 +321,9 @@ export function EnvPage() {
                   ) : (
                     <EmptyState
                       title={t(I18N_KEYS.env.empty.title)}
-                      body={t(I18N_KEYS.env.empty.body)}
+                      body={t(cwd === null
+                        ? I18N_KEYS.env.empty.bodyGlobal
+                        : I18N_KEYS.env.empty.bodyDirectory)}
                     />
                   )
                 }
@@ -707,7 +709,9 @@ function EnvRowActions({
           setConfirmingUnset(false);
           void onWrite(
             (cwd) => miseEnvUnsetArgs(row.name, cwd),
-            t(I18N_KEYS.env.success.unset, { name: row.name }),
+            t(cwd === null
+              ? I18N_KEYS.env.success.unsetGlobal
+              : I18N_KEYS.env.success.unsetDirectory, { name: row.name }),
           );
         }}
         onCancel={() => setConfirmingUnset(false)}
