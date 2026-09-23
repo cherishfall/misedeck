@@ -147,7 +147,11 @@ export function useOwnRun() {
   const { run } = useExecutionContext();
   const [isRunning, setIsRunning] = useState(false);
   const mounted = useRef(true);
+  // Setup re-sets the flag because React StrictMode (dev) double-invokes
+  // effects (setup → cleanup → setup); without it the ref stays false for
+  // the hook's lifetime and `finally` never clears `isRunning` (#198).
   useEffect(() => {
+    mounted.current = true;
     return () => {
       mounted.current = false;
     };
