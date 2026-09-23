@@ -36,6 +36,11 @@ export const I18N_KEYS = {
     copyFailed: "common.copyFailed",
     outdatedCount: "common.outdatedCount",
     allUpToDate: "common.allUpToDate",
+    /** Failure copy for the shared outdated hint: the query failed, so
+        the hint must render failure + a retry entry, never a loading
+        that never resolves (issue #199). */
+    outdatedError: "common.outdatedError",
+    retry: "common.retry",
     filter: {
       noMatchTitle: "common.filter.noMatchTitle",
       noMatchBody: "common.filter.noMatchBody",

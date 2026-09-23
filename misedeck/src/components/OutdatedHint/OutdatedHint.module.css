@@ -5,3 +5,9 @@
   text-transform: none;
   color: var(--dim);
 }
+
+/* Retry affordance for the failed state (issue #199): the shared ghost
+ * Button, nudged off the failure copy. */
+.retry {
+  margin-left: var(--space-2);
+}

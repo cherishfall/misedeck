@@ -580,8 +580,21 @@ export function ToolsPage() {
 
         <div className={styles.toolbar}>
           {/* F13 (issue #98): the hint renders in every state — loading
-              included — so it never pops in/out. */}
-          <OutdatedHint count={outdated.data == null ? null : outdated.data.length} />
+              included — so it never pops in/out. The query's three
+              upstream states (pending / error / success) dispatch
+              explicitly: a failed read renders the failure copy + retry,
+              never a fake loading that never resolves (issue #199). */}
+          <OutdatedHint
+            status={
+              outdated.isPending ? "loading" : outdated.error ? "error" : "ok"
+            }
+            count={outdated.data?.length ?? 0}
+            onRetry={() => {
+              void queryClient.invalidateQueries({
+                queryKey: ["tools", "outdated", cwd],
+              });
+            }}
+          />
           <TableFilter
             value={filter.query}
             onChange={filter.setQuery}

@@ -20,6 +20,7 @@ Before shipping any screen, ask: **could a mise CLI user predict what this scree
 ## Loading & empty states
 
 - A page whose content is a data list gates on its list query, not just on mise detection: while the list read is pending — first load or a directory switch — the page renders the shared `ListLoading` state (`ProgressDot` + `common.loading`), never the empty state. An empty state means the query finished with nothing; flashing it during pending teaches "no data" before the data arrives (beta11, issue #146). One implementation, no per-page copies.
+- A toolbar hint fed by an async query declares all four states — pending, empty, has-value, failure — and renders failure as failure (muted copy + a retry affordance), never as loading: a hint stuck on the loading copy after the query has failed presents progress that does not exist, and with no automatic retry it never resolves (beta14, issue #199).
 
 ## Teaching
 

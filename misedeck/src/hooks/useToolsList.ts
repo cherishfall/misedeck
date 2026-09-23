@@ -112,12 +112,20 @@ export function useToolsList(): UseQueryResult<JsonResult> {
 /**
  * Outdated tools map (`mise outdated --json --bump`). Cache key is
  * `["tools", "outdated", cwd]`.
+ *
+ * staleTime is five minutes (issue #199): `mise outdated` hits the
+ * network on the backend every run and the result is low-frequency
+ * data, so without a staleTime every remount refires it — in the 120s
+ * timeout scenario, opening the page stalls for two minutes each time.
+ * Mutations and the toolbar refresh still invalidate the query
+ * explicitly, so freshness on this page is unaffected.
  */
 export function useOutdatedTools(): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
   return useQuery({
     queryKey: ["tools", "outdated", cwd],
     queryFn: () => toolsOutdated(cwd),
+    staleTime: 300_000,
     refetchOnWindowFocus: false,
     retry: false,
   });

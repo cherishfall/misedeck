@@ -10,6 +10,8 @@
     "copyFailed": "Copy failed",
     "outdatedCount": "{{count}} tools outdated",
     "allUpToDate": "All installed tools are up to date.",
+    "outdatedError": "Couldn't check for updates",
+    "retry": "Retry",
     "filter": {
       "noMatchTitle": "No matching rows",
       "noMatchBody": "No rows match the current filter. Edit or clear the filter to bring the full list back."
