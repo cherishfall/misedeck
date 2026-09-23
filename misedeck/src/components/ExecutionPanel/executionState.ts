@@ -126,7 +126,13 @@ export function executionReducer(state: ExecState, action: Action): ExecState {
         // panel — see the `exit`/`fail` cases below.
         isOpen: state.isOpen,
       };
-    case "line":
+    case "line": {
+      // Cancel is a terminal status: a soft cancel leaves the process
+      // running (beta15 audit A2, issue #203), so late channel events
+      // must not append to a cancelled (or otherwise finished) run's
+      // transcript.
+      const target = state.runs.find((r) => r.id === action.id);
+      if (!target || target.status !== "running") return state;
       return {
         ...state,
         runs: state.runs.map((r) =>
@@ -135,7 +141,14 @@ export function executionReducer(state: ExecState, action: Action): ExecState {
             : r,
         ),
       };
-    case "exit":
+    }
+    case "exit": {
+      // Same terminal-status guard as `line` above: after a soft cancel
+      // the process keeps running and its late exit must not rewrite
+      // the cancelled status, and must not auto-open a dismissed panel
+      // via the failure exception below (issue #203).
+      const target = state.runs.find((r) => r.id === action.id);
+      if (!target || target.status !== "running") return state;
       return {
         ...state,
         runs: state.runs.map((r) =>
@@ -157,6 +170,7 @@ export function executionReducer(state: ExecState, action: Action): ExecState {
         // re-arm it, and there is no re-open loop.
         isOpen: action.exitCode === 0 ? state.isOpen : true,
       };
+    }
     case "complete":
       return {
         ...state,

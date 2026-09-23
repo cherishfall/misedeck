@@ -163,6 +163,46 @@ test("cancelled runs are finished and closable like any finished run", () => {
   assert.equal(next.activeRunId, null);
 });
 
+// Issue #203 (beta15 audit A2): a soft cancel leaves the process
+// running, so exit/line events can still arrive from the IPC channel
+// after the cancel. Cancel is a terminal status: the reducer ignores
+// late events instead of rewriting the outcome.
+
+test("exit after cancel: a late success exit keeps the cancelled status", () => {
+  let state = startRun(emptyState(), "a");
+  state = executionReducer(state, { type: "cancel", id: "a" });
+  const next = finishRun(state, "a", 0);
+  assert.equal(next, state);
+  const entry = state.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "cancelled");
+  assert.equal(entry.exitCode, null);
+});
+
+test("exit after cancel: a late failing exit does not reopen a dismissed panel", () => {
+  let state = startRun(emptyState(), "a");
+  state = executionReducer(state, { type: "cancel", id: "a" });
+  state = executionReducer(state, { type: "close" });
+  const next = finishRun(state, "a", 1);
+  assert.equal(next.isOpen, false);
+  const entry = next.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "cancelled");
+  assert.equal(entry.exitCode, null);
+});
+
+test("line after cancel: late output is not appended to the transcript", () => {
+  let state = startRun(emptyState(), "a");
+  state = executionReducer(state, { type: "cancel", id: "a" });
+  const next = executionReducer(state, {
+    type: "line",
+    id: "a",
+    stream: "stdout",
+    text: "late output",
+  });
+  assert.equal(next, state);
+  const entry = state.runs.find((r) => r.id === "a") as RunEntry;
+  assert.deepEqual(entry.lines, []);
+});
+
 // Issue #197: dismiss (close) is a panel fixture, usable in any state —
 // including the empty state the panel used to get stuck in.
 

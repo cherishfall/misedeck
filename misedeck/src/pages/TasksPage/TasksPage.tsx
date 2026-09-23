@@ -761,13 +761,18 @@ function TaskForm({
   const [description, setDescription] = useState(task?.description ?? "");
   const [dependsText, setDependsText] = useState(task?.depends.join(", ") ?? "");
   // Reset local state if the user opens a different task while
-  // the form is mounted.
+  // the form is mounted. The reset triggers on the task identity
+  // only: run/depends/description change on every refetch and
+  // would silently clear a draft mid-edit — the same refetch
+  // guard as the Env/Settings editors' `if (!editing)` (issue
+  // #58; issue #203). Switching tasks remounts this component
+  // (keyed by formFor.key), so the name dep is the safety net.
   useEffect(() => {
     setName(task?.name ?? "");
     setRun(task ? task.run.join("\n") : "");
     setDescription(task?.description ?? "");
     setDependsText(task?.depends.join(", ") ?? "");
-  }, [task?.name, task?.run, task?.description, task?.depends]);
+  }, [task?.name]);
 
   const runWords = useMemo(() => parseRunInput(run), [run]);
   const depends = useMemo(() => parseDependsInput(dependsText), [dependsText]);
