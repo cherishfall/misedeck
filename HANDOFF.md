@@ -2,13 +2,26 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-23, evening — ALL SPEC parents closed by owner verification, frontier EMPTY)
+## CURRENT STATE (2026-09-23, night — beta15 pre-release audit DONE, wave-1 must-fix #202–#207 implemented & closed)
 
-**Owner visually verified everything (2026-09-23「基本验收通过」) and all three open SPEC parents were closed: #187 (beta13 batch), #193 (beta14 wave 1: #194/#195), #196 (beta14 wave 2: #197–#200).** The issue tracker has zero open issues. Both beta14 waves carried `npm run ci` + `npm run test` (54) green; commits `a69cdf5` `6b876e1` `d86be0f` `f90258d` (wave 2) + `f4c111c` `912f253` (wave 1). Decision records: `docs/feedback/beta14-feedback-scratch.md` Issue 1–8.
+**Pre-release deep audit (5 parallel review subagents: frontend bugs / Tauri backend / UI consistency / i18n / user journeys) landed in `docs/feedback/beta15-pre-release-audit.md` (`118d8ae`, ticketing record `8ff45b3`). Verdict: P0 = 0, releasable; debt clusters around three families — failure feedback swallowed, error/retry recipe drift, soft-cancel aftermath.**
 
-**Owner's next move: beta.15 release decision.** Both waves + the previous `1feb11d` streaming-fix are candidates for the tag. Release procedure below (6 places / 5 files bump, annotated tag = Release body, proxy push, verify `git ls-remote`).
+**Platform decision (owner, 2026-09-23):** beta.15 ships WITHOUT Windows packages (narrow `bundle.targets` — Windows `locate_mise()` is broken-by-construction: HOME var, Unix paths, no `.exe`); Linux kept but marked untested in release notes. Owner will fine-tune Windows/Linux strategy later — ticket **#208** stays OPEN for that decision, do not implement without owner. Release notes must also disclose: Cancel is a soft cancel (does not kill the process).
 
-**Next feedback cycle → new scratch + new SPEC parent.** Nothing implementable is open.
+**Wave-1 must-fix (SPEC #201) — all 6 implemented & closed, serial per-ticket subagents, every one `npm run ci` + `npm run test` (57) green, NOT visually verified:**
+
+| Ticket | Commit | Scope |
+| --- | --- | --- |
+| #202 | `7d1bd4c` | PageShell 只读页 dismiss 改一次性（不再吞失败自动打开的面板/用户手动面板）；/plugins 移出 READ_ONLY_PATHS；trust error 态补 muted 横幅（`trust.banner.errorLabel/errorBody` 双语） |
+| #203 | `45d6c98` | reducer `exit`/`line` 加终态守卫（cancelled 不再被覆写/已收起面板不被弹开/无迟到日志，+3 node:test 用例）；TaskForm 草稿重置 effect 依赖收窄 `task?.name`（refetch 不再清空编辑中草稿） |
+| #204 | `df8ccb0` | Tasks/Settings/Doctor 计数 hint 四态化（新共享 QueryHint 组件，对齐 #199 OutdatedHint 先例；`common.loadFailed` 双语）；#199 四态规则全仓落地 |
+| #205 | `1291bb0` | EnvPage 错误态对齐六页 danger-tint 配方；Tasks stderr 改 `--size-data` 删横向滚动；retry 统一 ghost + `common.retry`（`tools.addTool.retryButton` 退役，dead-key 绿） |
+| #206 | `0b055e5` | capabilities 补 `opener:allow-open-path`（Tasks 页「打开任务文件」权限错修复）；CSP null → `"default-src 'self'"`（零额外放行） |
+| #207 | `3a802ce` | i18n P1 五条：renameOverwrite zh 语义反转修正 / "Pick again"→"Choose again" / 退役 Context→en "for this scope" zh「当前范围」（确认框两模式共用，"current directory" 语义不通的授权取舍）/ `outdatedCount_one` 复数 / unset 成功 toast「已移除」 |
+
+**Remaining open (all wave-2 P2, do not block release):** #201 SPEC + #208 Windows locate+CI（等 owner 平台决策）+ #209–#214. Wave-2 can be driven autonomously after owner says go, EXCEPT #208.
+
+**Next move: owner visually verifies wave-1 → tag beta.15** (release procedure below; bump 6 places / 5 files, release notes add: Windows 暂不支持 / Cancel 不终止进程 / Linux 未实测). Version naming beta.15 vs 1.0.0 is owner's call at tag time.
 
 ---
 
