@@ -11,6 +11,7 @@
     "outdatedCount": "{{count}} tools outdated",
     "allUpToDate": "All installed tools are up to date.",
     "outdatedError": "Couldn't check for updates",
+    "loadFailed": "Couldn't load the data",
     "retry": "Retry",
     "filter": {
       "noMatchTitle": "No matching rows",

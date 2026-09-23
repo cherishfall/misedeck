@@ -57,6 +57,7 @@ import {
   KeyForm,
   ListLoading,
   PageShell,
+  QueryHint,
   SuccessBar,
   Suggestions,
   Table,
@@ -544,16 +545,27 @@ export function TasksPage() {
         />
 
         <div className={styles.toolbar}>
-          <span className={styles.toolbarHint}>
-            {tasks.data
-              ? filter.active
+          {/* Four-state dispatch (issues #199/#204): the hint renders in
+              every state, and a failed read renders failure + retry —
+              never a fake loading that never resolves. */}
+          <QueryHint
+            status={
+              tasks.isPending ? "loading" : tasks.error ? "error" : "ok"
+            }
+            text={
+              filter.active
                 ? t(I18N_KEYS.tasks.countFiltered, {
                     count: filter.rows.length,
-                    total: tasks.data.length,
+                    total: tasks.data?.length ?? 0,
                   })
-                : t(I18N_KEYS.tasks.count, { count: tasks.data.length })
-              : t(I18N_KEYS.common.loading)}
-          </span>
+                : t(I18N_KEYS.tasks.count, { count: tasks.data?.length ?? 0 })
+            }
+            onRetry={() => {
+              void queryClient.invalidateQueries({
+                queryKey: ["tasks", "ls", cwd],
+              });
+            }}
+          />
           <TableFilter
             value={filter.query}
             onChange={filter.setQuery}

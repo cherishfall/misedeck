@@ -37,6 +37,7 @@ import {
   KeyForm,
   ListLoading,
   PageShell,
+  QueryHint,
   SuccessBar,
   Suggestions,
   Table,
@@ -251,11 +252,22 @@ export function SettingsPage() {
         />
 
         <div className={styles.toolbar}>
-          <span className={styles.toolbarHint}>
-            {settings.data
-              ? t(I18N_KEYS.settings.count, { count: settings.data.length })
-              : t(I18N_KEYS.common.loading)}
-          </span>
+          {/* Four-state dispatch (issues #199/#204): the hint renders in
+              every state, and a failed read renders failure + retry —
+              never a fake loading that never resolves. */}
+          <QueryHint
+            status={
+              settings.isPending ? "loading" : settings.error ? "error" : "ok"
+            }
+            text={t(I18N_KEYS.settings.count, {
+              count: settings.data?.length ?? 0,
+            })}
+            onRetry={() => {
+              void queryClient.invalidateQueries({
+                queryKey: ["settings", "ls", cwd],
+              });
+            }}
+          />
           <div className={styles.toolbarActions}>
             <TableFilter
               value={filter.query}

@@ -70,12 +70,6 @@
   gap: var(--space-3);
 }
 
-.toolbarHint {
-  font-family: var(--font-mono);
-  font-size: var(--size-data);
-  color: var(--dim);
-}
-
 .errorState {
   border: 1px solid var(--tint-danger);
   border-radius: var(--radius-panel);

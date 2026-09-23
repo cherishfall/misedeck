@@ -45,12 +45,6 @@
   flex-wrap: wrap;
 }
 
-.toolbarHint {
-  font-family: var(--font-mono);
-  font-size: var(--size-label);
-  color: var(--dim);
-}
-
 /* ---------- Summary panel ---------- */
 
 /* Single-column health rows: each is `label: value badge` on one line

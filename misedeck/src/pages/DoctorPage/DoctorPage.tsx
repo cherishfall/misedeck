@@ -18,6 +18,7 @@ import {
   EmptyState,
   PageShell,
   ProgressDot,
+  QueryHint,
   Table,
   type TableColumn,
   Tooltip,
@@ -87,13 +88,16 @@ export function DoctorPage() {
         </header>
 
         <div className={styles.toolbar}>
-          <span className={styles.toolbarHint}>
-            {doctor.data
-              ? t(I18N_KEYS.doctor.statusLabel)
-              : doctorError
-                ? null
-                : t(I18N_KEYS.common.loading)}
-          </span>
+          {/* Four-state dispatch (issues #199/#204), same as the
+              Tasks/Settings hints: a failed read renders failure + retry
+              in the hint itself, never a fake loading. */}
+          <QueryHint
+            status={
+              doctor.isPending ? "loading" : doctorError ? "error" : "ok"
+            }
+            text={t(I18N_KEYS.doctor.statusLabel)}
+            onRetry={onRefresh}
+          />
         </div>
 
 

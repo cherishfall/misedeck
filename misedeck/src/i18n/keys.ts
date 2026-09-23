@@ -40,6 +40,10 @@ export const I18N_KEYS = {
         the hint must render failure + a retry entry, never a loading
         that never resolves (issue #199). */
     outdatedError: "common.outdatedError",
+    /** Generic failure copy for any toolbar hint backed by a react-query
+        read (issue #204): same four-state contract as the outdated hint —
+        failure renders as failure + retry, never as a fake loading. */
+    loadFailed: "common.loadFailed",
     retry: "common.retry",
     filter: {
       noMatchTitle: "common.filter.noMatchTitle",

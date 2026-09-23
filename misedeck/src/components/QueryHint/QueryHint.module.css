@@ -1,0 +1,13 @@
+.hint {
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--dim);
+}
+
+/* Retry affordance for the failed state (issue #204): the shared ghost
+ * Button, nudged off the failure copy — same recipe as OutdatedHint. */
+.retry {
+  margin-left: var(--space-2);
+}

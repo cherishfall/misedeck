@@ -46,12 +46,6 @@
   flex-wrap: wrap;
 }
 
-.toolbarHint {
-  font-family: var(--font-mono);
-  font-size: var(--size-data);
-  color: var(--dim);
-}
-
 .toolbarActions {
   display: flex;
   align-items: center;
