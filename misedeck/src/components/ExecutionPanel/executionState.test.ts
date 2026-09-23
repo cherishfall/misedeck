@@ -162,3 +162,40 @@ test("cancelled runs are finished and closable like any finished run", () => {
   assert.deepEqual(next.runs, []);
   assert.equal(next.activeRunId, null);
 });
+
+// Issue #197: dismiss (close) is a panel fixture, usable in any state —
+// including the empty state the panel used to get stuck in.
+
+test("close: after clearRuns empties history, the panel can still be closed and reused", () => {
+  let state = historyWith(["a", "b"]);
+  state = executionReducer(state, { type: "open" });
+  assert.equal(state.isOpen, true);
+  state = executionReducer(state, { type: "clearRuns" });
+  assert.deepEqual(state.runs, []);
+  state = executionReducer(state, { type: "close" });
+  assert.equal(state.isOpen, false);
+  // The panel keeps working: a new command starts from the empty state.
+  state = startRun(state, "c");
+  assert.deepEqual(ids(state), ["c"]);
+  assert.equal(state.isOpen, false);
+});
+
+test("close: closing while running does not touch the run state", () => {
+  let state = historyWith(["a"], ["r1"]);
+  state = executionReducer(state, { type: "open" });
+  state = executionReducer(state, { type: "close" });
+  assert.equal(state.isOpen, false);
+  assert.deepEqual(ids(state), ["a", "r1"]);
+  const running = state.runs.find((r) => r.id === "r1") as RunEntry;
+  assert.equal(running.status, "running");
+  assert.deepEqual(running.lines, []);
+});
+
+test("close: after removeRun empties the last run, the panel can still be closed", () => {
+  let state = historyWith(["a"]);
+  state = executionReducer(state, { type: "open" });
+  state = executionReducer(state, { type: "removeRun", id: "a" });
+  assert.deepEqual(state.runs, []);
+  state = executionReducer(state, { type: "close" });
+  assert.equal(state.isOpen, false);
+});

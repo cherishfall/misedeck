@@ -20,6 +20,7 @@ import { I18N_KEYS } from "../../i18n/keys";
 import { usePersistentState } from "../../hooks/usePersistentState";
 import { Tooltip } from "../Tooltip";
 import { IconButton } from "../IconButton/IconButton";
+import { Button } from "../Button/Button";
 import { writeClipboard } from "../../utils/clipboard";
 import { useExecutionContext } from "./ExecutionContext";
 import { commandEcho } from "./commandEcho";
@@ -272,27 +273,22 @@ export function ExecutionPanel() {
               </button>
             )}
             {state.status === "running" && (
-              <button
-                type="button"
-                className={styles.actionBtn}
-                onClick={cancel}
-                aria-label={t(I18N_KEYS.execution.cancel)}
-              >
+              <Button variant="secondary" size="sm" onClick={cancel}>
                 {t(I18N_KEYS.execution.cancel)}
-              </button>
+              </Button>
             )}
-            {(state.status === "ok" ||
-              state.status === "failed" ||
-              state.status === "cancelled") && (
-              <button
-                type="button"
-                className={styles.actionBtn}
-                onClick={dismiss}
-                aria-label={t(I18N_KEYS.execution.dismiss)}
-              >
-                {t(I18N_KEYS.execution.dismiss)}
-              </button>
-            )}
+            {/* Dismiss is a panel fixture (issue #197): rendered
+             * unconditionally while the panel is open, always rightmost.
+             * It only minimizes the panel (closes `isOpen`; runs and
+             * in-flight commands are untouched) — it is not a cancel. */}
+            <button
+              type="button"
+              className={styles.actionBtn}
+              onClick={dismiss}
+              aria-label={t(I18N_KEYS.execution.dismiss)}
+            >
+              {t(I18N_KEYS.execution.dismiss)}
+            </button>
           </div>
         </div>
         {echo && state.kind === "mise" && state.request?.cwd === null && (

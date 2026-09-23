@@ -602,7 +602,7 @@
     "runsRunning": "{{count}} 运行中",
     "runsRecent": "{{count}} 条历史",
     "closeRun": "关闭",
-    "workingDirHome": "运行目录：~（家目录）"
+    "workingDirHome": "运行目录：~（主目录）"
   },
   "tooltip": {
     "copy": "复制"
