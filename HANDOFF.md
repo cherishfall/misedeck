@@ -2,7 +2,36 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-10-20, night — beta16 batch COMPLETE, frontier has no implementable tickets)
+## CURRENT STATE (2026-10-21, early — beta16 deep-audit batch #221–#229 CLOSED, #230/#231 remain; subagent quota exhausted until 2026-10-21 23:00)
+
+**Owner authorized visual + runtime verification this cycle (beta9 exception).** Four parallel audits ran (frontend logic / Rust runtime / visual over 20 real screenshots — 8 pages × en+zh light + 4 pages dark / rule-vs-code). Findings were published as SPEC **#220** and tickets **#221–#231**, then implemented one subagent per ticket. #221–#229 are closed; **#230 and #231 are still open** and blocked only on the next driver (see "Next move").
+
+| Issue | Commit | Scope |
+| --- | --- | --- |
+| #221 | `990d96c` | Non-zero mise exit is now a failure at the command boundary (`require_success`), so install/use/unuse/uninstall/settings-set/plugins/tasks mutations no longer show a green SuccessBar, invalidate caches, or clear forms on failure. Dead branches removed (`toJsonResult`, TasksPage exitCode checks). +2 Rust tests, ADR-0005 + runner.md bilingual. |
+| #222 | `7050029` | Bounded reader shutdown (`READER_SHUTDOWN_BOUND = 1s`, measured drain of 64 KiB / 4 KiB pipes) — the panel no longer hangs forever when a grandchild holds stdout; lossy byte decoding so one invalid UTF-8 byte cannot truncate the transcript or EPIPE the child. New fixtures + 2 tests; 179 Rust tests. |
+| #223 | `302d5db` + `c1314d1` | New `process_tree.rs`: every child is spawned in its own process group (unix `pre_exec`+`setsid` → `killpg`; windows `CREATE_NEW_PROCESS_GROUP` → `taskkill /F /T`); a pid registry with atomic reap/unregister + a `RunEvent::ExitRequested/Exit` sweep kills orphans on quit; frontend cancel now calls `cancel_run` and releases the page run-lock immediately. runner.md rewritten to the real semantics. |
+| #224 | `b1f6379` | `created_at` wire field fixed (Created column real, filter works, guard asserts the real payload); `hasUpgradeTarget()` predicate so a target equal to the current version (rust `stable`) renders no upgrade badge and is not counted; missing source renders `—` instead of `Global`. +7 tests → 100. |
+| #225 | `216627a` | `columnCharBudget(w)` derivation (Source 216px → 26 chars, Env Value 320px → 41 chars with head-elision); single-version Version cells render as full-contrast text instead of a disabled button; header/button baselines unified via shared `.cellTrigger`/`.cellButton`. +6 tests → 106. ui-ux-rules bilingual updated. |
+| #226 | `b6d2b16` | One shared page baseline/width (Doctor/Plugins/Home no longer jump); empty tables no longer render a floating header band; Settings' empty state carries an in-card action. |
+| #227 | `a48d889` | `initialDialogFocusTarget` (danger/busy → Cancel, no `autoFocus`), Tab cycle inside the dialog, focus returned on close, busy confirm explains itself; Tooltip opens on focus immediately and attaches `aria-describedby` on the keyboard path. New `lint:modal-focus` guard. +8 tests → 115. |
+| #228 | `0dba09f` | One `pickDirectory` implementation; dialog failure surfaces as `directory.pickerFailed` (cancel stays silent); Link-form picker drops to secondary; `MiseMissingState` uses `navigate()` instead of `Link > Button`. New `lint:nested-interactive` guard. +4 tests → 119. |
+| #229 | `57bf0f2` | All home resolution via `dirs::home_dir()` (shell.rs phantom `PROFILE` deleted), `locate_mise` probes `PATH` after the well-known list, install echo derived from the same platform branch the executor runs, shell-safe single-quote echo. Windows CI job green (run `39462447364`). |
+
+**Not verified anywhere in this batch (every ticket carries it on its issue):** no app launch, no screenshots, no real Windows machine — Windows is compile + unit level only. **Owner verifies on a beta.16 build.**
+
+**Warnings for the next driver:**
+- Subagent spawning is rate-limited (429) until **2026-10-21 23:00** — that is why #230/#231 were not dispatched; the batch was otherwise driven one subagent per ticket.
+- #228 changed the ui-ux-rules "Choose directory renders primary everywhere" rule into a general rule + explicit form-row exception (justified on the issue) — don't revert it as "drift".
+- #227 added `scripts/check-modal-focus.ts`; #228 added `scripts/check-nested-interactive.ts` — both wired into `npm run ci`. New guards must keep passing.
+- #219's Guard 4 (no Markdown backticks in copy) and the `lint:*` guards above are generation-time gates; do not disable them to make CI green.
+- `docs/screenshots/` is now stale relative to #225/#226 (Source column 216px, new page baseline). Re-capture before the beta.16 tag (README freshness gate in `docs/agents/ci.md`).
+
+**Next move:** implement **#230** (backend hardening: validate_cwd across all cwd commands, async `read_lockfile`, doctor/registry fallback only on parse/command failure, opener scope, `MISE_SAFE` implement-or-delete, lockfile resolved from the highest-precedence config) and **#231** (copy sweep: retire `scope/作用域`, plugin URL placeholder, Preview env value italics, command-hint `·` wrapping). Each: commit per ticket, push with `git -c http.proxy=http://127.0.0.1:7890 push origin master`, close the issue with a "NOT visually verified" note. Then owner verifies → tag beta.16. If the driver is a fresh session: read #220's ticket list first, and run one ticket per fresh context.
+
+---
+
+## PREVIOUS STATE (2026-10-20, night — beta16 batch COMPLETE, frontier had no implementable tickets)
 
 **Frontier is empty.** Every open issue is now an owner-verification gate: **#215** (beta16 UI precision SPEC; tickets #216/#217/#218 all closed in `744a9f8` + `421d6e6`), **#201** (beta15 remediation SPEC; all 13 tickets closed), plus **#219** and **#208** closed this session below. `gh issue list --state open` = #215, #201 only.
 
