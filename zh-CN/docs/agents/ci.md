@@ -9,11 +9,28 @@
 
 | Workflow      | 触发时机                                    | 做了什么                                                                                                                                  | 墙钟预算   |
 | ------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `tsc --noEmit` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run build` · `cargo check` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu。 | < 5 分钟    |
+| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `tsc --noEmit` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run build` · `cargo check` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu；另有独立 Windows job 跑 `npm run ci` + `cargo test --lib` + `cargo build`（见下文）。 | < 5 分钟    |
 | `release.yml` | 推送 `v*.*.*` tag，或 `workflow_dispatch`   | 在 `macos-latest`、`windows-latest`、`ubuntu-latest` 上并行构建 Tauri bundle；上传各平台 artifact；真实 tag 推送时发布 GitHub Release。       | 由矩阵决定 |
 
 `ci.yml` 是保证 `master` 绿色的闸门。`release.yml` 才是真正产出
 artifact 的那个。
+
+### Windows job
+
+`ci.yml` 还跑一个 `windows` job 覆盖 Windows beta 目标——评审循环里没有
+Windows 真机（issue #208），这是 Windows 代码路径唯一真正执行的地方。
+它跑完整的前端检查（`npm run ci`）、Rust 单元测试（`cargo test --lib`），
+以及 `cargo build` 编译冒烟（`dist/` 由 `npm run ci` 产出，所以顺序有讲究）。
+有两件事是刻意不做的：
+
+- 集成测试套件——它通过 `Command::new` 直接跑
+  `tests/fixtures/mise/fixture-mise` 这个 bash 脚本，Windows 无法执行。
+  这部分覆盖留在 Ubuntu leg；平台相关的 `candidate_paths` 断言是单元测试，
+  在这里会真跑。
+- Tauri 打包（`npm run tauri build`）——Windows 打包会拉 NSIS/WiX，
+  且是否出包是发版时的决定。
+
+Windows job 绿 = 编译级与单元级正确；它**不能**替代在真实 Windows 上跑应用。
 
 ## 发版流程
 

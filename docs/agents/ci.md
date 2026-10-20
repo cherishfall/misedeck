@@ -10,11 +10,31 @@ maintainer cuts a release.
 
 | Workflow    | Trigger                                  | What it does                                                                                                                                       | Wall-clock budget |
 | ----------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run build` · `cargo check` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu. | < 5 min            |
+| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run build` · `cargo check` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu; a separate Windows job runs `npm run ci` + `cargo test --lib` + `cargo build` (see below). | < 5 min            |
 | `release.yml` | push of a `v*.*.*` tag, or `workflow_dispatch` | Builds Tauri bundles for `macos-latest`, `windows-latest`, `ubuntu-latest` in parallel; uploads per-platform artifacts; on a real tag push, publishes a GitHub Release. | matrix-driven     |
 
 The `ci.yml` workflow is the gate that keeps `master` green. The
 `release.yml` workflow is the one that ships artifacts.
+
+### The Windows job
+
+`ci.yml` also runs a `windows` job for the Windows beta target, which has
+no real machine in the review loop (issue #208) — it is the only place
+the Windows code paths actually execute. It runs the full frontend check
+(`npm run ci`), the Rust unit tests (`cargo test --lib`), and a
+`cargo build` compile smoke (`dist/` comes from `npm run ci`, so the
+order matters). Two things are deliberately left out:
+
+- The integration suite — it drives the
+  `tests/fixtures/mise/fixture-mise` bash script through `Command::new`,
+  which Windows cannot execute. That coverage stays on the Ubuntu leg;
+  the platform-specific `candidate_paths` expectations are unit tests
+  and do run here.
+- The Tauri bundler (`npm run tauri build`) — Windows bundling pulls
+  NSIS/WiX, and packaging is a release-time decision.
+
+A green Windows job means compile-level and unit-level correctness; it
+is **not** a substitute for running the app on real Windows.
 
 ## Cutting a release
 

@@ -3,7 +3,8 @@ name: ci
 # Cheap frontend + Rust checks on every push to master and on every PR.
 # The full tag-triggered build lives in release.yml — this workflow
 # keeps master green without paying for a Tauri bundle on every commit.
-# Target wall-clock: under 5 minutes on a warm cache.
+# Target wall-clock: under 5 minutes on a warm cache for the Ubuntu
+# legs; the Windows smoke job runs a cold Rust build and is slower.
 
 on:
   push:
@@ -129,3 +130,59 @@ jobs:
       - name: cargo test
         working-directory: misedeck/src-tauri
         run: cargo test --all-targets
+
+  # Windows is a beta target with no real machine in the review loop
+  # (issue #208): this job is the only place the Windows code paths
+  # actually execute. The `frontend` job above already covers the npm
+  # checks on Windows; this one adds the Rust side plus the Tauri
+  # compile smoke, which is what broke-by-construction `locate_mise`
+  # needed. Bundling stays out — see the last step.
+  windows:
+    name: windows (windows-latest)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: misedeck/package-lock.json
+
+      - name: Install npm dependencies
+        working-directory: misedeck
+        run: npm ci
+
+      # Also produces `misedeck/dist`, which the Tauri context macro
+      # needs at compile time — so this must run before `cargo build`.
+      - name: Frontend checks
+        working-directory: misedeck
+        run: npm run ci
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: misedeck/src-tauri -> target
+          cache-on-failure: true
+
+      # `--lib`: the integration suite drives a bash fixture script
+      # (`tests/fixtures/mise/fixture-mise`) through `Command::new`,
+      # which Windows cannot execute. That coverage stays on the Ubuntu
+      # leg; the #208 candidate-path tests are unit tests and run here.
+      - name: cargo test
+        working-directory: misedeck/src-tauri
+        run: cargo test --lib
+
+      # Compile smoke, deliberately `cargo build` and not
+      # `npm run tauri build`: Windows bundling pulls NSIS/WiX, is slow
+      # and flaky, and packaging is the owner's release-time call
+      # (beta.15 ships without Windows packages). Compiling the crate +
+      # Tauri glue is what this job actually needs to prove.
+      - name: cargo build (compile smoke)
+        working-directory: misedeck/src-tauri
+        run: cargo build

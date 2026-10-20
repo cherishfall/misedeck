@@ -108,18 +108,54 @@ impl AppError {
     }
 }
 
-/// Well-known places to look for the mise binary on the host.
+/// File name of the mise executable on this platform. Windows needs the
+/// `.exe` suffix to launch it; unix has none.
+#[cfg(windows)]
+const MISE_BIN: &str = "mise.exe";
+#[cfg(not(windows))]
+const MISE_BIN: &str = "mise";
+
+/// Well-known places to look for the mise binary on the host, in probe
+/// order, deduplicated.
+///
+/// Home-relative entries resolve through `dirs::home_dir()` instead of
+/// the `HOME` env var: `HOME` is normally unset on Windows, which made
+/// the probe report MISE_NOT_FOUND there unconditionally (issue #208).
+/// This is the same resolution the Global-mode cwd anchor uses (issue
+/// #179, `resolve_cwd_anchor`), so both agree on what "home" means.
+///
+/// unix: `~/.local/bin/mise`, `~/.cargo/bin/mise`,
+/// `/opt/homebrew/bin/mise`, `/usr/local/bin/mise`.
+///
+/// windows: `%USERPROFILE%\.local\bin\mise.exe`,
+/// `%USERPROFILE%\.cargo\bin\mise.exe`,
+/// `%LOCALAPPDATA%\mise\bin\mise.exe` — the last one is where mise's
+/// official Windows installer puts the binary, and it is not on PATH.
 pub fn candidate_paths() -> Vec<PathBuf> {
     let mut paths: Vec<PathBuf> = Vec::new();
 
-    if let Some(home) = std::env::var_os("HOME") {
-        let home = PathBuf::from(home);
-        paths.push(home.join(".local/bin/mise"));
-        paths.push(home.join(".cargo/bin/mise"));
+    if let Some(home) = dirs::home_dir() {
+        paths.push(home.join(".local").join("bin").join(MISE_BIN));
+        paths.push(home.join(".cargo").join("bin").join(MISE_BIN));
     }
 
-    paths.push(PathBuf::from("/opt/homebrew/bin/mise"));
-    paths.push(PathBuf::from("/usr/local/bin/mise"));
+    #[cfg(windows)]
+    {
+        if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") {
+            paths.push(
+                PathBuf::from(local_app_data)
+                    .join("mise")
+                    .join("bin")
+                    .join(MISE_BIN),
+            );
+        }
+    }
+
+    #[cfg(unix)]
+    {
+        paths.push(PathBuf::from("/opt/homebrew/bin/mise"));
+        paths.push(PathBuf::from("/usr/local/bin/mise"));
+    }
 
     let mut seen = std::collections::HashSet::new();
     paths.retain(|p| seen.insert(p.clone()));
@@ -1619,12 +1655,52 @@ mod tests {
         assert!(resolve_cwd_anchor(None).unwrap().is_absolute());
     }
 
+    // The two `candidate_paths` tests below are platform-gated on
+    // purpose: each pins its own OS's candidate set, order, and binary
+    // name (issue #208). On macOS/Linux the Windows test is compiled out
+    // and vice versa, so the Windows expectations only execute for real
+    // on the `windows-latest` CI job — there is no Windows machine in
+    // the maintainer's review loop.
+    #[cfg(windows)]
     #[test]
-    fn candidate_paths_includes_known_macos_locations() {        let paths = candidate_paths();
-        let s: Vec<String> = paths.iter().map(|p| p.to_string_lossy().to_string()).collect();
-        assert!(s.iter().any(|p| p.ends_with("/.local/bin/mise")), "paths = {s:?}");
-        assert!(s.iter().any(|p| p == "/opt/homebrew/bin/mise"), "paths = {s:?}");
-        assert!(s.iter().any(|p| p == "/usr/local/bin/mise"), "paths = {s:?}");
+    fn candidate_paths_covers_windows_install_locations() {
+        let paths = candidate_paths();
+        let home = dirs::home_dir().expect("test environment has a home dir");
+        let local_app_data =
+            std::env::var_os("LOCALAPPDATA").expect("windows runners set LOCALAPPDATA");
+
+        assert_eq!(
+            paths,
+            vec![
+                home.join(".local").join("bin").join("mise.exe"),
+                home.join(".cargo").join("bin").join("mise.exe"),
+                PathBuf::from(local_app_data)
+                    .join("mise")
+                    .join("bin")
+                    .join("mise.exe"),
+            ],
+            "paths = {paths:?}"
+        );
+        // Every Windows probe target must be the launchable `.exe`, never
+        // the extensionless unix name.
+        assert!(paths.iter().all(|p| p.to_string_lossy().ends_with("mise.exe")));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn candidate_paths_keeps_unix_locations_and_order() {
+        // Regression pin for the macOS/Linux probe: same four paths, in
+        // the same order, as before the Windows fix (issue #208).
+        let home = dirs::home_dir().expect("test environment has a home dir");
+        assert_eq!(
+            candidate_paths(),
+            vec![
+                home.join(".local").join("bin").join("mise"),
+                home.join(".cargo").join("bin").join("mise"),
+                PathBuf::from("/opt/homebrew/bin/mise"),
+                PathBuf::from("/usr/local/bin/mise"),
+            ]
+        );
     }
 
     #[test]
