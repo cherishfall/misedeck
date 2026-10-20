@@ -6,7 +6,7 @@
 // Commands are thin: validate input, resolve the mise binary, call the
 // runner, shape the result. Everything reusable sits in `mise::`.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use once_cell::sync::Lazy;
@@ -202,21 +202,7 @@ pub enum InstallCommandResult {
 /// typed result as a structured enum (never throws on the JS side).
 #[tauri::command]
 async fn detect_mise() -> DetectMiseResult {
-    let path = {
-        let cached = MISE_BINARY.lock().expect("mise path mutex poisoned");
-        cached.clone()
-    };
-    let path = match path {
-        Some(p) => p,
-        None => match locate_mise() {
-            Ok(p) => {
-                *MISE_BINARY.lock().expect("mise path mutex poisoned") = Some(p.clone());
-                p
-            }
-            Err(e) => return DetectMiseResult::Err { err: e },
-        },
-    };
-    match spawn_run(move || run_mise_probe(&path)).await {
+    match spawn_run(|| run_with_mise_binary(run_mise_probe)).await {
         Ok(ok) => DetectMiseResult::Ok { ok },
         Err(err) => DetectMiseResult::Err { err },
     }
@@ -238,34 +224,28 @@ async fn run_mise_command(
         return RunCommandResult::Err { err };
     }
 
-    // Resolve the mise binary path.
-    let path = {
-        let cached = MISE_BINARY.lock().expect("mise path mutex poisoned");
-        cached.clone()
-    };
-    let path = match path {
-        Some(p) => p,
-        None => match locate_mise() {
-            Ok(p) => {
-                *MISE_BINARY.lock().expect("mise path mutex poisoned") = Some(p.clone());
-                p
-            }
-            Err(e) => return RunCommandResult::Err { err: e },
-        },
+    // The IPC-supplied directory is a boundary value: reject an empty or
+    // stale path before it becomes `-C <dir>` (issue #210).
+    let cwd = match validate_cwd(cwd.as_deref()) {
+        Ok(cwd) => cwd,
+        Err(err) => return RunCommandResult::Err { err },
     };
 
-    let req = RunRequest {
-        cwd: cwd.map(PathBuf::from),
-        args,
-    };
+    let req = RunRequest { cwd, args };
 
     // Run the (process-spawning) work off the main thread so the
     // window chrome stays responsive while the process runs.
     let res = tauri::async_runtime::spawn_blocking(move || {
-        run_mise(&path, &req, move |evt| {
-            // Channel::send is fallible only if the receiver is dropped;
-            // swallow the error rather than panicking in the runner thread.
-            let _ = on_event.send(evt);
+        run_with_mise_binary(|path| {
+            // A fresh clone per attempt: the retry path runs the command
+            // again, and the channel is cheap to clone.
+            let channel = on_event.clone();
+            run_mise(path, &req, move |evt| {
+                // Channel::send is fallible only if the receiver is
+                // dropped; swallow the error rather than panicking in the
+                // runner thread.
+                let _ = channel.send(evt);
+            })
         })
     }).await;
     match res {
@@ -312,27 +292,14 @@ async fn install_mise(on_event: tauri::ipc::Channel<RunEvent>) -> InstallCommand
 /// post-update probe succeeded).
 #[tauri::command]
 async fn mise_self_update(on_event: tauri::ipc::Channel<RunEvent>) -> InstallCommandResult {
-    // Resolve the mise binary path.
-    let path = {
-        let cached = MISE_BINARY.lock().expect("mise path mutex poisoned");
-        cached.clone()
-    };
-    let path = match path {
-        Some(p) => p,
-        None => match locate_mise() {
-            Ok(p) => {
-                *MISE_BINARY.lock().expect("mise path mutex poisoned") = Some(p.clone());
-                p
-            }
-            Err(e) => return InstallCommandResult::Err { err: e },
-        },
-    };
-
     // Run the (process-spawning) self-update off the main thread so the
     // window chrome stays responsive while the process runs.
     let res = tauri::async_runtime::spawn_blocking(move || {
-        run_self_update(&path, move |evt| {
-            let _ = on_event.send(evt);
+        run_with_mise_binary(|path| {
+            let channel = on_event.clone();
+            run_self_update(path, move |evt| {
+                let _ = channel.send(evt);
+            })
         })
     }).await;
     match res {
@@ -373,6 +340,79 @@ where
     }
 }
 
+/// Drop the cached mise path so the next resolve probes the filesystem
+/// again. Used when a cached path stops resolving (mise reinstalled or
+/// moved while the app was running).
+fn invalidate_mise_binary() {
+    *MISE_BINARY.lock().expect("mise path mutex poisoned") = None;
+}
+
+/// Run `run` against the cached mise binary, re-probing once when the
+/// runner reports `MISE_NOT_FOUND` (issue #210).
+///
+/// The cache is filled at startup and otherwise never revisited, so a
+/// user who moves or reinstalls mise saw `MISE_NOT_FOUND` on every
+/// command until restarting the app. A `MISE_NOT_FOUND` from a path that
+/// was just re-probed is final — the binary exists but cannot be
+/// executed — and a re-probe that lands on the same path is not retried,
+/// so a genuinely broken install still surfaces the original error
+/// instead of looping.
+fn run_with_mise_binary<T>(run: impl Fn(&Path) -> Result<T, AppError>) -> Result<T, AppError> {
+    let first = resolve_mise_binary(|e| e)?;
+    run_with_reprobe(
+        first,
+        || {
+            invalidate_mise_binary();
+            resolve_mise_binary(|e| e)
+        },
+        run,
+    )
+}
+
+/// The retry decision behind `run_with_mise_binary`, split out so it can
+/// be tested without a real mise binary: run at `first`; on
+/// `MISE_NOT_FOUND`, probe once more and retry at the new path. A
+/// re-probe that returns the same path, or fails, reports the original
+/// error.
+fn run_with_reprobe<T>(
+    first: PathBuf,
+    reprobe: impl FnOnce() -> Result<PathBuf, AppError>,
+    run: impl Fn(&Path) -> Result<T, AppError>,
+) -> Result<T, AppError> {
+    match run(&first) {
+        Err(err) if err.code == mise::code::MISE_NOT_FOUND => match reprobe() {
+            Ok(fresh) if fresh != first => run(&fresh),
+            _ => Err(err),
+        },
+        other => other,
+    }
+}
+
+/// Validate an IPC-supplied `cwd` (issue #210). `None` is Global mode.
+/// `Some` must name an existing directory: the runner turns it into
+/// `-C <dir>`, so an empty or stale path is a caller-side bug that would
+/// otherwise surface as mise's own error text. Reuses `COMMAND_FAILED`
+/// (no new error code).
+fn validate_cwd(cwd: Option<&str>) -> Result<Option<PathBuf>, AppError> {
+    match cwd {
+        None => Ok(None),
+        Some(raw) if raw.trim().is_empty() => Err(AppError::command_failed(
+            "run_mise_command: cwd is empty",
+            String::new(),
+        )),
+        Some(raw) => {
+            let path = PathBuf::from(raw);
+            if !path.is_dir() {
+                return Err(AppError::command_failed(
+                    format!("run_mise_command: cwd is not a directory: {raw}"),
+                    String::new(),
+                ));
+            }
+            Ok(Some(path))
+        }
+    }
+}
+
 /// Run a blocking mise call on Tauri's blocking thread pool so the UI
 /// event loop stays responsive (issue #46). The runner spawns a child
 /// process and waits on it; doing that work off the main thread is what
@@ -398,14 +438,10 @@ where
 /// tools are outdated).
 #[tauri::command]
 async fn tools_outdated(cwd: Option<String>) -> JsonResult {
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return JsonResult::Err { err: e },
-    };
     let cwd_owned = cwd.as_deref().map(PathBuf::from);
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        mise_outdated(&path, cwd)
+        run_with_mise_binary(|path| mise_outdated(path, cwd))
     }).await {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
@@ -419,14 +455,10 @@ async fn tools_outdated(cwd: Option<String>) -> JsonResult {
 /// tools.
 #[tauri::command]
 async fn tools_env(cwd: Option<String>) -> JsonResult {
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return JsonResult::Err { err: e },
-    };
     let cwd_owned = cwd.as_deref().map(PathBuf::from);
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        mise_env(&path, cwd)
+        run_with_mise_binary(|path| mise_env(path, cwd))
     }).await {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
@@ -439,14 +471,10 @@ async fn tools_env(cwd: Option<String>) -> JsonResult {
 /// Used by the first-class Env page (#41).
 #[tauri::command]
 async fn env_ls(cwd: Option<String>) -> JsonResult {
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return JsonResult::Err { err: e },
-    };
     let cwd_owned = cwd.as_deref().map(PathBuf::from);
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        mise_env_extended(&path, cwd)
+        run_with_mise_binary(|path| mise_env_extended(path, cwd))
     }).await {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
@@ -471,14 +499,10 @@ fn read_lockfile(cwd: Option<String>) -> Result<Option<String>, AppError> {
 /// both Global and directory contexts.
 #[tauri::command]
 async fn config_files(cwd: Option<String>) -> ConfigFilesResult {
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return ConfigFilesResult::Err { err: e },
-    };
     let cwd_owned = cwd.as_deref().map(PathBuf::from);
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        mise_config_files(&path, cwd)
+        run_with_mise_binary(|path| mise_config_files(path, cwd))
     }).await {
         Ok(files) => ConfigFilesResult::Ok { files },
         Err(err) => ConfigFilesResult::Err { err },
@@ -492,14 +516,10 @@ async fn config_files(cwd: Option<String>) -> ConfigFilesResult {
 /// actions will call before running.
 #[tauri::command]
 async fn trust_check(cwd: Option<String>) -> TrustResult {
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return TrustResult::Err { err: e },
-    };
     let cwd_owned = cwd.as_deref().map(PathBuf::from);
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        check_trust(&path, cwd)
+        run_with_mise_binary(|path| check_trust(path, cwd))
     }).await {
         Ok(ok) => TrustResult::Ok { ok },
         Err(err) => TrustResult::Err { err },
@@ -517,16 +537,15 @@ async fn mise_trust(
     cwd: Option<String>,
     on_event: tauri::ipc::Channel<RunEvent>,
 ) -> RunCommandResult {
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return RunCommandResult::Err { err: e },
-    };
     let cwd_owned = cwd.as_deref().map(PathBuf::from);
     // Run the (process-spawning) trust stream off the main thread so the
     // window chrome stays responsive while the process runs.
     let res = tauri::async_runtime::spawn_blocking(move || {
-        run_trust(&path, cwd_owned.as_deref(), move |evt| {
-            let _ = on_event.send(evt);
+        run_with_mise_binary(|path| {
+            let channel = on_event.clone();
+            run_trust(path, cwd_owned.as_deref(), move |evt| {
+                let _ = channel.send(evt);
+            })
         })
     }).await;
     match res {
@@ -548,14 +567,10 @@ async fn mise_trust(
 /// surface `mise tasks ls --json` exposes from any directory).
 #[tauri::command]
 async fn tasks_ls(cwd: Option<String>) -> JsonResult {
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return JsonResult::Err { err: e },
-    };
     let cwd_owned = cwd.as_deref().map(PathBuf::from);
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        mise_tasks_ls(&path, cwd)
+        run_with_mise_binary(|path| mise_tasks_ls(path, cwd))
     }).await {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
@@ -568,14 +583,10 @@ async fn tasks_ls(cwd: Option<String>) -> JsonResult {
 /// returns it as a structured array of tinted lines.
 #[tauri::command]
 async fn doctor(cwd: Option<String>) -> JsonResult {
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return JsonResult::Err { err: e },
-    };
     let cwd_owned = cwd.as_deref().map(PathBuf::from);
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        mise_doctor(&path, cwd)
+        run_with_mise_binary(|path| mise_doctor(path, cwd))
     }).await {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
@@ -588,14 +599,10 @@ async fn doctor(cwd: Option<String>) -> JsonResult {
 /// table into a JSON array behind the boundary.
 #[tauri::command]
 async fn registry(cwd: Option<String>) -> JsonResult {
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return JsonResult::Err { err: e },
-    };
     let cwd_owned = cwd.as_deref().map(PathBuf::from);
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        mise_registry(&path, cwd)
+        run_with_mise_binary(|path| mise_registry(path, cwd))
     }).await {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
@@ -609,14 +616,10 @@ async fn registry(cwd: Option<String>) -> JsonResult {
 /// installed-plugins section.
 #[tauri::command]
 async fn plugins_ls(cwd: Option<String>) -> JsonResult {
-    let path = match resolve_mise_binary(|e| e) {
-        Ok(p) => p,
-        Err(e) => return JsonResult::Err { err: e },
-    };
     let cwd_owned = cwd.as_deref().map(PathBuf::from);
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        mise_plugins_ls(&path, cwd)
+        run_with_mise_binary(|path| mise_plugins_ls(path, cwd))
     }).await {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
@@ -712,7 +715,6 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             detect_mise,
             run_mise_command,
@@ -775,4 +777,93 @@ pub fn run() {
 mod tests {
     // The Tauri commands depend on the Tauri runtime; covered indirectly
     // through the integration tests in `tests/mise.rs` and `tests/runner.rs`.
+    // The two pure helpers below are the seams of issue #210's cache
+    // re-probe and cwd validation, so they are tested here directly.
+
+    use std::cell::Cell;
+
+    use super::*;
+
+    #[test]
+    fn run_with_reprobe_retries_at_the_new_path_after_not_found() {
+        let seen: std::cell::RefCell<Vec<PathBuf>> = std::cell::RefCell::new(Vec::new());
+        let result = run_with_reprobe(
+            PathBuf::from("/old/mise"),
+            || Ok(PathBuf::from("/new/mise")),
+            |path| {
+                seen.borrow_mut().push(path.to_path_buf());
+                if path == Path::new("/old/mise") {
+                    Err(AppError::not_found())
+                } else {
+                    Ok("ran")
+                }
+            },
+        );
+        assert_eq!(result.expect("retry should succeed"), "ran");
+        assert_eq!(
+            *seen.borrow(),
+            vec![PathBuf::from("/old/mise"), PathBuf::from("/new/mise")],
+            "the run must happen once per probed path"
+        );
+    }
+
+    #[test]
+    fn run_with_reprobe_does_not_retry_the_same_path() {
+        let calls = Cell::new(0);
+        let err = run_with_reprobe(
+            PathBuf::from("/bin/mise"),
+            || Ok(PathBuf::from("/bin/mise")),
+            |_| {
+                calls.set(calls.get() + 1);
+                Err::<(), _>(AppError::not_found())
+            },
+        )
+        .expect_err("a re-probe landing on the same path is final");
+        assert_eq!(err.code, mise::code::MISE_NOT_FOUND);
+        assert_eq!(calls.get(), 1);
+    }
+
+    #[test]
+    fn run_with_reprobe_leaves_other_errors_alone() {
+        let calls = Cell::new(0);
+        let err = run_with_reprobe(
+            PathBuf::from("/bin/mise"),
+            || panic!("must not re-probe for a non-NotFound failure"),
+            |_| {
+                calls.set(calls.get() + 1);
+                Err::<(), _>(AppError::command_failed("boom", ""))
+            },
+        )
+        .expect_err("COMMAND_FAILED is not retried");
+        assert_eq!(err.code, mise::code::COMMAND_FAILED);
+        assert_eq!(calls.get(), 1);
+    }
+
+    #[test]
+    fn validate_cwd_accepts_none_and_existing_directories() {
+        assert!(validate_cwd(None).expect("None is Global mode").is_none());
+        let dir = std::env::temp_dir();
+        assert_eq!(
+            validate_cwd(Some(dir.to_str().unwrap())).expect("existing dir"),
+            Some(dir)
+        );
+    }
+
+    #[test]
+    fn validate_cwd_rejects_empty_and_missing_paths() {
+        for raw in ["", "   "] {
+            let err = validate_cwd(Some(raw)).expect_err("empty cwd must be rejected");
+            assert_eq!(err.code, mise::code::COMMAND_FAILED);
+            assert!(err.message.contains("empty"), "got {:?}", err.message);
+        }
+        let missing = std::env::temp_dir().join("misedeck-no-such-dir-210");
+        let err = validate_cwd(Some(missing.to_str().unwrap()))
+            .expect_err("missing cwd must be rejected");
+        assert_eq!(err.code, mise::code::COMMAND_FAILED);
+        assert!(
+            err.message.contains("not a directory"),
+            "got {:?}",
+            err.message
+        );
+    }
 }

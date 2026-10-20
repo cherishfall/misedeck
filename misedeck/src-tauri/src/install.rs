@@ -23,7 +23,8 @@ use std::time::{Duration, Instant};
 use serde::Serialize;
 
 use crate::mise::{
-    extract_date, meets_minimum, run_mise, AppError, RunEvent, RunRequest, MIN_MISE_VERSION,
+    extract_date, meets_minimum, run_mise, AppError, ChildGuard, RunEvent, RunRequest,
+    MIN_MISE_VERSION,
 };
 
 /// Maximum wall-clock time the official install script is allowed to
@@ -84,7 +85,7 @@ where
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    let mut child = match cmd.spawn() {
+    let mut guard = ChildGuard::new(match cmd.spawn() {
         Ok(c) => c,
         Err(e) => {
             return Err(AppError::command_failed(
@@ -92,10 +93,10 @@ where
                 String::new(),
             ));
         }
-    };
+    });
 
-    let mut stdout = child.stdout.take().expect("piped");
-    let mut stderr = child.stderr.take().expect("piped");
+    let mut stdout = guard.child().stdout.take().expect("piped");
+    let mut stderr = guard.child().stderr.take().expect("piped");
 
     let (out_tx, out_rx) = channel::<String>();
     let (err_tx, err_rx) = channel::<String>();
@@ -125,8 +126,10 @@ where
     let mut stderr_buf = String::new();
 
     loop {
-        match child.try_wait() {
+        match guard.child().try_wait() {
             Ok(Some(status)) => {
+                // Reaped; disarm the kill-on-drop guard.
+                drop(guard.disarm());
                 // Join readers BEFORE draining: once the child has exited the
                 // pipes are at EOF, so join() always returns. Draining first
                 // races with the reader threads and can permanently drop their
@@ -180,6 +183,7 @@ where
                     stderr_buf.push('\n');
                 }
                 if started.elapsed() > deadline {
+                    let mut child = guard.disarm();
                     let _ = child.kill();
                     let _ = child.wait();
                     // Join readers BEFORE the final drain for the same reason as
@@ -258,9 +262,6 @@ where
     let req = RunRequest::new(mise_self_update_argv());
     let outcome = run_mise(mise_path, &req, move |e| on_event(e))?;
 
-    if outcome.timed_out {
-        return Err(AppError::timeout());
-    }
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise self-update exited with status {}", outcome.exit_code),

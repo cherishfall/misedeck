@@ -279,6 +279,43 @@ pub fn resolve_cwd_anchor(cwd: Option<&Path>) -> Result<PathBuf, AppError> {
     }
 }
 
+/// Owns a spawned child and kills + reaps it on drop unless the runner
+/// has already disarmed the guard. A panic while the runner thread is
+/// waiting (in the loop, in a reader join, or in `on_event`) would
+/// otherwise leave the mise process running as an orphan; the guard
+/// closes that hole without changing the happy path.
+pub(crate) struct ChildGuard {
+    child: Option<std::process::Child>,
+}
+
+impl ChildGuard {
+    pub(crate) fn new(child: std::process::Child) -> Self {
+        Self { child: Some(child) }
+    }
+
+    /// The guarded child. Panics if the guard was disarmed first, which
+    /// would be a bug in the caller — every call site reads the child
+    /// while the guard still owns it.
+    pub(crate) fn child(&mut self) -> &mut std::process::Child {
+        self.child.as_mut().expect("child guard already disarmed")
+    }
+
+    /// Give the child back, disarming the Drop kill. Called once the
+    /// process has been reaped (normal exit or an explicit kill).
+    pub(crate) fn disarm(mut self) -> std::process::Child {
+        self.child.take().expect("child guard already disarmed")
+    }
+}
+
+impl Drop for ChildGuard {
+    fn drop(&mut self) {
+        if let Some(mut child) = self.child.take() {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+    }
+}
+
 /// Spawn the mise binary and capture its output, enforcing a finite
 /// `timeout`. This is the low-level entry point the runner routes every
 /// call through.
@@ -305,7 +342,7 @@ where
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    let mut child = match cmd.spawn() {
+    let mut guard = ChildGuard::new(match cmd.spawn() {
         Ok(c) => c,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
             return Err(AppError::not_found());
@@ -316,10 +353,10 @@ where
                 String::new(),
             ));
         }
-    };
+    });
 
-    let mut stdout = child.stdout.take().expect("piped");
-    let mut stderr = child.stderr.take().expect("piped");
+    let mut stdout = guard.child().stdout.take().expect("piped");
+    let mut stderr = guard.child().stderr.take().expect("piped");
 
     let (out_tx, out_rx) = channel::<String>();
     let (err_tx, err_rx) = channel::<String>();
@@ -350,8 +387,11 @@ where
     let mut stderr_buf = String::new();
 
     loop {
-        match child.try_wait() {
+        match guard.child().try_wait() {
             Ok(Some(status)) => {
+                // The process has been reaped; disarm so Drop does not
+                // signal it again.
+                drop(guard.disarm());
                 // Join readers BEFORE draining: once the child has exited the
                 // pipes are at EOF, so join() is guaranteed to return. If we
                 // drained first the reader threads might not have sent their
@@ -401,6 +441,7 @@ where
                     stderr_buf.push('\n');
                 }
                 if started.elapsed() > deadline {
+                    let mut child = guard.disarm();
                     let _ = child.kill();
                     let _ = child.wait();
                     // Join readers BEFORE the final drain for the same reason as
@@ -546,9 +587,6 @@ pub fn run_mise_json(
     req: &RunRequest,
 ) -> Result<serde_json::Value, AppError> {
     let outcome = run_mise_timed(mise_path, req, |_| {}, READ_TIMEOUT)?;
-    if outcome.timed_out {
-        return Err(AppError::timeout());
-    }
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise exited with status {}", outcome.exit_code),
@@ -905,9 +943,6 @@ pub fn mise_tasks_edit_path(
         None => RunRequest::new(args),
     };
     let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
-    if outcome.timed_out {
-        return Err(AppError::timeout());
-    }
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!(
@@ -973,9 +1008,6 @@ pub fn check_trust(mise_path: &Path, cwd: Option<&Path>) -> Result<TrustStatus, 
         None => RunRequest::new(args),
     };
     let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
-    if outcome.timed_out {
-        return Err(AppError::timeout());
-    }
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise trust --show exited with status {}", outcome.exit_code),
@@ -1049,9 +1081,6 @@ where
         None => RunRequest::new(args),
     };
     let outcome = run_mise(mise_path, &req, on_event)?;
-    if outcome.timed_out {
-        return Err(AppError::timeout());
-    }
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise trust exited with status {}", outcome.exit_code),
@@ -1177,9 +1206,6 @@ fn doctor_text_fallback(
         None => RunRequest::new(args),
     };
     let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
-    if outcome.timed_out {
-        return Err(AppError::timeout());
-    }
     // A non-zero exit is still valuable diagnostic output for the
     // health page; surface the lines instead of failing the command.
     let lines: Vec<DoctorLine> = outcome
@@ -1225,9 +1251,6 @@ fn registry_table_fallback(
         None => RunRequest::new(args),
     };
     let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
-    if outcome.timed_out {
-        return Err(AppError::timeout());
-    }
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise registry exited with status {}", outcome.exit_code),
@@ -1289,9 +1312,6 @@ pub fn mise_plugins_ls(
         None => RunRequest::new(args),
     };
     let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
-    if outcome.timed_out {
-        return Err(AppError::timeout());
-    }
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise plugins ls exited with status {}", outcome.exit_code),
@@ -1511,10 +1531,6 @@ pub fn mise_tasks_add_argv(
 pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
     let req = RunRequest::new(vec!["version".to_string(), "--json".to_string()]);
     let outcome = run_mise_timed(mise_path, &req, |_| {}, DETECT_TIMEOUT)?;
-
-    if outcome.timed_out {
-        return Err(AppError::timeout());
-    }
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise exited with status {}", outcome.exit_code),

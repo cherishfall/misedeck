@@ -30,7 +30,9 @@
 //                  best-effort path under `Documents/PowerShell/`.
 
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Child, Command, ExitStatus, Stdio};
+use std::thread;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 
@@ -174,21 +176,58 @@ pub fn classify_shell(basename: &str, raw: &str) -> ShellKind {
     }
 }
 
+/// Upper bound for the `which`-style presence probe. Windows `pwsh`
+/// cold start can take a couple of seconds; anything past this is
+/// treated as "not present" so a hung probe can never stall the
+/// command that triggered it (issue #210).
+const PROBE_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Upper bound for a terminal launch. Every launcher we use hands the
+/// window off and exits; one that blocks longer is reported as a
+/// failure instead of pinning the command thread.
+const LAUNCH_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// Wait for `child`, giving up after `timeout`. Returns `None` when the
+/// deadline passes (the child is killed and reaped first so it cannot
+/// outlive the probe) or when the wait itself fails. Polling keeps this
+/// std-only — no extra crate for what is a two-call helper.
+fn wait_with_timeout(child: &mut Child, timeout: Duration) -> Option<ExitStatus> {
+    let started = Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => return Some(status),
+            Ok(None) => {}
+            Err(_) => return None,
+        }
+        if started.elapsed() >= timeout {
+            let _ = child.kill();
+            let _ = child.wait();
+            return None;
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
+}
+
 #[allow(dead_code)]
 fn which_exists(name: &str) -> bool {
     // Probe the binary by trying to spawn it with a no-op arg. The
     // path is resolved by the OS, so a missing binary returns
     // `NotFound` and a present binary either runs (success) or
     // rejects the arg (non-zero exit) — both are fine for our
-    // presence check.
-    Command::new(name)
+    // presence check. The wait is bounded: `status()` would wait
+    // forever on a binary that hangs during startup.
+    let child = Command::new(name)
         .arg("--version")
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .stdin(std::process::Stdio::null())
-        .status()
-        .map(|s| s.success() || s.code().is_some())
-        .unwrap_or(false)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .stdin(Stdio::null())
+        .spawn();
+    match child {
+        Ok(mut child) => wait_with_timeout(&mut child, PROBE_TIMEOUT)
+            .map(|s| s.success() || s.code().is_some())
+            .unwrap_or(false),
+        Err(_) => false,
+    }
 }
 
 /// Compute the rc file path for the given shell. The function does
@@ -373,12 +412,16 @@ pub fn check_shell_activation_for(shell: &ShellKind) -> Result<ActivationStatus,
 //                That is documented as a limitation; the
 //                "Copy command" affordance is the precise
 //                alternative.
-//   * Windows → `cmd /c start "" <path>` opens a new cmd window
-//                rooted at the path. The PowerShell equivalent is
-//                `Start-Process -WorkingDirectory <path>
-//                powershell` but `cmd /c start` is the smallest
-//                dependable surface that does not require a
-//                present user profile.
+//   * Windows → `cmd /c start "" <%MISEDECK_TERM_DIR%>` opens a new
+//                window rooted at the path. The path travels through
+//                an environment variable rather than the command
+//                line, because cmd.exe re-parses that line and
+//                expands `%…%` even inside quotes (see
+//                `windows_cmd_start_plan`). The PowerShell
+//                equivalent is `Start-Process -WorkingDirectory
+//                <path> powershell` but `cmd /c start` is the
+//                smallest dependable surface that does not require
+//                a present user profile.
 //   * Linux   → best-effort probe: try `gnome-terminal`, then
 //                `konsole`, then `xfce4-terminal`, each with a
 //                `--working-directory=` flag. If none is found,
@@ -413,6 +456,49 @@ pub struct TerminalOpenOutcome {
     /// logs and in the "Copy command" fallback when the launch
     /// itself failed.
     pub argv: Vec<String>,
+}
+
+/// Environment variable that carries the directory into the Windows
+/// launcher.
+pub const WINDOWS_TERM_DIR_ENV: &str = "MISEDECK_TERM_DIR";
+
+/// The `cmd.exe` invocation that opens a window at a directory.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WindowsCmdStartPlan {
+    /// Raw command-line tail handed to `cmd.exe` via `raw_arg`. It is
+    /// not argv: cmd.exe re-parses it, so it is spelled out here.
+    pub raw_args: String,
+    /// The directory, handed over through `WINDOWS_TERM_DIR_ENV`.
+    pub env_value: String,
+    /// Human-readable argv reported in `TerminalOpenOutcome`.
+    pub argv: Vec<String>,
+}
+
+/// Plan the Windows launch without letting the directory reach cmd's
+/// parser.
+///
+/// `cmd.exe` re-parses its command line: `&` splits the command, `^`
+/// escapes the next character, and `%NAME%` expands — the last one
+/// *even inside double quotes*. Quoting the path therefore cannot make
+/// an arbitrary directory safe: `C:\50%off%` would silently become
+/// `C:\50` (issue #210). Passing the directory through an environment
+/// variable removes the class instead of patching characters: cmd
+/// expands `%MISEDECK_TERM_DIR%` in a single pass and never re-scans
+/// the value, so `&`, `^`, `%`, spaces, `(`, `)` and `!` all arrive
+/// intact. The empty `""` is still `start`'s title argument.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+pub fn windows_cmd_start_plan(dir: &str) -> WindowsCmdStartPlan {
+    WindowsCmdStartPlan {
+        raw_args: format!("/c start \"\" \"%{WINDOWS_TERM_DIR_ENV}%\""),
+        env_value: dir.to_string(),
+        argv: vec![
+            "cmd".to_string(),
+            "/c".to_string(),
+            "start".to_string(),
+            String::new(),
+            format!("%{WINDOWS_TERM_DIR_ENV}%"),
+        ],
+    }
 }
 
 pub fn open_in_terminal(path: Option<&str>) -> Result<TerminalOpenOutcome, AppError> {
@@ -456,23 +542,20 @@ pub fn open_in_terminal(path: Option<&str>) -> Result<TerminalOpenOutcome, AppEr
 
     #[cfg(target_os = "windows")]
     {
-        // `cmd /c start "" <path>` opens a new cmd window rooted
-        // at <path>. The empty quoted string is the "title"
-        // argument (otherwise `start` treats <path> as the title
-        // and the command does not run).
-        let argv: Vec<String> = vec![
-            "cmd".to_string(),
-            "/c".to_string(),
-            "start".to_string(),
-            "".to_string(),
-            resolved.to_string_lossy().to_string(),
-        ];
-        run_argv(&argv, "Windows", "cmd.exe", &path_str)?;
+        // `cmd /c start "" <%MISEDECK_TERM_DIR%>` opens a window rooted
+        // at the directory. The empty quoted string is the "title"
+        // argument (otherwise `start` treats the target as the title
+        // and the command does not run). The directory itself travels
+        // through an environment variable — see
+        // `windows_cmd_start_plan` for why it must not appear in the
+        // command line.
+        let plan = windows_cmd_start_plan(&path_str);
+        run_cmd_start(&plan, &path_str)?;
         return Ok(TerminalOpenOutcome {
             platform: "Windows".to_string(),
             terminal_app: "cmd.exe".to_string(),
             path: path_str,
-            argv,
+            argv: plan.argv,
         });
     }
 
@@ -526,6 +609,20 @@ pub fn open_in_terminal(path: Option<&str>) -> Result<TerminalOpenOutcome, AppEr
     }
 }
 
+/// Launcher for the Windows `cmd /c start` path. `raw_arg` is required
+/// because the default argv quoting would escape the quotes cmd.exe
+/// needs to see; the directory itself arrives through
+/// `WINDOWS_TERM_DIR_ENV`, never through the command line.
+#[cfg(target_os = "windows")]
+fn run_cmd_start(plan: &WindowsCmdStartPlan, path: &str) -> Result<(), AppError> {
+    use std::os::windows::process::CommandExt;
+
+    let mut cmd = Command::new("cmd.exe");
+    cmd.env(WINDOWS_TERM_DIR_ENV, &plan.env_value)
+        .raw_arg(&plan.raw_args);
+    run_prepared(cmd, "Windows", "cmd.exe", path, &plan.argv)
+}
+
 /// Helper: spawn an argv in the background (the terminal launches
 /// detached and returns immediately). The spawn errors are
 /// translated into `AppError::command_failed` so the UI can surface
@@ -546,23 +643,45 @@ fn run_argv(
         ));
     }
     let (bin, args) = argv.split_first().expect("non-empty");
-    let status = Command::new(bin)
-        .args(args)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status();
-    match status {
-        Ok(s) if s.success() => Ok(()),
-        Ok(s) => Err(AppError::command_failed(
+    let mut cmd = Command::new(bin);
+    cmd.args(args);
+    run_prepared(cmd, platform, terminal_app, path, argv)
+}
+
+/// Spawn a prepared launcher and wait for it under `LAUNCH_TIMEOUT`.
+/// The launcher is expected to hand the window off and exit; one that
+/// is still running at the deadline is killed and reported as a
+/// failure so a hung binary cannot pin the command thread.
+fn run_prepared(
+    mut cmd: Command,
+    platform: &str,
+    terminal_app: &str,
+    path: &str,
+    argv: &[String],
+) -> Result<(), AppError> {
+    cmd.stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    let mut child = cmd.spawn().map_err(|e| {
+        AppError::command_failed(
+            format!(
+                "{platform} terminal launch via {terminal_app} failed for {path}: {e} (argv: {argv:?})"
+            ),
+            String::new(),
+        )
+    })?;
+    match wait_with_timeout(&mut child, LAUNCH_TIMEOUT) {
+        Some(s) if s.success() => Ok(()),
+        Some(s) => Err(AppError::command_failed(
             format!(
                 "{platform} terminal launch via {terminal_app} exited with status {s} for {path} (argv: {argv:?})"
             ),
             String::new(),
         )),
-        Err(e) => Err(AppError::command_failed(
+        None => Err(AppError::command_failed(
             format!(
-                "{platform} terminal launch via {terminal_app} failed for {path}: {e} (argv: {argv:?})"
+                "{platform} terminal launch via {terminal_app} failed or did not finish within {}s for {path} (argv: {argv:?})",
+                LAUNCH_TIMEOUT.as_secs()
             ),
             String::new(),
         )),
@@ -632,5 +751,62 @@ mod tests {
         assert!(ShellKind::Bash.activation_line().contains("mise activate bash"));
         assert!(ShellKind::Fish.activation_line().contains("mise activate fish"));
         assert!(ShellKind::PowerShell.activation_line().contains("mise activate pwsh"));
+    }
+
+    #[test]
+    fn windows_cmd_start_plan_keeps_the_directory_out_of_the_command_line() {
+        // cmd.exe splits on `&`, eats `^`, and expands `%NAME%` even
+        // inside double quotes, so no directory may be interpolated
+        // into the command line — it travels through the environment
+        // variable instead (issue #210).
+        for dir in [
+            r"C:\A & B",
+            r"C:\50%off%",
+            r"C:\caret^dir",
+            r"C:\paren(dir)",
+            r"C:\bang!dir",
+            r"C:\space dir",
+        ] {
+            let plan = windows_cmd_start_plan(dir);
+            assert_eq!(plan.raw_args, r#"/c start "" "%MISEDECK_TERM_DIR%""#);
+            assert_eq!(plan.env_value, dir);
+            assert!(
+                !plan.raw_args.contains(dir),
+                "directory leaked into the cmd command line: {dir}"
+            );
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn wait_with_timeout_reaps_a_hung_child() {
+        let started = Instant::now();
+        let mut hung = Command::new("sh")
+            .args(["-c", "sleep 30"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("spawn");
+        assert!(wait_with_timeout(&mut hung, Duration::from_millis(100)).is_none());
+        assert!(
+            started.elapsed() < Duration::from_secs(5),
+            "the timeout must fire promptly, took {:?}",
+            started.elapsed()
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn wait_with_timeout_returns_the_exit_status() {
+        let mut quick = Command::new("sh")
+            .args(["-c", "exit 3"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("spawn");
+        let status = wait_with_timeout(&mut quick, Duration::from_secs(5)).expect("status");
+        assert_eq!(status.code(), Some(3));
     }
 }
