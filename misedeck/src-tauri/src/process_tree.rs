@@ -219,14 +219,23 @@ impl ChildGuard {
     /// step. The unregistration is what makes the registry's promise
     /// ("only pids we still own") hold: a pid leaves the map before it
     /// can be reused.
+    ///
+    /// The registry lock is held across the `try_wait` call on purpose.
+    /// Reaping frees the pid, so if `terminate_all` could look the group
+    /// up between the reap and the removal it might signal a pid that
+    /// already belongs to an unrelated process. Holding the lock across
+    /// both makes the pair atomic: either the kill sees a live child, or
+    /// the entry is already gone. `try_wait` is a single `waitpid`, so
+    /// the contention this adds is bounded by one syscall.
     pub(crate) fn try_wait(&mut self) -> io::Result<Option<ExitStatus>> {
         let Some(child) = self.child.as_mut() else {
             return Ok(None);
         };
+        let mut state = registry();
         let status = child.try_wait()?;
         if status.is_some() {
             self.reaped = true;
-            self.unregister();
+            self.unregister_locked(&mut state);
         }
         Ok(status)
     }
@@ -249,11 +258,11 @@ impl ChildGuard {
             let _ = child.wait();
         }
         self.reaped = true;
-        self.unregister();
+        let mut state = registry();
+        self.unregister_locked(&mut state);
     }
 
-    fn unregister(&mut self) {
-        let mut state = registry();
+    fn unregister_locked(&mut self, state: &mut Registry) {
         state.children.remove(&self.pid);
         // A cancel that arrived after the run finished must not linger
         // and hit a future run that reused the id.
