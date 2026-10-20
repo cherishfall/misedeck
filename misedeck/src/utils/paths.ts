@@ -84,16 +84,43 @@ function isAbsolutePathLike(value: string): boolean {
 }
 
 /**
- * Character budget for a Source cell in a 160px table column, measured
- * rather than guessed (issue #216).
+ * Character budget for a fixed-width, `--font-mono` table column at
+ * `--size-data`, measured rather than guessed (issue #216, generalized
+ * in #225 so every path cell derives its budget from the same math).
  *
- * A 160px column carries `--space-3` (12px) of padding on each side, leaving
- * 136px of text. `--font-mono` at `--size-data` (12px) advances 0.6em, i.e.
- * 7.2px per character, so `floor(136 / 7.2) = 18` characters fit. Anything
- * longer is re-truncated by the cell's own end `text-overflow: ellipsis` —
- * which hides the file name, the exact bug the head-elision exists to fix.
+ * A column of `widthPx` carries `--space-3` (12px) of padding on each
+ * side, leaving `widthPx - 24` px of text. `--font-mono` at
+ * `--size-data` (12px) advances 0.6em, i.e. 7.2px per character. The
+ * budget is the floor of that division: one character more would push
+ * the rendered string past the cell and let the cell's own end
+ * `text-overflow: ellipsis` re-truncate the tail — hiding the file
+ * name, the exact bug head-elision exists to fix.
  */
-export const SOURCE_CELL_CHARS = 18;
+export function columnCharBudget(widthPx: number): number {
+  const CELL_PADDING_PX = 2 * 12; // --space-3 on each side
+  const MONO_ADVANCE_PX = 7.2; // 0.6em at --size-data (12px)
+  return Math.floor((widthPx - CELL_PADDING_PX) / MONO_ADVANCE_PX);
+}
+
+/**
+ * Tools page's Source column (issue #225, widening #216's 160px): 216px
+ * makes the budget 26 characters — enough for `…/.config/mise/config.toml`,
+ * so the global config (`/Users/<me>/.config/mise/config.toml`) keeps its
+ * `.config` directory segment and stays separable from a project config
+ * (`…/<dir>/.mise/config.toml`). At the old 160px budget of 18 both
+ * collapsed toward `…/mise/config.toml`.
+ */
+export const SOURCE_CELL_CHARS = columnCharBudget(216);
+
+/**
+ * Env page's Value column (issue #225): the column is declared 320px,
+ * so the budget is 41 characters — head-elision keeps enough of the
+ * tail (`…/installs/node/22.11.0/bin` vs `…/installs/go/1.23.2`) for
+ * same-prefix env values like GOBIN / GOROOT / JAVA_HOME to be told
+ * apart, where the CSS end-ellipsis used to cut every one of them at
+ * the same `/Users/<me>/.local/share/mise/insta…`.
+ */
+export const ENV_VALUE_CELL_CHARS = columnCharBudget(320);
 
 /**
  * Display-only shortening for source paths. The tail is what identifies a

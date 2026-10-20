@@ -49,12 +49,13 @@
 /* ---------- Table cells ---------- */
 
 /* min-width = sum of declared column widths (150 tool + 220 version +
- * 130 requested + 120 backend (conditional) + 160 source + 140
+ * 130 requested + 120 backend (conditional) + 216 source + 140
  * actions): below this the shared scroller scrolls horizontally instead
- * of crushing columns (issues #90, #103; source widened in #216 so the
- * displayed path keeps its file name). */
+ * of crushing columns (issues #90, #103; source widened again in #225 so
+ * the measured 26-char budget keeps the global config's `.config`
+ * segment visible). */
 .toolsTable {
-  min-width: 920px;
+  min-width: 976px;
 }
 
 /* The Version cell's wrapper (#189): the version-switch trigger renders
@@ -98,7 +99,8 @@
 /* The Version cell doubles as the version-switch trigger (issue #151):
  * the button keeps the plain version look — interactivity is shown by
  * the option-hover wash on hover/focus, never a caret glyph (beta8,
- * beta11 2-d). */
+ * beta11 2-d). The shared `.cellTrigger` baseline (Table.module.css,
+ * issue #225) lands the button's text on the header's text baseline. */
 .versionTrigger {
   padding: var(--space-1) var(--space-2);
   background: none;
@@ -107,6 +109,14 @@
   text-align: left;
   cursor: pointer;
   transition: background var(--motion-state-change) ease;
+}
+
+/* The non-interactive Version cell (issue #225): the value renders as
+ * plain data at full contrast — never a disabled control's opacity —
+ * while the "not switchable" signal stays, non-dimming: the cursor plus
+ * the teaching Tooltip. */
+.versionStatic {
+  cursor: not-allowed;
 }
 
 .versionTrigger:hover:not(:disabled),

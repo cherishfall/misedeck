@@ -4,7 +4,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { isPathUnder, normalizePathForCompare, shortenPathTail } from "./paths";
+import {
+  ENV_VALUE_CELL_CHARS,
+  SOURCE_CELL_CHARS,
+  columnCharBudget,
+  isPathUnder,
+  normalizePathForCompare,
+  shortenPathTail,
+} from "./paths";
 
 test("isPathUnder: forward-slash child under forward-slash parent", () => {
   assert.equal(isPathUnder("/Users/dev/proj", "/Users/dev/proj/mise.toml"), true);
@@ -126,4 +133,82 @@ test("shortenPathTail: Windows separators stay backslashes", () => {
 test("shortenPathTail: values with no separator are not treated as paths", () => {
   const token = "registry:https://example.com/a/very/long/tool/identifier";
   assert.equal(shortenPathTail(token, 10), token);
+});
+
+// ---------- Measured column budgets (issue #225) ----------
+
+test("columnCharBudget: the 216px Source column measures 26 characters", () => {
+  // 216px − 2×12px padding = 192px of text; 192 / 7.2px per mono char.
+  assert.equal(columnCharBudget(216), 26);
+  assert.equal(SOURCE_CELL_CHARS, 26);
+});
+
+test("SOURCE_CELL_CHARS boundary: a path exactly at the budget is not elided", () => {
+  // Same off-by-one shape as the #216 test above.
+  const exact = `/${"d".repeat(13)}/config.toml`;
+  assert.equal(exact.length, SOURCE_CELL_CHARS);
+  assert.equal(shortenPathTail(exact, SOURCE_CELL_CHARS), exact);
+  // One character over the budget does elide — and keeps the file name.
+  const over = `/${"d".repeat(14)}/config.toml`;
+  assert.equal(over.length, SOURCE_CELL_CHARS + 1);
+  assert.equal(shortenPathTail(over, SOURCE_CELL_CHARS), "…/config.toml");
+});
+
+test("SOURCE_CELL_CHARS: global and project config sources stay separable", () => {
+  // The #225 defect: at the old 18-char budget both rendered
+  // `…/mise/config.toml`. The widened budget keeps the discriminating
+  // directory segment (`.config/mise` vs `.mise`).
+  const globalConfig = "/Users/lifan/.config/mise/config.toml";
+  const projectConfig = "/Users/lifan/AiCodingProjects/mise-ui/.mise/config.toml";
+  const globalShort = shortenPathTail(globalConfig, SOURCE_CELL_CHARS);
+  const projectShort = shortenPathTail(projectConfig, SOURCE_CELL_CHARS);
+  assert.equal(globalShort, "…/.config/mise/config.toml");
+  assert.equal(projectShort, "…/.mise/config.toml");
+  assert.notEqual(globalShort, projectShort);
+  // Neither may be re-truncated by the cell's end ellipsis: each budget
+  // character is 7.2px and the 216px column offers 192px of text.
+  assert.ok(globalShort.length * 7.2 <= 216 - 24, globalShort);
+  assert.ok(projectShort.length * 7.2 <= 216 - 24, projectShort);
+});
+
+test("ENV_VALUE_CELL_CHARS: the 320px Env Value column measures 41 characters", () => {
+  assert.equal(columnCharBudget(320), 41);
+  assert.equal(ENV_VALUE_CELL_CHARS, 41);
+});
+
+test("ENV_VALUE_CELL_CHARS boundary: a value exactly at the budget is not elided", () => {
+  const exact = `/${"d".repeat(36)}/bin`;
+  assert.equal(exact.length, ENV_VALUE_CELL_CHARS);
+  assert.equal(shortenPathTail(exact, ENV_VALUE_CELL_CHARS), exact);
+  const over = `/${"d".repeat(37)}/bin`;
+  assert.equal(over.length, ENV_VALUE_CELL_CHARS + 1);
+  assert.equal(shortenPathTail(over, ENV_VALUE_CELL_CHARS), "…/bin");
+});
+
+test("ENV_VALUE_CELL_CHARS: GOBIN / GOROOT / JAVA_HOME stay distinguishable", () => {
+  // The #225 defect: the tail-truncating CSS ellipsis collapsed all
+  // three to `/Users/lifan/.local/share/mise/insta…`. Head-elision at
+  // the measured budget keeps the tool + version tail of each.
+  const gobin = shortenPathTail(
+    "/Users/lifan/.local/share/mise/installs/node/22.11.0/bin",
+    ENV_VALUE_CELL_CHARS,
+  );
+  const goroot = shortenPathTail(
+    "/Users/lifan/.local/share/mise/installs/go/1.23.2",
+    ENV_VALUE_CELL_CHARS,
+  );
+  const javaHome = shortenPathTail(
+    "/Users/lifan/.local/share/mise/installs/java/openjdk-21",
+    ENV_VALUE_CELL_CHARS,
+  );
+  for (const short of [gobin, goroot, javaHome]) {
+    assert.ok(short.startsWith("…/"), short);
+    assert.ok(short.length <= ENV_VALUE_CELL_CHARS, short);
+    // Fits the 320px column's text box: no CSS end-ellipsis re-cut.
+    assert.ok(short.length * 7.2 <= 320 - 24, short);
+  }
+  assert.equal(gobin, "…/share/mise/installs/node/22.11.0/bin");
+  assert.equal(goroot, "…/.local/share/mise/installs/go/1.23.2");
+  assert.equal(javaHome, "…/share/mise/installs/java/openjdk-21");
+  assert.equal(new Set([gobin, goroot, javaHome]).size, 3);
 });

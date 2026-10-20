@@ -74,6 +74,7 @@ import { useParsedTasksList } from "../../hooks/useTasksList";
 import { useTableFilter } from "../../hooks/useTableFilter";
 
 import type { ConfigFile, MiseTask } from "../../types/tauri";
+import tableStyles from "../../components/Table/Table.module.css";
 
 import styles from "./TasksPage.module.css";
 
@@ -539,6 +540,7 @@ export function TasksPage() {
           <Button
             variant="primary"
             size="sm"
+            className={tableStyles.cellButton}
             onClick={() => void runTask(r.name)}
             disabled={taskRun.isRunning}
             data-testid={`tasks-run-${r.name}`}

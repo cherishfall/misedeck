@@ -39,6 +39,7 @@ import {
 import { useParsedPluginsList } from "../../hooks/useIssue29";
 import type { InstalledPlugin } from "../../types/tauri";
 
+import tableStyles from "../../components/Table/Table.module.css";
 import styles from "./PluginsPage.module.css";
 
 // ---------- Args builders ----------
@@ -176,6 +177,7 @@ export function PluginsPage() {
         <Button
           variant="danger"
           size="sm"
+          className={tableStyles.cellButton}
           onClick={() => setPendingUninstall(p.name)}
           data-testid={`plugins-uninstall-${p.name}`}
         >

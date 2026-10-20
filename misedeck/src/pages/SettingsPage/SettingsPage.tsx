@@ -58,6 +58,7 @@ import type { SettingsItem } from "../../types/tauri";
 
 import { settingsEmptyCopy } from "./settingsEmptyCopy";
 import { settingsUnsetInScope } from "./settingsUnsetScope";
+import tableStyles from "../../components/Table/Table.module.css";
 import styles from "./SettingsPage.module.css";
 
 // ---------- Args builders ----------
@@ -506,7 +507,12 @@ function RowActions({
 
   return (
     <span className={styles.rowActions}>
-      <Button variant="secondary" size="sm" onClick={startEdit}>
+      <Button
+        variant="secondary"
+        size="sm"
+        className={tableStyles.cellButton}
+        onClick={startEdit}
+      >
         {t(I18N_KEYS.settings.editButton)}
       </Button>
       {inScope ? (

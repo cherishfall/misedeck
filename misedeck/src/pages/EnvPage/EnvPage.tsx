@@ -44,7 +44,8 @@ import { useParsedEnvList } from "../../hooks/useEnvList";
 import { useTableFilter } from "../../hooks/useTableFilter";
 import { isEnvWriteScopeMismatch, type EnvSource } from "../../api/miseTools";
 
-import { shortenPathTail } from "../../utils/paths";
+import { ENV_VALUE_CELL_CHARS, shortenPathTail } from "../../utils/paths";
+import tableStyles from "../../components/Table/Table.module.css";
 import styles from "./EnvPage.module.css";
 
 // ---------- Row shape ----------
@@ -229,9 +230,20 @@ export function EnvPage() {
       key: "value",
       header: t(I18N_KEYS.env.columns.value),
       sortValue: (r) => r.value,
+      // Declared 320px (issue #225) so the head-elision budget below is
+      // measured against a known column width, and the table's min-width
+      // can equal the sum of its declared columns (issue #90 pattern).
+      width: "320px",
       cell: (r) => (
         <Tooltip text={r.value}>
-          <span className={styles.cellValue}>{r.value || "—"}</span>
+          {/* Head-elision keeps the tail (issue #225): a tail-truncating
+              ellipsis collapsed GOBIN / GOROOT / JAVA_HOME onto the same
+              `/Users/…/mise/insta…` prefix. Non-path values pass through
+              `shortenPathTail` untouched; the tooltip keeps the full
+              value. */}
+          <span className={styles.cellValue}>
+            {r.value ? shortenPathTail(r.value, ENV_VALUE_CELL_CHARS) : "—"}
+          </span>
         </Tooltip>
       ),
     },
@@ -680,6 +692,9 @@ function EnvRowActions({
       <Button
         variant="secondary"
         size="sm"
+        // Cell-control left baseline (#225): the first button's label
+        // lands on the header's text baseline.
+        className={tableStyles.cellButton}
         onClick={startEdit}
         data-testid={`env-edit-${row.name}`}
       >

@@ -105,10 +105,12 @@
 /* ---------- Cells ---------- */
 
 /* The shared `fixed` prop (issue #57) holds the declared column widths;
- * min-width ≈ their sum (800px px-columns) so narrow windows scroll
- * horizontally instead of crushing columns (issue #90). */
+ * min-width = their sum (220 name + 320 value + 220 source + 220 actions;
+ * the value column's 320px declared in #225 so its elision budget is
+ * measured) — below this the scroller scrolls horizontally instead of
+ * crushing columns (issue #90). */
 .envTable {
-  min-width: 800px;
+  min-width: 980px;
 }
 
 .cellName {

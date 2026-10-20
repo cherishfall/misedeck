@@ -61,6 +61,30 @@
   border-bottom: 0;
 }
 
+/* Cell-control left baseline (issue #225): the th's label sits at the
+ * td's --space-3 (12px) padding edge, and so must the *text* of a control
+ * rendered at a cell's left edge — a trigger/button whose own horizontal
+ * inset pushes its label right of the header reads as a misaligned column.
+ * The control's inset (its padding, plus the Button's 1px border) is
+ * neutralised with a positional shift: layout space is untouched (the
+ * neighbouring chip and cells never move) while the painted box — hit
+ * area, hover wash, focus ring included — lands its text on the header
+ * baseline. Two flavors, one per inset shape:
+ *   - .cellTrigger: a bare trigger with --space-2 horizontal padding
+ *     (the version-switch cell).
+ *   - .cellButton: a size-sm Button — --space-2-5 padding + its 1px
+ *     border (the actions columns).
+ * Plain-text cells need nothing: their glyphs already sit on the edge. */
+.cellTrigger {
+  position: relative;
+  left: calc(-1 * var(--space-2));
+}
+
+.cellButton {
+  position: relative;
+  left: calc(-1 * (var(--space-2-5) + 1px));
+}
+
 .row {
   transition: background var(--motion-state-change) ease;
 }

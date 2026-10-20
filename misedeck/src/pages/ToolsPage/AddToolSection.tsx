@@ -71,6 +71,7 @@ import {
 } from "../../components";
 import { shortenPathTail } from "../../utils/paths";
 import { compareToolVersions, hasUpgradeTarget } from "../../utils/versions";
+import tableStyles from "../../components/Table/Table.module.css";
 
 import styles from "./AddToolSection.module.css";
 
@@ -439,6 +440,7 @@ export function AddToolSection({
           <Button
             variant="danger"
             size="sm"
+            className={tableStyles.cellButton}
             onClick={() => onUnuse(selectedTool ?? "")}
             data-testid={`add-tool-active-unuse-${r.version}`}
           >
@@ -503,6 +505,7 @@ export function AddToolSection({
           <Button
             variant="primary"
             size="sm"
+            className={tableStyles.cellButton}
             onClick={() => onUse(selectedTool ?? "", r.version)}
             data-testid={`add-tool-installed-use-${r.version}`}
           >
@@ -573,6 +576,7 @@ export function AddToolSection({
           <Button
             variant="primary"
             size="sm"
+            className={tableStyles.cellButton}
             onClick={() => onUse(selectedTool ?? "", r.version)}
             data-testid={`add-tool-remote-use-${r.kind === "latest" ? "latest" : r.version}`}
           >

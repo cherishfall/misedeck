@@ -81,6 +81,7 @@ import {
   useOwnRun,
 } from "../../components/ExecutionPanel";
 import { FloatingMenu } from "../../components/FloatingMenu";
+import tableStyles from "../../components/Table/Table.module.css";
 import { SOURCE_CELL_CHARS, shortenPathTail } from "../../utils/paths";
 import { hasUpgradeTarget } from "../../utils/versions";
 import {
@@ -545,11 +546,15 @@ export function ToolsPage() {
     {
       key: "source",
       header: t(I18N_KEYS.tools.columns.source),
-      width: "160px",
+      // 216px (widened from 160px in #225): the measured budget
+      // `SOURCE_CELL_CHARS` needs 26 characters so the global config's
+      // `.config` directory segment survives head-elision and stays
+      // separable from a project config — see `paths.ts`.
+      width: "216px",
       sortValue: (r) => r.source,
       // The file name identifies the source, so elide the head of long
       // paths (issue #216); the tooltip keeps the full value. The budget
-      // matches the 160px column — see `SOURCE_CELL_CHARS`.
+      // matches the 216px column — see `SOURCE_CELL_CHARS`.
       cell: (r) => (
         <Tooltip text={r.source}>
           <span className={styles.cellSource}>{shortenPathTail(r.source, SOURCE_CELL_CHARS)}</span>
@@ -569,6 +574,9 @@ export function ToolsPage() {
         <Button
           variant="ghost"
           size="sm"
+          // Cell-control left baseline (#225): the button's label lands
+          // on the header's text baseline instead of its padding inset.
+          className={tableStyles.cellButton}
           onClick={() => onManageVersions(r.tool)}
           data-testid={`tools-manage-${r.tool}`}
         >
@@ -867,31 +875,34 @@ interface UseVersionCellProps {
  * WAI-ARIA Menu Button Pattern. Discoverability is the hover wash (the
  * option-hover language) plus a teaching Tooltip — never a caret glyph
  * (beta8, beta11 2-d). With only the current version installed the cell
- * renders a disabled trigger + teaching Tooltip instead of the menu,
- * which would open all-disabled (beta11 3-h m1).
+ * renders the version as plain text + teaching Tooltip instead of the
+ * menu, which would open all-disabled (beta11 3-h m1) — plain text, not
+ * a disabled control, so the value keeps full contrast (#225).
  */
 function UseVersionCell({ row, disabled, versions, onUse }: UseVersionCellProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   // Guard (beta11 3-h m1): with only the current version installed the
   // menu would open as an all-disabled list — a reachable control that
-  // can do nothing (ui-ux-rules no-op rule). Render the version as a
-  // disabled trigger whose Tooltip teaches why; installing another
-  // version is the Manage versions section's job (#178). Zero installed
-  // versions (the last one was just uninstalled, issue #213) is not
-  // "only one version installed" — the tooltip branches on the count.
+  // can do nothing (ui-ux-rules no-op rule). Render the version as plain
+  // text whose Tooltip teaches why; installing another version is the
+  // Manage versions section's job (#178). The text never carries the
+  // control's disabled opacity — data is data, and at 0.5 alpha it read
+  // as "unavailable" in four of six rows (issue #225); the non-dimming
+  // "not switchable" signal is the cursor plus the teaching Tooltip.
+  // Zero installed versions (the last one was just uninstalled, issue
+  // #213) is not "only one version installed" — the tooltip branches on
+  // the count.
   const tooltipKind = versionTooltipKind(versions.length);
   if (tooltipKind !== "switch") {
     return (
       <Tooltip text={t(versionTooltipKey(tooltipKind))}>
-        <button
-          type="button"
-          className={`${styles.cellVersion} ${styles.versionTrigger}`}
-          disabled
+        <span
+          className={`${styles.cellVersion} ${styles.versionStatic}`}
           data-testid={`tools-use-${row.tool}`}
         >
           {row.version}
-        </button>
+        </span>
       </Tooltip>
     );
   }
@@ -909,7 +920,7 @@ function UseVersionCell({ row, disabled, versions, onUse }: UseVersionCellProps)
         <Tooltip text={t(I18N_KEYS.tools.tooltip.switchVersion)}>
           <button
             type="button"
-            className={`${styles.cellVersion} ${styles.versionTrigger}`}
+            className={`${styles.cellVersion} ${styles.versionTrigger} ${tableStyles.cellTrigger}`}
             onClick={tp.onClick}
             aria-haspopup={tp["aria-haspopup"]}
             aria-expanded={tp["aria-expanded"]}
