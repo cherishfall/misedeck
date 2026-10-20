@@ -81,6 +81,7 @@ import {
   useOwnRun,
 } from "../../components/ExecutionPanel";
 import { FloatingMenu } from "../../components/FloatingMenu";
+import { shortenPathTail } from "../../utils/paths";
 
 import styles from "./ToolsPage.module.css";
 
@@ -447,7 +448,7 @@ export function ToolsPage() {
     {
       key: "tool",
       header: t(I18N_KEYS.tools.columns.tool),
-      width: "160px",
+      width: "150px",
       minWidth: "120px",
       sortValue: (r) => r.tool,
       cell: (r) => (
@@ -503,7 +504,7 @@ export function ToolsPage() {
     {
       key: "requested",
       header: t(I18N_KEYS.tools.columns.requested),
-      width: "160px",
+      width: "130px",
       sortValue: (r) => r.requested,
       cell: (r) =>
         // An orphan row (no Config file requests this tool) shows its
@@ -526,9 +527,15 @@ export function ToolsPage() {
     {
       key: "source",
       header: t(I18N_KEYS.tools.columns.source),
-      width: "100px",
+      width: "160px",
       sortValue: (r) => r.source,
-      cell: (r) => <Tooltip text={r.source}><span className={styles.cellSource}>{r.source}</span></Tooltip>,
+      // The file name identifies the source, so elide the head of long
+      // paths (issue #216); the tooltip keeps the full value.
+      cell: (r) => (
+        <Tooltip text={r.source}>
+          <span className={styles.cellSource}>{shortenPathTail(r.source, 24)}</span>
+        </Tooltip>
+      ),
     },
     {
       // The action column's single control (#189): a ghost "Manage
@@ -538,7 +545,7 @@ export function ToolsPage() {
       // lives in that region and confirms through the dialog below.
       key: "actions",
       header: t(I18N_KEYS.tools.columns.actions),
-      width: "160px",
+      width: "140px",
       cell: (r) => (
         <Button
           variant="ghost"

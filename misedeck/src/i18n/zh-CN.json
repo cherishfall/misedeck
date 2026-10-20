@@ -10,6 +10,7 @@
     "copyFailed": "复制失败",
     "outdatedCount": "{{count}} 个工具可更新",
     "outdatedCount_one": "{{count}} 个工具可更新",
+    "outdatedChecking": "正在检查更新…",
     "allUpToDate": "所有已安装工具均为最新版本。",
     "outdatedError": "无法获取可更新信息",
     "loadFailed": "无法加载数据",
@@ -418,7 +419,9 @@
     },
     "empty": {
       "title": "尚未配置任何设置",
-      "body": "使用下方表单添加一个设置。"
+      "body": "使用下方表单添加一个设置。",
+      "titleShowAll": "当前作用域没有显式设置",
+      "bodyShowAll": "mise 的默认值仍然生效。打开「显示全部（--all）」即可列出，或在下方新增一项设置。"
     },
     "error": {
       "title": "加载设置失败",

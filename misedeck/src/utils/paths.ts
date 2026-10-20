@@ -70,3 +70,46 @@ export function isPathUnder(
   const prefix = parent.endsWith("/") ? parent : `${parent}/`;
   return child.startsWith(prefix);
 }
+
+/** Absolute-path shapes worth eliding: POSIX root, home shorthand,
+ *  Windows drive, UNC share. Anything else (registry tokens, bare tool
+ *  names) is left exactly as mise reported it. */
+function isAbsolutePathLike(value: string): boolean {
+  return (
+    value.startsWith("/") ||
+    value.startsWith("~/") ||
+    /^[A-Za-z]:[\\/]/.test(value) ||
+    value.startsWith("\\\\")
+  );
+}
+
+/**
+ * Display-only shortening for source paths. The tail is what identifies a
+ * config source (`mise.toml` vs `config.toml`), so elide the *head*:
+ * `/Users/dev/proj/mise.toml` becomes `…/proj/mise.toml` instead of losing
+ * its file name to a trailing ellipsis.
+ *
+ * Never mutates the value sent to mise — callers pass the full string to the
+ * tooltip and store this result in render output only. Values that are not
+ * absolute paths, and paths already within `maxLength`, come back unchanged.
+ * A basename longer than the budget is returned whole: the whole point is to
+ * keep it visible.
+ */
+export function shortenPathTail(path: string, maxLength = 40): string {
+  if (path === "" || path.length <= maxLength || !isAbsolutePathLike(path)) {
+    return path;
+  }
+  const winSeparator = path.includes("\\") && !path.includes("/");
+  const separator = winSeparator ? "\\" : "/";
+  const segments = path.split(/[\\/]+/).filter((segment) => segment !== "");
+  if (segments.length < 2) return path;
+
+  let tail = segments[segments.length - 1];
+  for (let i = segments.length - 2; i >= 0; i -= 1) {
+    const candidate = `${segments[i]}${separator}${tail}`;
+    if (`…${separator}${candidate}`.length > maxLength) break;
+    tail = candidate;
+  }
+  return `…${separator}${tail}`;
+}
+

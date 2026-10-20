@@ -53,6 +53,8 @@ import { useTableFilter } from "../../hooks/useTableFilter";
 import { isPathUnder, normalizePathForCompare } from "../../utils/paths";
 import type { SettingsItem } from "../../types/tauri";
 
+import { shortenPathTail } from "../../utils/paths";
+import { settingsEmptyCopy } from "./settingsEmptyCopy";
 import styles from "./SettingsPage.module.css";
 
 // ---------- Args builders ----------
@@ -156,6 +158,11 @@ export function SettingsPage() {
     [r.key, formatValue(r.value), r.type ?? "", r.source ?? ""].join("\n"),
   );
 
+  // Empty-state copy (issue #218): an active filter explains itself; the
+  // default (--all off) view points at the switch, because mise's
+  // defaults exist even when nothing is explicitly configured.
+  const emptyCopy = settingsEmptyCopy({ filterActive: filter.active, showAll });
+
   // Mise-missing or list-loading state. The list-level gate (issue
   // #146) covers the `mise settings ls` read too: while it is pending —
   // first load or a directory switch — the shared ListLoading renders
@@ -211,9 +218,18 @@ export function SettingsPage() {
     {
       key: "source",
       header: t(I18N_KEYS.settings.columns.source),
-      width: "140px",
+      width: "160px",
       sortValue: (r) => r.source ?? "",
-      cell: (r) => (r.source ? <Tooltip text={r.source}><span className={styles.cellSource}>{r.source}</span></Tooltip> : <span className={styles.cellSource}>—</span>),
+      // Elide the head of long paths so the file name stays visible
+      // (issue #216); the tooltip carries the full value.
+      cell: (r) =>
+        r.source ? (
+          <Tooltip text={r.source}>
+            <span className={styles.cellSource}>{shortenPathTail(r.source, 24)}</span>
+          </Tooltip>
+        ) : (
+          <span className={styles.cellSource}>—</span>
+        ),
     },
     {
       key: "actions",
@@ -314,17 +330,10 @@ export function SettingsPage() {
               resizeKey="settings"
               className={styles.settingsTable}
               empty={
-                filter.active ? (
-                  <EmptyState
-                    title={t(I18N_KEYS.common.filter.noMatchTitle)}
-                    body={t(I18N_KEYS.common.filter.noMatchBody)}
-                  />
-                ) : (
-                  <EmptyState
-                    title={t(I18N_KEYS.settings.empty.title)}
-                    body={t(I18N_KEYS.settings.empty.body)}
-                  />
-                )
+                <EmptyState
+                  title={t(emptyCopy.titleKey)}
+                  body={t(emptyCopy.bodyKey)}
+                />
               }
             />
             <AddSettingForm

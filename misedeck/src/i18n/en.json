@@ -10,6 +10,7 @@
     "copyFailed": "Copy failed",
     "outdatedCount": "{{count}} tools outdated",
     "outdatedCount_one": "{{count}} tool outdated",
+    "outdatedChecking": "Checking for updates…",
     "allUpToDate": "All installed tools are up to date.",
     "outdatedError": "Couldn't check for updates",
     "loadFailed": "Couldn't load the data",
@@ -418,7 +419,9 @@
     },
     "empty": {
       "title": "No settings configured",
-      "body": "Use the form below to add a setting."
+      "body": "Use the form below to add a setting.",
+      "titleShowAll": "No settings set in this scope",
+      "bodyShowAll": "mise's defaults still apply. Turn on Show all (--all) to list them, or add a setting below."
     },
     "error": {
       "title": "Failed to load settings",

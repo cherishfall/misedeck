@@ -35,6 +35,11 @@ export const I18N_KEYS = {
         must never be silent (issue #183). */
     copyFailed: "common.copyFailed",
     outdatedCount: "common.outdatedCount",
+    /** Pending copy for the outdated check specifically (issue #217):
+        the tools table can already be populated while `mise outdated`
+        is still running, so a bare "Loading…" there reads as if the
+        table itself were loading. */
+    outdatedChecking: "common.outdatedChecking",
     allUpToDate: "common.allUpToDate",
     /** Failure copy for the shared outdated hint: the query failed, so
         the hint must render failure + a retry entry, never a loading
@@ -524,6 +529,11 @@ export const I18N_KEYS = {
     empty: {
       title: "settings.empty.title",
       body: "settings.empty.body",
+      /** Default (`--all` off) view with nothing explicitly configured:
+          mise's defaults still apply, so the copy points at the switch
+          instead of claiming there are no settings (issue #218). */
+      titleShowAll: "settings.empty.titleShowAll",
+      bodyShowAll: "settings.empty.bodyShowAll",
     },
     error: {
       title: "settings.error.title",

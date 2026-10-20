@@ -10,11 +10,10 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "../Button/Button";
 import { I18N_KEYS } from "../../i18n/keys";
+import { outdatedHintKey, type OutdatedHintStatus } from "./outdatedHintText";
 import styles from "./OutdatedHint.module.css";
 
-/** The upstream query state, dispatched explicitly by the consumer —
- *  a `null` count must never double as "loading" (issue #199). */
-export type OutdatedHintStatus = "loading" | "ok" | "error";
+export type { OutdatedHintStatus };
 
 export interface OutdatedHintProps {
   /** Which upstream state to render: query pending, succeeded, or failed. */
@@ -29,13 +28,7 @@ export function OutdatedHint({ status, count, onRetry }: OutdatedHintProps) {
   const { t } = useTranslation();
   return (
     <span className={styles.hint}>
-      {status === "loading"
-        ? t(I18N_KEYS.common.loading)
-        : status === "error"
-          ? t(I18N_KEYS.common.outdatedError)
-          : count > 0
-            ? t(I18N_KEYS.common.outdatedCount, { count })
-            : t(I18N_KEYS.common.allUpToDate)}
+      {t(outdatedHintKey(status, count), { count })}
       {status === "error" && (
         <Button
           variant="ghost"

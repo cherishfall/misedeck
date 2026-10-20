@@ -70,11 +70,11 @@
 
 /* ---------- Table cells ---------- */
 
-/* min-width = sum of declared column widths (240 key + 84 type + 140
+/* min-width = sum of declared column widths (240 key + 84 type + 160
  * source + 220 actions): narrow windows scroll horizontally instead of
- * crushing columns (issues #90, #103). */
+ * crushing columns (issues #90, #103; source widened in #216). */
 .settingsTable {
-  min-width: 684px;
+  min-width: 704px;
 }
 
 .cellKey {

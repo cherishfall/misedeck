@@ -44,6 +44,7 @@ import { useParsedEnvList } from "../../hooks/useEnvList";
 import { useTableFilter } from "../../hooks/useTableFilter";
 import { isEnvWriteScopeMismatch, type EnvSource } from "../../api/miseTools";
 
+import { shortenPathTail } from "../../utils/paths";
 import styles from "./EnvPage.module.css";
 
 // ---------- Row shape ----------
@@ -409,7 +410,9 @@ function EnvSourceCell({ row }: { row: EnvRow }) {
       {tooltip ? <Tooltip text={tooltip}>{badge}</Tooltip> : badge}
       {row.sourcePath && (
         <Tooltip text={row.sourcePath}>
-          <span className={styles.sourcePath}>{row.sourcePath}</span>
+          {/* Head-elided so the config file name stays readable (#216);
+              the tooltip keeps the absolute path. */}
+          <span className={styles.sourcePath}>{shortenPathTail(row.sourcePath, 30)}</span>
         </Tooltip>
       )}
     </div>

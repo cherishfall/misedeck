@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { isPathUnder, normalizePathForCompare } from "./paths";
+import { isPathUnder, normalizePathForCompare, shortenPathTail } from "./paths";
 
 test("isPathUnder: forward-slash child under forward-slash parent", () => {
   assert.equal(isPathUnder("/Users/dev/proj", "/Users/dev/proj/mise.toml"), true);
@@ -86,4 +86,34 @@ test("normalizePathForCompare: keeps root and drive-root forms", () => {
   assert.equal(normalizePathForCompare("C:\\", { caseInsensitive: false }), "C:/");
   assert.equal(normalizePathForCompare("c:/", { caseInsensitive: false }), "c:/");
   assert.equal(normalizePathForCompare("c:/"), "c:/");
+});
+
+test("shortenPathTail: short paths pass through unchanged", () => {
+  assert.equal(shortenPathTail("/Users/dev/mise.toml", 40), "/Users/dev/mise.toml");
+  assert.equal(shortenPathTail("mise.toml", 40), "mise.toml");
+  assert.equal(shortenPathTail("", 40), "");
+});
+
+test("shortenPathTail: long paths keep the tail and a leading ellipsis", () => {
+  const short = shortenPathTail("/Users/dev/AiCodingProjects/mise-ui/mise.toml", 30);
+  assert.ok(short.startsWith("…/"), short);
+  assert.ok(short.endsWith("/mise-ui/mise.toml"), short);
+  assert.ok(short.length <= 30, short);
+});
+
+test("shortenPathTail: the file name survives even when it alone exceeds the budget", () => {
+  const short = shortenPathTail("/a/b/very-long-configuration-file-name.toml", 10);
+  assert.equal(short, "…/very-long-configuration-file-name.toml");
+});
+
+test("shortenPathTail: Windows separators stay backslashes", () => {
+  const short = shortenPathTail("C:\\Users\\dev\\AiCodingProjects\\mise-ui\\mise.toml", 30);
+  assert.ok(short.startsWith("…\\"), short);
+  assert.ok(!short.includes("/"), short);
+  assert.ok(short.endsWith("\\mise.toml"), short);
+});
+
+test("shortenPathTail: values with no separator are not treated as paths", () => {
+  const token = "registry:https://example.com/a/very/long/tool/identifier";
+  assert.equal(shortenPathTail(token, 10), token);
 });

@@ -23,6 +23,7 @@ const LOCALES = ["en.json", "zh-CN.json"];
  */
 const ALLOWLIST = new Map<string, string>([
   ["common.loading", "in-progress state label, not a button"],
+  ["common.outdatedChecking", "in-progress state label for the outdated check (issue #217), not a button"],
   ["trust.busy", "in-progress state label, not a button"],
   ["states.detecting", "in-progress state label, not a button"],
   ["miseManagement.guidedInstallInstalling", "in-progress copy on a run-locked button (issue #166)"],

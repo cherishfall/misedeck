@@ -48,10 +48,11 @@
 
 /* ---------- Table cells ---------- */
 
-/* min-width = sum of declared column widths (160 tool + 220 version +
- * 160 requested + 120 backend (conditional) + 100 source + 160
+/* min-width = sum of declared column widths (150 tool + 220 version +
+ * 130 requested + 120 backend (conditional) + 160 source + 140
  * actions): below this the shared scroller scrolls horizontally instead
- * of crushing columns (issues #90, #103). */
+ * of crushing columns (issues #90, #103; source widened in #216 so the
+ * displayed path keeps its file name). */
 .toolsTable {
   min-width: 920px;
 }
