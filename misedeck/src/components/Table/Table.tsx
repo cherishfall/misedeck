@@ -198,9 +198,13 @@ export function Table<T>({
       const next = Math.max(min, Math.round(startWidth + ev.clientX - startX));
       setOverrides((prev) => (prev[column.key] === next ? prev : { ...prev, [column.key]: next }));
     };
-    const onUp = () => {
+    // `pointerup` and `pointercancel` both end the gesture (#209): a
+    // cancelled drag never fires `pointerup`, which used to leave the
+    // window listeners and the `userSelect: none` body lock behind.
+    const onEnd = () => {
       window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointerup", onEnd);
+      window.removeEventListener("pointercancel", onEnd);
       document.body.style.userSelect = previousUserSelect;
       setOverrides((prev) => {
         if (storageKey !== null) {
@@ -210,7 +214,8 @@ export function Table<T>({
       });
     };
     window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointerup", onEnd);
+    window.addEventListener("pointercancel", onEnd);
   };
 
   return (

@@ -192,8 +192,14 @@ export function DirectoryPreview() {
   const envError = env.error?.kind === "err" ? env.error.err : null;
   const lockfileError =
     lockfile.data && lockfile.data.kind === "err" ? lockfile.data.err : null;
-  const lockfileContent =
-    lockfile.data && lockfile.data.kind === "ok" ? lockfile.data.content : undefined;
+  // One sentinel for "no content to show": `undefined` covers both the
+  // pending query and the runner's `null` (no mise.lock). A `null` that
+  // slipped through here would pass a `!== null` pending guard and
+  // render an empty <pre> while the read is in flight (#209).
+  const lockfileContent: string | undefined =
+    lockfile.data && lockfile.data.kind === "ok"
+      ? (lockfile.data.content ?? undefined)
+      : undefined;
 
   // Tool rows: pick the active version per tool, badge by source.
   // Directory-scoped only — the Global context renders the
@@ -452,7 +458,7 @@ export function DirectoryPreview() {
         <ConfigFilesSection />
 
         {/* ---------- Lockfile ---------- */}
-        {(lockfileError || lockfileContent !== null) && (
+        {(lockfileError || lockfileContent !== undefined) && (
         <section className={styles.section} data-testid="preview-section-lockfile">
           <header className={styles.sectionHead}>
             <h2 className={styles.sectionTitle}>{t(I18N_KEYS.preview.lockfile.title)}</h2>
@@ -475,7 +481,7 @@ export function DirectoryPreview() {
               {t(I18N_KEYS.preview.lockfile.empty)}
             </div>
           )}
-          {!lockfileError && lockfileContent !== null && lockfileContent !== "" && (
+          {!lockfileError && lockfileContent !== undefined && lockfileContent !== "" && (
             <pre className={styles.lockfile} data-testid="preview-lockfile-content">
               {lockfileContent}
             </pre>

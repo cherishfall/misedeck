@@ -38,6 +38,17 @@ test("arguments containing spaces are JSON-quoted in both modes", () => {
   );
 });
 
+test("a cwd containing spaces is quoted like any other argv token", () => {
+  assert.equal(
+    commandEcho("mise", "/Users/me/My Project", ["use", "go@1.26.7"]),
+    'mise -C "/Users/me/My Project" use go@1.26.7',
+  );
+  assert.equal(
+    commandEcho("selfUpdate", "/Users/me/My Project", []),
+    'mise -C "/Users/me/My Project" self-update --yes',
+  );
+});
+
 test("self-update echo is out of #191 scope and keeps -C $HOME", () => {
   assert.equal(
     commandEcho("selfUpdate", null, []),

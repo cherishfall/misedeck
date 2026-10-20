@@ -86,20 +86,33 @@ export function ExecutionPanel() {
       const next = clamp(startHeight + (startY - ev.clientY));
       setStoredHeight((prev) => (prev === next ? prev : next));
     };
-    const onUp = () => {
+    // `pointercancel` ends the gesture without a `pointerup` (the OS or
+    // browser took the pointer, e.g. touch scroll): without it the window
+    // listeners and the `userSelect: none` lock outlive the drag (#209).
+    const onEnd = () => {
       window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointerup", onEnd);
+      window.removeEventListener("pointercancel", onEnd);
       document.body.style.userSelect = previousUserSelect;
     };
     window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointerup", onEnd);
+    window.addEventListener("pointercancel", onEnd);
   };
 
-  // Auto-scroll to bottom unless the user has scrolled up.
+  // A run switch is a fresh transcript (issue #209): re-arm the
+  // auto-scroll so the newly selected run lands at its bottom even if
+  // the user had scrolled up in the previous one.
+  useEffect(() => {
+    stickToBottomRef.current = true;
+  }, [activeRunId]);
+
+  // Auto-scroll to bottom unless the user has scrolled up. Keyed on the
+  // active run too, so two runs with the same line count still scroll.
   useEffect(() => {
     if (!logRef.current || !stickToBottomRef.current) return;
     logRef.current.scrollTop = logRef.current.scrollHeight;
-  }, [state.lines.length]);
+  }, [state.lines.length, activeRunId]);
 
   useEffect(
     () => () => {

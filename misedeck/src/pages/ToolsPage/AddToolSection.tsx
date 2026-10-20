@@ -261,7 +261,7 @@ export function AddToolSection({
     if (selectedTool === null || activeRows.length === 0) return null;
     const entry = (outdated.data ?? []).find((o) => o.name === selectedTool);
     const latest = entry?.latest;
-    if (latest === undefined || latest === "" || latest === activeRows[0]!.version) {
+    if (latest === undefined || latest === "" || latest === activeRows[0]?.version) {
       return null;
     }
     return { latest };

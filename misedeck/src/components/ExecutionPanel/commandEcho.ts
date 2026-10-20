@@ -20,6 +20,17 @@
 // Exported so confirmations (e.g. the uninstall dialog, issue #56) can
 // show the exact command that will run — identical to what the deck
 // echoes once the mutation dispatches.
+
+/**
+ * Quote one argv token the way a POSIX shell would need it. The echo
+ * promises a dispatchable command line (#72), so the rule applies to
+ * every token alike — the `-C` anchor included, not just the args
+ * (#209): `-C "/Users/me/My Project"` must not split at the space.
+ */
+function quoteArg(arg: string): string {
+  return arg.includes(" ") || arg.includes("\t") ? JSON.stringify(arg) : arg;
+}
+
 export function commandEcho(
   kind: "mise" | "install" | "selfUpdate",
   cwd: string | null,
@@ -30,7 +41,7 @@ export function commandEcho(
   }
   if (kind === "selfUpdate") {
     const parts: string[] = ["mise"];
-    parts.push("-C", cwd ?? "$HOME");
+    parts.push("-C", quoteArg(cwd ?? "$HOME"));
     // `--yes` is what the runner really passes (issue #125): the CLI's
     // own `[Y/n]` prompt is bypassed, the GUI confirms first instead.
     parts.push("self-update", "--yes");
@@ -41,14 +52,10 @@ export function commandEcho(
   // the bare command (use/unuse carry `-g`); only Directory mode shows
   // the `-C <dir>` anchor inline.
   if (cwd !== null) {
-    parts.push("-C", cwd);
+    parts.push("-C", quoteArg(cwd));
   }
   for (const a of args) {
-    if (a.includes(" ") || a.includes("\t")) {
-      parts.push(JSON.stringify(a));
-    } else {
-      parts.push(a);
-    }
+    parts.push(quoteArg(a));
   }
   return parts.join(" ");
 }

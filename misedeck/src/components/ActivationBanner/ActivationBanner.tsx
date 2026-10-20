@@ -18,7 +18,7 @@
 // variant so the user is never blind to the configuration
 // state.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
@@ -33,6 +33,9 @@ import { writeClipboard } from "../../utils/clipboard";
 
 import styles from "./ActivationBanner.module.css";
 
+/** How long the "Copied" / "Copy failed" acknowledgement lasts. */
+const COPIED_MS = 1500;
+
 export function ActivationBanner() {
   const { t } = useTranslation();
   const {
@@ -43,9 +46,34 @@ export function ActivationBanner() {
   } = useActivation();
   // The transient "copied" / "copy failed" hints that flash after the
   // copy button is pressed. Resets on its own after 1.5s. A failed copy
-  // must not be silent (issue #183).
+  // must not be silent (issue #183). The timer is cleared on unmount and
+  // re-armed on a second click — the CopyButton/Tooltip pattern (#209).
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
+  const copiedTimerRef = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (copiedTimerRef.current !== null) {
+        window.clearTimeout(copiedTimerRef.current);
+      }
+    },
+    [],
+  );
+
+  const copyLine = async (text: string) => {
+    const ok = await writeClipboard(text);
+    setCopied(ok);
+    setCopyFailed(!ok);
+    if (copiedTimerRef.current !== null) {
+      window.clearTimeout(copiedTimerRef.current);
+    }
+    copiedTimerRef.current = window.setTimeout(() => {
+      setCopied(false);
+      setCopyFailed(false);
+      copiedTimerRef.current = null;
+    }, COPIED_MS);
+  };
 
   // Only render when the probe has resolved. While loading or
   // on error we stay quiet — the page is otherwise usable,
@@ -73,7 +101,7 @@ export function ActivationBanner() {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => copyToClipboard(line, setCopied, setCopyFailed)}
+                onClick={() => void copyLine(line)}
                 data-testid="activation-banner-copy-line"
               >
                 {copyFailed
@@ -117,7 +145,7 @@ export function ActivationBanner() {
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => copyToClipboard(line, setCopied, setCopyFailed)}
+              onClick={() => void copyLine(line)}
               data-testid="activation-banner-copy-line"
             >
               {copyFailed
@@ -145,18 +173,4 @@ export function ActivationBanner() {
       </Banner>
     </div>
   );
-}
-
-async function copyToClipboard(
-  text: string,
-  onCopied: (v: boolean) => void,
-  onCopyFailed: (v: boolean) => void,
-): Promise<void> {
-  const ok = await writeClipboard(text);
-  onCopied(ok);
-  onCopyFailed(!ok);
-  window.setTimeout(() => {
-    onCopied(false);
-    onCopyFailed(false);
-  }, 1500);
 }

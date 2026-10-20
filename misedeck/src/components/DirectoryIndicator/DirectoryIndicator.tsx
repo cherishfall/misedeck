@@ -79,6 +79,15 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
       setOpenHint(null);
       openHintTimer.current = null;
     }, 4000);
+    // Unmount (or a new outcome) must not leave the dismiss timer
+    // holding a stale setState (issue #209) — same cleanup contract as
+    // CopyButton / Tooltip.
+    return () => {
+      if (openHintTimer.current !== null) {
+        window.clearTimeout(openHintTimer.current);
+        openHintTimer.current = null;
+      }
+    };
   }, [openOutcome, consumeOpenOutcome, t]);
 
   const onPick = () => {
