@@ -81,7 +81,7 @@ import {
   useOwnRun,
 } from "../../components/ExecutionPanel";
 import { FloatingMenu } from "../../components/FloatingMenu";
-import { shortenPathTail } from "../../utils/paths";
+import { SOURCE_CELL_CHARS, shortenPathTail } from "../../utils/paths";
 
 import styles from "./ToolsPage.module.css";
 
@@ -530,10 +530,11 @@ export function ToolsPage() {
       width: "160px",
       sortValue: (r) => r.source,
       // The file name identifies the source, so elide the head of long
-      // paths (issue #216); the tooltip keeps the full value.
+      // paths (issue #216); the tooltip keeps the full value. The budget
+      // matches the 160px column — see `SOURCE_CELL_CHARS`.
       cell: (r) => (
         <Tooltip text={r.source}>
-          <span className={styles.cellSource}>{shortenPathTail(r.source, 24)}</span>
+          <span className={styles.cellSource}>{shortenPathTail(r.source, SOURCE_CELL_CHARS)}</span>
         </Tooltip>
       ),
     },

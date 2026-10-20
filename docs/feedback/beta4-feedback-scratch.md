@@ -3,7 +3,7 @@
 > ✅ 已于 2026-09-02 全部发布到 cherishfall/misedeck：SPEC 父 issue **#45** + tickets **#46~#60**（label: v1 + ready-for-agent，原生 blocking + sub-issue 关系已设置）。
 > 映射：Issue 1+Q3+Q4→#48，Issue 2+Q5→#49，Issue 3+6-Q2+Q7→#54，Issue 4+Q6→#49（验收项），Issue 5→#55，Issue 6→#60，Issue 7+Q8→#60，Issue 8→#46；审查新增：Q1→#47，Q2②→#53，Q9→#57，Q10→#59，Q11→#50，Q12→#58，Q13→#56，Q14→#51，Q15→#52。Q2①（导航双击）用户实机未复现，判为采集工具假象，销项。
 > 阻塞链：#54←#49；#55/#56/#57←#50；#58/#59←#57；#60←#49,#54,#57,#59。
-> 完整审查报告：beta4-audit-visual.md / beta4-audit-product.md；截图 docs/screenshots/beta4-audit/。
+> 完整审查报告：beta4-audit-visual.md / beta4-audit-product.md；截图 docs/screenshots/beta4-audit/（该目录已随过期截图清理删除，路径仅作历史记录）。
 > 规范沉淀：docs/design/ui-ux-rules.md（双语）+ AGENTS.md 指针；visual-language.md 已修 ▸/主题三态过期条目。
 > 每条：用户原话（+截图）→ 对齐后的理解 →（部分）代码调查结论。
 
@@ -156,7 +156,7 @@
 
 # 第二批：全站 UI/UX 审查（2026-09-02，用户要求）
 
-> 方法：截图采集 `docs/screenshots/beta4-audit/`（16 张，浅/深 × 7 页 + 收起态 + 英文页）→ 双子代理审查（视觉合规 + 产品交互，用 web-design-guidelines / product-taste 等技能）。
+> 方法：截图采集 `docs/screenshots/beta4-audit/`（16 张，浅/深 × 7 页 + 收起态 + 英文页；目录已清理，仅作历史记录）→ 双子代理审查（视觉合规 + 产品交互，用 web-design-guidelines / product-taste 等技能）。
 > 完整报告：`beta4-audit-visual.md`（V1-V16）、`beta4-audit-product.md`（X1-X2, U1-U19）。
 > **Q1~Q15 用户全部采纳**，归并映射如下：
 

@@ -7,11 +7,11 @@
 // settings only) view must point at the `--all` switch instead of
 // claiming mise has no settings at all.
 
-import { I18N_KEYS } from "../../i18n/keys";
+import { I18N_KEYS, type I18nKey } from "../../i18n/keys";
 
 export interface SettingsEmptyCopy {
-  titleKey: string;
-  bodyKey: string;
+  titleKey: I18nKey;
+  bodyKey: I18nKey;
 }
 
 export function settingsEmptyCopy(input: {

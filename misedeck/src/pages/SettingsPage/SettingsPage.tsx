@@ -50,10 +50,14 @@ import {
 } from "../../components";
 import { useParsedSettingsList } from "../../hooks/useIssue29";
 import { useTableFilter } from "../../hooks/useTableFilter";
-import { isPathUnder, normalizePathForCompare } from "../../utils/paths";
+import {
+  isPathUnder,
+  normalizePathForCompare,
+  SOURCE_CELL_CHARS,
+  shortenPathTail,
+} from "../../utils/paths";
 import type { SettingsItem } from "../../types/tauri";
 
-import { shortenPathTail } from "../../utils/paths";
 import { settingsEmptyCopy } from "./settingsEmptyCopy";
 import styles from "./SettingsPage.module.css";
 
@@ -221,11 +225,14 @@ export function SettingsPage() {
       width: "160px",
       sortValue: (r) => r.source ?? "",
       // Elide the head of long paths so the file name stays visible
-      // (issue #216); the tooltip carries the full value.
+      // (issue #216); the tooltip carries the full value. The budget
+      // matches the 160px column — see `SOURCE_CELL_CHARS`.
       cell: (r) =>
         r.source ? (
           <Tooltip text={r.source}>
-            <span className={styles.cellSource}>{shortenPathTail(r.source, 24)}</span>
+            <span className={styles.cellSource}>
+              {shortenPathTail(r.source, SOURCE_CELL_CHARS)}
+            </span>
           </Tooltip>
         ) : (
           <span className={styles.cellSource}>—</span>

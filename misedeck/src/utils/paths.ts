@@ -84,6 +84,18 @@ function isAbsolutePathLike(value: string): boolean {
 }
 
 /**
+ * Character budget for a Source cell in a 160px table column, measured
+ * rather than guessed (issue #216).
+ *
+ * A 160px column carries `--space-3` (12px) of padding on each side, leaving
+ * 136px of text. `--font-mono` at `--size-data` (12px) advances 0.6em, i.e.
+ * 7.2px per character, so `floor(136 / 7.2) = 18` characters fit. Anything
+ * longer is re-truncated by the cell's own end `text-overflow: ellipsis` —
+ * which hides the file name, the exact bug the head-elision exists to fix.
+ */
+export const SOURCE_CELL_CHARS = 18;
+
+/**
  * Display-only shortening for source paths. The tail is what identifies a
  * config source (`mise.toml` vs `config.toml`), so elide the *head*:
  * `/Users/dev/proj/mise.toml` becomes `…/proj/mise.toml` instead of losing

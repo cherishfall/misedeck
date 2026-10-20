@@ -101,6 +101,16 @@ test("shortenPathTail: long paths keep the tail and a leading ellipsis", () => {
   assert.ok(short.length <= 30, short);
 });
 
+test("shortenPathTail: a path exactly at the budget is not elided", () => {
+  // Off-by-one guard: the whole path (no ellipsis, no extra segment) fits,
+  // so shortening it would lose information for nothing.
+  const exact = "/Users/dev/mise.toml";
+  assert.equal(exact.length, 20);
+  assert.equal(shortenPathTail(exact, 20), exact);
+  // One character over the budget does elide.
+  assert.equal(shortenPathTail(exact, 19), "…/dev/mise.toml");
+});
+
 test("shortenPathTail: the file name survives even when it alone exceeds the budget", () => {
   const short = shortenPathTail("/a/b/very-long-configuration-file-name.toml", 10);
   assert.equal(short, "…/very-long-configuration-file-name.toml");

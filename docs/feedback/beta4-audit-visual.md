@@ -1,7 +1,7 @@
 # MiseDeck beta4 视觉审查报告
 
 > 审查基准：`docs/design/visual-language.md`（#37 重写版，mise.jdx.dev 官网风）+ web-design-guidelines / frontend-design 技能框架。
-> 素材：`docs/screenshots/beta4-audit/` 16 张截图（浅/深 × 7 页 + 收起态 ×2 + 英文工具页）。对比度结论均有像素采样支撑。
+> 素材：`docs/screenshots/beta4-audit/` 16 张截图（浅/深 × 7 页 + 收起态 ×2 + 英文工具页）。对比度结论均有像素采样支撑。该目录已随过期截图清理删除，路径仅作历史记录。
 > 已排除 `beta4-feedback-scratch.md` 已定稿的 Issue 1–8。
 
 ## P0 — 明显缺陷

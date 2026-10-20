@@ -69,6 +69,7 @@ import {
   Tooltip,
   type TableColumn,
 } from "../../components";
+import { shortenPathTail } from "../../utils/paths";
 import { compareToolVersions } from "../../utils/versions";
 
 import styles from "./AddToolSection.module.css";
@@ -356,9 +357,14 @@ export function AddToolSection({
 
   const sourceCell = (r: MiseLsItem) => {
     const source = r.source?.path ?? r.source?.type ?? "—";
+    // Same class as the page tables (issue #216): a long install path would
+    // otherwise lose its file name to the cell's trailing ellipsis. The
+    // default budget is safe here — unlike the 160px page columns, this
+    // table's Source column is its flex column (the fixed ones are
+    // version + requested + actions), so it gets the leftover width.
     return (
       <Tooltip text={source}>
-        <span className={styles.cellSource}>{source}</span>
+        <span className={styles.cellSource}>{shortenPathTail(source)}</span>
       </Tooltip>
     );
   };

@@ -34,7 +34,7 @@ An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + Re
 - Cross-platform from day one: paths and process spawning via Tauri/Rust APIs only.
 - Read `docs/agents/architecture.md` before creating or modifying any Tauri command, and `docs/agents/conventions.md` before invoking mise, handling errors, or writing tests.
 - When the owner reports a visual or interaction error, evaluate whether it generalizes into a rule. If yes, fix the instance *and* codify the rule into `docs/design/ui-ux-rules.md` (and/or `visual-language.md`) in both locales as part of the same feedback cycle — the class of bug should be caught at generation time, not re-surface in later betas.
-- A release ships with a current README: before tagging, check both locales against what actually ships — status line and version, page/command table, install steps, platform support, known limitations, and screenshots. A stale README blocks the release. Procedure: `docs/agents/ci.md` → Cutting a release.
+- A release ships with a current README, in both locales. A stale README blocks the release; the pre-tag checklist is the one in `docs/agents/ci.md` → Cutting a release.
 
 ## Documentation languages
 

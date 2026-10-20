@@ -1,7 +1,7 @@
 # MiseDeck beta4 产品逻辑与交互 UX 审查报告
 
 > 判据：AGENTS.md 产品三原则 + ADR-0004 + product-logic.md + CONTEXT.md 词汇表；product-taste 技能框架。
-> 素材：`docs/screenshots/beta4-audit/` 16 张截图 + 只读代码核查 + 本机 mise 实况探测。
+> 素材：`docs/screenshots/beta4-audit/` 16 张截图 + 只读代码核查 + 本机 mise 实况探测。该目录已随过期截图清理删除，路径仅作历史记录。
 > 已排除 `beta4-feedback-scratch.md` 已定稿的 Issue 1–8。
 
 ## P0 — 无实锤

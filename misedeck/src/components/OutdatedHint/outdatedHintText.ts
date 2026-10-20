@@ -6,14 +6,14 @@
 // still running, so a bare "Loading…" there reads as if the table
 // itself were loading.
 
-import { I18N_KEYS } from "../../i18n/keys";
+import { I18N_KEYS, type I18nKey } from "../../i18n/keys";
 
 /** The upstream query state, dispatched explicitly by the consumer —
  *  a `null` count must never double as "loading" (issue #199). */
 export type OutdatedHintStatus = "loading" | "ok" | "error";
 
 /** Which copy a given state renders. */
-export function outdatedHintKey(status: OutdatedHintStatus, count: number): string {
+export function outdatedHintKey(status: OutdatedHintStatus, count: number): I18nKey {
   if (status === "loading") return I18N_KEYS.common.outdatedChecking;
   if (status === "error") return I18N_KEYS.common.outdatedError;
   return count > 0 ? I18N_KEYS.common.outdatedCount : I18N_KEYS.common.allUpToDate;
