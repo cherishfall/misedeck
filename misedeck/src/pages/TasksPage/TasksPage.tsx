@@ -35,6 +35,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -49,6 +50,7 @@ import {
   parseRunInput,
 } from "../../api/miseTools";
 import {
+  Badge,
   Button,
   commandEcho,
   CommandHint,
@@ -74,6 +76,11 @@ import { useTableFilter } from "../../hooks/useTableFilter";
 import type { ConfigFile, MiseTask } from "../../types/tauri";
 
 import styles from "./TasksPage.module.css";
+
+/** How long a row keeps its fail badge after a failed run (issue #213):
+ *  long enough to catch the eye after a glance at the panel, short
+ *  enough that stale failures never accumulate on the table. */
+const FAILED_BADGE_MS = 6000;
 
 // ---------- Row shapes ----------
 
@@ -175,6 +182,30 @@ export function TasksPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [successTick, setSuccessTick] = useState(0);
 
+  // Row-level failure marker (issue #213): the panel auto-opens with the
+  // stderr, but the table itself gave no hint which row failed. The badge
+  // is transient — cleared on the next run or after FAILED_BADGE_MS.
+  const [failedTask, setFailedTask] = useState<string | null>(null);
+  const failedBadgeTimerRef = useRef<number | null>(null);
+  const clearFailedBadge = useCallback(() => {
+    if (failedBadgeTimerRef.current !== null) {
+      window.clearTimeout(failedBadgeTimerRef.current);
+      failedBadgeTimerRef.current = null;
+    }
+  }, []);
+  useEffect(() => clearFailedBadge, [clearFailedBadge]);
+  const markTaskFailed = useCallback(
+    (name: string) => {
+      clearFailedBadge();
+      setFailedTask(name);
+      failedBadgeTimerRef.current = window.setTimeout(() => {
+        failedBadgeTimerRef.current = null;
+        setFailedTask(null);
+      }, FAILED_BADGE_MS);
+    },
+    [clearFailedBadge],
+  );
+
   // Top-toolbar refresh (issue #98).
   const onRefresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["tasks", "ls", cwd] });
@@ -184,6 +215,12 @@ export function TasksPage() {
   // Per-action run-locking (issue #138): each command-firing action gets
   // its own hook, so a control freezes only while *its* command is in
   // flight. Browsing and drafting never lock (issue #135).
+  //
+  // Deliberate exception — every row's Run button shares `taskRun`
+  // (issue #213): `mise run` tasks may depend on one another, and two
+  // concurrent runs would interleave into the one transcript the panel
+  // shows. Task runs therefore serialize by design; Save and Open in
+  // editor keep their own locks.
   const taskRun = useOwnRun();
   const saveRun = useOwnRun();
   const editorRun = useOwnRun();
@@ -200,9 +237,22 @@ export function TasksPage() {
         return;
       }
       if (taskRun.isRunning) return;
-      await taskRun.run({ cwd, args: miseRunTaskArgs(name) });
+      clearFailedBadge();
+      setFailedTask(null);
+      const res = await taskRun.run({ cwd, args: miseRunTaskArgs(name) });
+      if (res.kind === "err" || res.outcome.timedOut || res.outcome.exitCode !== 0) {
+        markTaskFailed(name);
+      }
     },
-    [guard.allowed, focusTrustBanner, taskRun.isRunning, taskRun.run, cwd],
+    [
+      guard.allowed,
+      focusTrustBanner,
+      taskRun.isRunning,
+      taskRun.run,
+      cwd,
+      clearFailedBadge,
+      markTaskFailed,
+    ],
   );
 
   // Save a task create/edit via the panel. Same trust-guard
@@ -438,9 +488,14 @@ export function TasksPage() {
       minWidth: "140px",
       sortValue: (r) => r.name,
       cell: (r) => (
-        <Tooltip text={r.name}>
-          <span className={styles.cellName}>{r.name}</span>
-        </Tooltip>
+        <span className={styles.nameCell}>
+          <Tooltip text={r.name}>
+            <span className={styles.cellName}>{r.name}</span>
+          </Tooltip>
+          {failedTask === r.name && (
+            <Badge variant="danger">{t(I18N_KEYS.tasks.runFailedBadge)}</Badge>
+          )}
+        </span>
       ),
     },
     {

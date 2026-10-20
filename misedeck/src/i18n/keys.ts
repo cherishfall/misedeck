@@ -178,6 +178,10 @@ export const I18N_KEYS = {
     tooltip: {
       switchVersion: "tools.tooltip.switchVersion",
       singleVersion: "tools.tooltip.singleVersion",
+      /** Zero installed versions (issue #213): the version cell still
+          names the requested-but-not-installed version, so the tooltip
+          must not claim "only one version installed". */
+      noVersion: "tools.tooltip.noVersion",
     },
     /** The in-cell chip naming the newest version on an outdated row
      *  (#189): pure information, not a control. */
@@ -210,7 +214,11 @@ export const I18N_KEYS = {
     confirm: {
       use: {
         title: "tools.confirm.use.title",
-        body: "tools.confirm.use.body",
+        /** Write-target disclosure split per mode (issue #213): the
+            command writes the global config in Global mode and the
+            current directory's config otherwise. */
+        bodyGlobal: "tools.confirm.use.bodyGlobal",
+        bodyDirectory: "tools.confirm.use.bodyDirectory",
       },
       install: {
         title: "tools.confirm.install.title",
@@ -219,6 +227,9 @@ export const I18N_KEYS = {
       uninstall: {
         title: "tools.confirm.uninstall.title",
         body: "tools.confirm.uninstall.body",
+        /** The version being uninstalled is the active one (issue
+            #213): the config request survives, so name what breaks. */
+        bodyActive: "tools.confirm.uninstall.bodyActive",
       },
       unuse: {
         title: "tools.confirm.unuse.title",
@@ -257,6 +268,10 @@ export const I18N_KEYS = {
       /** Why the in-use row's Uninstall is disabled: the requested
           version has no files on disk yet (beta13). */
       notInstalledUninstallTooltip: "tools.addTool.notInstalledUninstallTooltip",
+      /** Directory mode's in-use header note (issue #213): the tool is
+          also active through the global config, so the two requests
+          coexist after a directory-level Use. */
+      globalAlsoActive: "tools.addTool.globalAlsoActive",
       /** The in-use section header hint naming the upgrade target
           version from `mise outdated` (beta13). */
       upgradeAvailable: "tools.addTool.upgradeAvailable",
@@ -467,6 +482,9 @@ export const I18N_KEYS = {
       addTask: "tasks.empty.addTask",
     },
     runButton: "tasks.runButton",
+    /** Transient row-level failure marker after `mise run` fails
+     *  (issue #213) — reuses the run chip's fail tone. */
+    runFailedBadge: "tasks.runFailedBadge",
     editButton: "tasks.editButton",
     openInEditorButton: "tasks.openInEditorButton",
     editForm: {
@@ -686,6 +704,10 @@ export const I18N_KEYS = {
     tooOld: {
       title: "states.tooOld.title",
       body: "states.tooOld.body",
+      /** Package-manager installs cannot self-update (issue #213): the
+          fallback points at the package manager, the guided installer,
+          or the manual install guide. */
+      packageManagerHint: "states.tooOld.packageManagerHint",
     },
     commandFailed: {
       title: "states.commandFailed.title",

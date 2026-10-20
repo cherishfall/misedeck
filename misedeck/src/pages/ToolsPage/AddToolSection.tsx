@@ -96,8 +96,10 @@ interface AddToolSectionProps {
   onUse: (tool: string, version: string) => void;
   /** Opens the page's Install confirmation (exact command shown). */
   onInstall: (tool: string, version: string) => void;
-  /** Opens the page's removal confirmation (exact command shown). */
-  onUninstall: (tool: string, version: string) => void;
+  /** Opens the page's removal confirmation (exact command shown). The
+   *  `active` flag lets the dialog disclose that this version is the one
+   *  in use (issue #213). */
+  onUninstall: (tool: string, version: string, active: boolean) => void;
   /** Opens the page's Unuse confirmation (exact command shown). */
   onUnuse: (tool: string) => void;
   /** Opens the page's Upgrade confirmation (exact command shown). */
@@ -226,6 +228,26 @@ export function AddToolSection({
           (cwd === null || it.source?.path == null || !isGlobalConfigPath(it.source?.path)),
       ),
     [toolItems, cwd],
+  );
+
+  // Directory mode's counterpart (issue #213): `mise ls` still reports the
+  // globally-requested active row, and it is filtered out of ① above. A
+  // later directory-level Use layers a second request on top, leaving both
+  // active — the in-use header names the global rows so the coexistence is
+  // never silent.
+  const globalActiveRows = useMemo(
+    () =>
+      cwd === null
+        ? []
+        : toolItems.filter(
+            (it) =>
+              it.active && it.source?.path != null && isGlobalConfigPath(it.source.path),
+          ),
+    [toolItems, cwd],
+  );
+  const globalActiveVersions = useMemo(
+    () => [...new Set(globalActiveRows.map((it) => it.version))].join(", "),
+    [globalActiveRows],
   );
 
   // ② Installed: every other version actually on disk (`mise ls` can
@@ -419,7 +441,7 @@ export function AddToolSection({
             <Button
               variant="danger"
               size="sm"
-              onClick={() => onUninstall(selectedTool ?? "", r.version)}
+              onClick={() => onUninstall(selectedTool ?? "", r.version, true)}
               data-testid={`add-tool-active-uninstall-${r.version}`}
             >
               {t(I18N_KEYS.tools.actions.uninstall)}
@@ -482,7 +504,7 @@ export function AddToolSection({
           <Button
             variant="danger"
             size="sm"
-            onClick={() => onUninstall(selectedTool ?? "", r.version)}
+            onClick={() => onUninstall(selectedTool ?? "", r.version, false)}
             data-testid={`add-tool-installed-uninstall-${r.version}`}
           >
             {t(I18N_KEYS.tools.actions.uninstall)}
@@ -641,6 +663,13 @@ export function AddToolSection({
                     </div>
                   )}
                 </div>
+                {globalActiveRows.length > 0 && (
+                  <p className={styles.subNote}>
+                    {t(I18N_KEYS.tools.addTool.globalAlsoActive, {
+                      versions: globalActiveVersions,
+                    })}
+                  </p>
+                )}
                 <Table<MiseLsItem>
                   columns={inUseColumns}
                   rows={activeRows}

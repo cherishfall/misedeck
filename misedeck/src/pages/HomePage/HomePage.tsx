@@ -333,6 +333,13 @@ export function HomePage() {
                 minimum: tooOldParams?.minimum ?? "—",
               })}
             </p>
+            {/* No dead end (issue #213): `mise self-update` cannot
+                replace a binary owned by a package manager, so the
+                package-manager route and the reinstall routes are named
+                here instead of leaving self-update as the only exit. */}
+            <p className={styles.stateBody}>
+              {t(I18N_KEYS.states.tooOld.packageManagerHint)}
+            </p>
             <div className={styles.stateActions}>
               <Button
                 variant="primary"
@@ -344,6 +351,25 @@ export function HomePage() {
               >
                 {t(I18N_KEYS.miseManagement.selfUpdateButton)}
               </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={installRunning}
+                onClick={onGuidedInstall}
+                data-testid="too-old-guided-install"
+              >
+                {installRunning
+                  ? t(I18N_KEYS.miseManagement.guidedInstallInstalling)
+                  : t(I18N_KEYS.miseManagement.guidedInstallButton)}
+              </Button>
+              <a
+                className={styles.fallback}
+                href="https://mise.jdx.dev/installing.html"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t(I18N_KEYS.states.notInstalled.installHint)}
+              </a>
               <a
                 className={styles.fallback}
                 href="https://github.com/jdx/mise/releases"

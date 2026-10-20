@@ -98,7 +98,8 @@
     },
     "tooltip": {
       "switchVersion": "点击切换版本",
-      "singleVersion": "只安装了一个版本——在下方「版本管理」中找到该工具，安装其他版本后即可切换。"
+      "singleVersion": "只安装了一个版本——在下方「版本管理」中找到该工具，安装其他版本后即可切换。",
+      "noVersion": "没有已安装的版本——请在下方「版本管理」中找到该工具并安装。"
     },
     "upgradeChip": "可升级 · {{latest}}",
     "empty": {
@@ -136,6 +137,7 @@
       "filterPlaceholder": "过滤版本…",
       "notInstalledUninstallTooltip": "该版本尚未安装，没有可删除的安装文件",
       "upgradeAvailable": "新版本 {{latest}} 可用",
+      "globalAlsoActive": "该工具也由全局配置激活：{{versions}}。在此使用版本会为当前目录叠加一条请求——两者并存，当前目录中以此处的版本为准。",
       "emptyInUse": "当前范围内没有正在使用的版本。",
       "emptyInstalledTitle": "没有已安装版本",
       "emptyInstalledBody": "除在用版本外，`mise ls {{tool}}` 没有报告 {{tool}} 的其他已安装版本。",
@@ -168,7 +170,8 @@
     "confirm": {
       "use": {
         "title": "使用 {{tool}}@{{version}}？",
-        "body": "让该版本成为当前使用的版本；未安装时会先安装。"
+        "bodyGlobal": "让该版本成为当前使用的版本，并写入全局 mise 配置（`config.toml`）；未安装时会先安装。",
+        "bodyDirectory": "让该版本成为当前使用的版本，并写入就近的 mise 配置（`mise.toml`）；未安装时会先安装。"
       },
       "install": {
         "title": "安装 {{tool}}@{{version}}？",
@@ -176,7 +179,8 @@
       },
       "uninstall": {
         "title": "卸载 {{tool}}@{{version}}？",
-        "body": "删除该版本的安装文件，配置文件不变；正在使用时，下次会自动重新安装。"
+        "body": "删除该版本的安装文件，配置文件不变；正在使用时，下次会自动重新安装。",
+        "bodyActive": "该版本当前正在使用。卸载会删除其安装文件，但配置文件仍保留该请求，依赖它的命令会失败，直到重新安装。"
       },
       "unuse": {
         "title": "取消使用 {{tool}}？",
@@ -361,6 +365,7 @@
       "addTask": "新建任务"
     },
     "runButton": "运行",
+    "runFailedBadge": "失败",
     "editButton": "编辑",
     "openInEditorButton": "在编辑器中打开",
     "editForm": {
@@ -565,7 +570,8 @@
     },
     "tooOld": {
       "title": "mise 版本过旧",
-      "body": "检测到 {{found}}，但 MiseDeck 要求至少 {{minimum}}。请运行 `mise self-update` 更新 mise。"
+      "body": "检测到 {{found}}，但 MiseDeck 要求至少 {{minimum}}。请运行 `mise self-update` 更新 mise。",
+      "packageManagerHint": "如果 mise 是通过包管理器（Homebrew、apt 等）安装的，请用该包管理器更新——`mise self-update` 无法替换由包管理器托管的二进制。否则可用引导安装重新安装，或按安装指南手动重装。"
     },
     "commandFailed": {
       "title": "mise 执行失败",

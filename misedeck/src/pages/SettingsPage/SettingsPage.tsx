@@ -51,14 +51,13 @@ import {
 import { useParsedSettingsList } from "../../hooks/useIssue29";
 import { useTableFilter } from "../../hooks/useTableFilter";
 import {
-  isPathUnder,
-  normalizePathForCompare,
   SOURCE_CELL_CHARS,
   shortenPathTail,
 } from "../../utils/paths";
 import type { SettingsItem } from "../../types/tauri";
 
 import { settingsEmptyCopy } from "./settingsEmptyCopy";
+import { settingsUnsetInScope } from "./settingsUnsetScope";
 import styles from "./SettingsPage.module.css";
 
 // ---------- Args builders ----------
@@ -378,30 +377,11 @@ function isObjectValue(value: unknown): boolean {
  *  row. The command exits 0 without doing anything when the key lives
  *  in a different config file than the write target (beta11 4.7-M1),
  *  so an out-of-scope Unset renders disabled with its reason instead
- *  of silently failing. */
+ *  of silently failing. The rule lives in `settingsUnsetScope` so it is
+ *  unit-tested; Global mode applies the same `isGlobalConfigPath`
+ *  judgment as the Env page (issue #213). */
 function unsetInScope(row: SettingsItem, cwd: string | null, allView: boolean): boolean {
-  if (!row.source) {
-    // An `--all` row without a source carries only a built-in default
-    // — there is nothing to unset. The explicit view's rows are by
-    // construction explicitly set (the plain `--json` fallback shape
-    // merely drops the source field), so they stay in scope.
-    return !allView;
-  }
-  if (cwd === null) {
-    // Global context writes to the global config file; rows listed in
-    // this context are global-sourced in practice, so a sourced row is
-    // in scope. (A project-sourced row can only appear when the app's
-    // own process cwd sits inside a project, which the frontend cannot
-    // detect from here.)
-    return true;
-  }
-  // Directory context: `--local` finds and removes the key from
-  // whatever project config up the tree defines it, so the source's
-  // directory must be the cwd itself or one of its ancestors. A
-  // global-config source is never under the cwd — Unset would no-op.
-  const source = normalizePathForCompare(row.source);
-  const sourceDir = source.slice(0, Math.max(0, source.lastIndexOf("/")));
-  return isPathUnder(sourceDir, cwd);
+  return settingsUnsetInScope(row.source, cwd, allView);
 }
 
 function RowActions({

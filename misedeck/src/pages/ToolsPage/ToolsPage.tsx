@@ -82,6 +82,12 @@ import {
 } from "../../components/ExecutionPanel";
 import { FloatingMenu } from "../../components/FloatingMenu";
 import { SOURCE_CELL_CHARS, shortenPathTail } from "../../utils/paths";
+import {
+  confirmUseBodyKey,
+  uninstallConfirmBodyKey,
+  versionTooltipKey,
+  versionTooltipKind,
+} from "./toolCopy";
 
 import styles from "./ToolsPage.module.css";
 
@@ -121,7 +127,7 @@ interface ToolRow {
  *  actions. The dialog shows the exact argv for every kind. */
 type PendingAction =
   | { kind: "unuse"; tool: string }
-  | { kind: "uninstall"; tool: string; version: string }
+  | { kind: "uninstall"; tool: string; version: string; active: boolean }
   | { kind: "use"; tool: string; version: string }
   | { kind: "install"; tool: string; version: string }
   | { kind: "upgrade"; tool: string };
@@ -657,8 +663,8 @@ export function ToolsPage() {
           focusTool={manageFocus}
           onUse={(tool, version) => setPendingAction({ kind: "use", tool, version })}
           onInstall={(tool, version) => setPendingAction({ kind: "install", tool, version })}
-          onUninstall={(tool, version) =>
-            setPendingAction({ kind: "uninstall", tool, version })
+          onUninstall={(tool, version, active) =>
+            setPendingAction({ kind: "uninstall", tool, version, active })
           }
           onUnuse={(tool) => setPendingAction({ kind: "unuse", tool })}
           onUpgrade={(tool) => setPendingAction({ kind: "upgrade", tool })}
@@ -740,9 +746,9 @@ export function ToolsPage() {
             pendingAction?.kind === "unuse"
               ? t(I18N_KEYS.tools.confirm.unuse.body)
               : pendingAction?.kind === "uninstall"
-                ? t(I18N_KEYS.tools.confirm.uninstall.body)
+                ? t(uninstallConfirmBodyKey(pendingAction.active))
                 : pendingAction?.kind === "use"
-                  ? t(I18N_KEYS.tools.confirm.use.body)
+                  ? t(confirmUseBodyKey(cwd))
                   : pendingAction?.kind === "install"
                     ? t(I18N_KEYS.tools.confirm.install.body)
                     : pendingAction?.kind === "upgrade"
@@ -859,10 +865,13 @@ function UseVersionCell({ row, disabled, versions, onUse }: UseVersionCellProps)
   // menu would open as an all-disabled list — a reachable control that
   // can do nothing (ui-ux-rules no-op rule). Render the version as a
   // disabled trigger whose Tooltip teaches why; installing another
-  // version is the Manage versions section's job (#178).
-  if (versions.length <= 1) {
+  // version is the Manage versions section's job (#178). Zero installed
+  // versions (the last one was just uninstalled, issue #213) is not
+  // "only one version installed" — the tooltip branches on the count.
+  const tooltipKind = versionTooltipKind(versions.length);
+  if (tooltipKind !== "switch") {
     return (
-      <Tooltip text={t(I18N_KEYS.tools.tooltip.singleVersion)}>
+      <Tooltip text={t(versionTooltipKey(tooltipKind))}>
         <button
           type="button"
           className={`${styles.cellVersion} ${styles.versionTrigger}`}

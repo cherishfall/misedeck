@@ -108,6 +108,16 @@
 
 /* ---------- Cell content ---------- */
 
+/* Task name plus the transient fail badge (issue #213): the badge sits
+ * on the row's data line, the name truncates first. */
+.nameCell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
 .cellName {
   display: block;
   overflow: hidden;

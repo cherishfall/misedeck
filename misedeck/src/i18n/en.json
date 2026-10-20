@@ -98,7 +98,8 @@
     },
     "tooltip": {
       "switchVersion": "Click to switch version",
-      "singleVersion": "Only one version installed — find the tool in Manage versions below and install another version to switch."
+      "singleVersion": "Only one version installed — find the tool in Manage versions below and install another version to switch.",
+      "noVersion": "No installed versions — find the tool in Manage versions below and install one."
     },
     "upgradeChip": "Update available · {{latest}}",
     "empty": {
@@ -136,6 +137,7 @@
       "filterPlaceholder": "Filter versions…",
       "notInstalledUninstallTooltip": "This version is not installed — there is nothing to delete",
       "upgradeAvailable": "New version {{latest}} available",
+      "globalAlsoActive": "Also active through the global config: {{versions}}. Using a version here adds a request for the current directory; both stay active, and this directory's version wins here.",
       "emptyInUse": "No version is in use in the current scope.",
       "emptyInstalledTitle": "No installed versions",
       "emptyInstalledBody": "`mise ls {{tool}}` reports no installed versions of {{tool}} besides the one in use.",
@@ -168,7 +170,8 @@
     "confirm": {
       "use": {
         "title": "Use {{tool}}@{{version}}?",
-        "body": "Makes this version the one in use; it is installed first if missing."
+        "bodyGlobal": "Makes this version the one in use and records it in the global mise config (`config.toml`); it is installed first if missing.",
+        "bodyDirectory": "Makes this version the one in use and records it in the nearest mise config (`mise.toml`); it is installed first if missing."
       },
       "install": {
         "title": "Install {{tool}}@{{version}}?",
@@ -176,7 +179,8 @@
       },
       "uninstall": {
         "title": "Uninstall {{tool}}@{{version}}?",
-        "body": "Deletes this version's installation files; the config file stays unchanged. If it is the version in use, it is reinstalled automatically the next time."
+        "body": "Deletes this version's installation files; the config file stays unchanged. If it is the version in use, it is reinstalled automatically the next time.",
+        "bodyActive": "This version is currently in use. Uninstalling deletes its installation files; the config file keeps requesting it, so commands that need it fail until it is reinstalled."
       },
       "unuse": {
         "title": "Unuse {{tool}}?",
@@ -361,6 +365,7 @@
       "addTask": "Create task"
     },
     "runButton": "Run",
+    "runFailedBadge": "failed",
     "editButton": "Edit",
     "openInEditorButton": "Open in editor",
     "editForm": {
@@ -565,7 +570,8 @@
     },
     "tooOld": {
       "title": "mise is too old",
-      "body": "Found {{found}}, but MiseDeck requires at least {{minimum}}. Update mise with `mise self-update`."
+      "body": "Found {{found}}, but MiseDeck requires at least {{minimum}}. Update mise with `mise self-update`.",
+      "packageManagerHint": "If mise came from a package manager (Homebrew, apt, …), update it with that manager — `mise self-update` cannot replace a package-managed binary. Otherwise reinstall with the guided installer or follow the install guide."
     },
     "commandFailed": {
       "title": "mise failed",

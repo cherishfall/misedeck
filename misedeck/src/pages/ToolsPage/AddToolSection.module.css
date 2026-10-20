@@ -89,6 +89,16 @@
   color: var(--dim);
 }
 
+/* Directory mode's in-use header note (issue #213): the same quiet
+ * explanatory register as the in-use empty state. */
+.subNote {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  color: var(--dim);
+  line-height: 1.5;
+}
+
 /* ---------- Sub-list tables (fixed layout, issue #151) ---------- */
 
 /* min-width ≈ sum of declared column widths; the Source column takes
