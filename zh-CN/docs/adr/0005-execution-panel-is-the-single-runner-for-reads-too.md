@@ -19,7 +19,7 @@ ADR-0004 让执行面板成为**变更操作**的唯一路径：每次写入都�
 
 ## Consequences
 
-- `useExecutionContext().run(request, options?)` 返回 `RunCommandResult`；`toJsonResult()` 把一次运行归约为读 hook 缓存的 `JsonResult` 联合类型，并把超时 / 非零退出 / 无法解析的 stdout 映射到错误分支，原样保留 mise 的 stderr。
+- `useExecutionContext().run(request, options?)` 返回 `RunCommandResult`；`run_mise_command` 边界把非零退出与超时作为错误分支返回，并原样保留 mise 的 stderr（#221）；`toJsonResult()` 只把干净退出的一次运行归约为读 hook 缓存的 `JsonResult` 联合类型，仅将无法解析的 stdout 映射为 `PARSE_FAILED`。
 - 读查询享有与前台运行相同的体验（命令回显、流式输出、退出报告）以及下面的 30 分钟上限。原本「前台命令运行期间禁用一切 Run」的单飞规则是意外引入的全局锁，并非有意为之的后果；issue #138 已用按运行的隔离与按动作的锁定取代它——见「修订」。
 - 读查询继承的是流式 runner 的 30 分钟上限，而不是 120 秒的读超时。可以接受：用户能看见这次运行并取消它，而这在静默读查询时代从不成立。
 - 切换目录上下文时，已提交的版本查询会被清空，而不是静默重新取数：没有 fetcher 的查询无法重新取数，而一个永远转不完的 loading 就是在撒谎。输入框里的工具名保留，所以针对新目录重跑只需一次点击。

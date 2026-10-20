@@ -19,7 +19,7 @@ The panel is also now the home of **copy command**. It is the command history, s
 
 ## Consequences
 
-- `useExecutionContext().run(request, options?)` returns `RunCommandResult`; `toJsonResult()` reduces a run to the `JsonResult` union the read hooks cache, mapping timeout / non-zero exit / unparsable stdout to the error branch with mise's stderr verbatim.
+- `useExecutionContext().run(request, options?)` returns `RunCommandResult`; the `run_mise_command` boundary reports a non-zero exit and a timeout as the error branch with mise's stderr verbatim (#221), and `toJsonResult()` reduces a clean run to the `JsonResult` union the read hooks cache, mapping only unparsable stdout to `PARSE_FAILED`.
 - Reads share the foreground run UX (command echo, streaming, exit reporting) and the 30-minute ceiling below. The old "single-flight" rule that disabled every Run while any command ran was an accidental global lock, not a designed consequence; issue #138 replaced it with per-run isolation and per-action locking — see the Amendment.
 - Reads inherit the streaming runner's 30-minute ceiling rather than the 120-second read timeout. Acceptable: the user can see the run and cancel it, which was never true of a silent read.
 - Switching the directory context clears a committed version query instead of silently refetching it: a query with no fetcher cannot refetch, and a spinner that never resolves would be a lie. The typed tool name stays, so re-running against the new directory is one click.

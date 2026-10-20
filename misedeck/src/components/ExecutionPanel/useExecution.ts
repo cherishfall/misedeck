@@ -128,40 +128,25 @@ function isRunCommandResult(v: unknown): v is RunCommandResult {
 /**
  * Reduce a completed run to the `JsonResult` union the read hooks cache
  * (ADR-0005). `mise <cmd> --json` writes its payload to stdout, so a
- * clean exit parses stdout; a timeout, a non-zero exit, or unparsable
- * output all become the structured `{kind:"err"}` branch with mise's
- * stderr preserved verbatim — the runner never invents a payload.
+ * clean exit parses stdout. The command boundary already reports a
+ * non-zero exit and a timeout as `{kind:"err"}` (#221), so an `ok`
+ * result always carries a clean run; the only remaining failure is
+ * unparsable output, which becomes `PARSE_FAILED` with mise's stderr
+ * preserved verbatim — the runner never invents a payload.
  */
 export function toJsonResult(result: RunCommandResult): JsonResult {
   if (result.kind === "err") {
     return { kind: "err", err: result.err };
   }
-  const { outcome } = result;
-  if (outcome.timedOut) {
-    return {
-      kind: "err",
-      err: { code: "TIMEOUT", message: "mise timed out", stderr: outcome.stderr },
-    };
-  }
-  if (outcome.exitCode !== 0) {
-    return {
-      kind: "err",
-      err: {
-        code: "COMMAND_FAILED",
-        message: `mise exited with code ${outcome.exitCode}`,
-        stderr: outcome.stderr,
-      },
-    };
-  }
   try {
-    return { kind: "ok", value: JSON.parse(outcome.stdout) as Record<string, unknown> };
+    return { kind: "ok", value: JSON.parse(result.outcome.stdout) as Record<string, unknown> };
   } catch (e) {
     return {
       kind: "err",
       err: {
         code: "PARSE_FAILED",
         message: e instanceof Error ? e.message : String(e),
-        stderr: outcome.stderr,
+        stderr: result.outcome.stderr,
       },
     };
   }

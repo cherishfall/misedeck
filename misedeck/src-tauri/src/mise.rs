@@ -540,6 +540,26 @@ where
     run_mise_timed(mise_path, req, on_event, STREAMING_TIMEOUT)
 }
 
+/// Normalize a completed streaming run for the `run_mise_command`
+/// boundary (issue #221). `run_mise` deliberately reports non-zero
+/// exits as `Ok(RunOutcome)` with the code attached — the runner is
+/// the transport, not the judge. The IPC boundary is where that
+/// becomes a success/failure verdict, so the frontend only ever sees
+/// `{kind:"ok"}` for a clean exit and `{kind:"err"}` otherwise, the
+/// same contract `run_mise_json` already offers the read commands.
+///
+/// The error carries mise's own stderr verbatim; the execution panel
+/// has already streamed the transcript by the time this runs.
+pub fn require_success(outcome: RunOutcome) -> Result<RunOutcome, AppError> {
+    if outcome.exit_code != 0 {
+        return Err(AppError::command_failed(
+            format!("mise exited with status {}", outcome.exit_code),
+            outcome.stderr,
+        ));
+    }
+    Ok(outcome)
+}
+
 /// Source of an installed tool's version, as reported by `mise ls --json`.
 /// mise has a small set of well-known sources (the global / local
 /// toml files, environment overrides, idle). The `type` is the

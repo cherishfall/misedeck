@@ -12,7 +12,7 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use misedeck_lib::mise::{code, run_mise, RunEvent, RunRequest};
+use misedeck_lib::mise::{code, require_success, run_mise, RunEvent, RunRequest};
 use serial_test::serial;
 
 fn fixture_script() -> PathBuf {
@@ -65,6 +65,41 @@ fn captured_run_with_nonzero_exit_keeps_stderr() {
         let outcome = run_mise(&script, &req, |_| {}).expect("runner returns Ok even on non-zero exit");
         assert_ne!(outcome.exit_code, 0);
         assert!(outcome.stderr.contains("ERROR"));
+    });
+}
+
+#[test]
+#[serial]
+fn streaming_boundary_turns_nonzero_exit_into_command_failed() {
+    // Issue #221: `run_mise` keeps reporting non-zero exits as Ok, but
+    // the `run_mise_command` boundary normalizes them with
+    // `require_success` — so the frontend sees `kind:"err"` and never a
+    // green success with a failing exit code.
+    let script = fixture_script();
+    with_slug("doctor-fail", || {
+        let req = RunRequest::new(vec!["doctor".to_string()]);
+        let outcome = run_mise(&script, &req, |_| {}).expect("raw runner returns Ok");
+        let err = require_success(outcome).expect_err("non-zero exit must fail at the boundary");
+        assert_eq!(err.code, code::COMMAND_FAILED);
+        assert!(err.stderr.contains("ERROR"), "stderr = {:?}", err.stderr);
+        assert!(
+            err.message.contains("exited with status"),
+            "message = {:?}",
+            err.message
+        );
+    });
+}
+
+#[test]
+#[serial]
+fn streaming_boundary_passes_a_clean_exit_through() {
+    let script = fixture_script();
+    with_slug("doctor-happy", || {
+        let req = RunRequest::new(vec!["doctor".to_string()]);
+        let outcome = run_mise(&script, &req, |_| {}).expect("happy fixture yields Ok");
+        let outcome = require_success(outcome).expect("exit 0 must stay Ok");
+        assert_eq!(outcome.exit_code, 0);
+        assert!(outcome.stdout.contains("[OK]"));
     });
 }
 

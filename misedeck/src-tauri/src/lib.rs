@@ -22,7 +22,7 @@ use mise::{
     check_trust, detect_mise as run_mise_probe, locate_mise, mise_config_files, mise_doctor,
     mise_env, mise_env_extended, mise_outdated, mise_plugins_ls,
     mise_registry, mise_tasks_ls, read_mise_lockfile,
-    run_mise, run_trust, validate_run_args,
+    require_success, run_mise, run_trust, validate_run_args,
     AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
 };
 use shell::{check_shell_activation, open_in_terminal as open_in_terminal_inner};
@@ -211,6 +211,12 @@ async fn detect_mise() -> DetectMiseResult {
 /// Run an arbitrary mise command, streaming each line to the UI via the
 /// `on_event` channel. The final result is returned as a structured
 /// `RunCommandResult`.
+///
+/// This is the single success/failure boundary for streaming commands
+/// (issue #221): a non-zero exit is reported as `RunCommandResult::Err`
+/// with mise's stderr attached, never as an `Ok` carrying a non-zero
+/// `exitCode`. Callers therefore only branch on the variant; the
+/// execution panel still has the full transcript.
 #[tauri::command]
 async fn run_mise_command(
     cwd: Option<String>,
@@ -249,7 +255,10 @@ async fn run_mise_command(
         })
     }).await;
     match res {
-        Ok(Ok(outcome)) => RunCommandResult::Ok { outcome },
+        Ok(Ok(outcome)) => match require_success(outcome) {
+            Ok(outcome) => RunCommandResult::Ok { outcome },
+            Err(err) => RunCommandResult::Err { err },
+        },
         Ok(Err(e)) => RunCommandResult::Err { err: e },
         Err(_) => RunCommandResult::Err {
             err: AppError::command_failed(

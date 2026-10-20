@@ -5,7 +5,7 @@
 Runner 层位于 Tauri command 与 mise CLI 之间，代码在 `misedeck/src-tauri/src/mise.rs`，分两部分：
 
 - **纯 runner** — `run_mise(mise_path, req, on_event)` 构造 argv，spawn mise，用后台读线程截获 stdout/stderr，每行调用 `on_event` 并在结束时发 `Exit`。函数不依赖 Tauri，所以能用 fixture 二进制做单元测试。
-- **Tauri command** — `run_mise_command(cwd, args, on_event)` 校验输入、解析（首次解析后缓存）mise binary、把事件转发到 `tauri::ipc::Channel<RunEvent>`。最终返回 `RunCommandResult` enum 作为结构化值（不在 JS 端 throw）。
+- **Tauri command** — `run_mise_command(cwd, args, on_event)` 校验输入、解析（首次解析后缓存）mise binary、把事件转发到 `tauri::ipc::Channel<RunEvent>`。最终返回 `RunCommandResult` enum 作为结构化值（不在 JS 端 throw）。这个命令同时也是成功/失败边界（issue #221）：非零退出以错误分支返回并附带 mise 的 stderr，而 `run_mise` 本身仍报告原始的 `RunOutcome`。
 
 ## Argv 形态
 

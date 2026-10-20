@@ -240,7 +240,7 @@ export function TasksPage() {
       clearFailedBadge();
       setFailedTask(null);
       const res = await taskRun.run({ cwd, args: miseRunTaskArgs(name) });
-      if (res.kind === "err" || res.outcome.timedOut || res.outcome.exitCode !== 0) {
+      if (res.kind === "err") {
         markTaskFailed(name);
       }
     },
@@ -307,10 +307,6 @@ export function TasksPage() {
         setEditorError(t(I18N_KEYS.tasks.openEditorError.body));
         return;
       }
-      if (res.outcome.exitCode !== 0) {
-        setEditorError(t(I18N_KEYS.tasks.openEditorError.body));
-        return;
-      }
       const path = res.outcome.stdout.trim();
       if (!path) {
         setEditorError(t(I18N_KEYS.tasks.openEditorError.body));
@@ -346,7 +342,7 @@ export function TasksPage() {
       }
       if (configRun.isRunning) return;
       const res = await configRun.run({ cwd, args: miseConfigLsArgs() });
-      if (res.kind === "err" || res.outcome.exitCode !== 0) {
+      if (res.kind === "err") {
         setEditorError(t(I18N_KEYS.tasks.openConfigError.body));
         return;
       }

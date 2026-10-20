@@ -5,7 +5,7 @@
 The runner is the layer between the Tauri commands and the mise CLI. It lives in `misedeck/src-tauri/src/mise.rs` and is split into two parts:
 
 - **Pure runner** — `run_mise(mise_path, req, on_event)` builds argv, spawns mise, captures stdout/stderr in background reader threads, and invokes `on_event` for every line plus a final `Exit`. The function has no Tauri imports so it is unit-testable against a fixture binary.
-- **Tauri command** — `run_mise_command(cwd, args, on_event)` validates input, resolves the mise binary (cached on first call), and pipes the runner's events into a `tauri::ipc::Channel<RunEvent>`. The final `RunCommandResult` enum is returned as a structured value (never throws on the JS side).
+- **Tauri command** — `run_mise_command(cwd, args, on_event)` validates input, resolves the mise binary (cached on first call), and pipes the runner's events into a `tauri::ipc::Channel<RunEvent>`. The final `RunCommandResult` enum is returned as a structured value (never throws on the JS side). This command is also the success/failure boundary (issue #221): a non-zero exit comes back as the error variant with mise's stderr attached, while `run_mise` itself still reports the raw `RunOutcome`.
 
 ## Argv shape
 
