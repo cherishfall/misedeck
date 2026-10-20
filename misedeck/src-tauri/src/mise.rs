@@ -7,10 +7,12 @@
 // Every type crossing the Rust↔TS boundary uses `#[serde(rename_all = "camelCase")]`.
 // Errors are data: they travel as `AppError` to the UI; the runner never panics.
 
+use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::mpsc::{channel, RecvTimeoutError};
+use std::sync::mpsc::{channel, RecvTimeoutError, Sender};
 use std::thread;
+use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
@@ -352,6 +354,87 @@ impl Drop for ChildGuard {
     }
 }
 
+/// Upper bound on how long a runner waits for the pipe readers to reach
+/// EOF once the child is gone (issue #222).
+///
+/// A reader's remaining job at that point is to drain bytes the kernel
+/// already buffered — sub-millisecond work, since a unix pipe holds
+/// 64 KiB and a Windows anonymous pipe 4 KiB. The bound is for the
+/// case where a *grandchild* inherited stdout/stderr and keeps the
+/// write end open (`npm run dev &`, a daemon, `curl | sh`): the reader
+/// then never sees EOF, and an unbounded `join()` blocked the main loop
+/// forever — the panel stayed "running", Cancel did nothing, and the
+/// streaming ceiling stopped applying because its deadline check only
+/// runs while the child is alive. One second is three orders of
+/// magnitude above the drain cost; the deadline is shared by both
+/// readers, so a run pays it at most once. Killing the process tree is
+/// issue #223's job, not this bound's.
+pub(crate) const READER_SHUTDOWN_BOUND: Duration = Duration::from_secs(1);
+
+/// Spawn a reader thread that splits one pipe into lines and forwards
+/// them over `tx`.
+///
+/// Reads bytes and decodes each complete line with
+/// `String::from_utf8_lossy`. `BufRead::lines()` ends its iterator at
+/// the first invalid byte: the transcript truncated mid-run, the pipe
+/// closed, and the child could die with EPIPE while the outcome still
+/// reported its exit code (issue #222). `RunOutcome` already documents
+/// lossy decoding; this is that promise. `\n` splits, a trailing `\r`
+/// is stripped, and a final unterminated line is still delivered — the
+/// same line shape `lines()` produced.
+pub(crate) fn spawn_line_reader<R>(pipe: R, tx: Sender<String>) -> JoinHandle<()>
+where
+    R: Read + Send + 'static,
+{
+    thread::spawn(move || {
+        let mut reader = BufReader::new(pipe);
+        let mut buf = Vec::new();
+        loop {
+            buf.clear();
+            match reader.read_until(b'\n', &mut buf) {
+                Ok(0) => break,
+                Ok(_) => {
+                    if buf.last() == Some(&b'\n') {
+                        buf.pop();
+                        if buf.last() == Some(&b'\r') {
+                            buf.pop();
+                        }
+                    }
+                    if tx.send(String::from_utf8_lossy(&buf).into_owned()).is_err() {
+                        break;
+                    }
+                }
+                // An I/O error is the pipe going away, not a decode
+                // problem — either way there is nothing left to read.
+                Err(_) => break,
+            }
+        }
+    })
+}
+
+/// Wait for the readers with a shared deadline instead of `join()`-ing
+/// forever. A reader still blocked at the deadline is abandoned:
+/// dropping its `JoinHandle` detaches the thread, which exits by itself
+/// once the pipe closes or its channel receiver is gone. The caller
+/// drains whatever did arrive and always reaches the exit event
+/// (issue #222).
+pub(crate) fn join_readers_bounded(handles: Vec<JoinHandle<()>>, bound: Duration) {
+    let deadline = Instant::now() + bound;
+    for handle in handles {
+        loop {
+            if handle.is_finished() {
+                let _ = handle.join();
+                break;
+            }
+            let now = Instant::now();
+            if now >= deadline {
+                break;
+            }
+            thread::sleep((deadline - now).min(Duration::from_millis(5)));
+        }
+    }
+}
+
 /// Spawn the mise binary and capture its output, enforcing a finite
 /// `timeout`. This is the low-level entry point the runner routes every
 /// call through.
@@ -391,31 +474,14 @@ where
         }
     });
 
-    let mut stdout = guard.child().stdout.take().expect("piped");
-    let mut stderr = guard.child().stderr.take().expect("piped");
+    let stdout = guard.child().stdout.take().expect("piped");
+    let stderr = guard.child().stderr.take().expect("piped");
 
     let (out_tx, out_rx) = channel::<String>();
     let (err_tx, err_rx) = channel::<String>();
 
-    // Reader threads: split on '\n' and forward one line per channel send.
-    let out_thread = thread::spawn(move || {
-        use std::io::{BufRead, BufReader};
-        let reader = BufReader::new(&mut stdout);
-        for line in reader.lines().map_while(Result::ok) {
-            if out_tx.send(line).is_err() {
-                break;
-            }
-        }
-    });
-    let err_thread = thread::spawn(move || {
-        use std::io::{BufRead, BufReader};
-        let reader = BufReader::new(&mut stderr);
-        for line in reader.lines().map_while(Result::ok) {
-            if err_tx.send(line).is_err() {
-                break;
-            }
-        }
-    });
+    let out_thread = spawn_line_reader(stdout, out_tx);
+    let err_thread = spawn_line_reader(stderr, err_tx);
 
     let started = Instant::now();
     let deadline = timeout;
@@ -429,12 +495,12 @@ where
                 // signal it again.
                 drop(guard.disarm());
                 // Join readers BEFORE draining: once the child has exited the
-                // pipes are at EOF, so join() is guaranteed to return. If we
-                // drained first the reader threads might not have sent their
-                // last lines yet, and we'd never see them again (race -> dropped
-                // output, e.g. truncated tail / missing error lines).
-                let _ = out_thread.join();
-                let _ = err_thread.join();
+                // pipes usually go to EOF, so joining first is what makes their
+                // last lines visible. The join is bounded, though: a grandchild
+                // that inherited the pipe keeps it open, and waiting on it
+                // forever would swallow the exit event (issue #222). Whatever
+                // the readers managed to send is drained below either way.
+                join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
                 // Drain remaining lines.
                 while let Ok(line) = out_rx.try_recv() {
                     on_event(RunEvent::Stdout { line: line.clone() });
@@ -481,10 +547,9 @@ where
                     let _ = child.kill();
                     let _ = child.wait();
                     // Join readers BEFORE the final drain for the same reason as
-                    // the exit branch: lines the reader threads hadn't sent yet
-                    // would otherwise be lost.
-                    let _ = out_thread.join();
-                    let _ = err_thread.join();
+                    // the exit branch — still bounded, because a killed child's
+                    // grandchild can hold the pipe just as well (issue #222).
+                    join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
                     while let Ok(line) = out_rx.try_recv() {
                         on_event(RunEvent::Stdout { line: line.clone() });
                         stdout_buf.push_str(&line);

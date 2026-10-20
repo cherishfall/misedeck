@@ -15,6 +15,8 @@ Runner 层位于 Tauri command 与 mise CLI 之间，代码在 `misedeck/src-tau
 
 Runner 用后台读线程（每个 pipe 一个）按行切分，通过有界 `mpsc::channel` 转发。主循环在两次 `try_wait` 之间非阻塞排空 channel，面板就能看到实时输出。`STREAMING_TIMEOUT`（30 分钟）到点自动 kill 进程。来自 UI 的取消是软取消：Rust runner 没有向 JS 侧暴露 kill handle，所以 `cancel` 只把该次运行标记为已取消（只释放它自己的 UI 槽位），进程本身只靠超时自动 kill 回收。并不存在全应用级的单飞槽位——运行按 `RunEntry` 隔离（issue #138）。
 
+读线程按字节读取，每行用 `String::from_utf8_lossy` 解码，因此一个非法字节绝不会终止读线程、截断日志、或在子进程仍在运行时关掉管道（issue #222；`RunOutcome` 本就承诺 lossy 解码）。子进程消失后，runner 等待读线程收尾最多 `READER_SHUTDOWN_BOUND`（1 秒）：它们只需要排空管道里已缓冲的数据，而继承了管道的孙进程（`npm run dev &`、daemon）可能永远持有写端，绝不能因此吞掉退出事件。到期仍未结束的读线程会被放弃——丢弃其 handle，线程在管道最终关闭时自行退出。终止整个进程树是 #223 的职责；这个上限只保证退出事件一定能送达。
+
 ## Captured 模式
 
 `detect_mise` 用同一个 `run_mise` 但 `on_event` 是 no-op，事后读 `RunOutcome.stdout` / `RunOutcome.stderr`。两种模式共用一个函数，因此错误映射一致：非零退出 + 非空 stderr → `COMMAND_FAILED`，JSON 解析失败 → `PARSE_FAILED`，超时 → `TIMEOUT`。

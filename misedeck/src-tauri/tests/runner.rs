@@ -11,6 +11,7 @@
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use misedeck_lib::mise::{code, require_success, run_mise, RunEvent, RunRequest};
 use serial_test::serial;
@@ -183,5 +184,66 @@ fn streaming_emits_stdout_stderr_and_exit_in_order() {
         assert!(stderr_count >= 1, "expected stderr lines, got {evs:?}");
         // Last event is Exit.
         assert!(matches!(evs.last(), Some(RunEvent::Exit { .. })));
+    });
+}
+
+/// The fixture-mise script only replays recorded bytes, so this case gets
+/// its own script: the child exits while a grandchild (`sleep 10 &`) holds
+/// the stdout pipe open, exactly like a task that ends with `npm run dev &`
+/// or starts a daemon (issue #222).
+#[test]
+fn exited_child_whose_grandchild_holds_stdout_still_returns() {
+    let script =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/hold-stdout-fixture");
+    let req = RunRequest::new(vec!["run".to_string(), "dev".to_string()]);
+    let started = Instant::now();
+    let outcome = run_mise(&script, &req, |_| {}).expect("runner must return Ok");
+    let elapsed = started.elapsed();
+
+    // The reader bound is one second; anything under three proves the
+    // main loop escaped instead of waiting for EOF that never comes.
+    assert!(
+        elapsed < Duration::from_secs(3),
+        "run blocked for {elapsed:?} — the reader join is not bounded"
+    );
+    assert_eq!(outcome.exit_code, 7, "the child's exit code must survive");
+    assert!(
+        outcome.stdout.contains("leaving"),
+        "buffered lines must still be drained, stdout = {:?}",
+        outcome.stdout
+    );
+}
+
+#[test]
+#[serial]
+fn invalid_utf8_output_does_not_truncate_the_transcript() {
+    let script = fixture_script();
+    with_slug("invalid-utf8-output", || {
+        let events: Arc<Mutex<Vec<RunEvent>>> = Arc::new(Mutex::new(Vec::new()));
+        let events2 = Arc::clone(&events);
+        let req = RunRequest::new(vec!["doctor".to_string()]);
+        // Used to end the reader at the first invalid byte, losing everything
+        // after it and closing the pipe on the still-running child (#222).
+        let outcome = run_mise(&script, &req, move |e| {
+            events2.lock().unwrap().push(e);
+        })
+        .expect("invalid UTF-8 must not fail the run");
+
+        assert_eq!(outcome.exit_code, 0);
+        assert!(outcome.stdout.contains("line-before"), "stdout = {:?}", outcome.stdout);
+        assert!(
+            outcome.stdout.contains("line-after-bad-bytes"),
+            "transcript truncated after invalid bytes: {:?}",
+            outcome.stdout
+        );
+        // The replacement character proves the bytes were decoded lossily
+        // rather than dropped.
+        assert!(outcome.stdout.contains('\u{FFFD}'), "stdout = {:?}", outcome.stdout);
+        let evs = events.lock().unwrap();
+        assert!(
+            evs.iter().any(|e| matches!(e, RunEvent::Stdout { line } if line == "line-after-bad-bytes")),
+            "events = {evs:?}"
+        );
+        assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
     });
 }

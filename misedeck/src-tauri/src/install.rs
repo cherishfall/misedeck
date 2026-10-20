@@ -17,14 +17,13 @@
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::mpsc::{channel, RecvTimeoutError};
-use std::thread;
 use std::time::{Duration, Instant};
 
 use serde::Serialize;
 
 use crate::mise::{
-    extract_date, meets_minimum, run_mise, AppError, ChildGuard, RunEvent, RunRequest,
-    MIN_MISE_VERSION,
+    extract_date, join_readers_bounded, meets_minimum, run_mise, spawn_line_reader, AppError,
+    ChildGuard, RunEvent, RunRequest, MIN_MISE_VERSION, READER_SHUTDOWN_BOUND,
 };
 
 /// Maximum wall-clock time the official install script is allowed to
@@ -95,30 +94,14 @@ where
         }
     });
 
-    let mut stdout = guard.child().stdout.take().expect("piped");
-    let mut stderr = guard.child().stderr.take().expect("piped");
+    let stdout = guard.child().stdout.take().expect("piped");
+    let stderr = guard.child().stderr.take().expect("piped");
 
     let (out_tx, out_rx) = channel::<String>();
     let (err_tx, err_rx) = channel::<String>();
 
-    let out_thread = thread::spawn(move || {
-        use std::io::{BufRead, BufReader};
-        let reader = BufReader::new(&mut stdout);
-        for line in reader.lines().map_while(Result::ok) {
-            if out_tx.send(line).is_err() {
-                break;
-            }
-        }
-    });
-    let err_thread = thread::spawn(move || {
-        use std::io::{BufRead, BufReader};
-        let reader = BufReader::new(&mut stderr);
-        for line in reader.lines().map_while(Result::ok) {
-            if err_tx.send(line).is_err() {
-                break;
-            }
-        }
-    });
+    let out_thread = spawn_line_reader(stdout, out_tx);
+    let err_thread = spawn_line_reader(stderr, err_tx);
 
     let started = Instant::now();
     let deadline = INSTALL_TIMEOUT;
@@ -131,11 +114,12 @@ where
                 // Reaped; disarm the kill-on-drop guard.
                 drop(guard.disarm());
                 // Join readers BEFORE draining: once the child has exited the
-                // pipes are at EOF, so join() always returns. Draining first
-                // races with the reader threads and can permanently drop their
-                // last lines (truncated tail / missing error output).
-                let _ = out_thread.join();
-                let _ = err_thread.join();
+                // pipes usually go to EOF, so joining first is what makes their
+                // last lines visible. The join is bounded — a grandchild that
+                // inherited the pipe keeps it open, and waiting forever would
+                // swallow the exit event (issue #222). `run_mise` uses the same
+                // helper and bound so both runners share one shutdown contract.
+                join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
                 while let Ok(line) = out_rx.try_recv() {
                     on_event(RunEvent::Stdout { line: line.clone() });
                     stdout_buf.push_str(&line);
@@ -187,10 +171,9 @@ where
                     let _ = child.kill();
                     let _ = child.wait();
                     // Join readers BEFORE the final drain for the same reason as
-                    // the exit branch: lines the reader threads hadn't sent yet
-                    // would otherwise be lost.
-                    let _ = out_thread.join();
-                    let _ = err_thread.join();
+                    // the exit branch — still bounded, because a killed child's
+                    // grandchild can hold the pipe just as well (issue #222).
+                    join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
                     while let Ok(line) = out_rx.try_recv() {
                         on_event(RunEvent::Stdout { line: line.clone() });
                         stdout_buf.push_str(&line);
@@ -309,6 +292,7 @@ where
 mod tests {
     use super::*;
     use std::sync::{Arc, Mutex};
+    use std::thread;
 
     #[test]
     fn install_outcome_default_is_zero() {
@@ -334,31 +318,23 @@ mod tests {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
         let mut child = cmd.spawn().expect("spawn");
-        let mut out = child.stdout.take().unwrap();
-        let mut err = child.stderr.take().unwrap();
+        let out = child.stdout.take().unwrap();
+        let err = child.stderr.take().unwrap();
         let (otx, orx) = channel::<String>();
         let (etx, erx) = channel::<String>();
-        let ot = thread::spawn(move || {
-            use std::io::{BufRead, BufReader};
-            for line in BufReader::new(&mut out).lines().map_while(Result::ok) {
-                let _ = otx.send(line);
-            }
-        });
-        let et = thread::spawn(move || {
-            use std::io::{BufRead, BufReader};
-            for line in BufReader::new(&mut err).lines().map_while(Result::ok) {
-                let _ = etx.send(line);
-            }
-        });
+        // Same readers the production runner uses — the test exercises the
+        // shared line splitter, not a copy of it (issue #222).
+        let ot = spawn_line_reader(out, otx);
+        let et = spawn_line_reader(err, etx);
         let started = Instant::now();
         loop {
             match child.try_wait().unwrap() {
                 Some(status) => {
                     // Join readers BEFORE draining (mirrors the production
                     // runner): draining first races with the reader threads and
-                    // can drop their last lines.
-                    let _ = ot.join();
-                    let _ = et.join();
+                    // can drop their last lines. Bounded for the same reason as
+                    // production — a grandchild may hold the pipe.
+                    join_readers_bounded(vec![ot, et], READER_SHUTDOWN_BOUND);
                     while let Ok(line) = orx.try_recv() {
                         events_for_cb
                             .lock()
