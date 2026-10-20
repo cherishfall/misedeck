@@ -2,9 +2,9 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-10-21, early — beta16 deep-audit batch #221–#229 CLOSED, #230/#231 remain; subagent quota exhausted until 2026-10-21 23:00)
+## CURRENT STATE (2026-10-21, night — beta16 deep-audit batch #221–#231 ALL CLOSED; only verification gates remain)
 
-**Owner authorized visual + runtime verification this cycle (beta9 exception).** Four parallel audits ran (frontend logic / Rust runtime / visual over 20 real screenshots — 8 pages × en+zh light + 4 pages dark / rule-vs-code). Findings were published as SPEC **#220** and tickets **#221–#231**, then implemented one subagent per ticket. #221–#229 are closed; **#230 and #231 are still open** and blocked only on the next driver (see "Next move").
+**Owner authorized visual + runtime verification this cycle (beta9 exception).** Four parallel audits ran (frontend logic / Rust runtime / visual over 20 real screenshots — 8 pages × en+zh light + 4 pages dark / rule-vs-code). Findings were published as SPEC **#220** and tickets **#221–#231**; all eleven are implemented and closed. `gh issue list --state open` = #220 (SPEC, all tickets closed), #215, #201 — every one is an owner-verification gate.
 
 | Issue | Commit | Scope |
 | --- | --- | --- |
@@ -17,17 +17,19 @@ This document is a continuation marker between autonomous driver sessions.
 | #227 | `a48d889` | `initialDialogFocusTarget` (danger/busy → Cancel, no `autoFocus`), Tab cycle inside the dialog, focus returned on close, busy confirm explains itself; Tooltip opens on focus immediately and attaches `aria-describedby` on the keyboard path. New `lint:modal-focus` guard. +8 tests → 115. |
 | #228 | `0dba09f` | One `pickDirectory` implementation; dialog failure surfaces as `directory.pickerFailed` (cancel stays silent); Link-form picker drops to secondary; `MiseMissingState` uses `navigate()` instead of `Link > Button`. New `lint:nested-interactive` guard. +4 tests → 119. |
 | #229 | `57bf0f2` | All home resolution via `dirs::home_dir()` (shell.rs phantom `PROFILE` deleted), `locate_mise` probes `PATH` after the well-known list, install echo derived from the same platform branch the executor runs, shell-safe single-quote echo. Windows CI job green (run `39462447364`). |
+| #230 | `eb853e4` | **Implemented by the driver in the main session** (subagent quota was exhausted). `validated_cwd()` gates every cwd-taking command (10) so a dead/unmounted directory fails in the page's own error shape and an empty string never becomes `-C ""`; `read_lockfile` is now `async` + `spawn_run`; doctor/registry fall back only on `PARSE_FAILED`/`COMMAND_FAILED` (no more 2×120s timeout stacking); `MISE_SAFE=1` is really set for every read (all reads funnel through `run_mise_json`; the streaming surface deliberately does not — verified byte-identical mise output with/without it); `opener:default` dropped, `allow-open-path` kept unscoped with the reasoning in architecture.md; the lockfile is resolved by walking up to the nearest `mise.lock` (subdirectory contexts no longer report "no lockfile"). 186 Rust tests + `npm run ci` green. |
+| #231 | `d202502` | Retired the self-invented `scope / 作用域` vocabulary (8 strings, both locales; `grep -c` = 0); plugin URL placeholder shortened so the example is not cut in half; Preview's env values render like Env's (no italics, `--text`); `CommandHint`'s separator is `" ·\u00A0"` so a wrapped line can only start with `· command`, never end with an orphaned dot. 125 frontend tests green. |
 
 **Not verified anywhere in this batch (every ticket carries it on its issue):** no app launch, no screenshots, no real Windows machine — Windows is compile + unit level only. **Owner verifies on a beta.16 build.**
 
 **Warnings for the next driver:**
-- Subagent spawning is rate-limited (429) until **2026-10-21 23:00** — that is why #230/#231 were not dispatched; the batch was otherwise driven one subagent per ticket.
+- #230 was implemented in the **main session** because subagent spawning hit the 429 quota (resets 2026-10-21 23:00). Everything else in this batch was one subagent per ticket — keep that pattern when quota allows.
 - #228 changed the ui-ux-rules "Choose directory renders primary everywhere" rule into a general rule + explicit form-row exception (justified on the issue) — don't revert it as "drift".
-- #227 added `scripts/check-modal-focus.ts`; #228 added `scripts/check-nested-interactive.ts` — both wired into `npm run ci`. New guards must keep passing.
-- #219's Guard 4 (no Markdown backticks in copy) and the `lint:*` guards above are generation-time gates; do not disable them to make CI green.
-- `docs/screenshots/` is now stale relative to #225/#226 (Source column 216px, new page baseline). Re-capture before the beta.16 tag (README freshness gate in `docs/agents/ci.md`).
+- Guards added along the way, all wired into `npm run ci`: `check-i18n.ts` Guard 4 (no Markdown backticks in copy, #219), `check-modal-focus.ts` (#227), `check-nested-interactive.ts` (#228). Do not disable a guard to make CI green.
+- `docs/screenshots/` is still stale relative to #225/#226 (Source column now 216px / 26-char budget, new shared page baseline). Re-capture before the beta.16 tag (README freshness gate in `docs/agents/ci.md`).
+- Windows remains compile + unit level only: no real Windows machine, so process-group kill (#223), shell home resolution (#229) and the Windows CI job are unverified on hardware.
 
-**Next move:** implement **#230** (backend hardening: validate_cwd across all cwd commands, async `read_lockfile`, doctor/registry fallback only on parse/command failure, opener scope, `MISE_SAFE` implement-or-delete, lockfile resolved from the highest-precedence config) and **#231** (copy sweep: retire `scope/作用域`, plugin URL placeholder, Preview env value italics, command-hint `·` wrapping). Each: commit per ticket, push with `git -c http.proxy=http://127.0.0.1:7890 push origin master`, close the issue with a "NOT visually verified" note. Then owner verifies → tag beta.16. If the driver is a fresh session: read #220's ticket list first, and run one ticket per fresh context.
+**Next move:** owner verifies the whole beta16 batch on a build (highlights: #221 failed mutations no longer claim success; #222/#223 the panel can no longer hang and cancel really stops the process tree; #224 honest dates/upgrade targets/sources; #225 legible columns; #226 shared page baseline and no floating header on empty tables; #227 keyboard-safe dialogs and tooltips; #229/#230 Windows + cwd hardening; #231 copy). Then **tag beta.16** (bump 6 places / 5 files; re-capture `docs/screenshots/` first per the README freshness gate). A fresh driver session should read #220's ticket list before touching anything.
 
 ---
 
