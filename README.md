@@ -37,7 +37,7 @@ Beyond the pages:
 
 ## Requirements
 
-- **mise ≥ 2025.1.0** — MiseDeck calls the CLI rather than bundling it; the Home page can install it for you.
+- **mise ≥ 2025.1.0** — MiseDeck calls the CLI rather than bundling it; the Home page can install it.
 - **macOS on Apple Silicon** for the prebuilt app; Linux x86_64 packages are attached but unverified; Windows x64 is experimental.
 - Building from source: Rust stable and Node.js 22+.
 
@@ -71,12 +71,12 @@ Then open the app normally. No `sudo` needed; `-d` deletes the attribute, `-r` a
 
 Without a terminal: launch once and dismiss the dialog, open **System Settings → Privacy & Security → Security**, click **Open Anyway**, authenticate, then open the app again and confirm **Open**.
 
-If it still refuses:
+If it still will not open:
 
 - Run the copy in `/Applications`, not the one inside the mounted DMG (that copy is read-only).
 - Check the flag is gone: `xattr -p com.apple.quarantine /Applications/misedeck.app` should answer *No such xattr*.
 - Re-apply after every reinstall — each new download carries the flag again.
-- Don't disable Gatekeeper system-wide (`sudo spctl --master-disable`); clearing this one app is the narrow fix.
+- Avoid disabling Gatekeeper system-wide (`sudo spctl --master-disable`); clearing this app is the narrow fix.
 
 ### Linux x86_64
 
@@ -84,11 +84,11 @@ If it still refuses:
 - Fedora/RHEL: `misedeck-<version>-1.x86_64.rpm`
 - Any distro: `misedeck_<version>_amd64.AppImage` — `chmod +x`, then run.
 
-Packaged by CI, never exercised on a real desktop by the maintainer. Expect rough edges.
+Packaged by CI; the maintainer has not run these on a real desktop.
 
 ### Windows x64 — experimental
 
-Each release attaches `misedeck_<version>_x64-setup.exe`. Windows is not verified yet: the maintainer is testing on real hardware now, and finding the mise binary on Windows is still being fixed ([#208](https://github.com/cherishfall/misedeck/issues/208)). Expect it not to work yet; reports help.
+Each release attaches `misedeck_<version>_x64-setup.exe`. Windows is not verified yet: testing on real hardware is in progress, and finding the mise binary on Windows is still being fixed ([#208](https://github.com/cherishfall/misedeck/issues/208)). Expect breakage; feedback is welcome.
 
 ## Run from source
 
@@ -100,7 +100,7 @@ cd misedeck/misedeck   # repo root → app directory (package.json is here)
 npm install
 ```
 
-Already have a clone? `cd <repo>/misedeck` first — running `npm install` at the repo root fails with `ENOENT … package.json`.
+For an existing clone, start from `<repo>/misedeck` — `npm install` at the repo root fails with `ENOENT … package.json`.
 
 ### Development
 
@@ -135,11 +135,14 @@ Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on ma
 
 ## Screenshots
 
-Images in [`docs/screenshots/`](./docs/screenshots/) predate the sidebar, light theme, and scope switcher, so they no longer match the app. Fresh ones are being captured for 1.0.
+| English | 简体中文 |
+| --- | --- |
+| ![Tools](./docs/screenshots/tools-en.png) | ![工具](./docs/screenshots/tools-zh-CN.png) |
+| ![Directory overview](./docs/screenshots/overview-en.png) | ![目录概览](./docs/screenshots/overview-zh-CN.png) |
 
 ## Contributing
 
-See [AGENTS.md](./AGENTS.md), the glossary in [CONTEXT.md](./CONTEXT.md), and [docs/adr/](./docs/adr/). Bugs and feedback: [Issues](https://github.com/cherishfall/misedeck/issues).
+See [AGENTS.md](./AGENTS.md), the glossary in [CONTEXT.md](./CONTEXT.md), and [docs/adr/](./docs/adr/). Report bugs and feedback in [Issues](https://github.com/cherishfall/misedeck/issues).
 
 ## Disclaimer
 

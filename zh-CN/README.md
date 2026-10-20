@@ -37,7 +37,7 @@
 
 ## 环境要求
 
-- **mise ≥ 2025.1.0**——MiseDeck 调用 CLI，不内置它；mise 缺失时首页可以帮你安装。
+- **mise ≥ 2025.1.0**——MiseDeck 调用 CLI，不内置它；mise 缺失时首页可以安装。
 - **macOS（Apple Silicon）** 使用预构建包；Linux x86_64 有包但未验证；Windows x64 为实验性支持。
 - 从源码构建：Rust stable 与 Node.js 22+。
 
@@ -76,7 +76,7 @@ xattr -dr com.apple.quarantine /Applications/misedeck.app
 - 运行 `/Applications` 里的副本，而不是挂载中 DMG 里的那个（后者只读）。
 - 确认标记已清除：`xattr -p com.apple.quarantine /Applications/misedeck.app` 应返回 *No such xattr*。
 - 每次重装后都要重新执行——新下载的文件会重新带上标记。
-- 不要全局关闭 Gatekeeper（`sudo spctl --master-disable`）；只清理这一个应用，范围最小也足够。
+- 避免全局关闭 Gatekeeper（`sudo spctl --master-disable`）；只清理这一个应用即可。
 
 ### Linux x86_64
 
@@ -84,11 +84,11 @@ xattr -dr com.apple.quarantine /Applications/misedeck.app
 - Fedora/RHEL：`misedeck-<version>-1.x86_64.rpm`
 - 任意发行版：`misedeck_<version>_amd64.AppImage`——先 `chmod +x`，再运行。
 
-由 CI 打包，维护者从未在真实桌面上跑过。请预期粗糙之处。
+由 CI 打包，维护者尚未在真实桌面上运行过。
 
 ### Windows x64——实验性
 
-每个 release 都会附带 `misedeck_<version>_x64-setup.exe`。Windows 尚未验证：维护者正在真机上测试，Windows 上定位 mise 可执行文件的问题仍在修复（[#208](https://github.com/cherishfall/misedeck/issues/208)）。目前请预期它跑不起来；欢迎反馈。
+每个 release 都会附带 `misedeck_<version>_x64-setup.exe`。Windows 尚未验证：真机测试正在进行，Windows 上定位 mise 可执行文件的问题仍在修复（[#208](https://github.com/cherishfall/misedeck/issues/208)）。请预期尚不可用；欢迎反馈。
 
 ## 从源码运行
 
@@ -100,7 +100,7 @@ cd misedeck/misedeck   # 仓库根 → 应用目录（package.json 在这里）
 npm install
 ```
 
-已经克隆过了？先 `cd <repo>/misedeck`——在仓库根目录执行 `npm install` 会报 `ENOENT … package.json`。
+已有本地克隆时，从 `<repo>/misedeck` 开始——在仓库根目录执行 `npm install` 会报 `ENOENT … package.json`。
 
 ### 开发模式
 
@@ -135,11 +135,14 @@ npm run tauri build
 
 ## 截图
 
-[`docs/screenshots/`](../docs/screenshots/) 里的图片早于侧边栏、浅色主题和作用域切换，与当前应用已不一致。1.0 前会重新拍摄。
+| English | 简体中文 |
+| --- | --- |
+| ![工具](../docs/screenshots/tools-en.png) | ![工具](../docs/screenshots/tools-zh-CN.png) |
+| ![目录概览](../docs/screenshots/overview-en.png) | ![目录概览](../docs/screenshots/overview-zh-CN.png) |
 
 ## 参与贡献
 
-见 [AGENTS.md](../AGENTS.md)、术语表 [CONTEXT.md](../CONTEXT.md)、决策记录 [docs/adr/](../docs/adr/)。问题与反馈提到 [Issues](https://github.com/cherishfall/misedeck/issues)。
+见 [AGENTS.md](../AGENTS.md)、术语表 [CONTEXT.md](../CONTEXT.md)、决策记录 [docs/adr/](../docs/adr/)。问题与反馈请提交到 [Issues](https://github.com/cherishfall/misedeck/issues)。
 
 ## 免责声明
 
