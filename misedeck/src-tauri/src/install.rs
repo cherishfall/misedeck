@@ -46,8 +46,19 @@ pub struct InstallOutcome {
     pub timed_out: bool,
 }
 
+/// The install one-liner this platform's shell runs — and the line the
+/// execution panel echoes, so the two can never drift (issue #229).
+/// `scripts/check-install-echo-parity.ts` (wired into `npm run ci`)
+/// asserts the frontend's copy of these strings matches this file.
+#[cfg(target_os = "windows")]
+pub const INSTALL_SCRIPT_LINE: &str = "irm https://mise.jdx.dev/install.ps1 | iex";
+#[cfg(not(target_os = "windows"))]
+pub const INSTALL_SCRIPT_LINE: &str = "curl -fsSL https://mise.jdx.dev/install.sh | sh";
+
 /// Build the platform-specific install command. Returned as a
-/// `Command` so the caller owns the spawn.
+/// `Command` so the caller owns the spawn. Both branches hand
+/// `INSTALL_SCRIPT_LINE` to the platform's shell, so what the panel
+/// echoes is the same line the executor runs.
 fn build_install_command() -> Command {
     #[cfg(target_os = "windows")]
     {
@@ -57,14 +68,14 @@ fn build_install_command() -> Command {
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
-            "irm https://mise.jdx.dev/install.ps1 | iex",
+            INSTALL_SCRIPT_LINE,
         ]);
         cmd
     }
     #[cfg(not(target_os = "windows"))]
     {
         let mut cmd = Command::new("sh");
-        cmd.args(["-c", "curl -fsSL https://mise.jdx.dev/install.sh | sh"]);
+        cmd.args(["-c", INSTALL_SCRIPT_LINE]);
         cmd
     }
 }

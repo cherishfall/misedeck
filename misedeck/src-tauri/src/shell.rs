@@ -16,18 +16,20 @@
 // approach `mise doctor` documents in its "shell startup"
 // check.
 //
-// Per-shell rc files:
-//   * zsh        → `$HOME/.zshrc`  (and `.zshenv` as a fallback)
-//   * bash       → `$HOME/.bashrc` on Linux;
-//                  `$HOME/.bash_profile` (and `.bashrc`) on macOS,
+// Per-shell rc files (all home-relative; `~` below is the home
+// directory `dirs::home_dir()` resolves — `$HOME` on unix, the
+// profile known folder on Windows, issue #229):
+//   * zsh        → `~/.zshrc`  (and `.zshenv` as a fallback)
+//   * bash       → `~/.bashrc` on Linux;
+//                  `~/.bash_profile` (and `.bashrc`) on macOS,
 //                  where the user shell defaults to bash but the
 //                  login rc differs.
-//   * fish       → `$HOME/.config/fish/config.fish`
-//   * pwsh       → `$PROFILE` (per-user, current host) — a one-liner
-//                  `$PROFILE` env var is set by PowerShell on startup
-//                  and points at the user profile. We honour it when
-//                  present; otherwise we fall back to a documented
-//                  best-effort path under `Documents/PowerShell/`.
+//   * fish       → `~/.config/fish/config.fish`
+//   * pwsh       → `~/Documents/PowerShell/Microsoft.PowerShell_profile.ps1`,
+//                  the documented per-user-current-host default. There
+//                  is no `$PROFILE` *environment* variable — `$PROFILE`
+//                  is a PowerShell variable, invisible to a spawned
+//                  process — so the lookup always missed (issue #229).
 
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, ExitStatus, Stdio};
@@ -110,8 +112,8 @@ impl ShellKind {
 pub struct ActivationStatus {
     pub shell: ShellKind,
     /// Absolute path of the rc file the probe decided on. Empty
-    /// when we could not determine one (e.g. `$HOME` unset on a
-    /// sandboxed test).
+    /// when we could not determine one (e.g. no home directory
+    /// resolvable in a sandboxed test).
     pub rc_path: String,
     /// The actual text the probe inspected, for the UI's
     /// debug-only path. Empty when the file does not exist.
@@ -234,9 +236,16 @@ fn which_exists(name: &str) -> bool {
 /// not check that the file exists — `check_shell_activation` reads
 /// it and surfaces the `NotFound` case as `activated = Some(false)`. The
 /// returned path is always absolute; an empty `String` is returned
-/// when `$HOME` is unset (only happens in extreme sandboxes).
+/// when no home directory can be resolved (only happens in extreme
+/// sandboxes).
+///
+/// Home is resolved through `dirs::home_dir()`, never the `HOME` env
+/// var: Windows has no `HOME`, so every rc path there came back empty
+/// and the probe reported `activated: null` forever (issue #229). This
+/// is the same resolution `mise.rs` uses for the mise candidates and
+/// the Global-mode anchor (issues #208, #179).
 pub fn rc_path_for(shell: &ShellKind) -> String {
-    let Some(home) = std::env::var_os("HOME").map(PathBuf::from) else {
+    let Some(home) = dirs::home_dir() else {
         return String::new();
     };
     let path: PathBuf = match shell {
@@ -251,16 +260,16 @@ pub fn rc_path_for(shell: &ShellKind) -> String {
             home.join(".bashrc")
         }
         ShellKind::Fish => home.join(".config").join("fish").join("config.fish"),
-        ShellKind::PowerShell => match std::env::var_os("PROFILE") {
-            Some(p) => PathBuf::from(p),
-            None => {
-                // Best-effort fallback: PowerShell's documented
-                // default per-user profile path on Windows.
-                home.join("Documents")
-                    .join("PowerShell")
-                    .join("Microsoft.PowerShell_profile.ps1")
-            }
-        },
+        ShellKind::PowerShell => {
+            // PowerShell's documented per-user-current-host profile.
+            // NOT verified on real Windows — no Windows machine in the
+            // review loop; this is the path `about_Profiles` documents
+            // for pwsh 6+, and it is derived from the same
+            // `dirs::home_dir()` the rest of the probe uses.
+            home.join("Documents")
+                .join("PowerShell")
+                .join("Microsoft.PowerShell_profile.ps1")
+        }
         ShellKind::Unknown { .. } => {
             // No specific rc to suggest; the UI surfaces a
             // generic "we could not detect your shell" hint.
@@ -274,7 +283,7 @@ pub fn rc_path_for(shell: &ShellKind) -> String {
 /// (e.g. `.bash_profile` alongside `.bashrc` for bash on macOS).
 /// Empty list when there are no siblings worth checking.
 pub fn rc_sibling_paths(shell: &ShellKind) -> Vec<String> {
-    let Some(home) = std::env::var_os("HOME").map(PathBuf::from) else {
+    let Some(home) = dirs::home_dir() else {
         return Vec::new();
     };
     match shell {
@@ -503,7 +512,9 @@ pub fn windows_cmd_start_plan(dir: &str) -> WindowsCmdStartPlan {
 
 pub fn open_in_terminal(path: Option<&str>) -> Result<TerminalOpenOutcome, AppError> {
     // Resolve the target path: caller-supplied (must exist and be
-    // a directory) or `$HOME` as a fallback.
+    // a directory) or the home directory as a fallback. Home comes
+    // from `dirs::home_dir()` — `$HOME` is unset on Windows, which
+    // made this arm fail every time there (issue #229).
     let resolved = match path {
         Some(p) if !p.is_empty() => {
             let pb = PathBuf::from(p);
@@ -515,11 +526,12 @@ pub fn open_in_terminal(path: Option<&str>) -> Result<TerminalOpenOutcome, AppEr
             }
             pb
         }
-        _ => std::env::var_os("HOME")
-            .map(PathBuf::from)
-            .ok_or_else(|| {
-                AppError::command_failed("open_in_terminal: $HOME unset", String::new())
-            })?,
+        _ => dirs::home_dir().ok_or_else(|| {
+            AppError::command_failed(
+                "open_in_terminal: no home directory to open",
+                String::new(),
+            )
+        })?,
     };
     let path_str = resolved.to_string_lossy().to_string();
 
@@ -775,6 +787,34 @@ mod tests {
                 "directory leaked into the cmd command line: {dir}"
             );
         }
+    }
+
+    /// The rc resolver must agree with `dirs::home_dir()` on every
+    /// platform — never with the `HOME` env var, which Windows does
+    /// not set (issue #229). This runs under `cargo test --lib` on
+    /// the `windows-latest` job, so it is the one place the Windows
+    /// claim is actually executed. NOT verified on a real Windows
+    /// desktop — only on the Windows runner.
+    #[test]
+    fn rc_path_for_anchors_every_shell_at_home_dir() {
+        let home = dirs::home_dir().expect("test environment has a home dir");
+        let home = home.to_string_lossy().to_string();
+        for (shell, suffix) in [
+            (ShellKind::Zsh, ".zshrc"),
+            (ShellKind::Bash, ".bashrc"),
+            (ShellKind::Fish, "config.fish"),
+            (ShellKind::PowerShell, "Microsoft.PowerShell_profile.ps1"),
+        ] {
+            let rc = rc_path_for(&shell);
+            assert!(
+                rc.starts_with(&home),
+                "{shell:?} rc path {rc:?} must start with home {home:?}"
+            );
+            assert!(rc.ends_with(suffix), "{shell:?} rc path {rc:?} ends with {suffix}");
+            assert!(!rc.is_empty());
+        }
+        // Unknown shells have no rc to probe — not a path under home.
+        assert!(rc_path_for(&ShellKind::Unknown { name: "nu".to_string() }).is_empty());
     }
 
     #[cfg(unix)]

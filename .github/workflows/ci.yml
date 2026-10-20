@@ -88,6 +88,12 @@ jobs:
         working-directory: misedeck
         run: npm run lint:command-hint
 
+      # The guided-install echo (TS) and the command the Rust executor
+      # spawns must be the same per-platform line (issue #229).
+      - name: Install-echo parity guard
+        working-directory: misedeck
+        run: npm run lint:install-echo-parity
+
       - name: Frontend production build
         working-directory: misedeck
         run: npm run build

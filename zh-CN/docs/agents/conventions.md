@@ -66,6 +66,11 @@ MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  TIMEOUT  TERMINAL_NO
 
 路径、home 目录、进程生成和 shell 检测都走 Tauri/Rust 的跨平台 API。macOS 专属行为（如 Gatekeeper 说明）放在平台守卫之后，其他平台上为空操作或等价实现。
 
+- **home 一律用 `dirs::home_dir()`，绝不读 `HOME` 环境变量**（issue #229）：Windows 上没有 `HOME`，每一处 `$HOME` 读取都会得到空值——激活探测因此恒为 `activated: null`，`open_in_terminal` 每次都失败。shell rc 路径和其他任何 home 相对路径同理。
+- **查找 mise 时，在已知候选之后还要扫描 `PATH`**：Windows 上 scoop/winget 装的 mise、Linux 上的 `/usr/bin/mise` 只存在于 `PATH`。
+- **回显必须显示执行层真正走的分支**：引导安装在 Windows 跑 `irm … | iex`、其他平台跑 `curl … | sh`，回显行同样按平台生成。`npm run lint:install-echo-parity` 会在前端副本与 `src-tauri/src/install.rs` 不一致时让构建失败。
+- **回显引号是 shell 引号**（单引号；POSIX 用 `'\''`、PowerShell 用 `''`），不是 JSON 引号：执行面板承诺给出可粘贴的一行，而 `$HOME`、`$(…)`、反引号和 `!` 在 argv 里无害、在 shell 里却会改变含义。
+
 ## i18n
 
 - 绝不在代码中拼接翻译后的字符串——不允许 `t(...) + x`、`x + t(...)`，也不允许在模板字符串中嵌入 `t(...)`。语序、标点和复数规则归语言环境所有，而不是代码。把整句话放进 `en.json` + `zh-CN.json`，用 `{{占位符}}`，通过 `t(key, { ... })` 传入各部分——计数也不例外（`"{{count}} settings"`，而不是 `` `${n} ${t(...)}` ``）。

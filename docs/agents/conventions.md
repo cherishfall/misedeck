@@ -71,6 +71,11 @@ Verification is static-first, and agent-side visual verification is off the tabl
 
 Paths, home dirs, process spawning, and shell detection go through Tauri/Rust cross-platform APIs. macOS-only behavior (e.g. Gatekeeper notes) lives behind platform guards with a no-op or equivalent elsewhere.
 
+- **Home is `dirs::home_dir()`, never the `HOME` env var** (issue #229): Windows sets no `HOME`, so every `$HOME` read resolved to nothing there — the activation probe reported `activated: null` and `open_in_terminal` failed on every launch. The same applies to shell rc paths and to any other home-relative string.
+- **Locating mise scans `PATH`** after the well-known candidates: a scoop/winget mise on Windows or `/usr/bin/mise` on Linux lives only there.
+- **An echo must show the branch the executor takes** — the guided install runs `irm … | iex` on Windows and `curl … | sh` elsewhere, so the echoed line is platform-derived too. `npm run lint:install-echo-parity` fails the build when the frontend's copy and `src-tauri/src/install.rs` disagree.
+- **Echo quoting is shell quoting** (single quotes; `'\''` on POSIX, `''` in PowerShell), not JSON quoting: the panel promises a line the user can paste, and `$HOME`, `$(…)`, backticks and `!` change meaning in a shell even though they are inert in argv.
+
 ## i18n
 
 - Never concatenate translated strings in code — no `t(...) + x`, no `x + t(...)`, no `t(...)` inside a template literal. Word order, punctuation, and plural rules are owned by the locale, not the code. Put the entire phrase in `en.json` + `zh-CN.json` with `{{placeholders}}` and pass the parts via `t(key, { ... })` — counts included (`"{{count}} settings"`, not `` `${n} ${t(...)}` ``).

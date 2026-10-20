@@ -88,7 +88,8 @@ interface ActivationContextValue {
   /** Clear the dismiss flag for the active shell (used by the
    *  "dismissed earlier" recovery flow). */
   undismissBanner: () => void;
-  /** Open a terminal at `path` (or `$HOME` when null). The
+  /** Open a terminal at `path` (or the home directory when null —
+   *  `dirs::home_dir()`, not `$HOME`, issue #229). The
    *  result is published as `openOutcome`; consume it via
    *  `consumeOpenOutcome`. */
   openInTerminal: (path: string | null) => Promise<void>;

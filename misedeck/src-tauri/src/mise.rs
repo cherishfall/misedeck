@@ -166,9 +166,46 @@ pub fn candidate_paths() -> Vec<PathBuf> {
     paths
 }
 
-/// Probe for a working mise binary in the well-known locations.
+/// Candidate paths built from a `PATH` value, in `PATH` order. Pure —
+/// no filesystem access — so the probe order is testable on every
+/// platform, including the Windows runner where `mise` is not installed.
+///
+/// The binary name carries the platform suffix (`mise.exe` on Windows,
+/// `mise` elsewhere) because Windows `CreateProcess` will not launch an
+/// extensionless file. A scoop / winget / `apt` install lands on `PATH`
+/// under exactly that name and in none of the well-known candidates, so
+/// without this scan a mise that works in the terminal still reported
+/// `MISE_NOT_FOUND` (issue #229) — and the retry path re-probed the same
+/// list, so it could never help.
+///
+/// Entries that are not absolute are skipped: an empty `PATH` entry
+/// means "the current directory" on POSIX, and probing a relative
+/// candidate would make mise resolution depend on the process cwd —
+/// the leak Global mode's home anchor exists to prevent (issue #179).
+fn path_candidates(path_value: &str) -> Vec<PathBuf> {
+    std::env::split_paths(path_value)
+        .filter(|dir| dir.is_absolute())
+        .map(|dir| dir.join(MISE_BIN))
+        .collect()
+}
+
+/// Every path `locate_mise` probes, in order: the well-known candidates
+/// first (unchanged, so macOS/Linux behaviour is identical), then every
+/// `PATH` entry. Deduplicated, first occurrence wins.
+fn probe_paths() -> Vec<PathBuf> {
+    let mut paths = candidate_paths();
+    if let Some(path_value) = std::env::var_os("PATH") {
+        paths.extend(path_candidates(&path_value.to_string_lossy()));
+    }
+    let mut seen = std::collections::HashSet::new();
+    paths.retain(|p| seen.insert(p.clone()));
+    paths
+}
+
+/// Probe for a working mise binary: the well-known locations first, then
+/// every `PATH` entry (issue #229).
 pub fn locate_mise() -> Result<PathBuf, AppError> {
-    for p in candidate_paths() {
+    for p in probe_paths() {
         if p.is_file() {
             return Ok(p);
         }
@@ -1808,6 +1845,54 @@ mod tests {
                 PathBuf::from("/usr/local/bin/mise"),
             ]
         );
+    }
+
+    /// `PATH` is appended after the well-known candidates so the
+    /// macOS/Linux probe order is bit-for-bit what it was (issue #229);
+    /// the pure builder is what makes that assertable without a mise
+    /// install and without touching the filesystem.
+    #[test]
+    fn probe_paths_appends_path_after_the_candidates() {
+        let candidates = candidate_paths();
+        let probe = probe_paths();
+        assert_eq!(
+            probe[..candidates.len()],
+            candidates[..],
+            "the well-known candidates must stay first, in order"
+        );
+        assert!(
+            probe.len() >= candidates.len(),
+            "PATH entries are appended, never substituted"
+        );
+    }
+
+    /// The pure half of the PATH scan: `PATH` order is preserved and
+    /// every entry carries this platform's binary name (`mise.exe` on
+    /// Windows — `CreateProcess` will not launch an extensionless file).
+    #[test]
+    fn path_candidates_joins_the_platform_binary_name_in_path_order() {
+        let (dir_a, dir_b, separator) = if cfg!(windows) {
+            (r"C:\opt\mise", r"C:\usr\bin", ";")
+        } else {
+            ("/opt/mise", "/usr/bin", ":")
+        };
+        let candidates = path_candidates(&format!("{dir_a}{separator}{dir_b}"));
+        let expected: Vec<PathBuf> =
+            vec![PathBuf::from(dir_a).join(MISE_BIN), PathBuf::from(dir_b).join(MISE_BIN)];
+        assert_eq!(candidates, expected, "candidates = {candidates:?}");
+        assert!(
+            candidates.iter().all(|p| p.to_string_lossy().ends_with(MISE_BIN)),
+            "every PATH probe must use {MISE_BIN}"
+        );
+    }
+
+    #[test]
+    fn path_candidates_ignores_entries_that_are_not_absolute() {
+        // An empty PATH entry means "the current directory" on POSIX;
+        // probing a relative candidate would tie mise resolution to the
+        // process cwd (issue #179).
+        assert!(path_candidates("").is_empty());
+        assert!(path_candidates("bin:relative").is_empty());
     }
 
     #[test]

@@ -125,8 +125,10 @@ export async function shellActivationCheck(): Promise<ShellActivationResult> {
 }
 
 /** Calls the `open_in_terminal` Tauri command (issue #28).
- *  Launches the user's terminal at the given path (or `$HOME`
- *  when `path` is `null`). On success, the structured
+ *  Launches the user's terminal at the given path (or the home
+ *  directory `dirs::home_dir()` resolves when `path` is `null` —
+ *  not `$HOME`, which Windows does not set, issue #229). On success,
+ *  the structured
  *  `TerminalOpenOutcome` is shipped as `ok`; on failure, the
  *  structured `AppError` is shipped as `err` (the only
  *  platform-specific code is `TERMINAL_NOT_FOUND` on Linux). */
