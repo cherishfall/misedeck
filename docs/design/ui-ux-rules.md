@@ -36,6 +36,8 @@ Before shipping any screen, ask: **could a mise CLI user predict what this scree
 ## Interaction integrity
 
 - Destructive actions (uninstall, unset, overwrite) always confirm first.
+- A destructive confirmation never arms itself. The shared `ConfirmDialog` opens a `danger` dialog with focus on **Cancel**, cycles Tab / Shift-Tab inside the dialog while it is open (`aria-modal` alone does not contain focus — it only tells assistive tech the rest of the page is inert), keeps Escape as cancel, and returns focus to whatever opened it. Otherwise opening the dialog with Enter and pressing Enter again runs the destructive command before it was read, and focus walks out onto the page behind the overlay (beta16, issue #227). Non-destructive confirmations still open on Confirm. Guarded by `npm run lint:modal-focus` (no `autoFocus` anywhere; only the shared component may declare a modal).
+- Every explanation is reachable without a mouse. A control disabled with a reason, a row that is read-only, an ellipsized value: each carries its reason in a Tooltip, and the Tooltip answers focus as well as hover (Floating layers below) — a reason only a pointer can reach is not a reason (beta16, issue #227). In-dialog, a Confirm disabled because its own command is still in flight says so in the dialog body (`common.confirmBusy`) and links it to the button with `aria-describedby`, since a disabled button cannot be focused to hear its own tooltip.
 - A control that would be a no-op right now renders disabled — an active-looking button that does nothing reads as broken. When the enabled state depends on a count, put the count in the label so the user can see the button has real work behind it (e.g. a bulk action that names how many rows it will act on).
 - An action cell whose row has no reachable action renders a dim `—` — a blank action cell is a bug. The reason must be discoverable on the `—` itself: the `—` must carry a Tooltip stating why (the source-badge Tooltip remains a secondary contact, beta12, issue #185). A row whose single action is blocked renders a disabled button + Tooltip instead; two side-by-side disabled buttons are noise, not information (beta11, issue #148).
 - Rows render read-only by default; an explicit Edit expands the inline form. A field the CLI cannot write (pure tool-injected env vars — ones with no config sourcePath; a config-requested tool var IS overridable via `mise set`, beta11 issue #156) or that must not be typed by hand (picker-owned path) renders as read-only text — never an editable input.
@@ -159,6 +161,19 @@ floating layer is a bug.
   `aria-current` on the active item.
 - No entrance animation. `visual-language.md` permits only two ambient
   motions; a popover fading or sliding in is a bug.
+- `Tooltip` answers both channels with one layer: hover opens it after its
+  ~250ms intent delay, focus opens it immediately (there is no intent to
+  measure once the target is focused), and blur / mouse-leave close it on
+  the same grace timer — the layer keeps focus too, so moving focus into
+  its copy button does not close it out from under the user. Because the
+  layer is open on focus, `aria-describedby` lands on the keyboard path as
+  well, which is where the app's "why is this disabled / read-only"
+  explanations live (beta16, issue #227).
+- A floating layer whose trigger is not focusable makes its trigger
+  focusable: the Tooltip gives its wrapper `tabindex="0"` unless something
+  inside it can already take focus. Disabled controls do not count — they
+  are exactly the case most in need of an explanation the keyboard can
+  reach (beta16, issue #227).
 
 ## Verification
 

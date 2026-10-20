@@ -50,6 +50,11 @@ export const I18N_KEYS = {
         failure renders as failure + retry, never as a fake loading. */
     loadFailed: "common.loadFailed",
     retry: "common.retry",
+    /** Why ConfirmDialog's confirm button is disabled: the same command
+        is still running (issue #227). Rendered as in-dialog copy and
+        referenced by the button's aria-describedby, so the disabled
+        state always carries its reason. */
+    confirmBusy: "common.confirmBusy",
     filter: {
       noMatchTitle: "common.filter.noMatchTitle",
       noMatchBody: "common.filter.noMatchBody",

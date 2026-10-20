@@ -15,6 +15,7 @@
     "outdatedError": "无法检查更新",
     "loadFailed": "无法加载数据",
     "retry": "重试",
+    "confirmBusy": "该命令正在运行中，请等待其结束。",
     "filter": {
       "noMatchTitle": "无匹配行",
       "noMatchBody": "当前过滤条件没有匹配任何行。修改或清除过滤条件即可恢复完整列表。"

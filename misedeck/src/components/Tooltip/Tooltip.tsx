@@ -10,6 +10,17 @@
 // Scope (finalized in beta7): data surfaces only. Buttons and icons
 // keep their native `title` — short labels, no copy need.
 //
+// Two channels open the same layer (issue #227): hover, with the intent
+// delay below, and focus, immediately — no delay, because a keyboard
+// user has already expressed intent by landing there. `aria-describedby`
+// therefore attaches on the keyboard path too; before, it attached only
+// while the layer was open and only a mouse could open it, leaving every
+// "why is this disabled / why is this row read-only" explanation
+// unreachable without one. When nothing inside the trigger is focusable
+// (a plain span of ellipsized text, a badge, a disabled Button) the
+// trigger takes its own tab stop — an explanation nobody can tab to is
+// not an explanation.
+//
 // Shares the floating-layer rules with FloatingMenu: createPortal into
 // document.body (custom properties live on :root, so themed tokens
 // inherit), hand-computed position from getBoundingClientRect, z-index
@@ -26,6 +37,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import { FOCUSABLE_SELECTOR } from "../../utils/focusable";
 import { CopyButton } from "../CopyButton";
 import styles from "./Tooltip.module.css";
 
@@ -50,6 +62,17 @@ export function Tooltip({ text, children }: TooltipProps) {
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
   const openTimerRef = useRef<number | null>(null);
   const closeTimerRef = useRef<number | null>(null);
+  /** True when something inside the trigger can already take focus. */
+  const [focusableInside, setFocusableInside] = useState(false);
+
+  // No dependency list on purpose: the wrapped content swaps freely (a
+  // disabled Button that later enables, a badge that replaces a text
+  // cell), and the answer has to track it.
+  useLayoutEffect(() => {
+    const el = triggerRef.current;
+    if (!el) return;
+    setFocusableInside(el.querySelector(FOCUSABLE_SELECTOR) !== null);
+  });
 
   const clearTimer = (ref: { current: number | null }) => {
     if (ref.current !== null) {
@@ -82,6 +105,17 @@ export function Tooltip({ text, children }: TooltipProps) {
       closeTimerRef.current = null;
       setOpen(false);
     }, CLOSE_DELAY_MS);
+  }, []);
+
+  // Focus opens immediately (issue #227): unlike hover there is no
+  // intent to measure, the pointer target is already there. Blur closes
+  // on the same grace timer as the mouse leaves do, so focus moving
+  // into the layer's copy button does not close it out from under the
+  // user.
+  const openNow = useCallback(() => {
+    clearTimer(closeTimerRef);
+    clearTimer(openTimerRef);
+    setOpen(true);
   }, []);
 
   // Position once open: above the trigger, flipped below when the layer
@@ -128,8 +162,11 @@ export function Tooltip({ text, children }: TooltipProps) {
     <span
       ref={triggerRef}
       className={styles.trigger}
+      tabIndex={focusableInside ? undefined : 0}
       onMouseEnter={scheduleOpen}
       onMouseLeave={scheduleClose}
+      onFocus={openNow}
+      onBlur={scheduleClose}
       aria-describedby={open ? tooltipId : undefined}
     >
       {children}
@@ -147,6 +184,8 @@ export function Tooltip({ text, children }: TooltipProps) {
             }
             onMouseEnter={scheduleOpen}
             onMouseLeave={scheduleClose}
+            onFocus={openNow}
+            onBlur={scheduleClose}
           >
             <span className={styles.text}>{text}</span>
             <CopyButton text={text} className={styles.copy} />

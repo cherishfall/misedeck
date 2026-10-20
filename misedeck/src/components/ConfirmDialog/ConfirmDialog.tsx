@@ -9,8 +9,13 @@
 // re-implement the modal.
 //
 // The overlay renders inside the app window (never as a separate OS
-// window, per the popover rule). Escape and a backdrop click cancel;
-// the confirm button autofocuses on open for keyboard-first operation.
+// window, per the popover rule). Escape and a backdrop click cancel.
+// Focus is chosen deliberately (issue #227): a destructive dialog
+// starts on Cancel, so opening it with Enter and pressing Enter again
+// does not run the destructive command — reaching it is a deliberate
+// Tab. Tab / Shift-Tab cycle inside the dialog while it is open
+// (`aria-modal` alone does not stop focus from leaving), Escape still
+// cancels, and focus returns to whatever opened the dialog on close.
 //
 // The dialog is run-aware (issue #135 / #138): the caller passes
 // `confirmBusy` — true only while the *specific* command this dialog
@@ -21,14 +26,19 @@
 // elsewhere (the single-flight rule from ADR-0005 was an accidental
 // global lock and is dropped by issue #138). Because the lock lives
 // here, the buttons that merely *open* a confirm dialog are not
-// command-firing controls and never run-lock.
+// command-firing controls and never run-lock. A lock with no visible
+// reason is a disabled control whose disability is unexplained, so the
+// busy state also renders its reason in the dialog and points Confirm's
+// `aria-describedby` at it (issue #227).
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
+import { FOCUSABLE_SELECTOR } from "../../utils/focusable";
 import { Button } from "../Button/Button";
 import styles from "./ConfirmDialog.module.css";
+import { initialDialogFocusTarget, nextFocusIndex } from "./focusTarget";
 
 export interface ConfirmDialogProps {
   /** When false the dialog renders nothing. */
@@ -79,6 +89,24 @@ export function ConfirmDialog({
   children,
 }: ConfirmDialogProps) {
   const { t } = useTranslation();
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const cancelRef = useRef<HTMLButtonElement | null>(null);
+  const confirmRef = useRef<HTMLButtonElement | null>(null);
+  const busyNoteId = useId();
+
+  // Runs once per opening: later changes (a command finishing, flipping
+  // `confirmBusy`) must not steal focus back from wherever the user
+  // tabbed to.
+  useEffect(() => {
+    if (!open) return;
+    const opener =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const target = initialDialogFocusTarget({ danger, confirmBusy });
+    (target === "cancel" ? cancelRef.current : confirmRef.current)?.focus();
+    return () => opener?.focus();
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -86,7 +114,29 @@ export function ConfirmDialog({
       if (e.key === "Escape") {
         e.preventDefault();
         onCancel();
+        return;
       }
+      if (e.key !== "Tab") return;
+      const root = dialogRef.current;
+      if (!root) return;
+      const nodes = Array.from(
+        root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+      );
+      // Always preventDefault: Tab is ours to place now, whether there
+      // is somewhere inside to send it or not.
+      e.preventDefault();
+      const index = nextFocusIndex(
+        nodes.length,
+        nodes.indexOf(document.activeElement as HTMLElement),
+        e.shiftKey,
+      );
+      if (index < 0) {
+        // Nothing focusable inside (busy dialog: Confirm is disabled) —
+        // park focus on the dialog itself rather than let Tab escape.
+        root.focus();
+        return;
+      }
+      nodes[index].focus();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -103,6 +153,8 @@ export function ConfirmDialog({
       data-testid="confirm-dialog-overlay"
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className={styles.dialog}
         role="alertdialog"
         aria-modal="true"
@@ -122,15 +174,21 @@ export function ConfirmDialog({
           </p>
         )}
         {children}
+        {confirmBusy && (
+          <p id={busyNoteId} className={styles.busyNote}>
+            {t(I18N_KEYS.common.confirmBusy)}
+          </p>
+        )}
         <div className={styles.actions}>
-          <Button variant="secondary" size="sm" onClick={onCancel}>
+          <Button ref={cancelRef} variant="secondary" size="sm" onClick={onCancel}>
             {cancelLabel}
           </Button>
           <Button
+            ref={confirmRef}
             variant={danger ? "danger" : "primary"}
             size="sm"
-            autoFocus
             disabled={confirmBusy}
+            aria-describedby={confirmBusy ? busyNoteId : undefined}
             onClick={onConfirm}
             data-testid="confirm-dialog-confirm"
           >

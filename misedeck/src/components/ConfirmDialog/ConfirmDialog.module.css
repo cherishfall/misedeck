@@ -70,6 +70,16 @@
   color: var(--dim);
 }
 
+/* Why Confirm is disabled (issue #227): in-dialog body copy, so the
+ * reason is readable without a mouse, and the same note is the disabled
+ * button's accessible description (aria-describedby). */
+.busyNote {
+  margin: 0;
+  font-size: var(--size-data);
+  line-height: 1.5;
+  color: var(--dim);
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;

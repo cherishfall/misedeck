@@ -15,6 +15,7 @@
     "outdatedError": "Could not check for updates",
     "loadFailed": "Could not load the data",
     "retry": "Retry",
+    "confirmBusy": "This command is already running — wait for it to finish.",
     "filter": {
       "noMatchTitle": "No matching rows",
       "noMatchBody": "No rows match the current filter. Edit or clear the filter to bring the full list back."
