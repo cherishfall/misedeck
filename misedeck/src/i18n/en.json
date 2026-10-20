@@ -574,7 +574,7 @@
     },
     "tooOld": {
       "title": "mise is too old",
-      "body": "Found {{found}}, but MiseDeck requires at least {{minimum}}. Update mise with mise self-update.",
+      "body": "Found {{found}}, but MiseDeck requires at least {{minimum}}. Update mise by running mise self-update.",
       "packageManagerHint": "If mise came from a package manager (Homebrew, apt, …), update it with that manager — mise self-update cannot replace a package-managed binary. Otherwise reinstall with the guided installer or follow the install guide."
     },
     "commandFailed": {
@@ -583,7 +583,7 @@
     },
     "parseFailed": {
       "title": "Unrecognized mise response",
-      "body": "MiseDeck could not parse mise version --json. You may be running a forked build."
+      "body": "MiseDeck could not parse the output of mise version --json. You may be running a forked build."
     }
   },
   "labels": {
@@ -600,7 +600,7 @@
   },
   "errors": {
     "miseNotFound": "The mise CLI was not found on this machine. Install it from https://mise.jdx.dev/installing.html and relaunch MiseDeck.",
-    "miseTooOld": "Found mise {{found}}, but MiseDeck requires at least {{minimum}}. Update mise with mise self-update.",
+    "miseTooOld": "Found mise {{found}}, but MiseDeck requires at least {{minimum}}. Update mise by running mise self-update.",
     "terminalNotFound": "No terminal emulator was found on this Linux system (looked for gnome-terminal, konsole, xfce4-terminal).",
     "timeout": "mise did not respond within the timeout.",
     "unknown": "Something went wrong. The execution panel has the details."
@@ -643,7 +643,7 @@
     "openInTerminalError": "Could not open a terminal at {{path}}. Copy the command and run it yourself.",
     "openInTerminalSuccess": "Opened {{terminal}} at {{path}}.",
     "bannerLabel": "Shell activation missing",
-    "bannerBody": "Your {{shell}} config at {{rcPath}} does not have mise activate. Add the line below to use mise in interactive sessions.",
+    "bannerBody": "Your {{shell}} config at {{rcPath}} does not have the mise activate line. Add the line below to use mise in interactive sessions.",
     "bannerBodyUnknownShell": "MiseDeck could not detect your shell ({{name}}). Add the appropriate mise activate <shell> line to your shell's rc file to use mise in interactive sessions.",
     "copyLineButton": "Copy the line",
     "dismissButton": "Dismiss"
