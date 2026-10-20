@@ -15,6 +15,7 @@ use tauri::Manager;
 
 pub mod install;
 pub mod mise;
+pub mod process_tree;
 pub mod shell;
 
 use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
@@ -22,7 +23,7 @@ use mise::{
     check_trust, detect_mise as run_mise_probe, locate_mise, mise_config_files, mise_doctor,
     mise_env, mise_env_extended, mise_outdated, mise_plugins_ls,
     mise_registry, mise_tasks_ls, read_mise_lockfile,
-    require_success, run_mise, run_trust, validate_run_args,
+    require_success, run_mise_tracked, run_trust, validate_run_args,
     AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
 };
 use shell::{check_shell_activation, open_in_terminal as open_in_terminal_inner};
@@ -217,10 +218,16 @@ async fn detect_mise() -> DetectMiseResult {
 /// with mise's stderr attached, never as an `Ok` carrying a non-zero
 /// `exitCode`. Callers therefore only branch on the variant; the
 /// execution panel still has the full transcript.
+///
+/// `run_id` is the panel's id for this run (issue #223). It is the
+/// handle `cancel_run` uses to terminate the run's process group; a run
+/// without one (an older caller) simply cannot be cancelled from the
+/// panel.
 #[tauri::command]
 async fn run_mise_command(
     cwd: Option<String>,
     args: Vec<String>,
+    run_id: Option<String>,
     on_event: tauri::ipc::Channel<RunEvent>,
 ) -> RunCommandResult {
     // Validate args: must be non-empty; flag tokens must not contain
@@ -238,6 +245,7 @@ async fn run_mise_command(
     };
 
     let req = RunRequest { cwd, args };
+    let run_id = run_id.filter(|id| !id.is_empty());
 
     // Run the (process-spawning) work off the main thread so the
     // window chrome stays responsive while the process runs.
@@ -246,7 +254,7 @@ async fn run_mise_command(
             // A fresh clone per attempt: the retry path runs the command
             // again, and the channel is cheap to clone.
             let channel = on_event.clone();
-            run_mise(path, &req, move |evt| {
+            run_mise_tracked(path, &req, run_id.as_deref(), move |evt| {
                 // Channel::send is fallible only if the receiver is
                 // dropped; swallow the error rather than panicking in the
                 // runner thread.
@@ -273,10 +281,19 @@ async fn run_mise_command(
 /// each line via the `on_event` channel. Returns a structured
 /// `InstallCommandResult` (the streaming events have already been
 /// delivered by the time the final result is returned).
+///
+/// `run_id` makes the install cancellable and part of the app-exit
+/// cleanup (issue #223): cancelling kills `sh`'s whole group, so `curl`
+/// and the installer stop writing shims instead of finishing in the
+/// background.
 #[tauri::command]
-async fn install_mise(on_event: tauri::ipc::Channel<RunEvent>) -> InstallCommandResult {
+async fn install_mise(
+    run_id: Option<String>,
+    on_event: tauri::ipc::Channel<RunEvent>,
+) -> InstallCommandResult {
+    let run_id = run_id.filter(|id| !id.is_empty());
     let res = tauri::async_runtime::spawn_blocking(move || {
-        run_install_script(move |evt| {
+        run_install_script(run_id.as_deref(), move |evt| {
             let _ = on_event.send(evt);
         })
     }).await;
@@ -300,13 +317,17 @@ async fn install_mise(on_event: tauri::ipc::Channel<RunEvent>) -> InstallCommand
 /// `InstallCommandResult` with the post-update version (when the
 /// post-update probe succeeded).
 #[tauri::command]
-async fn mise_self_update(on_event: tauri::ipc::Channel<RunEvent>) -> InstallCommandResult {
+async fn mise_self_update(
+    run_id: Option<String>,
+    on_event: tauri::ipc::Channel<RunEvent>,
+) -> InstallCommandResult {
     // Run the (process-spawning) self-update off the main thread so the
     // window chrome stays responsive while the process runs.
+    let run_id = run_id.filter(|id| !id.is_empty());
     let res = tauri::async_runtime::spawn_blocking(move || {
         run_with_mise_binary(|path| {
             let channel = on_event.clone();
-            run_self_update(path, move |evt| {
+            run_self_update(path, run_id.as_deref(), move |evt| {
                 let _ = channel.send(evt);
             })
         })
@@ -562,15 +583,17 @@ async fn trust_check(cwd: Option<String>) -> TrustResult {
 #[tauri::command]
 async fn mise_trust(
     cwd: Option<String>,
+    run_id: Option<String>,
     on_event: tauri::ipc::Channel<RunEvent>,
 ) -> RunCommandResult {
     let cwd_owned = cwd.as_deref().map(PathBuf::from);
+    let run_id = run_id.filter(|id| !id.is_empty());
     // Run the (process-spawning) trust stream off the main thread so the
     // window chrome stays responsive while the process runs.
     let res = tauri::async_runtime::spawn_blocking(move || {
         run_with_mise_binary(|path| {
             let channel = on_event.clone();
-            run_trust(path, cwd_owned.as_deref(), move |evt| {
+            run_trust(path, cwd_owned.as_deref(), run_id.as_deref(), move |evt| {
                 let _ = channel.send(evt);
             })
         })
@@ -736,6 +759,20 @@ fn set_window_theme(window: tauri::Window, theme: String) -> Result<(), AppError
     Ok(())
 }
 
+/// Cancel an in-flight run by the panel's run id (issue #223).
+///
+/// The panel flips the run to "cancelled" immediately (the soft-cancel
+/// product semantics stay: it never waits for the process), and this
+/// command asks the runner that owns the child to tear down the whole
+/// process group — `curl | sh`'s downloader, a `mise run` task shell —
+/// instead of only the direct child. The request is observed within one
+/// runner poll slice (~50 ms). An unknown id is a no-op: a cancel that
+/// races a normal exit is normal.
+#[tauri::command]
+fn cancel_run(run_id: String) {
+    process_tree::request_cancel(&run_id);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -746,6 +783,7 @@ pub fn run() {
             detect_mise,
             directory_exists,
             run_mise_command,
+            cancel_run,
             install_mise,
             mise_self_update,
             tools_outdated,
@@ -782,12 +820,22 @@ pub fn run() {
         // hierarchy (NSWindow → contentView → WKWebView → DOM), letting
         // assistive tech reach the UI. macOS-only; `RunEvent::Ready` fires
         // once the app and its config windows exist.
-        .run(|app, event| {
+        //
+        // Process cleanup (issue #223): quitting or closing the window
+        // while a run is in flight must not leave `mise`, a task shell or
+        // an install script's `curl` behind. `ExitRequested` covers the
+        // window-close and app-quit paths; `Exit` is the last chance
+        // before the process leaves. Both are idempotent — the registry
+        // drains what it kills, and only pids this app started are in it.
+        .run(|_app, event| match event {
+            tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit => {
+                process_tree::terminate_all();
+            }
             #[cfg(target_os = "macos")]
-            if matches!(event, tauri::RunEvent::Ready | tauri::RunEvent::Resumed) {
+            tauri::RunEvent::Ready | tauri::RunEvent::Resumed => {
                 use objc::{msg_send, sel, sel_impl};
 
-                if let Some(window) = app.get_webview_window("main") {
+                if let Some(window) = _app.get_webview_window("main") {
                     if let Ok(ns_window) = window.ns_window() {
                         let ns_window = ns_window as *mut objc::runtime::Object;
                         unsafe {
@@ -798,6 +846,7 @@ pub fn run() {
                     }
                 }
             }
+            _ => {}
         });
 }
 

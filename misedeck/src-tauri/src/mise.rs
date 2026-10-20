@@ -10,12 +10,14 @@
 use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::mpsc::{channel, RecvTimeoutError, Sender};
+use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
+
+use crate::process_tree::{self, ChildGuard};
 
 /// Minimum supported mise version (see docs/agents/conventions.md).
 pub const MIN_MISE_VERSION: &str = "2025.1.0";
@@ -317,43 +319,6 @@ pub fn resolve_cwd_anchor(cwd: Option<&Path>) -> Result<PathBuf, AppError> {
     }
 }
 
-/// Owns a spawned child and kills + reaps it on drop unless the runner
-/// has already disarmed the guard. A panic while the runner thread is
-/// waiting (in the loop, in a reader join, or in `on_event`) would
-/// otherwise leave the mise process running as an orphan; the guard
-/// closes that hole without changing the happy path.
-pub(crate) struct ChildGuard {
-    child: Option<std::process::Child>,
-}
-
-impl ChildGuard {
-    pub(crate) fn new(child: std::process::Child) -> Self {
-        Self { child: Some(child) }
-    }
-
-    /// The guarded child. Panics if the guard was disarmed first, which
-    /// would be a bug in the caller — every call site reads the child
-    /// while the guard still owns it.
-    pub(crate) fn child(&mut self) -> &mut std::process::Child {
-        self.child.as_mut().expect("child guard already disarmed")
-    }
-
-    /// Give the child back, disarming the Drop kill. Called once the
-    /// process has been reaped (normal exit or an explicit kill).
-    pub(crate) fn disarm(mut self) -> std::process::Child {
-        self.child.take().expect("child guard already disarmed")
-    }
-}
-
-impl Drop for ChildGuard {
-    fn drop(&mut self) {
-        if let Some(mut child) = self.child.take() {
-            let _ = child.kill();
-            let _ = child.wait();
-        }
-    }
-}
-
 /// Upper bound on how long a runner waits for the pipe readers to reach
 /// EOF once the child is gone (issue #222).
 ///
@@ -435,9 +400,38 @@ pub(crate) fn join_readers_bounded(handles: Vec<JoinHandle<()>>, bound: Duration
     }
 }
 
+/// Move every line the readers have already queued into `on_event` and
+/// the aggregate buffers. Every exit path of both streaming runners —
+/// normal exit, timeout, cancel — ends the same way, so the drain lives
+/// here instead of being copied per branch.
+pub(crate) fn drain_streams<F>(
+    out_rx: &Receiver<String>,
+    err_rx: &Receiver<String>,
+    on_event: &mut F,
+    stdout: &mut String,
+    stderr: &mut String,
+) where
+    F: FnMut(RunEvent),
+{
+    while let Ok(line) = out_rx.try_recv() {
+        on_event(RunEvent::Stdout { line: line.clone() });
+        stdout.push_str(&line);
+        stdout.push('\n');
+    }
+    while let Ok(line) = err_rx.try_recv() {
+        on_event(RunEvent::Stderr { line: line.clone() });
+        stderr.push_str(&line);
+        stderr.push('\n');
+    }
+}
+
 /// Spawn the mise binary and capture its output, enforcing a finite
 /// `timeout`. This is the low-level entry point the runner routes every
 /// call through.
+///
+/// `run_id` links the run to the execution panel so `cancel_run` can
+/// stop its process tree; `None` is a run nobody can cancel (read-only
+/// queries, fixture tests).
 ///
 /// `on_event` is called for each line and once at the end with `Exit`.
 /// The callback runs on a background thread; keep it cheap (the Tauri
@@ -447,6 +441,7 @@ fn run_mise_timed<F>(
     req: &RunRequest,
     mut on_event: F,
     timeout: Duration,
+    run_id: Option<&str>,
 ) -> Result<RunOutcome, AppError>
 where
     F: FnMut(RunEvent) + Send + 'static,
@@ -461,7 +456,7 @@ where
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    let mut guard = ChildGuard::new(match cmd.spawn() {
+    let mut guard = match ChildGuard::spawn(&mut cmd, run_id) {
         Ok(c) => c,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
             return Err(AppError::not_found());
@@ -472,7 +467,7 @@ where
                 String::new(),
             ));
         }
-    });
+    };
 
     let stdout = guard.child().stdout.take().expect("piped");
     let stderr = guard.child().stderr.take().expect("piped");
@@ -489,11 +484,27 @@ where
     let mut stderr_buf = String::new();
 
     loop {
-        match guard.child().try_wait() {
+        // Cancel (issue #223): the panel has already flipped the run to
+        // "cancelled", so this outcome is discarded by the caller — what
+        // matters is that the whole group dies instead of only mise.
+        // Checked every slice, so the tree is gone within ~50 ms.
+        if let Some(id) = run_id {
+            if process_tree::take_cancel(id) {
+                guard.terminate_tree();
+                join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
+                drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
+                on_event(RunEvent::Exit {
+                    exit_code: -1,
+                    duration_ms: started.elapsed().as_millis() as u64,
+                    timed_out: false,
+                });
+                return Err(AppError::command_failed("mise run cancelled", String::new()));
+            }
+        }
+        match guard.try_wait() {
             Ok(Some(status)) => {
-                // The process has been reaped; disarm so Drop does not
-                // signal it again.
-                drop(guard.disarm());
+                // The process has been reaped; the guard unregistered
+                // its group, so nothing can signal it again.
                 // Join readers BEFORE draining: once the child has exited the
                 // pipes usually go to EOF, so joining first is what makes their
                 // last lines visible. The join is bounded, though: a grandchild
@@ -502,16 +513,7 @@ where
                 // the readers managed to send is drained below either way.
                 join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
                 // Drain remaining lines.
-                while let Ok(line) = out_rx.try_recv() {
-                    on_event(RunEvent::Stdout { line: line.clone() });
-                    stdout_buf.push_str(&line);
-                    stdout_buf.push('\n');
-                }
-                while let Ok(line) = err_rx.try_recv() {
-                    on_event(RunEvent::Stderr { line: line.clone() });
-                    stderr_buf.push_str(&line);
-                    stderr_buf.push('\n');
-                }
+                drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
 
                 let duration_ms = started.elapsed().as_millis() as u64;
                 let exit_code = status.code().unwrap_or(-1);
@@ -532,34 +534,18 @@ where
             }
             Ok(None) => {
                 // Non-blocking drain of pending lines so the UI sees output in real time.
-                while let Ok(line) = out_rx.try_recv() {
-                    on_event(RunEvent::Stdout { line: line.clone() });
-                    stdout_buf.push_str(&line);
-                    stdout_buf.push('\n');
-                }
-                while let Ok(line) = err_rx.try_recv() {
-                    on_event(RunEvent::Stderr { line: line.clone() });
-                    stderr_buf.push_str(&line);
-                    stderr_buf.push('\n');
-                }
+                drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
                 if started.elapsed() > deadline {
-                    let mut child = guard.disarm();
-                    let _ = child.kill();
-                    let _ = child.wait();
+                    // Timeout is a cancel with a deadline: the whole
+                    // group dies, not just mise (issue #223) — a `mise
+                    // run` task shell must not outlive its 30-minute
+                    // ceiling.
+                    guard.terminate_tree();
                     // Join readers BEFORE the final drain for the same reason as
-                    // the exit branch — still bounded, because a killed child's
-                    // grandchild can hold the pipe just as well (issue #222).
+                    // the exit branch — still bounded, because the pipes may be
+                    // held by something that outlived the group (issue #222).
                     join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
-                    while let Ok(line) = out_rx.try_recv() {
-                        on_event(RunEvent::Stdout { line: line.clone() });
-                        stdout_buf.push_str(&line);
-                        stdout_buf.push('\n');
-                    }
-                    while let Ok(line) = err_rx.try_recv() {
-                        on_event(RunEvent::Stderr { line: line.clone() });
-                        stderr_buf.push_str(&line);
-                        stderr_buf.push('\n');
-                    }
+                    drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
                     on_event(RunEvent::Exit {
                         exit_code: -1,
                         duration_ms: started.elapsed().as_millis() as u64,
@@ -592,17 +578,52 @@ where
     }
 }
 
-/// Streaming (cancellable) entry point for the execution panel. Keeps
-/// the 30-minute `STREAMING_TIMEOUT` ceiling so a long install / run /
-/// self-update is reaped if the user does not cancel it first. Read-only
-/// queries must not use this — they route through `run_mise_json` /
+/// Streaming entry point for the execution panel. Keeps the 30-minute
+/// `STREAMING_TIMEOUT` ceiling so a long install / run / self-update is
+/// reaped if the user does not cancel it first. Read-only queries must
+/// not use this — they route through `run_mise_json` /
 /// `run_mise_timed(..., READ_TIMEOUT)` so a hung process is reaped far
 /// sooner and never blocks the window (issue #46).
+///
+/// This variant is not cancellable by id; the execution panel uses
+/// `run_mise_tracked`.
 pub fn run_mise<F>(mise_path: &Path, req: &RunRequest, on_event: F) -> Result<RunOutcome, AppError>
 where
     F: FnMut(RunEvent) + Send + 'static,
 {
-    run_mise_timed(mise_path, req, on_event, STREAMING_TIMEOUT)
+    run_mise_tracked(mise_path, req, None, on_event)
+}
+
+/// Streaming run that `cancel_run(run_id)` can stop (issue #223). The
+/// panel's cancel marks the run cancelled and then tears down its whole
+/// process group — `mise run`'s task shell included — instead of waiting
+/// out the 30-minute ceiling.
+pub fn run_mise_tracked<F>(
+    mise_path: &Path,
+    req: &RunRequest,
+    run_id: Option<&str>,
+    on_event: F,
+) -> Result<RunOutcome, AppError>
+where
+    F: FnMut(RunEvent) + Send + 'static,
+{
+    run_mise_timed(mise_path, req, on_event, STREAMING_TIMEOUT, run_id)
+}
+
+/// The timed core with an explicit deadline, exposed for tests that
+/// need to drive the timeout path without waiting 30 minutes (issue
+/// #223) and for callers with their own ceiling. No cancel id: a
+/// caller that needs both uses `run_mise_tracked`.
+pub fn run_mise_with_timeout<F>(
+    mise_path: &Path,
+    req: &RunRequest,
+    timeout: Duration,
+    on_event: F,
+) -> Result<RunOutcome, AppError>
+where
+    F: FnMut(RunEvent) + Send + 'static,
+{
+    run_mise_timed(mise_path, req, on_event, timeout, None)
 }
 
 /// Normalize a completed streaming run for the `run_mise_command`
@@ -707,7 +728,7 @@ pub fn run_mise_json(
     mise_path: &Path,
     req: &RunRequest,
 ) -> Result<serde_json::Value, AppError> {
-    let outcome = run_mise_timed(mise_path, req, |_| {}, READ_TIMEOUT)?;
+    let outcome = run_mise_timed(mise_path, req, |_| {}, READ_TIMEOUT, None)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise exited with status {}", outcome.exit_code),
@@ -1063,7 +1084,7 @@ pub fn mise_tasks_edit_path(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!(
@@ -1128,7 +1149,7 @@ pub fn check_trust(mise_path: &Path, cwd: Option<&Path>) -> Result<TrustStatus, 
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise trust --show exited with status {}", outcome.exit_code),
@@ -1184,13 +1205,14 @@ pub fn check_trust(mise_path: &Path, cwd: Option<&Path>) -> Result<TrustStatus, 
 ///
 /// This is a thin wrapper around the runner that exists at the
 /// runner layer so the Tauri command surface can keep a one-line
-/// per-command shape; the underlying `run_mise` already does the
-/// heavy lifting. A non-zero exit maps to `COMMAND_FAILED` so the
+/// per-command shape; the underlying `run_mise_tracked` already does
+/// the heavy lifting. A non-zero exit maps to `COMMAND_FAILED` so the
 /// JS side can render stderr in the panel (matches the
 /// `run_self_update` pattern in `install.rs`).
 pub fn run_trust<F>(
     mise_path: &Path,
     cwd: Option<&Path>,
+    run_id: Option<&str>,
     on_event: F,
 ) -> Result<RunOutcome, AppError>
 where
@@ -1201,7 +1223,7 @@ where
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise(mise_path, &req, on_event)?;
+    let outcome = run_mise_tracked(mise_path, &req, run_id, on_event)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise trust exited with status {}", outcome.exit_code),
@@ -1326,7 +1348,7 @@ fn doctor_text_fallback(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None)?;
     // A non-zero exit is still valuable diagnostic output for the
     // health page; surface the lines instead of failing the command.
     let lines: Vec<DoctorLine> = outcome
@@ -1371,7 +1393,7 @@ fn registry_table_fallback(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise registry exited with status {}", outcome.exit_code),
@@ -1432,7 +1454,7 @@ pub fn mise_plugins_ls(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT)?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise plugins ls exited with status {}", outcome.exit_code),
@@ -1651,7 +1673,7 @@ pub fn mise_tasks_add_argv(
 /// around the generalized runner for the probe path.
 pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
     let req = RunRequest::new(vec!["version".to_string(), "--json".to_string()]);
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, DETECT_TIMEOUT)?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, DETECT_TIMEOUT, None)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise exited with status {}", outcome.exit_code),

@@ -2201,6 +2201,7 @@ name = "misedeck"
 version = "1.0.0-beta.14"
 dependencies = [
  "dirs",
+ "libc",
  "objc",
  "once_cell",
  "serde",

@@ -127,10 +127,10 @@ export function executionReducer(state: ExecState, action: Action): ExecState {
         isOpen: state.isOpen,
       };
     case "line": {
-      // Cancel is a terminal status: a soft cancel leaves the process
-      // running (beta15 audit A2, issue #203), so late channel events
-      // must not append to a cancelled (or otherwise finished) run's
-      // transcript.
+      // Cancel is a terminal status: the panel flips to "cancelled"
+      // immediately while Rust tears the run's process group down
+      // (issue #223), so late channel events must not append to a
+      // cancelled (or otherwise finished) run's transcript.
       const target = state.runs.find((r) => r.id === action.id);
       if (!target || target.status !== "running") return state;
       return {
@@ -143,8 +143,8 @@ export function executionReducer(state: ExecState, action: Action): ExecState {
       };
     }
     case "exit": {
-      // Same terminal-status guard as `line` above: after a soft cancel
-      // the process keeps running and its late exit must not rewrite
+      // Same terminal-status guard as `line` above: the kill that follows
+      // a cancel reports its own non-zero exit, which must not rewrite
       // the cancelled status, and must not auto-open a dismissed panel
       // via the failure exception below (issue #203).
       const target = state.runs.find((r) => r.id === action.id);

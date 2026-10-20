@@ -22,9 +22,10 @@ use std::time::{Duration, Instant};
 use serde::Serialize;
 
 use crate::mise::{
-    extract_date, join_readers_bounded, meets_minimum, run_mise, spawn_line_reader, AppError,
-    ChildGuard, RunEvent, RunRequest, MIN_MISE_VERSION, READER_SHUTDOWN_BOUND,
+    drain_streams, extract_date, join_readers_bounded, meets_minimum, run_mise, run_mise_tracked,
+    spawn_line_reader, AppError, RunEvent, RunRequest, MIN_MISE_VERSION, READER_SHUTDOWN_BOUND,
 };
+use crate::process_tree::{self, ChildGuard};
 
 /// Maximum wall-clock time the official install script is allowed to
 /// take. The script downloads mise + a few shim files, so 5 minutes
@@ -75,7 +76,13 @@ fn build_install_command() -> Command {
 /// This mirrors `run_mise` so the two surfaces (mise commands +
 /// non-mise shell commands) share the same streaming pattern and
 /// the same `RunEvent` payload — the JS side has one reducer.
-pub fn run_install<F>(mut on_event: F) -> Result<InstallOutcome, AppError>
+///
+/// `run_id` is the execution panel's run id. The script is `sh -c
+/// "curl … | sh"` (or PowerShell on Windows), so cancelling must kill
+/// the process group, not just `sh` — otherwise `curl` and the
+/// installer keep writing shims after the panel said "cancelled"
+/// (issue #223).
+pub fn run_install<F>(run_id: Option<&str>, mut on_event: F) -> Result<InstallOutcome, AppError>
 where
     F: FnMut(RunEvent) + Send + 'static,
 {
@@ -84,7 +91,7 @@ where
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    let mut guard = ChildGuard::new(match cmd.spawn() {
+    let mut guard = match ChildGuard::spawn(&mut cmd, run_id) {
         Ok(c) => c,
         Err(e) => {
             return Err(AppError::command_failed(
@@ -92,7 +99,7 @@ where
                 String::new(),
             ));
         }
-    });
+    };
 
     let stdout = guard.child().stdout.take().expect("piped");
     let stderr = guard.child().stderr.take().expect("piped");
@@ -109,10 +116,28 @@ where
     let mut stderr_buf = String::new();
 
     loop {
-        match guard.child().try_wait() {
+        // Cancel (issue #223): same contract as `run_mise` — the panel
+        // already shows "cancelled", so the outcome is discarded; what
+        // matters is that `curl` and the installer die with `sh`.
+        if let Some(id) = run_id {
+            if process_tree::take_cancel(id) {
+                guard.terminate_tree();
+                join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
+                drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
+                on_event(RunEvent::Exit {
+                    exit_code: -1,
+                    duration_ms: started.elapsed().as_millis() as u64,
+                    timed_out: false,
+                });
+                return Err(AppError::command_failed(
+                    "install cancelled",
+                    String::new(),
+                ));
+            }
+        }
+        match guard.try_wait() {
             Ok(Some(status)) => {
-                // Reaped; disarm the kill-on-drop guard.
-                drop(guard.disarm());
+                // Reaped; the guard unregistered its group.
                 // Join readers BEFORE draining: once the child has exited the
                 // pipes usually go to EOF, so joining first is what makes their
                 // last lines visible. The join is bounded — a grandchild that
@@ -120,16 +145,7 @@ where
                 // swallow the exit event (issue #222). `run_mise` uses the same
                 // helper and bound so both runners share one shutdown contract.
                 join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
-                while let Ok(line) = out_rx.try_recv() {
-                    on_event(RunEvent::Stdout { line: line.clone() });
-                    stdout_buf.push_str(&line);
-                    stdout_buf.push('\n');
-                }
-                while let Ok(line) = err_rx.try_recv() {
-                    on_event(RunEvent::Stderr { line: line.clone() });
-                    stderr_buf.push_str(&line);
-                    stderr_buf.push('\n');
-                }
+                drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
                 let duration_ms = started.elapsed().as_millis() as u64;
                 let exit_code = status.code().unwrap_or(-1);
                 on_event(RunEvent::Exit {
@@ -156,34 +172,17 @@ where
                 });
             }
             Ok(None) => {
-                while let Ok(line) = out_rx.try_recv() {
-                    on_event(RunEvent::Stdout { line: line.clone() });
-                    stdout_buf.push_str(&line);
-                    stdout_buf.push('\n');
-                }
-                while let Ok(line) = err_rx.try_recv() {
-                    on_event(RunEvent::Stderr { line: line.clone() });
-                    stderr_buf.push_str(&line);
-                    stderr_buf.push('\n');
-                }
+                drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
                 if started.elapsed() > deadline {
-                    let mut child = guard.disarm();
-                    let _ = child.kill();
-                    let _ = child.wait();
+                    // A timeout kills the tree for the same reason a
+                    // cancel does: `sh` dying alone leaves `curl` and
+                    // the installer running (issue #223).
+                    guard.terminate_tree();
                     // Join readers BEFORE the final drain for the same reason as
-                    // the exit branch — still bounded, because a killed child's
-                    // grandchild can hold the pipe just as well (issue #222).
+                    // the exit branch — still bounded, because the pipes may be
+                    // held by something that outlived the group (issue #222).
                     join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
-                    while let Ok(line) = out_rx.try_recv() {
-                        on_event(RunEvent::Stdout { line: line.clone() });
-                        stdout_buf.push_str(&line);
-                        stdout_buf.push('\n');
-                    }
-                    while let Ok(line) = err_rx.try_recv() {
-                        on_event(RunEvent::Stderr { line: line.clone() });
-                        stderr_buf.push_str(&line);
-                        stderr_buf.push('\n');
-                    }
+                    drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
                     let duration_ms = started.elapsed().as_millis() as u64;
                     on_event(RunEvent::Exit {
                         exit_code: -1,
@@ -238,12 +237,20 @@ pub fn mise_self_update_argv() -> Vec<String> {
 /// Run `mise self-update` via the existing runner, streaming the same
 /// `RunEvent` line the panel already knows. On success, re-runs
 /// `mise version --json` to capture the post-update version string.
-pub fn run_self_update<F>(mise_path: &Path, mut on_event: F) -> Result<SelfUpdateOutcome, AppError>
+///
+/// `run_id` makes the update cancellable and part of the app-exit
+/// cleanup (issue #223); the post-update probe is short and runs
+/// untracked.
+pub fn run_self_update<F>(
+    mise_path: &Path,
+    run_id: Option<&str>,
+    mut on_event: F,
+) -> Result<SelfUpdateOutcome, AppError>
 where
     F: FnMut(RunEvent) + Send + 'static,
 {
     let req = RunRequest::new(mise_self_update_argv());
-    let outcome = run_mise(mise_path, &req, move |e| on_event(e))?;
+    let outcome = run_mise_tracked(mise_path, &req, run_id, move |e| on_event(e))?;
 
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(

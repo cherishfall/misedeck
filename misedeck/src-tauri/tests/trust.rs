@@ -118,7 +118,7 @@ fn run_trust_streams_stdout_and_exit() {
         let events: std::sync::Arc<std::sync::Mutex<Vec<RunEvent>>> =
             std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
         let events2 = std::sync::Arc::clone(&events);
-        let outcome = run_trust(&script, Some(std::path::Path::new("/tmp/mise-trust-test")), move |e| {
+        let outcome = run_trust(&script, Some(std::path::Path::new("/tmp/mise-trust-test")), None, move |e| {
             events2.lock().unwrap().push(e);
         })
         .expect("trust fixture should yield Ok");
@@ -143,7 +143,7 @@ fn run_trust_propagates_command_failed() {
     // the JS side can render the stderr in the panel.
     let script = fixture_script();
     with_slug("trust-command-failed", || {
-        let err = run_trust(&script, Some(std::path::Path::new("/tmp/mise-trust-test")), |_| {})
+        let err = run_trust(&script, Some(std::path::Path::new("/tmp/mise-trust-test")), None, |_| {})
             .expect_err("non-zero exit should yield Err");
         assert_eq!(err.code, code::COMMAND_FAILED);
         assert!(
@@ -157,7 +157,7 @@ fn run_trust_propagates_command_failed() {
 #[test]
 fn run_trust_returns_not_found_when_mise_missing() {
     let bogus = PathBuf::from("/this/path/does/not/exist/mise-xyz");
-    let err = run_trust(&bogus, Some(std::path::Path::new("/tmp/somewhere")), |_| {})
+    let err = run_trust(&bogus, Some(std::path::Path::new("/tmp/somewhere")), None, |_| {})
         .expect_err("missing binary should yield Err");
     assert_eq!(err.code, code::MISE_NOT_FOUND);
 }

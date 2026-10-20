@@ -35,6 +35,13 @@ tauri-plugin-clipboard-manager = "2.3.3"
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2"
 
+# Unix-only process-tree control (issue #223): `setsid()` in the child
+# before exec and `killpg()` on cancel/timeout/quit. Already in the
+# lockfile as a tauri transitive; promoted to a direct dependency so the
+# two calls are not reached through a crate we do not own.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 [dev-dependencies]
 tempfile = "3"
 serial_test = "3"

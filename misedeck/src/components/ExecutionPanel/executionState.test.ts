@@ -163,10 +163,11 @@ test("cancelled runs are finished and closable like any finished run", () => {
   assert.equal(next.activeRunId, null);
 });
 
-// Issue #203 (beta15 audit A2): a soft cancel leaves the process
-// running, so exit/line events can still arrive from the IPC channel
-// after the cancel. Cancel is a terminal status: the reducer ignores
-// late events instead of rewriting the outcome.
+// Issue #203 (beta15 audit A2), sharpened by #223: cancel is a terminal
+// status the panel reports immediately, while Rust tears the process
+// group down. The kill's own exit/line events still arrive on the
+// channel afterwards, so the reducer ignores late events instead of
+// rewriting the outcome.
 
 test("exit after cancel: a late success exit keeps the cancelled status", () => {
   let state = startRun(emptyState(), "a");

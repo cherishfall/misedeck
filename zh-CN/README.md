@@ -128,7 +128,7 @@ npm run tauri build
 
 - macOS 构建未签名、未公证（见上）。
 - 没有自动更新：请下载新构建，装好后重新执行一次 `xattr`。
-- 取消是软取消——它让 MiseDeck 停止等待，但不会杀掉 `mise` 子进程。
+- 取消不会等待进程结束：面板立即把这次运行标记为 cancelled，随后 MiseDeck 终止该次运行的整个进程树（`curl | sh` 安装、`mise run` 的任务 shell）。退出应用时仍在运行的进程也会被清理。
 - Windows 为实验性支持（[#208](https://github.com/cherishfall/misedeck/issues/208)）；Linux 未验证。
 - 没有 Intel macOS 构建；需要请从源码构建。
 - beta 阶段：界面文案与布局在版本之间可能变化。

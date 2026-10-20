@@ -8,12 +8,16 @@
 //   - Global mode (cwd: None) prepending -C <home> (issue #179)
 //   - streaming emits Stdout/Stderr/Exit events in order
 //   - missing binary maps to MISE_NOT_FOUND
+//   - cancel / timeout kill the whole process tree, grandchild included
+//     (issue #223; unix only — see the module at the end)
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use misedeck_lib::mise::{code, require_success, run_mise, RunEvent, RunRequest};
+use misedeck_lib::mise::{
+    code, require_success, run_mise, run_mise_tracked, run_mise_with_timeout, RunEvent, RunRequest,
+};
 use serial_test::serial;
 
 fn fixture_script() -> PathBuf {
@@ -49,7 +53,10 @@ fn captured_run_collects_stdout_and_stderr() {
         let evs = events.lock().unwrap();
         assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));
         // Exit event is the last one.
-        assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
+        assert!(matches!(
+            evs.last(),
+            Some(RunEvent::Exit { exit_code: 0, .. })
+        ));
     });
 }
 
@@ -63,7 +70,8 @@ fn captured_run_with_nonzero_exit_keeps_stderr() {
         // captured outcome has the exit code. The probe wrapper turns
         // non-zero into COMMAND_FAILED — this test asserts the raw
         // surface so the wrapper can rely on it.
-        let outcome = run_mise(&script, &req, |_| {}).expect("runner returns Ok even on non-zero exit");
+        let outcome =
+            run_mise(&script, &req, |_| {}).expect("runner returns Ok even on non-zero exit");
         assert_ne!(outcome.exit_code, 0);
         assert!(outcome.stderr.contains("ERROR"));
     });
@@ -142,7 +150,8 @@ fn cwd_none_anchors_to_home() {
         // the process cwd (issue #179).
         let home = dirs::home_dir().expect("test environment has a home dir");
         let req = RunRequest::new(vec!["env".to_string(), "--json".to_string()]);
-        let outcome = run_mise(&script, &req, |_| {}).expect("runner returns Ok even on non-zero exit");
+        let outcome =
+            run_mise(&script, &req, |_| {}).expect("runner returns Ok even on non-zero exit");
         assert_eq!(outcome.exit_code, 127);
         let combined = format!("{}{}", outcome.stdout, outcome.stderr);
         assert!(
@@ -178,8 +187,14 @@ fn streaming_emits_stdout_stderr_and_exit_in_order() {
         assert_eq!(outcome.exit_code, 0);
         let evs = events.lock().unwrap();
         // At least one Stdout and one Stderr line.
-        let stdout_count = evs.iter().filter(|e| matches!(e, RunEvent::Stdout { .. })).count();
-        let stderr_count = evs.iter().filter(|e| matches!(e, RunEvent::Stderr { .. })).count();
+        let stdout_count = evs
+            .iter()
+            .filter(|e| matches!(e, RunEvent::Stdout { .. }))
+            .count();
+        let stderr_count = evs
+            .iter()
+            .filter(|e| matches!(e, RunEvent::Stderr { .. }))
+            .count();
         assert!(stdout_count >= 1, "expected stdout lines, got {evs:?}");
         assert!(stderr_count >= 1, "expected stderr lines, got {evs:?}");
         // Last event is Exit.
@@ -230,7 +245,11 @@ fn invalid_utf8_output_does_not_truncate_the_transcript() {
         .expect("invalid UTF-8 must not fail the run");
 
         assert_eq!(outcome.exit_code, 0);
-        assert!(outcome.stdout.contains("line-before"), "stdout = {:?}", outcome.stdout);
+        assert!(
+            outcome.stdout.contains("line-before"),
+            "stdout = {:?}",
+            outcome.stdout
+        );
         assert!(
             outcome.stdout.contains("line-after-bad-bytes"),
             "transcript truncated after invalid bytes: {:?}",
@@ -238,12 +257,159 @@ fn invalid_utf8_output_does_not_truncate_the_transcript() {
         );
         // The replacement character proves the bytes were decoded lossily
         // rather than dropped.
-        assert!(outcome.stdout.contains('\u{FFFD}'), "stdout = {:?}", outcome.stdout);
+        assert!(
+            outcome.stdout.contains('\u{FFFD}'),
+            "stdout = {:?}",
+            outcome.stdout
+        );
         let evs = events.lock().unwrap();
         assert!(
-            evs.iter().any(|e| matches!(e, RunEvent::Stdout { line } if line == "line-after-bad-bytes")),
+            evs.iter()
+                .any(|e| matches!(e, RunEvent::Stdout { line } if line == "line-after-bad-bytes")),
             "events = {evs:?}"
         );
-        assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
+        assert!(matches!(
+            evs.last(),
+            Some(RunEvent::Exit { exit_code: 0, .. })
+        ));
     });
+}
+
+// ---------- process tree (issue #223) ----------
+//
+// Both tests below are unix-only and deliberately so, stated here rather
+// than implied: the fixture is a bash script that starts a grandchild
+// (`sleep 300`), which the Windows CI job cannot execute (it runs
+// `cargo test --lib` for exactly that reason), and the liveness probe
+// uses `kill(pid, 0)`. The Windows side of the mechanism —
+// `CREATE_NEW_PROCESS_GROUP` + `taskkill /F /T` — has no test: there is
+// no Windows machine in the review loop, only the compile/test CI job.
+//
+// Both tests put a hard bound on the runner: a broken implementation
+// blocks until the grandchild's `sleep 300` ends, and `recv_timeout`
+// turns that hang into a failure instead of a stuck CI job.
+
+#[cfg(unix)]
+mod process_tree {
+    use super::*;
+    use misedeck_lib::process_tree::request_cancel;
+    use std::sync::mpsc::channel as std_channel;
+
+    fn tree_fixture() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/tree-kill-fixture")
+    }
+
+    /// `kill(pid, 0)` — "the process exists and we may signal it".
+    fn alive(pid: i32) -> bool {
+        // SAFETY: signal 0 only checks existence; no handler runs.
+        unsafe { libc::kill(pid, 0) == 0 }
+    }
+
+    /// The fixture writes its grandchild's pid once the background
+    /// `sleep` is running; poll until the file parses.
+    fn wait_for_pid(path: &std::path::Path, bound: Duration) -> Option<i32> {
+        let deadline = Instant::now() + bound;
+        while Instant::now() < deadline {
+            if let Some(pid) = std::fs::read_to_string(path)
+                .ok()
+                .and_then(|s| s.trim().parse::<i32>().ok())
+            {
+                return Some(pid);
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        None
+    }
+
+    /// SIGKILL is asynchronous: give the kernel (and the reaper) a
+    /// moment before declaring the grandchild a survivor.
+    fn dead_within(pid: i32, bound: Duration) -> bool {
+        let deadline = Instant::now() + bound;
+        while Instant::now() < deadline {
+            if !alive(pid) {
+                return true;
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        !alive(pid)
+    }
+
+    /// Cancel must stop the work, not just `sh`. Before #223 the runner
+    /// had no cancel path at all (soft cancel) and killed only the direct
+    /// child at timeout.
+    #[test]
+    fn cancel_kills_the_grandchild_too() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let pid_file = dir.path().join("grandchild.pid");
+        let run_id = "runner-cancel-tree";
+
+        let (tx, rx) = std_channel();
+        let script = tree_fixture();
+        let pid_arg = pid_file.to_string_lossy().to_string();
+        std::thread::spawn(move || {
+            let req = RunRequest::new(vec![pid_arg]);
+            let result = run_mise_tracked(&script, &req, Some(run_id), |_| {});
+            let _ = tx.send(result.map(|o| o.exit_code));
+        });
+
+        let grandchild = wait_for_pid(&pid_file, Duration::from_secs(5))
+            .expect("fixture never reported its grandchild pid");
+        assert!(
+            alive(grandchild),
+            "grandchild {grandchild} must be running before the cancel"
+        );
+
+        request_cancel(run_id);
+
+        // Hard bound: an implementation that ignores the cancel waits for
+        // `sleep 300`, so this fails the test instead of hanging CI.
+        let result = rx
+            .recv_timeout(Duration::from_secs(10))
+            .expect("runner did not return after cancel — the process tree was not killed");
+        // The runner reports the cancel as an error (the panel has already
+        // marked the run cancelled and discards this outcome); a killed
+        // process must never look like a clean exit.
+        let err = result.expect_err("a cancelled run is not a success");
+        assert_eq!(err.code, code::COMMAND_FAILED);
+        assert!(
+            err.message.contains("cancelled"),
+            "message = {:?}",
+            err.message
+        );
+        assert!(
+            dead_within(grandchild, Duration::from_secs(5)),
+            "grandchild {grandchild} survived the cancel — only the direct child was killed"
+        );
+    }
+
+    /// Timeout is the same guarantee with a deadline: the 30-minute
+    /// ceiling must tear down the tree, not just mise.
+    #[test]
+    fn timeout_kills_the_grandchild_too() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let pid_file = dir.path().join("grandchild.pid");
+
+        let (tx, rx) = std_channel();
+        let script = tree_fixture();
+        let pid_arg = pid_file.to_string_lossy().to_string();
+        std::thread::spawn(move || {
+            let req = RunRequest::new(vec![pid_arg]);
+            let result = run_mise_with_timeout(&script, &req, Duration::from_secs(2), |_| {});
+            let _ = tx.send(result.map(|o| o.exit_code));
+        });
+
+        let grandchild = wait_for_pid(&pid_file, Duration::from_secs(5))
+            .expect("fixture never reported its grandchild pid");
+        assert!(alive(grandchild), "grandchild {grandchild} must be running");
+
+        let result = rx
+            .recv_timeout(Duration::from_secs(10))
+            .expect("runner did not return after the timeout — the process tree was not killed");
+        let err = result.expect_err("a timed-out run is an error");
+        assert_eq!(err.code, code::TIMEOUT);
+        assert!(
+            dead_within(grandchild, Duration::from_secs(5)),
+            "grandchild {grandchild} survived the timeout — only the direct child was killed"
+        );
+    }
 }

@@ -230,11 +230,19 @@ export function useExecution() {
       if (!background) {
         cancelRefs.current.set(id, () => {
           cancelled = true;
-          // The Rust runner doesn't expose a kill handle from the JS side
-          // yet (soft cancel, see runner.md); the run is marked cancelled
-          // and its handle is released so the user can dispatch again.
+          // The panel flips to "cancelled" immediately — it never waits
+          // for the process (soft cancel). `cancel_run` then asks Rust to
+          // tear down the run's whole process group, so `curl | sh` and
+          // `mise run` task shells stop instead of finishing in the
+          // background (issue #223). The request is fire-and-forget: the
+          // teardown may land after this handle is released, and its
+          // late events are ignored because cancelled is terminal.
           dispatch({ type: "cancel", id });
           cancelRefs.current.delete(id);
+          void invoke("cancel_run", { runId: id }).catch(() => {
+            // A cancel that races the run's own exit is a no-op; never
+            // surface it as a failure of the run.
+          });
         });
       }
       /** Report a failure: the panel only hears about foreground runs it
@@ -246,6 +254,9 @@ export function useExecution() {
       try {
         const result = (await invoke(ipcCommand, {
           ...payload,
+          // The run id doubles as the cancel handle on the Rust side:
+          // `cancel_run` finds this run's process group by it (#223).
+          runId: id,
           onEvent: channel,
         })) as unknown;
         if (!isRunCommandResult(result)) {

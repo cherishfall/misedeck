@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# tree-kill-fixture — a child that starts a grandchild and then waits
+# (issue #223).
+#
+# The runner spawns this script in its own process group, and the
+# grandchild (`sleep 300`) inherits that group — exactly like `curl`
+# under `sh -c "curl … | sh"` or a task shell under `mise run`. Killing
+# only the direct child would leave the grandchild running; the test
+# asserts it is gone after cancel / timeout.
+#
+# Argv: the runner always prepends `-C <anchor>` (issue #179), so the
+# pid file path is the third positional argument.
+set -u
+
+PID_FILE="${3:-}"
+if [[ -z "$PID_FILE" ]]; then
+  echo "tree-kill-fixture: pid file argument missing (argv: $*)" >&2
+  exit 2
+fi
+
+echo "started"
+sleep 300 &
+GRANDCHILD=$!
+echo "$GRANDCHILD" > "$PID_FILE"
+echo "grandchild $GRANDCHILD"
+wait

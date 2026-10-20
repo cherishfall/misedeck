@@ -30,7 +30,7 @@ fn run_self_update_streams_to_exit_and_probes_version() {
     let script = fixture_script();
     let events: Arc<Mutex<Vec<RunEvent>>> = Arc::new(Mutex::new(Vec::new()));
     let events_for_cb = events.clone();
-    let outcome = run_self_update(&script, move |e| events_for_cb.lock().unwrap().push(e))
+    let outcome = run_self_update(&script, None, move |e| events_for_cb.lock().unwrap().push(e))
         .expect("self-update fixture should yield Ok");
     let events = events.lock().unwrap();
     assert_eq!(outcome.outcome.exit_code, 0);
