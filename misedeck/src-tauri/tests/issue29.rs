@@ -180,6 +180,41 @@ fn doctor_falls_back_to_raw_text_lines() {
     });
 }
 
+#[test]
+#[serial]
+fn doctor_fallback_with_no_output_fails_instead_of_faking_health() {
+    // Issue #233: `doctor-fail` is exit 1 with stderr only and no stdout.
+    // Swallowing that into `Ok({rawLines: []})` let the page fall through
+    // its `rawLines.length > 0` guard into the structured view, where
+    // `warnings ?? []` is empty and the status renders "OK" — a healthy
+    // conclusion from no data. A zero-line report on a non-zero exit is
+    // a broken mise, not a passing check.
+    let script = fixture_script();
+    with_slug("doctor-fail", || {
+        let err = mise_doctor(&script, None).expect_err("no output must fail");
+        assert_eq!(err.code, code::COMMAND_FAILED);
+        assert!(err.stderr.contains("ERROR"), "stderr = {:?}", err.stderr);
+    });
+}
+
+#[test]
+#[serial]
+fn doctor_fallback_keeps_output_lines_on_a_nonzero_exit() {
+    // The other half of the #233 guard: a non-zero exit that still
+    // produced report lines stays Ok — those lines are the diagnostic
+    // output the fallback exists for. Pins the `lines.is_empty()`
+    // condition so a future flat "non-zero → Err" reading of the
+    // conventions cannot silently drop failing-check reports.
+    let script = fixture_script();
+    with_slug("doctor-fail-with-lines", || {
+        let v = mise_doctor(&script, None).expect("lines on a non-zero exit stay Ok");
+        let lines = v["rawLines"].as_array().expect("rawLines array");
+        assert_eq!(lines.len(), 3);
+        assert_eq!(lines[2]["status"], "error");
+        assert!(lines[2]["text"].as_str().unwrap().contains("plugin failed"));
+    });
+}
+
 // ---------- registry ----------
 
 #[test]

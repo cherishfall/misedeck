@@ -1428,8 +1428,6 @@ fn doctor_text_fallback(
         None => RunRequest::new(args),
     };
     let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
-    // A non-zero exit is still valuable diagnostic output for the
-    // health page; surface the lines instead of failing the command.
     let lines: Vec<DoctorLine> = outcome
         .stdout
         .lines()
@@ -1438,6 +1436,16 @@ fn doctor_text_fallback(
             status: classify_doctor_line(line),
         })
         .collect();
+    // A non-zero exit with NO output lines is a broken mise, not a
+    // report: shipping Ok({rawLines: []}) would render "Status: OK"
+    // from no data (issue #233). Non-zero exits WITH lines stay Ok —
+    // those lines are the diagnostic output the fallback exists for.
+    if lines.is_empty() && outcome.exit_code != 0 {
+        return Err(AppError::command_failed(
+            format!("mise doctor exited with status {}", outcome.exit_code),
+            outcome.stderr,
+        ));
+    }
     Ok(serde_json::json!({
         "rawLines": lines,
         "rawText": outcome.stdout,
