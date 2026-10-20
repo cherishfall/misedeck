@@ -30,6 +30,7 @@
     "recentsHeader": "最近的目录",
     "pickerLabel": "选择目录",
     "pickerTitle": "为 MiseDeck 选择一个目录",
+    "pickerFailed": "无法打开目录选择对话框，未做任何改动，请重试。",
     "chooseAnother": "选择其他目录",
     "removeRecentLabel": "从最近列表移除",
     "unavailableLabel": "目录不可用",

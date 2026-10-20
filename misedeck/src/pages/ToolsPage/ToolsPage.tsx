@@ -48,7 +48,7 @@ import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
 import { useTrustGuard } from "../../state/trustContext";
 import { detectMise, isAppError } from "../../api/mise";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { pickDirectory } from "../../directory/pickDirectory";
 import {
   useParsedOutdatedTools,
   useParsedToolsList,
@@ -988,24 +988,24 @@ function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
   const [tool, setTool] = useState("");
   const [version, setVersion] = useState("");
   const [path, setPath] = useState("");
+  const [pickError, setPickError] = useState<string | null>(null);
 
   // Pick the local directory with the native dialog. The result stays in
   // local form state — we deliberately do NOT call `setDirectory`, which
   // would move the whole app's directory context (DirectoryIndicator's
-  // `onPick` does that; this is a command argument, not the cwd).
-  const pickDirectory = async () => {
-    try {
-      const picked = await openDialog({
-        directory: true,
-        multiple: false,
-        title: t(I18N_KEYS.directory.pickerTitle),
-      });
-      if (typeof picked === "string" && picked.length > 0) {
+  // pick does that; this is a command argument, not the cwd). The dialog
+  // itself is the shared `directory/pickDirectory` implementation: a
+  // cancel says nothing, a failed dialog reads through the form's
+  // existing conflict line (issue #228).
+  const pickPath = () => {
+    void pickDirectory(
+      t,
+      (picked) => {
+        setPickError(null);
         setPath(picked);
-      }
-    } catch {
-      // User cancelled or the dialog failed; leave the field as-is.
-    }
+      },
+      { onError: setPickError },
+    );
   };
 
   const canSubmit =
@@ -1065,9 +1065,9 @@ function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
           </span>
         </Tooltip>
         <Button
-          variant="primary"
+          variant="secondary"
           size="sm"
-          onClick={pickDirectory}
+          onClick={pickPath}
           data-testid="tools-link-pick"
         >
           {t(I18N_KEYS.directory.pickerLabel)}
@@ -1085,6 +1085,11 @@ function LinkToolForm({ onLink, disabled, conflict }: LinkToolFormProps) {
       {conflict && (
         <p className={styles.linkConflict} role="alert" data-testid="tools-link-conflict">
           {conflict}
+        </p>
+      )}
+      {pickError && (
+        <p className={styles.linkConflict} role="alert" data-testid="tools-link-pick-error">
+          {pickError}
         </p>
       )}
     </div>

@@ -185,11 +185,23 @@ export function DirectoryPreview() {
 
   // The "Choose directory" action (issue #48): the same Tauri
   // dialog picker the directory indicator uses, shared via
-  // `directory/pickDirectory.ts` so the two call sites cannot drift.
+  // `directory/pickDirectory.ts` — every picker in the app (indicator,
+  // this page, the unavailable banner, the Tools Link form) goes through
+  // that one handler, so the call sites cannot drift.
   // A successful pick switches the app-level directory context, which
-  // re-keys every query on the page.
+  // re-keys every query on the page. A dialog that failed is readable
+  // under the empty state instead of leaving the button looking dead;
+  // a cancel stays silent (issue #228).
+  const [pickError, setPickError] = useState<string | null>(null);
   const onPickDirectory = () => {
-    void pickDirectory(t, setDirectory);
+    void pickDirectory(
+      t,
+      (picked) => {
+        setPickError(null);
+        setDirectory(picked);
+      },
+      { onError: setPickError },
+    );
   };
 
   // Every hook stays above the early returns below so the hook
@@ -392,20 +404,31 @@ export function DirectoryPreview() {
             </header>
           )}
           {cwd === null && (
-            <EmptyState
-              title={t(I18N_KEYS.preview.sections.tools)}
-              body={t(I18N_KEYS.preview.empty.body)}
-              action={
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => void onPickDirectory()}
-                  data-testid="preview-choose-directory"
+            <>
+              <EmptyState
+                title={t(I18N_KEYS.preview.sections.tools)}
+                body={t(I18N_KEYS.preview.empty.body)}
+                action={
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => void onPickDirectory()}
+                    data-testid="preview-choose-directory"
+                  >
+                    {t(I18N_KEYS.preview.empty.action)}
+                  </Button>
+                }
+              />
+              {pickError && (
+                <p
+                  className={styles.pickError}
+                  role="alert"
+                  data-testid="preview-pick-error"
                 >
-                  {t(I18N_KEYS.preview.empty.action)}
-                </Button>
-              }
-            />
+                  {pickError}
+                </p>
+              )}
+            </>
           )}
           {cwd !== null && toolsError && (
             <div className={styles.errorState}>

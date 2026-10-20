@@ -10,7 +10,7 @@
 // eyebrow slot carries the panel's title text.
 
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { useNavigate } from "react-router";
 
 import { I18N_KEYS } from "../../i18n/keys";
 
@@ -26,16 +26,23 @@ interface MiseMissingStateProps {
 
 export function MiseMissingState({ backHref = "/" }: MiseMissingStateProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   return (
     <div className={styles.missing} role="status">
       <div className={styles.eyebrow}>{t(I18N_KEYS.tools.missing.title)}</div>
       <p className={styles.body}>{t(I18N_KEYS.tools.missing.body)}</p>
       <div className={styles.actions}>
-        <Link to={backHref} className={styles.back}>
-          <Button variant="secondary" size="sm">
-            ← {t(I18N_KEYS.common.back)}
-          </Button>
-        </Link>
+        {/* One interactive element: the back control used to be a
+            `<Link>` wrapping a `<Button>`, which rendered `<a><button>`
+            and gave Enter two activation paths (issue #228). */}
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => navigate(backHref)}
+          data-testid="mise-missing-back"
+        >
+          ← {t(I18N_KEYS.common.back)}
+        </Button>
       </div>
     </div>
   );

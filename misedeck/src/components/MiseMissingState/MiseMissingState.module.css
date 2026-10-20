@@ -40,7 +40,3 @@
   flex-wrap: wrap;
   margin-top: var(--space-2);
 }
-
-.back {
-  text-decoration: none;
-}

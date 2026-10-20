@@ -69,6 +69,10 @@ export const I18N_KEYS = {
     recentsHeader: "directory.recentsHeader",
     pickerLabel: "directory.pickerLabel",
     pickerTitle: "directory.pickerTitle",
+    /** Readable failure copy when the native dialog itself failed
+        (issue #228): a cancel is silent, a failure is not. Shared by
+        every picker call site, including the Tools page's Link form. */
+    pickerFailed: "directory.pickerFailed",
     chooseAnother: "directory.chooseAnother",
     removeRecentLabel: "directory.removeRecentLabel",
     unavailableLabel: "directory.unavailableLabel",

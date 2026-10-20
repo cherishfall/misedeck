@@ -14,9 +14,11 @@
 // en copy on the Choose family; the Tools page Link form shares the
 // same key). Both render `primary` — choose-directory has one visual
 // role everywhere, toolbar included (ui-ux-rules.md variant mapping,
-// beta9). The shared pick handler lives in `directory/pickDirectory.ts`.
+// beta9) — an inline form row is the exception: there the row's submit
+// owns primary and the picker drops to secondary (issue #228). The
+// shared pick handler lives in `directory/pickDirectory.ts`.
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
@@ -37,6 +39,9 @@ import { Tooltip } from "../Tooltip/Tooltip";
 
 import styles from "./DirectoryIndicator.module.css";
 
+/** How long the strip's hint line stays on screen. */
+const HINT_DISMISS_MS = 4000;
+
 interface DirectoryIndicatorProps {
   /** Explicit render mode. Passed by the parent from the directory
    *  context — the component never infers it from `cwd` itself. */
@@ -54,8 +59,25 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
   // before the user can select it; selecting a live entry is still
   // re-probed by the context itself.
   const [recentProbes, setRecentProbes] = useState<Record<string, DirectoryProbe>>({});
-  const [openHint, setOpenHint] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
-  const openHintTimer = useRef<number | null>(null);
+  // The strip's single transient acknowledgement line (issue #228): the
+  // open-in-terminal outcome and a failed directory pick both read
+  // through it, so there is one hint channel instead of one per action.
+  const [hint, setHint] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const hintTimer = useRef<number | null>(null);
+  const clearHintTimer = () => {
+    if (hintTimer.current !== null) {
+      window.clearTimeout(hintTimer.current);
+      hintTimer.current = null;
+    }
+  };
+  const showHint = useCallback((kind: "ok" | "error", text: string) => {
+    clearHintTimer();
+    setHint({ kind, text });
+    hintTimer.current = window.setTimeout(() => {
+      setHint(null);
+      hintTimer.current = null;
+    }, HINT_DISMISS_MS);
+  }, []);
 
   const lastOutcomeRef = useRef<OpenTerminalOutcome | null>(null);
   useEffect(() => {
@@ -63,42 +85,41 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
     if (lastOutcomeRef.current === openOutcome) return;
     lastOutcomeRef.current = openOutcome;
     consumeOpenOutcome();
-    if (openHintTimer.current !== null) {
-      window.clearTimeout(openHintTimer.current);
-    }
     if (openOutcome.kind === "ok") {
       const o = openOutcome.outcome;
-      setOpenHint({
-        kind: "ok",
-        text: t(I18N_KEYS.activation.openInTerminalSuccess, {
+      showHint(
+        "ok",
+        t(I18N_KEYS.activation.openInTerminalSuccess, {
           terminal: o.terminalApp,
           path: o.path,
         }),
-      });
+      );
     } else {
       const path = openOutcome.path ?? "";
-      setOpenHint({
-        kind: "error",
-        text: t(I18N_KEYS.activation.openInTerminalError, { path }),
-      });
+      showHint(
+        "error",
+        t(I18N_KEYS.activation.openInTerminalError, { path }),
+      );
     }
-    openHintTimer.current = window.setTimeout(() => {
-      setOpenHint(null);
-      openHintTimer.current = null;
-    }, 4000);
     // Unmount (or a new outcome) must not leave the dismiss timer
     // holding a stale setState (issue #209) — same cleanup contract as
     // CopyButton / Tooltip.
-    return () => {
-      if (openHintTimer.current !== null) {
-        window.clearTimeout(openHintTimer.current);
-        openHintTimer.current = null;
-      }
-    };
-  }, [openOutcome, consumeOpenOutcome, t]);
+    return clearHintTimer;
+  }, [openOutcome, consumeOpenOutcome, t, showHint]);
 
+  // A failed directory dialog reads through the hint line below; a
+  // cancel stays silent (nothing happened to explain) and a confirmed
+  // pick clears whatever the line was showing (issue #228).
   const onPick = () => {
-    void pickDirectory(t, setDirectory);
+    void pickDirectory(
+      t,
+      (picked) => {
+        clearHintTimer();
+        setHint(null);
+        setDirectory(picked);
+      },
+      { onError: (message) => showHint("error", message) },
+    );
   };
 
   useEffect(() => {
@@ -119,6 +140,20 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
     const path = context.kind === "dir" ? context.path : null;
     void openInTerminal(path);
   };
+
+  // One hint line, shared by both strip modes (issue #228): the
+  // choose-directory button lives in Global mode too, so a failed pick
+  // is readable there and not only in Directory mode.
+  const hintRow = hint && (
+    <div className={styles.hintRow}>
+      <span
+        className={hint.kind === "ok" ? styles.openHintOk : styles.openHintError}
+        data-testid="directory-indicator-open-hint"
+      >
+        {hint.text}
+      </span>
+    </div>
+  );
 
   // Global mode: only the Global label and the choose-directory button.
   // Directory-only actions (open-in-terminal, recents, the picker)
@@ -153,6 +188,7 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
             </Button>
           </div>
         </div>
+        {hintRow}
       </div>
     );
   }
@@ -280,16 +316,7 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
         </Tooltip>
       </div>
 
-      {openHint && (
-        <div className={styles.hintRow}>
-          <span
-            className={openHint.kind === "ok" ? styles.openHintOk : styles.openHintError}
-            data-testid="directory-indicator-open-hint"
-          >
-            {openHint.text}
-          </span>
-        </div>
-      )}
+      {hintRow}
     </div>
   );
 }

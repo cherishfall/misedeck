@@ -8,6 +8,7 @@
 // directory is primary (ui-ux-rules.md: one global action, one visual
 // role).
 
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
@@ -22,8 +23,24 @@ import styles from "./DirectoryUnavailableBanner.module.css";
 export function DirectoryUnavailableBanner() {
   const { t } = useTranslation();
   const { unavailablePath, dismissUnavailable, setDirectory } = useDirectory();
+  // A dialog that failed to open says so inside this banner (issue
+  // #228) — the banner is already the notice channel for "the directory
+  // did not work", and it carries `role="status"`, so the copy is
+  // announced without a second live region. A cancel stays silent.
+  const [pickError, setPickError] = useState<string | null>(null);
 
   if (unavailablePath === null) return null;
+
+  const onPick = () => {
+    void pickDirectory(
+      t,
+      (picked) => {
+        setPickError(null);
+        setDirectory(picked);
+      },
+      { onError: setPickError },
+    );
+  };
 
   return (
     <div className={styles.wrap}>
@@ -35,7 +52,7 @@ export function DirectoryUnavailableBanner() {
             <Button
               variant="primary"
               size="sm"
-              onClick={() => void pickDirectory(t, setDirectory)}
+              onClick={onPick}
               data-testid="directory-unavailable-pick"
             >
               {t(I18N_KEYS.directory.pickerLabel)}
@@ -52,6 +69,14 @@ export function DirectoryUnavailableBanner() {
         }
       >
         {t(I18N_KEYS.directory.unavailableBody, { path: unavailablePath })}
+        {pickError && (
+          <p
+            className={styles.pickError}
+            data-testid="directory-unavailable-pick-error"
+          >
+            {pickError}
+          </p>
+        )}
       </Banner>
     </div>
   );

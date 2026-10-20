@@ -165,6 +165,18 @@
   line-height: 1.5;
 }
 
+/* Inline failure of the "Choose directory" dialog (issue #228): the
+ * page's other error copy is a panel for a failed read, so the pick's
+ * one-line acknowledgement stays inline and close to the button. */
+.pickError {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--breach);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 60ch;
+}
+
 .errorStderr {
   font-family: var(--font-mono);
   font-size: var(--size-data);

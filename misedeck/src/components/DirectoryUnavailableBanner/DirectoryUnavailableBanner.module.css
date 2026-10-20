@@ -5,3 +5,13 @@
   width: 100%;
   padding: var(--space-3) var(--space-5) 0;
 }
+
+/* Failed reselect dialog: the banner owns the notice, so the failure
+ * reads as one more line inside its own body (issue #228). */
+.pickError {
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  color: var(--breach);
+  margin: var(--space-2) 0 0;
+  line-height: 1.5;
+}
