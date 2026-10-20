@@ -67,3 +67,6 @@ fastlane/test_output
 .chrome-en/
 misedeck/scripts-capture.mjs
 scripts-capture-exec.mjs
+
+# WorkBuddy local agent memory (machine-local, never shared)
+.workbuddy/memory/
