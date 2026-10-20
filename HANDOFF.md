@@ -2,9 +2,9 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-10-21, night — beta16 deep-audit batch #221–#231 ALL CLOSED; only verification gates remain)
+## CURRENT STATE (2026-10-21, night — beta16 deep-audit batch #221–#232 ALL CLOSED; only verification gates remain)
 
-**Owner authorized visual + runtime verification this cycle (beta9 exception).** Four parallel audits ran (frontend logic / Rust runtime / visual over 20 real screenshots — 8 pages × en+zh light + 4 pages dark / rule-vs-code). Findings were published as SPEC **#220** and tickets **#221–#231**; all eleven are implemented and closed. `gh issue list --state open` = #220 (SPEC, all tickets closed), #215, #201 — every one is an owner-verification gate.
+**Owner authorized visual + runtime verification this cycle (beta9 exception).** Four parallel audits ran (frontend logic / Rust runtime / visual over 20 real screenshots — 8 pages × en+zh light + 4 pages dark / rule-vs-code). Findings were published as SPEC **#220** and tickets **#221–#232**; all twelve are implemented and closed. `gh issue list --state open` = #220 (SPEC, all tickets closed), #215, #201 — every one is an owner-verification gate.
 
 | Issue | Commit | Scope |
 | --- | --- | --- |
@@ -19,6 +19,7 @@ This document is a continuation marker between autonomous driver sessions.
 | #229 | `57bf0f2` | All home resolution via `dirs::home_dir()` (shell.rs phantom `PROFILE` deleted), `locate_mise` probes `PATH` after the well-known list, install echo derived from the same platform branch the executor runs, shell-safe single-quote echo. Windows CI job green (run `39462447364`). |
 | #230 | `eb853e4` | **Implemented by the driver in the main session** (subagent quota was exhausted). `validated_cwd()` gates every cwd-taking command (10) so a dead/unmounted directory fails in the page's own error shape and an empty string never becomes `-C ""`; `read_lockfile` is now `async` + `spawn_run`; doctor/registry fall back only on `PARSE_FAILED`/`COMMAND_FAILED` (no more 2×120s timeout stacking); `MISE_SAFE=1` is really set for every read (all reads funnel through `run_mise_json`; the streaming surface deliberately does not — verified byte-identical mise output with/without it); `opener:default` dropped, `allow-open-path` kept unscoped with the reasoning in architecture.md; the lockfile is resolved by walking up to the nearest `mise.lock` (subdirectory contexts no longer report "no lockfile"). 186 Rust tests + `npm run ci` green. |
 | #231 | `d202502` | Retired the self-invented `scope / 作用域` vocabulary (8 strings, both locales; `grep -c` = 0); plugin URL placeholder shortened so the example is not cut in half; Preview's env values render like Env's (no italics, `--text`); `CommandHint`'s separator is `" ·\u00A0"` so a wrapped line can only start with `· command`, never end with an orphaned dot. 125 frontend tests green. |
+| #232 | `18bd5ef` | Source-badge colour closed out as neutral: `tool` joins `project` in the info family instead of wearing warning gold (a source is a fact, not a state — the badge's text carries it; warning means needs-attention per visual-language.md). The two per-page copies of `envSourceVariant` (EnvPage + DirectoryPreview) collapse into `src/utils/envSource.ts` with 2 node:test cases, so the pages cannot drift apart again. Found during the post-fix screenshot re-review. |
 
 **Not verified anywhere in this batch (every ticket carries it on its issue):** no app launch, no screenshots, no real Windows machine — Windows is compile + unit level only. **Owner verifies on a beta.16 build.**
 
@@ -29,7 +30,7 @@ This document is a continuation marker between autonomous driver sessions.
 - `docs/screenshots/` is still stale relative to #225/#226 (Source column now 216px / 26-char budget, new shared page baseline). Re-capture before the beta.16 tag (README freshness gate in `docs/agents/ci.md`).
 - Windows remains compile + unit level only: no real Windows machine, so process-group kill (#223), shell home resolution (#229) and the Windows CI job are unverified on hardware.
 
-**Next move:** owner verifies the whole beta16 batch on a build (highlights: #221 failed mutations no longer claim success; #222/#223 the panel can no longer hang and cancel really stops the process tree; #224 honest dates/upgrade targets/sources; #225 legible columns; #226 shared page baseline and no floating header on empty tables; #227 keyboard-safe dialogs and tooltips; #229/#230 Windows + cwd hardening; #231 copy). Then **tag beta.16** (bump 6 places / 5 files; re-capture `docs/screenshots/` first per the README freshness gate). A fresh driver session should read #220's ticket list before touching anything.
+**Next move:** owner verifies the whole beta16 batch on a build (highlights: #221 failed mutations no longer claim success; #222/#223 the panel can no longer hang and cancel really stops the process tree; #224 honest dates/upgrade targets/sources; #225 legible columns; #226 shared page baseline and no floating header on empty tables; #227 keyboard-safe dialogs and tooltips; #229/#230 Windows + cwd hardening; #231 copy; #232 tool-sourced badges no longer gold). Then **tag beta.16** (bump 6 places / 5 files; re-capture `docs/screenshots/` first per the README freshness gate). A fresh driver session should read #220's ticket list before touching anything.
 
 ---
 
