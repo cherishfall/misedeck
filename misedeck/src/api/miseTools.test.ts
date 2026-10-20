@@ -5,7 +5,39 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { parseRunInput, isEnvWriteScopeMismatch } from "./miseTools";
+import { parseLsRemotePayload, parseRunInput, isEnvWriteScopeMismatch } from "./miseTools";
+
+// Wire-shape guard for `mise ls-remote --json <tool>` (issue #224):
+// rows lifted verbatim from the real `mise ls-remote --json node`
+// output (verified against mise 2026.10.15). mise emits snake_case
+// `created_at`; the parser used to read a camelCase `createdAt`, so
+// the Created column rendered "—" everywhere and filtering by a date
+// fragment never matched. Pin the exact field here so it cannot drift
+// again — the fixture payload (`src-tauri/tests/fixtures/mise/
+// ls-remote---json-go/stdout`) already ships the same field.
+test("parseLsRemotePayload: reads mise's snake_case created_at", () => {
+  const payload = [
+    { version: "0.1.14", created_at: "2011-08-26T00:00:00.0Z" },
+    { version: "0.1.15", created_at: "2011-08-26T00:00:00.0Z" },
+    { version: "22.11.0", created_at: "2024-10-29T00:00:00.0Z" },
+  ];
+  assert.deepEqual(parseLsRemotePayload(payload), [
+    { version: "0.1.14", createdAt: "2011-08-26T00:00:00.0Z" },
+    { version: "0.1.15", createdAt: "2011-08-26T00:00:00.0Z" },
+    { version: "22.11.0", createdAt: "2024-10-29T00:00:00.0Z" },
+  ]);
+});
+
+test("parseLsRemotePayload: a row without created_at keeps the column's em-dash fallback", () => {
+  assert.deepEqual(parseLsRemotePayload([{ version: "1.0.0" }]), [
+    { version: "1.0.0", createdAt: undefined },
+  ]);
+});
+
+test("parseLsRemotePayload: a non-array payload yields no rows", () => {
+  assert.deepEqual(parseLsRemotePayload({ version: "1.0.0" }), []);
+  assert.deepEqual(parseLsRemotePayload(null), []);
+});
 
 test("parseRunInput: splits a single line into shell words", () => {
   assert.deepEqual(parseRunInput("npm run build"), ["npm", "run", "build"]);

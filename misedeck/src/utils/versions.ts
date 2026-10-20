@@ -1,3 +1,5 @@
+import type { MiseOutdatedItem } from "../types/tauri";
+
 /**
  * Directional compare for mise's date-based versions (e.g. 2026.9.2):
  * split on `.` and compare segment-wise numerically. Returns > 0 when
@@ -81,4 +83,19 @@ function toolVersionKey(v: string): ToolVersionKey {
     return { numbers, prefix: v, trailing: "" };
   }
   return { numbers, prefix: v.slice(0, firstIndex), trailing: v.slice(lastEnd) };
+}
+
+/**
+ * True when a `mise outdated` row names a real upgrade target: a
+ * non-empty `latest` that differs from the row's own `current`. mise can
+ * report the same value for both — rust requested as `latest` reports
+ * `current: "stable"` and `latest: "stable"` — and an upgrade hint whose
+ * target equals the current version promises a change that cannot
+ * happen (issue #224). This is the one predicate behind every upgrade
+ * surface: the Tools table's Version-cell chip, the "N tools outdated"
+ * count, and the version-management section's in-use hint all derive
+ * from it, so they can never disagree.
+ */
+export function hasUpgradeTarget(item: MiseOutdatedItem): boolean {
+  return item.latest !== undefined && item.latest !== "" && item.latest !== item.current;
 }

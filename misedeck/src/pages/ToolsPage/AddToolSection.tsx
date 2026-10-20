@@ -70,7 +70,7 @@ import {
   type TableColumn,
 } from "../../components";
 import { shortenPathTail } from "../../utils/paths";
-import { compareToolVersions } from "../../utils/versions";
+import { compareToolVersions, hasUpgradeTarget } from "../../utils/versions";
 
 import styles from "./AddToolSection.module.css";
 
@@ -282,6 +282,13 @@ export function AddToolSection({
   const upgradeInfo = useMemo(() => {
     if (selectedTool === null || activeRows.length === 0) return null;
     const entry = (outdated.data ?? []).find((o) => o.name === selectedTool);
+    // One rule for every upgrade surface (issue #224): a target that
+    // equals the current version is not an update — mise reports
+    // `current: "stable", latest: "stable"` for rust requested as
+    // `latest`. The in-use row's version is the second same-value
+    // guard (a stale outdated read right after an upgrade). Same
+    // predicate as the main table's chip and the outdated count.
+    if (entry !== undefined && !hasUpgradeTarget(entry)) return null;
     const latest = entry?.latest;
     if (latest === undefined || latest === "" || latest === activeRows[0]?.version) {
       return null;

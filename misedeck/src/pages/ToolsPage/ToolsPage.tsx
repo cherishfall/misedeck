@@ -82,6 +82,7 @@ import {
 } from "../../components/ExecutionPanel";
 import { FloatingMenu } from "../../components/FloatingMenu";
 import { SOURCE_CELL_CHARS, shortenPathTail } from "../../utils/paths";
+import { hasUpgradeTarget } from "../../utils/versions";
 import {
   confirmUseBodyKey,
   uninstallConfirmBodyKey,
@@ -358,10 +359,21 @@ export function ToolsPage() {
     [fireMutation, linkRun, t],
   );
 
+  // The outdated rows that name a real upgrade target (issue #224): mise
+  // can report `current === latest` (rust requested as `latest` reports
+  // both "stable"), and a hint whose target equals the current value
+  // promises a change that cannot happen. One filtered list feeds both
+  // upgrade surfaces below — the Version-cell chips and the
+  // "N tools outdated" count — so they can never disagree.
+  const upgradableOutdated = useMemo(
+    () => (outdated.data ?? []).filter(hasUpgradeTarget),
+    [outdated.data],
+  );
+
   const rows = useMemo<ToolRow[]>(() => {
     if (!tools.data) return [];
     const outdatedByTool = new Map<string, { latest: string }>();
-    for (const item of outdated.data ?? []) {
+    for (const item of upgradableOutdated) {
       if (item.latest) outdatedByTool.set(item.name, { latest: item.latest });
     }
     const out: ToolRow[] = [];
@@ -385,7 +397,7 @@ export function ToolsPage() {
       });
     }
     return out;
-  }, [tools.data, outdated.data]);
+  }, [tools.data, upgradableOutdated]);
 
   // Text filter over the full row set (issue #106); sorting applies to
   // the filtered rows inside the Table.
@@ -602,7 +614,7 @@ export function ToolsPage() {
             status={
               outdated.isPending ? "loading" : outdated.error ? "error" : "ok"
             }
-            count={outdated.data?.length ?? 0}
+            count={upgradableOutdated.length}
             onRetry={() => {
               void queryClient.invalidateQueries({
                 queryKey: ["tools", "outdated", cwd],

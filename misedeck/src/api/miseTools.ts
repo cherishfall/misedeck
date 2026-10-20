@@ -136,7 +136,11 @@ export function parseOutdatedPayload(
   return out;
 }
 
-/** Parse the `mise ls-remote --json <tool>` payload (`[rows]`). */
+/** Parse the `mise ls-remote --json <tool>` payload (`[rows]`). mise
+ *  emits snake_case keys here too — `created_at`, verified against
+ *  `mise ls-remote --json node` (issue #224): reading a camelCase
+ *  `createdAt` left the Created column empty and made date-fragment
+ *  filtering never match. */
 export function parseLsRemotePayload(value: unknown): MiseLsRemoteItem[] {
   if (!Array.isArray(value)) return [];
   const out: MiseLsRemoteItem[] = [];
@@ -147,7 +151,7 @@ export function parseLsRemotePayload(value: unknown): MiseLsRemoteItem[] {
     if (version === "") continue;
     out.push({
       version,
-      createdAt: asOptionalString(o.createdAt),
+      createdAt: asOptionalString(o.created_at),
     });
   }
   return out;

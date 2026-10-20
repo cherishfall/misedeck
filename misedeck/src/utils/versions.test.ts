@@ -6,7 +6,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { compareToolVersions } from "./versions";
+import { compareToolVersions, hasUpgradeTarget } from "./versions";
 
 const desc = (versions: string[]): string[] =>
   [...versions].sort((a, b) => compareToolVersions(b, a));
@@ -58,4 +58,31 @@ test("compareToolVersions: garbage input never throws and stays deterministic", 
   }
   // A string with no digits falls back to a lexical comparison.
   assert.ok(compareToolVersions("beta", "alpha") > 0);
+});
+
+// `hasUpgradeTarget` is the one predicate behind every upgrade surface
+// (issue #224): the Tools table's chip, the "N tools outdated" count,
+// and the version-management section's in-use hint. External behaviour
+// only — an outdated row's state in, an upgrade-offered decision out.
+test("hasUpgradeTarget: a latest newer than current is an update", () => {
+  assert.equal(hasUpgradeTarget({ name: "node", current: "20.11.0", latest: "20.18.1" }), true);
+});
+
+test("hasUpgradeTarget: latest equal to current is not an update", () => {
+  // The audited rust row: requested `latest`, mise reports both
+  // `current` and `latest` as "stable" — the badge would promise an
+  // update to the version already in use.
+  assert.equal(
+    hasUpgradeTarget({ name: "rust", requested: "latest", current: "stable", latest: "stable" }),
+    false,
+  );
+});
+
+test("hasUpgradeTarget: a missing or empty latest is not an update", () => {
+  assert.equal(hasUpgradeTarget({ name: "node", current: "20.11.0" }), false);
+  assert.equal(hasUpgradeTarget({ name: "node", current: "20.11.0", latest: "" }), false);
+});
+
+test("hasUpgradeTarget: a latest with no current still counts", () => {
+  assert.equal(hasUpgradeTarget({ name: "node", latest: "20.18.1" }), true);
 });

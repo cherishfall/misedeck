@@ -72,8 +72,12 @@ interface ToolRow {
   id: string;
   tool: string;
   version: string;
-  /** "Global" or "Current directory" (i18n) — derived from `source.path`. */
-  source: "global" | "project";
+  /** "Global" or "Current directory" (i18n) — derived from `source.path`.
+   *  `undefined` when mise reports no config-file source (an orphan
+   *  installation): the cell renders a dim "—" instead of claiming a
+   *  scope mise never stated (issue #224) — the same conclusion the
+   *  Tools page draws for the same row. */
+  source: "global" | "project" | undefined;
 }
 
 interface EnvRow {
@@ -93,19 +97,21 @@ interface EnvRow {
  * project is the source of truth; otherwise the global config (or
  * some other ancestor) is. Separator- and case-normalized via the
  * shared path util so Windows backslash paths classify correctly
- * (issue #159).
+ * (issue #159). A tool with no config-file source at all (an orphan
+ * installation) has no honest answer here: `undefined` renders the
+ * em-dash — never a fabricated "Global" (issue #224).
  */
 function toolSourceKind(
   sourcePath: string | undefined,
   cwd: string,
-): "global" | "project" {
-  if (!sourcePath) return "global";
+): "global" | "project" | undefined {
+  if (!sourcePath) return undefined;
   return isPathUnder(cwd, sourcePath) ? "project" : "global";
 }
 
 /** Map a tool's source category to the badge variant. */
 function toolSourceVariant(
-  source: "global" | "project",
+  source: "global" | "project" | undefined,
 ): "default" | "info" {
   return source === "project" ? "info" : "default";
 }
@@ -287,14 +293,20 @@ export function DirectoryPreview() {
       key: "source",
       header: t(I18N_KEYS.preview.columns.source),
       width: "120px",
-      sortValue: (r) => r.source,
-      cell: (r) => (
-        <Badge variant={toolSourceVariant(r.source)}>
-          {r.source === "project"
-            ? t(I18N_KEYS.preview.toolSource.project)
-            : t(I18N_KEYS.preview.toolSource.global)}
-        </Badge>
-      ),
+      sortValue: (r) => r.source ?? "",
+      cell: (r) =>
+        // No config-file source — mise never said where this row came
+        // from, so the cell claims nothing: a dim "—" (issue #224),
+        // the same conclusion the Tools page shows for the row.
+        r.source === undefined ? (
+          <span className={styles.dim}>—</span>
+        ) : (
+          <Badge variant={toolSourceVariant(r.source)}>
+            {r.source === "project"
+              ? t(I18N_KEYS.preview.toolSource.project)
+              : t(I18N_KEYS.preview.toolSource.global)}
+          </Badge>
+        ),
     },
   ];
 

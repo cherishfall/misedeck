@@ -132,6 +132,12 @@
   font-style: italic;
 }
 
+/* Missing-data placeholder: a dim "—" where a badge would claim a
+ * source mise did not report (issue #224). */
+.dim {
+  color: var(--dim);
+}
+
 /* ---------- Error / lockfile ---------- */
 
 .errorState {
