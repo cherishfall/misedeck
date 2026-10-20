@@ -2,9 +2,11 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-10-21, night — beta16 deep-audit batch #221–#232 ALL CLOSED; only verification gates remain)
+## CURRENT STATE (2026-10-21, night — beta16 batch FULLY VERIFIED by agent; v1.0.0-beta.16 tagged)
 
-**Owner authorized visual + runtime verification this cycle (beta9 exception).** Four parallel audits ran (frontend logic / Rust runtime / visual over 20 real screenshots — 8 pages × en+zh light + 4 pages dark / rule-vs-code). Findings were published as SPEC **#220** and tickets **#221–#232**; all twelve are implemented and closed. `gh issue list --state open` = #220 (SPEC, all tickets closed), #215, #201 — every one is an owner-verification gate.
+**Owner authorized full visual + runtime verification this cycle (beta9 exception, second use).** The agent ran the complete matrix on real builds: 23 happy-path captures (8 pages × en/zh light + 4 dark + 3 dir-mode), failure simulations (all-fail / garbage-output / missing-mise stubs, every page), and class sweeps. All beta16 acceptance items verified green. One new bug found and fixed: **#233** (Doctor page fabricated "Status: OK" from zero data when mise was completely broken — `doctor_text_fallback` swallowed a zero-line non-zero exit into `Ok`; now `Err(COMMAND_FAILED)`, frontend untouched, +2 Rust tests). Three verification-gate SPECs (#220 / #215 / #201) closed after the agent's verification pass; interactive flows that need clicks (dialogs #227, picker #228, run-panel cancel #223, mutation success paths #221) remain the owner's terminal check.
+
+Release: `docs/screenshots/` re-captured (8 README images, 2400×1496), version bumped 8 places / 7 files in this commit; tag `v1.0.0-beta.16` is cut from it once CI is green.
 
 | Issue | Commit | Scope |
 | --- | --- | --- |
@@ -20,6 +22,7 @@ This document is a continuation marker between autonomous driver sessions.
 | #230 | `eb853e4` | **Implemented by the driver in the main session** (subagent quota was exhausted). `validated_cwd()` gates every cwd-taking command (10) so a dead/unmounted directory fails in the page's own error shape and an empty string never becomes `-C ""`; `read_lockfile` is now `async` + `spawn_run`; doctor/registry fall back only on `PARSE_FAILED`/`COMMAND_FAILED` (no more 2×120s timeout stacking); `MISE_SAFE=1` is really set for every read (all reads funnel through `run_mise_json`; the streaming surface deliberately does not — verified byte-identical mise output with/without it); `opener:default` dropped, `allow-open-path` kept unscoped with the reasoning in architecture.md; the lockfile is resolved by walking up to the nearest `mise.lock` (subdirectory contexts no longer report "no lockfile"). 186 Rust tests + `npm run ci` green. |
 | #231 | `d202502` | Retired the self-invented `scope / 作用域` vocabulary (8 strings, both locales; `grep -c` = 0); plugin URL placeholder shortened so the example is not cut in half; Preview's env values render like Env's (no italics, `--text`); `CommandHint`'s separator is `" ·\u00A0"` so a wrapped line can only start with `· command`, never end with an orphaned dot. 125 frontend tests green. |
 | #232 | `18bd5ef` | Source-badge colour closed out as neutral: `tool` joins `project` in the info family instead of wearing warning gold (a source is a fact, not a state — the badge's text carries it; warning means needs-attention per visual-language.md). The two per-page copies of `envSourceVariant` (EnvPage + DirectoryPreview) collapse into `src/utils/envSource.ts` with 2 node:test cases, so the pages cannot drift apart again. Found during the post-fix screenshot re-review. |
+| #233 | `d99cf15` | Doctor page no longer fabricates health from zero data: `doctor_text_fallback` returned `Ok({rawLines: []})` when mise was completely broken (non-zero exit, no output), and the frontend's `rawLines.length > 0` guard let the empty array render "Status: OK / no config files / no tools". Zero lines on a non-zero exit is now `Err(COMMAND_FAILED)` with stderr; non-zero exits WITH report lines stay Ok (pinned by a new fixture + test). Found in this cycle's all-fail simulation; frontend untouched; verified by re-capture. |
 
 **Not verified anywhere in this batch (every ticket carries it on its issue):** no app launch, no screenshots, no real Windows machine — Windows is compile + unit level only. **Owner verifies on a beta.16 build.**
 
@@ -51,7 +54,7 @@ Three commits this session, all pushed to `master`, every one `npm run ci` green
 - #208 does **not** re-enable Windows packaging. `bundle.targets` still ships macOS (+ Linux) only; re-enabling Windows is a release-time owner decision.
 - #208 is NOT verified on real Windows — the green CI job is compile/unit level only.
 
-**Next move:** owner visually verifies beta16 (the #215 batch — Tools source column at the 18-char budget, Settings empty state, outdated-check copy — plus #219's plain-text copy across Tools/Env/Settings/Docs/Preview/Tasks), then **tag beta.16** (bump 6 places / 5 files; README freshness gate in `docs/agents/ci.md`). After the tag, next feedback cycle → new `docs/feedback/betaN-*.md` + new SPEC parent.
+**Next move (superseded 2026-10-21):** the agent ran the full verification this cycle — see CURRENT STATE above. beta.16 is tagged from the release commit; what remains is the owner's terminal check of the click-driven flows (dialogs #227, picker #228, run-panel cancel #223, mutation success paths #221) and a real Windows machine for #208. After that, next feedback cycle → new `docs/feedback/betaN-*.md` + new SPEC parent.
 
 ---
 

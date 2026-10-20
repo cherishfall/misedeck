@@ -2198,7 +2198,7 @@ dependencies = [
 
 [[package]]
 name = "misedeck"
-version = "1.0.0-beta.14"
+version = "1.0.0-beta.16"
 dependencies = [
  "dirs",
  "libc",
