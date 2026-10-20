@@ -90,7 +90,7 @@ Packaged by CI, never exercised on a real desktop by the maintainer. Expect roug
 
 Each release attaches `misedeck_<version>_x64-setup.exe`. Windows is not verified yet: the maintainer is testing on real hardware now, and finding the mise binary on Windows is still being fixed ([#208](https://github.com/cherishfall/misedeck/issues/208)). Expect it not to work yet; reports help.
 
-## Build from source
+## Run from source
 
 The repo root is not the app: `package.json` lives in the `misedeck/` subdirectory, and every npm command has to run from there.
 
@@ -98,12 +98,31 @@ The repo root is not the app: `package.json` lives in the `misedeck/` subdirecto
 git clone https://github.com/cherishfall/misedeck.git
 cd misedeck/misedeck   # repo root → app directory (package.json is here)
 npm install
-npm run tauri build
 ```
 
 Already have a clone? `cd <repo>/misedeck` first — running `npm install` at the repo root fails with `ENOENT … package.json`.
 
-Bundles land in `src-tauri/target/release/bundle/`; `npm run tauri dev` runs the app against the Vite dev server. On Linux, install the WebKitGTK/GTK development packages listed in [`.github/workflows/release.yml`](./.github/workflows/release.yml) first.
+### Development
+
+```bash
+npm run tauri dev
+```
+
+This starts the Vite dev server on `localhost:1420` and opens the app window against it. Frontend edits hot-reload; changes under `src-tauri/` rebuild the Rust side and restart the window. The first launch compiles everything from scratch (minutes), later ones are incremental.
+
+`npm run dev` on its own only serves the frontend in a browser — the Rust backend and its commands are missing, so use `npm run tauri dev` to actually exercise the app.
+
+Extra prerequisites on top of Rust stable + Node 22: macOS needs the Xcode Command Line Tools (`xcode-select --install`); Linux needs the WebKitGTK/GTK development packages listed in [`.github/workflows/release.yml`](./.github/workflows/release.yml).
+
+### Build installers
+
+```bash
+npm run tauri build
+```
+
+Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on macOS, `nsis/` on Windows, `deb/`, `rpm/`, `appimage/` on Linux. macOS builds come out unsigned, exactly like the released ones.
+
+`npm run ci` runs what CI runs: typecheck, tests, the i18n/CSS lint guards, and a production frontend build.
 
 ## Known limitations
 

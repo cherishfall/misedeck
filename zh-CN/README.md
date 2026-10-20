@@ -90,7 +90,7 @@ xattr -dr com.apple.quarantine /Applications/misedeck.app
 
 每个 release 都会附带 `misedeck_<version>_x64-setup.exe`。Windows 尚未验证：维护者正在真机上测试，Windows 上定位 mise 可执行文件的问题仍在修复（[#208](https://github.com/cherishfall/misedeck/issues/208)）。目前请预期它跑不起来；欢迎反馈。
 
-## 从源码构建
+## 从源码运行
 
 仓库根目录不是应用目录：`package.json` 在 `misedeck/` 子目录里，所有 npm 命令都要在那里执行。
 
@@ -98,12 +98,31 @@ xattr -dr com.apple.quarantine /Applications/misedeck.app
 git clone https://github.com/cherishfall/misedeck.git
 cd misedeck/misedeck   # 仓库根 → 应用目录（package.json 在这里）
 npm install
-npm run tauri build
 ```
 
 已经克隆过了？先 `cd <repo>/misedeck`——在仓库根目录执行 `npm install` 会报 `ENOENT … package.json`。
 
-安装包输出到 `src-tauri/target/release/bundle/`；`npm run tauri dev` 会配合 Vite 开发服务器运行应用。Linux 上请先安装 [`.github/workflows/release.yml`](../.github/workflows/release.yml) 里列出的 WebKitGTK/GTK 开发包。
+### 开发模式
+
+```bash
+npm run tauri dev
+```
+
+这会启动 Vite 开发服务器（`localhost:1420`）并打开连到它的应用窗口。前端改动热更新；`src-tauri/` 下的改动会重新编译 Rust 并重启窗口。首次启动要全量编译（数分钟），之后是增量。
+
+单独跑 `npm run dev` 只是在浏览器里提供前端页面——Rust 后端和它的命令都不在，要真正跑应用请用 `npm run tauri dev`。
+
+除 Rust stable 与 Node 22 之外：macOS 需要 Xcode Command Line Tools（`xcode-select --install`）；Linux 需要 [`.github/workflows/release.yml`](../.github/workflows/release.yml) 里列出的 WebKitGTK/GTK 开发包。
+
+### 构建安装包
+
+```bash
+npm run tauri build
+```
+
+产物在 `src-tauri/target/release/bundle/`——macOS 是 `dmg/` 与 `macos/`，Windows 是 `nsis/`，Linux 是 `deb/`、`rpm/`、`appimage/`。macOS 构建和正式发布的一样，都是未签名的。
+
+`npm run ci` 跑的就是 CI 那一套：类型检查、测试、i18n/CSS 的 lint 守卫，以及生产前端构建。
 
 ## 已知限制
 
