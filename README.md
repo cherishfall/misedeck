@@ -92,14 +92,18 @@ Each release attaches `misedeck_<version>_x64-setup.exe`. Windows is not verifie
 
 ## Build from source
 
+The repo root is not the app: `package.json` lives in the `misedeck/` subdirectory, and every npm command has to run from there.
+
 ```bash
 git clone https://github.com/cherishfall/misedeck.git
-cd misedeck/misedeck
+cd misedeck/misedeck   # repo root → app directory (package.json is here)
 npm install
 npm run tauri build
 ```
 
-Bundles land in `misedeck/src-tauri/target/release/bundle/`; `npm run tauri dev` for development. On Linux, install the WebKitGTK/GTK development packages listed in [`.github/workflows/release.yml`](./.github/workflows/release.yml) first.
+Already have a clone? `cd <repo>/misedeck` first — running `npm install` at the repo root fails with `ENOENT … package.json`.
+
+Bundles land in `src-tauri/target/release/bundle/`; `npm run tauri dev` runs the app against the Vite dev server. On Linux, install the WebKitGTK/GTK development packages listed in [`.github/workflows/release.yml`](./.github/workflows/release.yml) first.
 
 ## Known limitations
 

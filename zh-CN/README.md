@@ -92,14 +92,18 @@ xattr -dr com.apple.quarantine /Applications/misedeck.app
 
 ## 从源码构建
 
+仓库根目录不是应用目录：`package.json` 在 `misedeck/` 子目录里，所有 npm 命令都要在那里执行。
+
 ```bash
 git clone https://github.com/cherishfall/misedeck.git
-cd misedeck/misedeck
+cd misedeck/misedeck   # 仓库根 → 应用目录（package.json 在这里）
 npm install
 npm run tauri build
 ```
 
-安装包输出到 `misedeck/src-tauri/target/release/bundle/`；开发用 `npm run tauri dev`。Linux 上请先安装 [`.github/workflows/release.yml`](../.github/workflows/release.yml) 中列出的 WebKitGTK/GTK 开发包。
+已经克隆过了？先 `cd <repo>/misedeck`——在仓库根目录执行 `npm install` 会报 `ENOENT … package.json`。
+
+安装包输出到 `src-tauri/target/release/bundle/`；`npm run tauri dev` 会配合 Vite 开发服务器运行应用。Linux 上请先安装 [`.github/workflows/release.yml`](../.github/workflows/release.yml) 里列出的 WebKitGTK/GTK 开发包。
 
 ## 已知限制
 
