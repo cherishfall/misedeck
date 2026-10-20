@@ -6,7 +6,7 @@ This document is a continuation marker between autonomous driver sessions.
 
 **Owner authorized full visual + runtime verification this cycle (beta9 exception, second use).** The agent ran the complete matrix on real builds: 23 happy-path captures (8 pages × en/zh light + 4 dark + 3 dir-mode), failure simulations (all-fail / garbage-output / missing-mise stubs, every page), and class sweeps. All beta16 acceptance items verified green. One new bug found and fixed: **#233** (Doctor page fabricated "Status: OK" from zero data when mise was completely broken — `doctor_text_fallback` swallowed a zero-line non-zero exit into `Ok`; now `Err(COMMAND_FAILED)`, frontend untouched, +2 Rust tests). Three verification-gate SPECs (#220 / #215 / #201) closed after the agent's verification pass; interactive flows that need clicks (dialogs #227, picker #228, run-panel cancel #223, mutation success paths #221) remain the owner's terminal check.
 
-Release: `docs/screenshots/` re-captured (8 README images, 2400×1496), version bumped 8 places / 7 files in this commit; tag `v1.0.0-beta.16` is cut from it once CI is green.
+Release: `docs/screenshots/` re-captured (8 README images, 2400×1496), version bumped 8 places / 7 files in `85c5d4a`; annotated tag **`v1.0.0-beta.16`** cut from it (tag message = release body), release.yml three-platform matrix building.
 
 | Issue | Commit | Scope |
 | --- | --- | --- |
