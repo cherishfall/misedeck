@@ -2,7 +2,28 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-09-23, night — beta15 pre-release audit DONE, wave-1 must-fix #202–#207 implemented & closed)
+## CURRENT STATE (2026-10-20, night — beta16 batch COMPLETE, frontier has no implementable tickets)
+
+**Frontier is empty.** Every open issue is now an owner-verification gate: **#215** (beta16 UI precision SPEC; tickets #216/#217/#218 all closed in `744a9f8` + `421d6e6`), **#201** (beta15 remediation SPEC; all 13 tickets closed), plus **#219** and **#208** closed this session below. `gh issue list --state open` = #215, #201 only.
+
+Three commits this session, all pushed to `master`, every one `npm run ci` green, **none visually verified — owner verifies on a beta.16 build**:
+
+| Issue | Commit | Scope |
+| --- | --- | --- |
+| #219 | `aa1de9d` | i18n copy de-backticked: **43 values per locale** stripped of Markdown backticks (owner chose option A — plain text, no renderer, no new component; the ticket's option B "markdown-lite" was explicitly rejected). New **Guard 4** in `scripts/check-i18n.ts`: any backtick in either catalog fails `npm run lint:i18n`, with the key path in the error. Rule line added to `ui-ux-rules.md` → Copy in both locales (one home, no restatement). Class sweep: AST scan of `src/**/*.{ts,tsx}` string literals + JSX text — only hit is `api/miseTools.ts:516` — a shell-escape character table (`$`, backtick, quote, backslash), not copy; deliberately kept. |
+| #219 | `712960b` | Copy polish caused by de-backticking: `"Update mise with mise self-update."` (2 keys, stutter) → `"Update mise by running mise self-update."`; `"does not have mise activate."` → `"does not have the mise activate line."`; `"could not parse mise version --json."` → `"could not parse the output of mise version --json."` zh untouched (already read correctly). |
+| #208 | `de6d829` | `candidate_paths()` resolves home via `dirs::home_dir()` (was `$HOME` only — unset on Windows) and adds the Windows install locations `%USERPROFILE%\.local\bin\mise.exe`, `%USERPROFILE%\.cargo\bin\mise.exe`, `%LOCALAPPDATA%\mise\bin\mise.exe` through a `MISE_BIN` const (`.exe` on Windows). Unix candidate set/order unchanged; dedupe kept. Platform-gated `candidate_paths` unit tests. `ci.yml` gains a `windows` job (`npm run ci` + `cargo test --lib` + `cargo build` compile smoke); integration suite stays Ubuntu-only (it drives a bash fixture Windows cannot execute), Tauri bundler skipped by design — documented in `ci.md` both locales. Run `39418465492`: `windows (windows-latest)` **success**, whole workflow green. |
+
+**Warnings for the next session:**
+- #219 removed every mono emphasis from copy — commands now read as plain prose. That is the accepted cost of option A; do not "restore" backticks, Guard 4 will fail.
+- #208 does **not** re-enable Windows packaging. `bundle.targets` still ships macOS (+ Linux) only; re-enabling Windows is a release-time owner decision.
+- #208 is NOT verified on real Windows — the green CI job is compile/unit level only.
+
+**Next move:** owner visually verifies beta16 (the #215 batch — Tools source column at the 18-char budget, Settings empty state, outdated-check copy — plus #219's plain-text copy across Tools/Env/Settings/Docs/Preview/Tasks), then **tag beta.16** (bump 6 places / 5 files; README freshness gate in `docs/agents/ci.md`). After the tag, next feedback cycle → new `docs/feedback/betaN-*.md` + new SPEC parent.
+
+---
+
+## PREVIOUS STATE (2026-09-23, night — beta15 pre-release audit DONE, wave-1 must-fix #202–#207 implemented & closed)
 
 **Pre-release deep audit (5 parallel review subagents: frontend bugs / Tauri backend / UI consistency / i18n / user journeys) landed in `docs/feedback/beta15-pre-release-audit.md` (`118d8ae`, ticketing record `8ff45b3`). Verdict: P0 = 0, releasable; debt clusters around three families — failure feedback swallowed, error/retry recipe drift, soft-cancel aftermath.**
 
