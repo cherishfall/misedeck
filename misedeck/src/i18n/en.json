@@ -100,7 +100,7 @@
     },
     "orphan": {
       "badge": "Orphan",
-      "tooltip": "No Config file in scope requests this tool"
+      "tooltip": "No config file requests this tool"
     },
     "tooltip": {
       "switchVersion": "Click to switch version",
@@ -144,7 +144,7 @@
       "notInstalledUninstallTooltip": "This version is not installed — there is nothing to delete",
       "upgradeAvailable": "New version {{latest}} available",
       "globalAlsoActive": "Also active through the global config: {{versions}}. Using a version here adds a request for the current directory; both stay active, and this directory's version wins here.",
-      "emptyInUse": "No version is in use in the current scope.",
+      "emptyInUse": "No version is in use.",
       "emptyInstalledTitle": "No installed versions",
       "emptyInstalledBody": "mise ls {{tool}} reports no installed versions of {{tool}} besides the one in use.",
       "emptyAvailableTitle": "No available versions",
@@ -259,7 +259,7 @@
     },
     "env": {
       "emptyTitle": "No env vars",
-      "emptyBody": "mise env --json returned an empty map. Add an [env] table to a mise config file in scope to surface values here.",
+      "emptyBody": "mise env --json returned an empty map. Add an [env] table to a mise config file to surface values here.",
       "errorTitle": "Failed to load env",
       "errorBody": "mise env --json did not return. Stderr is shown below."
     },
@@ -366,7 +366,7 @@
     },
     "empty": {
       "title": "No tasks",
-      "body": "mise tasks ls returned no tasks here. Tasks come from the [tasks] table of a mise.toml in scope, or from executable files under mise-tasks/.",
+      "body": "mise tasks ls returned no tasks here. Tasks come from the [tasks] table of a mise.toml, or from executable files under mise-tasks/.",
       "openConfig": "Open config file in editor",
       "addTask": "Create task"
     },
@@ -430,9 +430,9 @@
     },
     "empty": {
       "title": "No settings configured",
-      "body": "Add a setting to write it into mise's config for this scope.",
+      "body": "Add a setting to write it into mise's config.",
       "action": "Add a setting",
-      "titleShowAll": "No settings set in this scope",
+      "titleShowAll": "No settings are explicitly set",
       "bodyShowAll": "mise's defaults still apply — this list shows only what is explicitly set here.",
       "showAllAction": "Show all (--all)"
     },
@@ -472,7 +472,7 @@
     },
     "tooltip": {
       "objectReadOnly": "Table-typed settings cannot be written by mise settings set — edit the config file directly.",
-      "unsetOutOfScope": "Defined in {{source}}, outside the current write scope — Unset would not take effect.",
+      "unsetOutOfScope": "Defined in {{source}}, outside the current directory's config — Unset would not take effect.",
       "unsetDefault": "This key only carries a built-in default — there is nothing to unset."
     },
     "hintGlobal": "View and edit mise's global settings. Writes go through mise settings set / mise settings unset and stream into the panel."
@@ -503,7 +503,7 @@
     },
     "configFiles": {
       "title": "Config files",
-      "none": "No config files in scope."
+      "none": "No config files."
     },
     "toolset": {
       "title": "Resolved toolset",
@@ -546,7 +546,7 @@
       "title": "Install plugin",
       "explanation": "Add a custom plugin the CLI way: a name plus the plugin's git URL — the asdf-ecosystem standard for tools with no built-in shorthand.",
       "namePlaceholder": "Plugin name",
-      "urlPlaceholder": "Git URL — https://github.com/<owner>/<repo>"
+      "urlPlaceholder": "Git URL — github.com/<owner>/<repo>"
     },
     "confirm": {
       "uninstall": {

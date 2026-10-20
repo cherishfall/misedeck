@@ -126,11 +126,14 @@
   color: var(--text);
 }
 
+/* Same voice as the Env page's value cell (issue #231): mono, full
+ * text colour, no italics. The two pages show the same data, so they
+ * must not give it two different emphasis levels — the italic/dim
+ * variant read as "not trustworthy" next to Env's plain rendering. */
 .envValueText {
   font-family: var(--font-mono);
   font-size: var(--size-data);
-  color: var(--dim);
-  font-style: italic;
+  color: var(--text);
 }
 
 /* Missing-data placeholder: a dim "—" where a badge would claim a

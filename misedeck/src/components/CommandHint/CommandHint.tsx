@@ -23,7 +23,12 @@ export function CommandHint({ children }: CommandHintProps) {
     <p className={styles.commandHint}>
       {commands.map((command, index) => (
         <Fragment key={`${index}-${command}`}>
-          {index > 0 && <span className={styles.separator}>{" · "}</span>}
+          {/* The dot belongs to the command that follows it: a
+              non-breaking space glues the two, and the only break
+              opportunity is the regular space before the dot. A
+              wrapped line therefore starts with "· command" and can
+              never end with an orphaned dot (issue #231). */}
+          {index > 0 && <span className={styles.separator}>{" ·\u00A0"}</span>}
           <span className={styles.command}>{command}</span>
         </Fragment>
       ))}
