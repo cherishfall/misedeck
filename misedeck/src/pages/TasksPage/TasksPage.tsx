@@ -460,6 +460,23 @@ export function TasksPage() {
 
   const tasksError = tasks.error?.kind === "err" ? tasks.error.err : null;
 
+  // The empty state used to say "nothing here" three times over: a
+  // `0 tasks` count, the column-header band, and the `No tasks` card
+  // (issue #226). The header band is gone (the shared Table renders no
+  // header over zero rows) and so is the zero count — the card carries
+  // the fact. A filtered zero still counts: "0 of 12 tasks" says
+  // something about the filter, not about the data being empty.
+  const taskTotal = tasks.data?.length ?? 0;
+  const taskCountText =
+    taskTotal === 0
+      ? ""
+      : filter.active
+        ? t(I18N_KEYS.tasks.countFiltered, {
+            count: filter.rows.length,
+            total: taskTotal,
+          })
+        : t(I18N_KEYS.tasks.count, { count: taskTotal });
+
   // The Description column exists only when at least one row carries a
   // description (beta11 5-d): an all-empty column would render nothing
   // but "—" — noise, not data. Same conditional-column logic as the
@@ -605,14 +622,7 @@ export function TasksPage() {
             status={
               tasks.isPending ? "loading" : tasks.error ? "error" : "ok"
             }
-            text={
-              filter.active
-                ? t(I18N_KEYS.tasks.countFiltered, {
-                    count: filter.rows.length,
-                    total: tasks.data?.length ?? 0,
-                  })
-                : t(I18N_KEYS.tasks.count, { count: tasks.data?.length ?? 0 })
-            }
+            text={taskCountText}
             onRetry={() => {
               void queryClient.invalidateQueries({
                 queryKey: ["tasks", "ls", cwd],

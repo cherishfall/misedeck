@@ -218,71 +218,79 @@ export function Table<T>({
     window.addEventListener("pointercancel", onEnd);
   };
 
+  // An empty table renders no header band (issue #226): column headers
+  // over zero rows — above an empty-state card — repeat "there is
+  // nothing here" and float a labelled grid that labels nothing. The
+  // empty state carries the whole message.
+  const hasRows = sortedRows.length > 0;
+
   return (
     <div className={styles.scroller}>
       <table {...tableProps} className={tableClasses}>
         {caption !== undefined && <caption className={styles.caption}>{caption}</caption>}
-        <thead>
-          <tr>
-            {columns.map((c) => {
-              const overridden = overrides[c.key];
-              const width = overridden !== undefined ? `${overridden}px` : c.width;
-              const thProps: ThHTMLAttributes<HTMLTableCellElement> = {
-                style:
-                  width || c.minWidth
-                    ? { width, minWidth: c.minWidth }
-                    : undefined,
-              };
-              if (c.numeric) thProps.className = styles.numeric;
-              const resizable = resizeKey !== undefined && c.width !== undefined;
-              const sortable = c.sortValue !== undefined;
-              const isSorted = sortable && activeSort?.key === c.key;
-              if (isSorted) {
-                thProps["aria-sort"] =
-                  activeSort.direction === "asc" ? "ascending" : "descending";
-              }
-              return (
-                <th
-                  key={c.key}
-                  {...thProps}
-                  scope="col"
-                  className={
-                    [thProps.className ?? "", isSorted ? styles.sorted : ""]
-                      .filter(Boolean)
-                      .join(" ") || undefined
-                  }
-                >
-                  {sortable ? (
-                    <button
-                      type="button"
-                      className={styles.sortButton}
-                      onClick={() => onHeaderSort(c)}
-                      data-testid={`sort-${c.key}`}
-                    >
-                      {c.header}
-                      {isSorted && (
-                        // ↑/↓ are data glyphs (issue #105), exempt from the
-                        // caret ban — same treatment as the upgrade-path →.
-                        <span className={styles.sortIndicator} aria-hidden="true">
-                          {activeSort.direction === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </button>
-                  ) : (
-                    c.header
-                  )}
-                  {resizable && (
-                    <span
-                      className={styles.resizeHandle}
-                      aria-hidden="true"
-                      onPointerDown={(e) => beginResize(e, c)}
-                    />
-                  )}
-                </th>
-              );
-            })}
-          </tr>
-        </thead>
+        {hasRows && (
+          <thead>
+            <tr>
+              {columns.map((c) => {
+                const overridden = overrides[c.key];
+                const width = overridden !== undefined ? `${overridden}px` : c.width;
+                const thProps: ThHTMLAttributes<HTMLTableCellElement> = {
+                  style:
+                    width || c.minWidth
+                      ? { width, minWidth: c.minWidth }
+                      : undefined,
+                };
+                if (c.numeric) thProps.className = styles.numeric;
+                const resizable = resizeKey !== undefined && c.width !== undefined;
+                const sortable = c.sortValue !== undefined;
+                const isSorted = sortable && activeSort?.key === c.key;
+                if (isSorted) {
+                  thProps["aria-sort"] =
+                    activeSort.direction === "asc" ? "ascending" : "descending";
+                }
+                return (
+                  <th
+                    key={c.key}
+                    {...thProps}
+                    scope="col"
+                    className={
+                      [thProps.className ?? "", isSorted ? styles.sorted : ""]
+                        .filter(Boolean)
+                        .join(" ") || undefined
+                    }
+                  >
+                    {sortable ? (
+                      <button
+                        type="button"
+                        className={styles.sortButton}
+                        onClick={() => onHeaderSort(c)}
+                        data-testid={`sort-${c.key}`}
+                      >
+                        {c.header}
+                        {isSorted && (
+                          // ↑/↓ are data glyphs (issue #105), exempt from the
+                          // caret ban — same treatment as the upgrade-path →.
+                          <span className={styles.sortIndicator} aria-hidden="true">
+                            {activeSort.direction === "asc" ? "↑" : "↓"}
+                          </span>
+                        )}
+                      </button>
+                    ) : (
+                      c.header
+                    )}
+                    {resizable && (
+                      <span
+                        className={styles.resizeHandle}
+                        aria-hidden="true"
+                        onPointerDown={(e) => beginResize(e, c)}
+                      />
+                    )}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+        )}
         <tbody>
           {sortedRows.length === 0 && empty !== undefined ? (
             <tr>

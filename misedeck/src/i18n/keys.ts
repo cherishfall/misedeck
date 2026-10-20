@@ -551,11 +551,17 @@ export const I18N_KEYS = {
     empty: {
       title: "settings.empty.title",
       body: "settings.empty.body",
+      /** The `--all` view's next step, offered inside the empty card
+          (issue #226): focus the add form below. */
+      action: "settings.empty.action",
       /** Default (`--all` off) view with nothing explicitly configured:
           mise's defaults still apply, so the copy points at the switch
           instead of claiming there are no settings (issue #218). */
       titleShowAll: "settings.empty.titleShowAll",
       bodyShowAll: "settings.empty.bodyShowAll",
+      /** The default view's next step, inside the card: the switch's own
+          action, reachable without hunting for it above (issue #226). */
+      showAllAction: "settings.empty.showAllAction",
     },
     error: {
       title: "settings.error.title",

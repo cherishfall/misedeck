@@ -11,10 +11,12 @@ test("settingsEmptyCopy: filter wins over everything else", () => {
   assert.deepEqual(settingsEmptyCopy({ filterActive: true, showAll: false }), {
     titleKey: I18N_KEYS.common.filter.noMatchTitle,
     bodyKey: I18N_KEYS.common.filter.noMatchBody,
+    action: null,
   });
   assert.deepEqual(settingsEmptyCopy({ filterActive: true, showAll: true }), {
     titleKey: I18N_KEYS.common.filter.noMatchTitle,
     bodyKey: I18N_KEYS.common.filter.noMatchBody,
+    action: null,
   });
 });
 
@@ -28,5 +30,20 @@ test("settingsEmptyCopy: an empty --all view means nothing is configured", () =>
   assert.deepEqual(settingsEmptyCopy({ filterActive: false, showAll: true }), {
     titleKey: I18N_KEYS.settings.empty.title,
     bodyKey: I18N_KEYS.settings.empty.body,
+    action: { kind: "add", labelKey: I18N_KEYS.settings.empty.action },
+  });
+});
+
+// Issue #226: the empty card carries the next step it names — the
+// switch's own action in the default view, the add form in the --all
+// view — instead of pointing at a control outside the card.
+test("settingsEmptyCopy: every non-filter empty state offers an in-card action", () => {
+  assert.deepEqual(settingsEmptyCopy({ filterActive: false, showAll: false }).action, {
+    kind: "showAll",
+    labelKey: I18N_KEYS.settings.empty.showAllAction,
+  });
+  assert.deepEqual(settingsEmptyCopy({ filterActive: false, showAll: true }).action, {
+    kind: "add",
+    labelKey: I18N_KEYS.settings.empty.action,
   });
 });

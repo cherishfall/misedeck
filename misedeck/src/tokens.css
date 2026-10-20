@@ -121,6 +121,10 @@
   --layout-nav-width: 196px;
   --layout-nav-collapsed-width: 56px;
   --layout-deck-collapsed-height: 48px;
+  /* The one page content width (issue #226). Every page's title and
+   * content share it and the left baseline it produces; PageShell is the
+   * only place it is applied. */
+  --layout-page-max-width: 1200px;
 
   /* ---------- 5. Motion ----------
    * Two ambient loops + one state-change budget. Everything else is

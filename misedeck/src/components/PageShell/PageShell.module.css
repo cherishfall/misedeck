@@ -175,13 +175,27 @@
   overflow-x: hidden;
 }
 
+/* The one page content box (issue #226): every page's title and content
+ * start at this left edge and share this width, so switching pages never
+ * shifts anything sideways. This is the only place the page box is
+ * declared — a page-level `max-width` / auto margin that produces a second,
+ * narrower box is a bug, guarded by `npm run lint:page-layout`.
+ *
+ * A page that genuinely needs a narrower reading measure still gets its
+ * title on this baseline: the narrower box is declared inside the page
+ * (left-aligned, commented with its reason), never by re-centring a second
+ * page box. */
 .main {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  padding: var(--space-6);
+  max-width: var(--layout-page-max-width);
+  margin: 0 auto;
 }
 
 @media (prefers-reduced-motion: reduce) {

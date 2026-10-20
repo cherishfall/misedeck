@@ -428,9 +428,11 @@
     },
     "empty": {
       "title": "No settings configured",
-      "body": "Use the form below to add a setting.",
+      "body": "Add a setting to write it into mise's config for this scope.",
+      "action": "Add a setting",
       "titleShowAll": "No settings set in this scope",
-      "bodyShowAll": "mise's defaults still apply. Turn on Show all (--all) to list them, or add a setting below."
+      "bodyShowAll": "mise's defaults still apply — this list shows only what is explicitly set here.",
+      "showAllAction": "Show all (--all)"
     },
     "error": {
       "title": "Failed to load settings",

@@ -428,9 +428,11 @@
     },
     "empty": {
       "title": "尚未配置任何设置",
-      "body": "使用下方表单添加一个设置。",
+      "body": "添加一项设置，即可写入此作用域的 mise 配置。",
+      "action": "添加一项设置",
       "titleShowAll": "当前作用域没有显式设置",
-      "bodyShowAll": "mise 的默认值仍然生效。打开「显示全部（--all）」即可列出，或在下方新增一项设置。"
+      "bodyShowAll": "mise 的默认值仍然生效——此列表只显示显式设置的项目。",
+      "showAllAction": "显示全部（--all）"
     },
     "error": {
       "title": "加载设置失败",

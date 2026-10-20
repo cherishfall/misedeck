@@ -20,7 +20,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
@@ -100,6 +100,13 @@ export function SettingsPage() {
   });
 
   const [showAll, setShowAll] = useState(false);
+  // The empty card's "Add a setting" step lands focus on the add form's
+  // key field (issue #226): the card must be able to complete the next
+  // step it names, not point at a control outside itself.
+  const addKeyRef = useRef<HTMLInputElement>(null);
+  const focusAddKey = useCallback(() => {
+    addKeyRef.current?.focus();
+  }, []);
   // The explicit (CLI-faithful) list is the default view; the `--all`
   // list backs both the opt-in "show all" view and the add form's
   // key-name completion, so it is always fetched.
@@ -164,8 +171,19 @@ export function SettingsPage() {
 
   // Empty-state copy (issue #218): an active filter explains itself; the
   // default (--all off) view points at the switch, because mise's
-  // defaults exist even when nothing is explicitly configured.
+  // defaults exist even when nothing is explicitly configured. The card
+  // carries that next step itself (issue #226).
   const emptyCopy = settingsEmptyCopy({ filterActive: filter.active, showAll });
+
+  // A count of zero above the empty-state card says "there is nothing"
+  // twice (issue #226) — the card below already carries that fact and
+  // the next step. The filtered count still renders: "0 of 12 settings"
+  // is information about the filter, not a second empty state.
+  const settingsTotal = settings.data?.length ?? 0;
+  const settingsCountText =
+    settingsTotal === 0
+      ? ""
+      : t(I18N_KEYS.settings.count, { count: settingsTotal });
 
   // Mise-missing or list-loading state. The list-level gate (issue
   // #146) covers the `mise settings ls` read too: while it is pending —
@@ -282,9 +300,7 @@ export function SettingsPage() {
             status={
               settings.isPending ? "loading" : settings.error ? "error" : "ok"
             }
-            text={t(I18N_KEYS.settings.count, {
-              count: settings.data?.length ?? 0,
-            })}
+            text={settingsCountText}
             onRetry={() => {
               void queryClient.invalidateQueries({
                 queryKey: ["settings", "ls", cwd],
@@ -340,10 +356,34 @@ export function SettingsPage() {
                 <EmptyState
                   title={t(emptyCopy.titleKey)}
                   body={t(emptyCopy.bodyKey)}
+                  action={
+                    /* The card's own next step (issue #226): the switch
+                       this empty state talks about is reachable from
+                       here, so the card no longer sends the user
+                       looking for a control above or below it. A filter
+                       with no matches offers none — its body explains
+                       the filter and the filter box is in the toolbar,
+                       the same shape as the Tasks empty state. */
+                    emptyCopy.action === null ? undefined : (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        data-testid={`settings-empty-${emptyCopy.action.kind}`}
+                        onClick={
+                          emptyCopy.action.kind === "showAll"
+                            ? () => setShowAll(true)
+                            : focusAddKey
+                        }
+                      >
+                        {t(emptyCopy.action.labelKey)}
+                      </Button>
+                    )
+                  }
                 />
               }
             />
             <AddSettingForm
+              inputRef={addKeyRef}
               onWrite={runWrite}
               disabled={writeRun.isRunning}
               cwd={cwd}
@@ -573,12 +613,16 @@ function RowActions({
 }
 
 function AddSettingForm({
+  inputRef,
   onWrite,
   disabled,
   cwd,
   existingKeys,
   keySuggestions,
 }: {
+  /** The key field — the empty state's "Add a setting" step focuses it
+   *  (issue #226). */
+  inputRef: RefObject<HTMLInputElement | null>;
   onWrite: (
     builder: (cwd: string | null) => string[],
     successMessage?: string,
@@ -637,6 +681,7 @@ function AddSettingForm({
     >
       <span className={styles.addLabel}>{t(I18N_KEYS.settings.addSettingLabel)}</span>
       <input
+        ref={inputRef}
         type="text"
         className={styles.inputName}
         value={key}

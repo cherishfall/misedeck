@@ -10,8 +10,11 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
   background: color-mix(in srgb, var(--hull) 40%, transparent);
-  max-width: 560px;
-  margin: 0 auto;
+  /* Full content width, left-aligned on the shared page baseline
+   * (issue #226): the same mise-missing state on the other pages renders
+   * as the shared EmptyState, which fills the page box — a narrower,
+   * self-centred copy is what made the Tools page jump sideways. */
+  min-width: 0;
 }
 
 .eyebrow {

@@ -2,13 +2,14 @@
  * page-level error panels (HomePage's detection states), reused so the
  * root failure does not invent a second visual language. */
 
+/* The page content box — padding, width and centring — belongs to
+ * PageShell's `.main` (issue #226): one left baseline and one content
+ * width for every page. This rule is only the page's own vertical
+ * stack, so nothing here may declare a width or a centring margin. */
 .page {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-  padding: var(--space-6);
-  max-width: 1200px;
-  margin: 0 auto;
   min-width: 0;
 }
 
