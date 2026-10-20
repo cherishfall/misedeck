@@ -107,7 +107,16 @@
 
   /* ---------- 4. Layout ---------- */
 
+  /* Radius tiers (docs/design/visual-language.md → Layout): panels 8px,
+   * controls 6px; the 4px small-element radius is a documented literal
+   * convention, not a token (ui-ux-rules.md). */
   --radius-panel: 8px;
+  --radius-control: 6px;
+
+  /* The one focus ring: 2px beam at 30%, shared by Button, IconButton and
+   * every hand-rolled input/pager control. Controls never re-derive it
+   * (issue #211). */
+  --ring: 0 0 0 2px color-mix(in srgb, var(--beam) 30%, transparent);
 
   --layout-nav-width: 196px;
   --layout-nav-collapsed-width: 56px;

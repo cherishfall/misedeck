@@ -8,7 +8,7 @@ The design system foundation for MiseDeck's UI. Rewritten in issue #37: the hack
 
 1. **Brand inheritance.** Both themes follow mise.jdx.dev's look: warm parchment light, warm charcoal dark, the wine/rose brand accent. A user coming from the mise site should feel the app is the same product, not a reskin of something else.
 2. **Mono is the voice of data.** Versions, paths, commands, logs, and badges are set in JetBrains Mono — the same face the mise site uses for code. Display type carries the editorial serif signature; UI type stays quiet.
-3. **Flat and quiet.** Solid surfaces, 1px warm-neutral borders, 8px radius. No glow, no translucency stacking, no animated decoration. Color does the talking.
+3. **Flat and quiet.** Solid surfaces, 1px warm-neutral borders, 8px panel radius. No glow, no translucency stacking, no animated decoration. Color does the talking.
 4. **Two themes from day one.** Dark and light are designed counterparts from the same token slots — never an inversion. The toggle is a two-state light/dark switch (default light), fully manual.
 
 ## Themes
@@ -65,7 +65,7 @@ The shared `Button` component (`src/components/Button/Button.module.css`) maps t
 | `ghost` | transparent | `--line` | `--dim` | low-emphasis; hover lifts text to `--text`, border to `--line-strong` |
 | `danger` | `--tint-danger-bg` | `--tint-danger` | `--breach` | destructive only |
 
-Base states: the resting button is `--hull` at 80% on a `--line` border with `--text`; focus is a `--beam` border plus a `--beam` 30% ring; disabled and loading render at 0.55 opacity with the variant color kept — the reduction carries the state. Hovers are `color-mix` shifts of the same tokens, never new hues. `--breach` and the danger tints appear on buttons only in the `danger` variant: the semantic discipline above binds controls as much as surfaces.
+Base states: the resting button is `--hull` at 80% on a `--line` border with `--text`; focus is a `--beam` border plus the shared `--ring` token (2px `--beam` at 30%); disabled and loading render at 0.55 opacity with the variant color kept — the reduction carries the state. Hovers are `color-mix` shifts of the same tokens, never new hues. `--breach` and the danger tints appear on buttons only in the `danger` variant: the semantic discipline above binds controls as much as surfaces.
 
 ## Typography
 
@@ -89,6 +89,9 @@ Base states: the resting button is `--hull` at 80% on a `--line` border with `--
 The chrome (sidebar, directory indicator, execution panel placement) is owned by `docs/design/product-logic.md`; this document owns the surfaces inside it.
 
 - Panels: solid `--panel` fill, 1px `--line` border, 8px radius. No backdrop blur, no corner ornament.
+- Radius comes in three tiers: `--radius-panel` (8px) for panels, dialogs, popovers and page cards; `--radius-control` (6px) for controls and control-sized previews (Button, IconButton, the `mise activate` line preview); and the 4px small-element radius for in-cell chips, tags, inputs, stderr boxes and the confirm dialog's command box — that one stays a documented literal convention rather than a token (`ui-ux-rules.md` header lists it with the 1px border as an exemption from the token rule).
+- Focus has exactly one ring: `--ring` (2px `--beam` at 30%). Buttons, icon buttons, inputs and pager controls all focus with the same weight — a control that hand-derives its own beam percentage is drift (issue #211).
+- Inline section wrappers — the Tools page's manage-versions region and its Advanced disclosure, the Plugins install form — are the deliberate **translucent section** variant: `color-mix(in srgb, var(--panel) 50%, transparent)` with the same 1px `--line` border and 8px panel radius. They are content regions inside the page flow, not lifted layers: the solid `--panel` fill plus shadow stays reserved for the surfaces that actually float (popover, dialog, banner, tooltip, success bar), and a translucent fill never appears on one of those. Elevation is carried by the shadow; the wash only separates a region from the page it sits in. One wash over one opaque layer is not the translucency stacking the principles forbid.
 - Spacing comes from the `--space-*` scale (2 / 4 / 6 / 8 / 10 / 12 / 14 / 16 / 22 / 26px; half-step indices slot between base steps, e.g. `--space-1-5` = 6px) — the scale is the source of truth; there is no arithmetic grid beneath it. Hardcoded px paddings/margins/gaps are rejected by `npm run lint:css-spacing`.
 - No background decoration: the app background is a flat `--void`. Elevation (popovers) is a single quiet shadow derived from `--void`.
 

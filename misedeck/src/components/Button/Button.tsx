@@ -1,10 +1,10 @@
 // Button — primary, secondary, ghost, danger. Sizes sm/md.
 //
-// Per docs/design/visual-language.md:
+// Per docs/design/visual-language.md → Action buttons:
 //   - primary: beam fill, void text
-//   - secondary: line border, text fill
-//   - ghost: no border, dim → text on hover
-//   - danger: breach fill, void text
+//   - secondary: hull 80% fill, line-strong border, text
+//   - ghost: transparent fill, line border, dim text → text on hover
+//   - danger: danger tint-bg fill, danger tint border, breach text
 //
 // All hover / focus / active states are ≤120ms ease per the
 // "motion" rule (only three ambient loops exist; everything else is

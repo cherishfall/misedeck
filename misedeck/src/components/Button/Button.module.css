@@ -11,7 +11,7 @@
   font-family: var(--font-ui);
   font-weight: 600;
   letter-spacing: var(--tracking-button);
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--hull) 80%, transparent);
   color: var(--text);
@@ -32,7 +32,7 @@
 .button:focus-visible {
   outline: none;
   border-color: var(--beam);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--beam) 30%, transparent);
+  box-shadow: var(--ring);
 }
 
 .button:active:not(:disabled) {
@@ -80,20 +80,21 @@
   color: var(--text);
 }
 
-/* Ghost — no border, dim → text on hover. For low-emphasis actions. */
+/* Ghost — line border, dim text → text on hover. For low-emphasis actions. */
 .variant-ghost {
   background: transparent;
   border-color: var(--line);
   color: var(--dim);
 }
 
+/* The hover lift never touches the ring: a ghost button that is hovered
+ * while focused keeps the shared focus ring (issue #211). */
 .variant-ghost:hover:not(:disabled) {
   color: var(--text);
   border-color: var(--line-strong);
-  box-shadow: none;
 }
 
-/* Danger — breach fill, void text. For destructive actions only. */
+/* Danger — danger tint wash, breach text. For destructive actions only. */
 .variant-danger {
   background: var(--tint-danger-bg);
   border-color: var(--tint-danger);

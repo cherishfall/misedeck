@@ -5,10 +5,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--dim);
-  border: 1px solid transparent;
+  border-radius: var(--radius-control);
   cursor: pointer;
   font-family: var(--font-mono);
   transition:
@@ -42,9 +39,20 @@
   font-size: var(--size-base);
 }
 
+/* Ghost is the default variant: no resting fill or border, dim glyph. It
+ * must exist as a class — the component resolves `styles.variant-ghost`
+ * for its default and a missing class would silently render the base
+ * chrome instead of this variant (issue #211). */
+.variant-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--dim);
+}
+
 .variant-secondary {
   border-color: var(--line);
   background: color-mix(in srgb, var(--hull) 60%, transparent);
+  color: var(--dim);
 }
 
 .glyph {

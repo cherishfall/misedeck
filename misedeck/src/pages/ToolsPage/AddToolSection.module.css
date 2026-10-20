@@ -208,7 +208,7 @@
 .input:focus-visible {
   outline: none;
   border-color: var(--beam);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--beam) 25%, transparent);
+  box-shadow: var(--ring);
 }
 
 .input:hover:not(:disabled) {
