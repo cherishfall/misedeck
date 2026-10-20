@@ -50,6 +50,7 @@ import {
 } from "../../hooks/useToolsList";
 import { isPathUnder } from "../../utils/paths";
 import { resolveAppErrorMessage } from "../../utils/appError";
+import { envSourceVariant } from "../../utils/envSource";
 import {
   Badge,
   Button,
@@ -114,20 +115,6 @@ function toolSourceVariant(
   source: "global" | "project" | undefined,
 ): "default" | "info" {
   return source === "project" ? "info" : "default";
-}
-
-/** Map an env var's source category to the badge variant. */
-function envSourceVariant(source: EnvSource): "default" | "info" | "warning" {
-  switch (source) {
-    case "project":
-      return "info";
-    case "tool":
-      return "warning";
-    case "global":
-    case "default":
-    default:
-      return "default";
-  }
 }
 
 /**

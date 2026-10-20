@@ -45,6 +45,7 @@ import { useTableFilter } from "../../hooks/useTableFilter";
 import { isEnvWriteScopeMismatch, type EnvSource } from "../../api/miseTools";
 
 import { ENV_VALUE_CELL_CHARS, shortenPathTail } from "../../utils/paths";
+import { envSourceVariant } from "../../utils/envSource";
 import tableStyles from "../../components/Table/Table.module.css";
 import styles from "./EnvPage.module.css";
 
@@ -362,19 +363,6 @@ export function EnvPage() {
 }
 
 // ---------- Source cell ----------
-
-function envSourceVariant(source: EnvSource): "default" | "info" | "warning" {
-  switch (source) {
-    case "project":
-      return "info";
-    case "tool":
-      return "warning";
-    case "global":
-    case "default":
-    default:
-      return "default";
-  }
-}
 
 /**
  * A row is editable when mise reported a config-file source path for
