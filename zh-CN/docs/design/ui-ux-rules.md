@@ -108,6 +108,7 @@ MiseDeck 每个页面、组件、样式和文案都必须遵守的交互与呈�
 ## 文案
 
 - 所有文案走 i18n——字形也不例外：JSX 中禁止硬编码字形字面量；尾随字形走 Button 的 `trailing` prop；菜单/弹层触发器一律不携带 caret 字形。一个 i18n key 对应一个语义角色：同一个词既作状态标签又作动作触发时，用两个 key——标签与动作在各语言里的演化方向不同。用词只出自 `CONTEXT.md`。UI 文案中已退休的词：「上下文/Context」和「项目/project」——说「当前目录」。
+- i18n 文案是纯文本——不使用 Markdown 语法（反引号、加粗、链接）；命令强调不通过翻译字符串承载。由 `npm run lint:i18n`（Guard 4）把关。
 - 移除词汇按作用域拆分（ADR-0008，经 beta13 修订）：工具级移除是 Unuse / 取消使用，运行 `mise unuse <tool>`——只在「版本管理」区的在用行可达，而在用行必有配置请求；版本级文件删除是 Uninstall / 卸载（`mise uninstall <tool>@<version>`）；插件级移除是 Uninstall / 卸载（`mise plugins uninstall <plugin>`）。`mise uninstall --all` 不进入 GUI——beta13 批量操作禁令（产品级决策，归 `product-logic.md` 所有）。核心约束是标签永远配它实际运行的命令：确认弹窗的教学回显绝不与按钮矛盾。
 - 按钮文案绝不以「…」结尾——尾随省略号是已退休的「会打开对话框」旧式惯例；按钮读作纯动词（beta9）。省略号只保留在语义不同的地方：输入框 placeholder 与进行中文案（加载中 / 忙碌态）。由 `npm run lint:i18n-ellipsis` 防线把关。
 - 过期版本一律渲染为升级路径：`2026.8.14 → 2026.9.0`，绝不直接贴 CLI 原始输出，绝不只靠颜色表达。

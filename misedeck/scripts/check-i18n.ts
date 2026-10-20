@@ -33,6 +33,13 @@
 // their base key is used. This is a text scan, not a parser; when it
 // reports a key, either delete the key or add the genuine dynamic
 // usage to the whitelist below with a reason.
+//
+// Guard 4 — no Markdown syntax in copy (issue #219): every catalog
+// value is rendered by React as plain text, so Markdown notation ships
+// as literal characters — `mise tasks ls` reached users with visible
+// backticks. Guard 4 fails the build when any leaf string in either
+// catalog contains a backtick; commands stay plain text and emphasis
+// is never carried by a translation string.
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -460,6 +467,46 @@ function checkDeadKeys(): number {
   return 0;
 }
 
+// ---------------------------------------------------------------------------
+// Guard 4 — no Markdown syntax in copy (issue #219)
+// ---------------------------------------------------------------------------
+
+const BACKTICK = "`";
+
+function checkNoMarkdown(): number {
+  const locales: ReadonlyArray<readonly [string, JsonObject]> = [
+    ["en", loadJson(EN_FILE)],
+    ["zh-CN", loadJson(ZH_CN_FILE)],
+  ];
+
+  const problems: string[] = [];
+  let checked = 0;
+  for (const [locale, root] of locales) {
+    for (const key of walkKeys(root)) {
+      const text = lookupString(root, key);
+      if (text === undefined) continue;
+      checked += 1;
+      if (text.includes(BACKTICK)) {
+        problems.push(`${locale}.json  "${key}"  →  ${text}`);
+      }
+    }
+  }
+
+  if (problems.length > 0) {
+    console.error(
+      "i18n copy check FAILED — copy is plain text; Markdown syntax (backticks) must not appear in it.",
+    );
+    for (const p of problems) console.error(`  - ${p}`);
+    console.error(
+      "\n  Remove the backticks — React renders them literally. Commands stay plain text;" +
+        " command emphasis is not carried by translation strings.",
+    );
+    return 1;
+  }
+  console.log(`i18n copy check OK — no Markdown backticks across ${checked} catalog string(s).`);
+  return 0;
+}
+
 function main(): void {
   const en = loadJson(EN_FILE);
   const zh = loadJson(ZH_CN_FILE);
@@ -467,7 +514,8 @@ function main(): void {
   const literalExit = checkLiteralCallSites();
   const interpolationExit = checkInterpolation();
   const deadKeyExit = checkDeadKeys();
-  process.exit(parityExit || literalExit || interpolationExit || deadKeyExit);
+  const markdownExit = checkNoMarkdown();
+  process.exit(parityExit || literalExit || interpolationExit || deadKeyExit || markdownExit);
 }
 
 main();

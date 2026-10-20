@@ -116,7 +116,7 @@
     },
     "error": {
       "title": "加载工具列表失败",
-      "body": "`mise ls --json` 未返回结果。stderr 如下所示。"
+      "body": "mise ls --json 未返回结果。stderr 如下所示。"
     },
     "filterPlaceholder": "过滤工具…",
     "actions": {
@@ -144,13 +144,13 @@
       "globalAlsoActive": "该工具也由全局配置激活：{{versions}}。在此使用版本会为当前目录叠加一条请求——两者并存，当前目录中以此处的版本为准。",
       "emptyInUse": "当前范围内没有正在使用的版本。",
       "emptyInstalledTitle": "没有已安装版本",
-      "emptyInstalledBody": "除在用版本外，`mise ls {{tool}}` 没有报告 {{tool}} 的其他已安装版本。",
+      "emptyInstalledBody": "除在用版本外，mise ls {{tool}} 没有报告 {{tool}} 的其他已安装版本。",
       "emptyAvailableTitle": "没有可安装版本",
-      "emptyAvailableBody": "`mise ls-remote {{tool}}` 没有返回任何版本。"
+      "emptyAvailableBody": "mise ls-remote {{tool}} 没有返回任何版本。"
     },
     "linkForm": {
       "title": "链接工具",
-      "explanation": "链接会将你本地构建的目录作为已安装版本接入，而不是下载：`mise link <tool>@<version> <path>` 把它软链进 mise。",
+      "explanation": "链接会将你本地构建的目录作为已安装版本接入，而不是下载：mise link <tool>@<version> <path> 会把它软链进 mise。",
       "toolPlaceholder": "工具名（如 node）",
       "versionPlaceholder": "版本（如 22.11.0）",
       "noPath": "未选择目录",
@@ -174,8 +174,8 @@
     "confirm": {
       "use": {
         "title": "使用 {{tool}}@{{version}}？",
-        "bodyGlobal": "让该版本成为当前使用的版本，并写入全局 mise 配置（`config.toml`）；未安装时会先安装。",
-        "bodyDirectory": "让该版本成为当前使用的版本，并写入就近的 mise 配置（`mise.toml`）；未安装时会先安装。"
+        "bodyGlobal": "让该版本成为当前使用的版本，并写入全局 mise 配置（config.toml）；未安装时会先安装。",
+        "bodyDirectory": "让该版本成为当前使用的版本，并写入就近的 mise 配置（mise.toml）；未安装时会先安装。"
       },
       "install": {
         "title": "安装 {{tool}}@{{version}}？",
@@ -219,7 +219,7 @@
     "commandHint": "mise trust · mise -C <dir> ls · mise env · mise config",
     "nav": "概览",
     "empty": {
-      "body": "环境变量与配置文件两节已展示全局解析结果；此列表按目录解析。选择一个目录，查看 `mise -C <dir> ls` 在该目录的结果。",
+      "body": "环境变量与配置文件两节已展示全局解析结果；此列表按目录解析。选择一个目录，查看 mise -C <dir> ls 在该目录的结果。",
       "action": "选择目录"
     },
     "sections": {
@@ -228,14 +228,14 @@
       "config": "配置文件"
     },
     "config": {
-      "orderNote": "按优先级从高到低排列——与 `mise config ls --json` 输出的顺序一致。",
-      "emptyGlobal": "`mise config ls` 没有找到全局配置文件。",
-      "emptyDirectory": "`mise config ls` 没有在当前目录找到配置文件。",
+      "orderNote": "按优先级从高到低排列——与 mise config ls --json 输出的顺序一致。",
+      "emptyGlobal": "mise config ls 没有找到全局配置文件。",
+      "emptyDirectory": "mise config ls 没有在当前目录找到配置文件。",
       "view": "查看内容",
       "hide": "收起内容",
       "unreadable": "（无法读取此文件）",
       "errorTitle": "加载配置文件失败",
-      "errorBody": "`mise config ls --json` 未返回结果。stderr 如下所示。"
+      "errorBody": "mise config ls --json 未返回结果。stderr 如下所示。"
     },
     "columns": {
       "tool": "工具",
@@ -257,13 +257,13 @@
     },
     "env": {
       "emptyTitle": "没有环境变量",
-      "emptyBody": "`mise env --json` 返回了空映射。在作用域内的 mise 配置文件中添加 [env] 表可在此处显示变量。",
+      "emptyBody": "mise env --json 返回了空映射。在作用域内的 mise 配置文件中添加 [env] 表可在此处显示变量。",
       "errorTitle": "加载环境变量失败",
-      "errorBody": "`mise env --json` 未返回结果。stderr 如下所示。"
+      "errorBody": "mise env --json 未返回结果。stderr 如下所示。"
     },
     "toolsError": {
       "title": "加载已解析工具失败",
-      "body": "`mise -C <dir> ls --json` 未返回结果。stderr 如下所示。"
+      "body": "mise -C <dir> ls --json 未返回结果。stderr 如下所示。"
     },
     "lockfile": {
       "title": "mise.lock",
@@ -274,7 +274,7 @@
   },
   "env": {
     "title": "环境变量",
-    "hint": "当前目录已解析的环境变量。添加、编辑或移除变量；所有写入都通过 `mise set` / `mise unset` 并在执行面板中实时显示。",
+    "hint": "当前目录已解析的环境变量。添加、编辑或移除变量；所有写入都通过 mise set / mise unset 并在执行面板中实时显示。",
     "commandHint": "mise env · mise set · mise unset",
     "listTitle": "已解析的环境变量",
     "filterPlaceholder": "过滤环境变量…",
@@ -298,7 +298,7 @@
     },
     "error": {
       "title": "加载环境变量失败",
-      "body": "`mise env` 未返回结果。stderr 如下所示。"
+      "body": "mise env 未返回结果。stderr 如下所示。"
     },
     "addLabel": "添加环境变量",
     "addButton": "添加",
@@ -310,9 +310,9 @@
       "untrustedBody": "在修改此目录的环境变量之前，请先信任它。"
     },
     "tooltip": {
-      "tool": "由 {{tool}} 通过 `mise env` 注入；在运行时解析，无法通过 `mise set` 设置。",
-      "default": "继承自宿主环境；并非由 mise 写入，因此无法通过 `mise set` 设置。",
-      "configTool": "由配置文件请求、{{tool}} 注入；可通过 `mise set` 覆盖。"
+      "tool": "由 {{tool}} 通过 mise env 注入；在运行时解析，无法通过 mise set 设置。",
+      "default": "继承自宿主环境；并非由 mise 写入，因此无法通过 mise set 设置。",
+      "configTool": "由配置文件请求、{{tool}} 注入；可通过 mise set 覆盖。"
     },
     "confirm": {
       "unset": {
@@ -344,11 +344,11 @@
       "unsetGlobal": "{{name}} 已从全局配置移除",
       "unsetDirectory": "{{name}} 已从当前目录的配置移除"
     },
-    "hintGlobal": "全局模式下解析出的环境变量。添加、编辑或移除变量；所有写入都通过 `mise set -g` / `mise unset -g` 并在执行面板中实时显示。"
+    "hintGlobal": "全局模式下解析出的环境变量。添加、编辑或移除变量；所有写入都通过 mise set -g / mise unset -g 并在执行面板中实时显示。"
   },
   "tasks": {
     "title": "任务",
-    "subtitle": "列出、运行、创建并编辑当前目录的 mise 任务。写入通过 `mise tasks add`，并在执行面板中实时显示。",
+    "subtitle": "列出、运行、创建并编辑当前目录的 mise 任务。写入通过 mise tasks add，并在执行面板中实时显示。",
     "filterPlaceholder": "过滤任务…",
     "count": "{{count}} 个任务",
     "count_one": "{{count}} 个任务",
@@ -364,7 +364,7 @@
     },
     "empty": {
       "title": "没有任务",
-      "body": "`mise tasks ls` 没有返回任务。任务来自作用域内 mise.toml 的 `[tasks]` 表，或 `mise-tasks/` 目录下的可执行文件。",
+      "body": "mise tasks ls 没有返回任务。任务来自作用域内 mise.toml 的 [tasks] 表，或 mise-tasks/ 目录下的可执行文件。",
       "openConfig": "在编辑器中打开配置文件",
       "addTask": "新建任务"
     },
@@ -387,7 +387,7 @@
       "cancelButton": "取消",
       "runRequired": "必须填写运行命令",
       "nameRequired": "必须填写任务名称",
-      "runReadonlyTooltip": "该任务的 run 有多行。GUI 通过 `mise tasks add` 保存任务，它会把 run 存为单行，因此在这里编辑会改变任务的实际行为。请改为在配置文件中编辑 run（在编辑器中打开）。"
+      "runReadonlyTooltip": "该任务的 run 有多行。GUI 通过 mise tasks add 保存任务，它会把 run 存为单行，因此在这里编辑会改变任务的实际行为。请改为在配置文件中编辑 run（在编辑器中打开）。"
     },
     "confirm": {
       "flattenRun": {
@@ -400,24 +400,24 @@
     },
     "openEditorError": {
       "title": "无法打开配置文件",
-      "body": "`mise tasks edit` 没有返回可用路径。如果命令执行失败，stderr 会在执行面板中显示。"
+      "body": "mise tasks edit 没有返回可用路径。如果命令执行失败，stderr 会在执行面板中显示。"
     },
     "openConfigError": {
-      "body": "`mise config ls --json` 没有返回可打开的配置文件。如果命令执行失败，stderr 会在执行面板中显示。"
+      "body": "mise config ls --json 没有返回可打开的配置文件。如果命令执行失败，stderr 会在执行面板中显示。"
     },
     "readError": {
       "title": "加载任务失败",
-      "body": "`mise tasks ls --json` 未返回结果。stderr 如下所示。"
+      "body": "mise tasks ls --json 未返回结果。stderr 如下所示。"
     },
     "success": {
       "saved": "任务 {{name}} 已保存",
       "added": "任务 {{name}} 已创建"
     },
-    "subtitleGlobal": "列出、运行、创建并编辑全局模式下的 mise 任务。写入通过 `mise tasks add`，并在执行面板中实时显示。"
+    "subtitleGlobal": "列出、运行、创建并编辑全局模式下的 mise 任务。写入通过 mise tasks add，并在执行面板中实时显示。"
   },
   "settings": {
     "title": "设置",
-    "hint": "查看并编辑当前目录的 mise 设置。写入通过 `mise settings set` / `mise settings unset` 并在执行面板中实时显示。",
+    "hint": "查看并编辑当前目录的 mise 设置。写入通过 mise settings set / mise settings unset 并在执行面板中实时显示。",
     "commandHint": "mise settings ls · mise settings set · mise settings unset",
     "columns": {
       "key": "键",
@@ -434,7 +434,7 @@
     },
     "error": {
       "title": "加载设置失败",
-      "body": "`mise settings ls` 未返回结果。stderr 如下所示。"
+      "body": "mise settings ls 未返回结果。stderr 如下所示。"
     },
     "saveButton": "保存",
     "unsetButton": "移除",
@@ -443,7 +443,7 @@
     "addSettingLabel": "添加设置",
     "keyPlaceholder": "设置名",
     "valuePlaceholder": "值",
-    "showAll": "显示全部（`--all`）",
+    "showAll": "显示全部（--all）",
     "filterPlaceholder": "过滤设置…",
     "count": "{{count}} 项设置",
     "count_one": "{{count}} 项设置",
@@ -467,11 +467,11 @@
       }
     },
     "tooltip": {
-      "objectReadOnly": "整表设置无法通过 `mise settings set` 写入，请直接编辑配置文件。",
+      "objectReadOnly": "整表设置无法通过 mise settings set 写入，请直接编辑配置文件。",
       "unsetOutOfScope": "该设置定义在 {{source}}，不在当前写入范围内——移除不会生效。",
       "unsetDefault": "该键只有内置默认值，没有可移除的设置。"
     },
-    "hintGlobal": "查看并编辑 mise 的全局设置。写入通过 `mise settings set` / `mise settings unset` 并在执行面板中实时显示。"
+    "hintGlobal": "查看并编辑 mise 的全局设置。写入通过 mise settings set / mise settings unset 并在执行面板中实时显示。"
   },
   "doctor": {
     "title": "诊断",
@@ -504,13 +504,13 @@
     "toolset": {
       "title": "已解析工具集",
       "emptyTitle": "没有已解析工具",
-      "emptyBodyGlobal": "`mise doctor --json` 报告全局工具集为空。",
-      "emptyBodyDirectory": "`mise doctor --json` 报告当前目录的工具集为空。"
+      "emptyBodyGlobal": "mise doctor --json 报告全局工具集为空。",
+      "emptyBodyDirectory": "mise doctor --json 报告当前目录的工具集为空。"
     },
     "rawTitle": "原始 doctor 输出",
     "error": {
       "title": "加载诊断失败",
-      "body": "`mise doctor --json` 未返回结果。stderr 如下所示。"
+      "body": "mise doctor --json 未返回结果。stderr 如下所示。"
     },
     "columns": {
       "tool": "工具",
@@ -557,7 +557,7 @@
     },
     "installedError": {
       "title": "加载插件失败",
-      "body": "`mise plugins ls` 未返回结果。stderr 如下所示。"
+      "body": "mise plugins ls 未返回结果。stderr 如下所示。"
     },
     "success": {
       "uninstalled": "插件 {{name}} 已卸载",
@@ -574,16 +574,16 @@
     },
     "tooOld": {
       "title": "mise 版本过旧",
-      "body": "检测到 {{found}}，但 MiseDeck 要求至少 {{minimum}}。请运行 `mise self-update` 更新 mise。",
-      "packageManagerHint": "如果 mise 是通过包管理器（Homebrew、apt 等）安装的，请用该包管理器更新——`mise self-update` 无法替换由包管理器托管的二进制。否则可用引导安装重新安装，或按安装指南手动重装。"
+      "body": "检测到 {{found}}，但 MiseDeck 要求至少 {{minimum}}。请运行 mise self-update 更新 mise。",
+      "packageManagerHint": "如果 mise 是通过包管理器（Homebrew、apt 等）安装的，请用该包管理器更新——mise self-update 无法替换由包管理器托管的二进制。否则可用引导安装重新安装，或按安装指南手动重装。"
     },
     "commandFailed": {
       "title": "mise 执行失败",
-      "body": "`mise version --json` 返回了非零状态码。stderr 如下所示。"
+      "body": "mise version --json 返回了非零状态码。stderr 如下所示。"
     },
     "parseFailed": {
       "title": "无法解析 mise 响应",
-      "body": "MiseDeck 无法解析 `mise version --json`。你可能在运行一个 fork 版本。"
+      "body": "MiseDeck 无法解析 mise version --json。你可能在运行一个 fork 版本。"
     }
   },
   "labels": {
@@ -600,7 +600,7 @@
   },
   "errors": {
     "miseNotFound": "未在这台机器上找到 mise CLI。请按 https://mise.jdx.dev/installing.html 安装后重新启动 MiseDeck。",
-    "miseTooOld": "检测到 mise {{found}}，但 MiseDeck 要求至少 {{minimum}}。请运行 `mise self-update` 更新 mise。",
+    "miseTooOld": "检测到 mise {{found}}，但 MiseDeck 要求至少 {{minimum}}。请运行 mise self-update 更新 mise。",
     "terminalNotFound": "未在这个 Linux 系统上找到终端模拟器（已查找 gnome-terminal、konsole、xfce4-terminal）。",
     "timeout": "mise 未在超时时间内响应。",
     "unknown": "出现了未知错误，详情请见执行面板。"
@@ -643,8 +643,8 @@
     "openInTerminalError": "无法在 {{path}} 打开终端。请复制命令后手动执行。",
     "openInTerminalSuccess": "已通过 {{terminal}} 在 {{path}} 打开终端。",
     "bannerLabel": "Shell 激活缺失",
-    "bannerBody": "你的 {{shell}} 配置文件 {{rcPath}} 中没有 `mise activate`。请在下方添加该行，以便在交互式 shell 中使用 mise。",
-    "bannerBodyUnknownShell": "MiseDeck 无法识别你的 shell（{{name}}）。请在对应 shell 的 rc 文件中添加 `mise activate <shell>` 行，以在交互式 shell 中使用 mise。",
+    "bannerBody": "你的 {{shell}} 配置文件 {{rcPath}} 中没有 mise activate。请在下方添加该行，以便在交互式 shell 中使用 mise。",
+    "bannerBodyUnknownShell": "MiseDeck 无法识别你的 shell（{{name}}）。请在对应 shell 的 rc 文件中添加 mise activate <shell> 行，以在交互式 shell 中使用 mise。",
     "copyLineButton": "复制该行",
     "dismissButton": "关闭"
   }
