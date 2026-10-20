@@ -12,8 +12,8 @@
     "outdatedCount_one": "{{count}} tool outdated",
     "outdatedChecking": "Checking for updates…",
     "allUpToDate": "All installed tools are up to date.",
-    "outdatedError": "Couldn't check for updates",
-    "loadFailed": "Couldn't load the data",
+    "outdatedError": "Could not check for updates",
+    "loadFailed": "Could not load the data",
     "retry": "Retry",
     "filter": {
       "noMatchTitle": "No matching rows",
@@ -62,7 +62,7 @@
   "trust": {
     "banner": {
       "label": "Untrusted config",
-      "body": "This directory's mise config file has not been trusted. Env and tasks will not run until you trust it.",
+      "body": "This directory's mise config file has not been trusted. Env vars and tasks stay disabled until you trust it.",
       "action": "Trust this directory",
       "errorLabel": "Directory check failed",
       "errorBody": "MiseDeck could not determine this directory's trust state, so write actions are disabled."
@@ -107,7 +107,7 @@
     },
     "missing": {
       "title": "Tools unavailable",
-      "body": "MiseDeck needs the mise CLI to list installed tools. Go back and install mise to populate this page."
+      "body": "MiseDeck needs the mise CLI to list installed tools. Go back and install mise, then return to this page."
     },
     "error": {
       "title": "Failed to load tools",
@@ -132,7 +132,7 @@
       "installedTitle": "Installed",
       "notInstalledTitle": "Not installed",
       "activeBadge": "active",
-      "created": "Created",
+      "created": "Released",
       "filterPlaceholder": "Filter versions…",
       "notInstalledUninstallTooltip": "This version is not installed — there is nothing to delete",
       "upgradeAvailable": "New version {{latest}} available",
@@ -297,7 +297,7 @@
     "editButton": "Edit",
     "unsetButton": "Unset",
     "namePlaceholder": "Key",
-    "valuePlaceholder": "value",
+    "valuePlaceholder": "Value",
     "guard": {
       "untrustedBody": "Trust this directory before mutating its env vars."
     },
@@ -470,12 +470,12 @@
     "commandHint": "mise doctor",
     "statusLabel": "Health check",
     "status": {
-      "ok": "Ok",
-      "warn": "Warn"
+      "ok": "OK",
+      "warn": "Warning"
     },
     "missing": {
       "title": "Doctor unavailable",
-      "body": "MiseDeck needs the mise CLI to run the health check. Go back and install mise to populate this page."
+      "body": "MiseDeck needs the mise CLI to run the health check. Go back and install mise, then return to this page."
     },
     "summary": {
       "status": "Status",
@@ -560,19 +560,19 @@
     "ready": "Ready",
     "notInstalled": {
       "title": "mise not found",
-      "body": "We could not locate the mise binary on this machine. Guided install below runs the official install script through the execution panel; the install guide has the manual steps.",
+      "body": "MiseDeck could not locate the mise binary on this machine. Guided install below runs the official install script through the execution panel; the install guide has the manual steps.",
       "installHint": "Read the install guide"
     },
     "tooOld": {
       "title": "mise is too old",
-      "body": "Found {{found}}, but MiseDeck requires at least {{minimum}}. Update with `mise self-update`."
+      "body": "Found {{found}}, but MiseDeck requires at least {{minimum}}. Update mise with `mise self-update`."
     },
     "commandFailed": {
       "title": "mise failed",
       "body": "`mise version --json` exited with a non-zero status. Stderr is shown below."
     },
     "parseFailed": {
-      "title": "unrecognised mise response",
+      "title": "Unrecognized mise response",
       "body": "MiseDeck could not parse `mise version --json`. You may be running a forked build."
     }
   },
@@ -583,7 +583,7 @@
   },
   "errors": {
     "miseNotFound": "The mise CLI was not found on this machine. Install it from https://mise.jdx.dev/installing.html and relaunch MiseDeck.",
-    "miseTooOld": "Found mise {{found}}, but MiseDeck requires at least {{minimum}}. Run `mise self-update` to upgrade.",
+    "miseTooOld": "Found mise {{found}}, but MiseDeck requires at least {{minimum}}. Update mise with `mise self-update`.",
     "terminalNotFound": "No terminal emulator was found on this Linux system (looked for gnome-terminal, konsole, xfce4-terminal).",
     "timeout": "mise did not respond within the timeout.",
     "unknown": "Something went wrong. The execution panel has the details."

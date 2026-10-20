@@ -12,7 +12,7 @@
     "outdatedCount_one": "{{count}} 个工具可更新",
     "outdatedChecking": "正在检查更新…",
     "allUpToDate": "所有已安装工具均为最新版本。",
-    "outdatedError": "无法获取可更新信息",
+    "outdatedError": "无法检查更新",
     "loadFailed": "无法加载数据",
     "retry": "重试",
     "filter": {
@@ -37,13 +37,13 @@
     "expandLabel": "展开侧边栏"
   },
   "miseManagement": {
-    "guidedInstallButton": "引导式安装",
-    "selfUpdateButton": "更新版本",
+    "guidedInstallButton": "引导安装",
+    "selfUpdateButton": "更新",
     "releaseNotesLink": "查看发布说明",
     "confirmSelfUpdate": {
       "title": "更新 mise？",
-      "bodyWithLatest": "将运行下面的确切命令，把 mise 从 {{current}} 升级到 {{latest}}，并替换已安装的二进制文件。",
-      "bodyUnknownLatest": "将运行下面的确切命令，把 mise 从 {{current}} 升级到最新版本，并替换已安装的二进制文件。"
+      "bodyWithLatest": "将运行下面的确切命令，把 mise 从 {{current}} 更新到 {{latest}}，并替换已安装的二进制文件。",
+      "bodyUnknownLatest": "将运行下面的确切命令，把 mise 从 {{current}} 更新到最新版本，并替换已安装的二进制文件。"
     },
     "guidedInstallInstalling": "安装中…"
   },
@@ -62,7 +62,7 @@
   "trust": {
     "banner": {
       "label": "未受信任的配置",
-      "body": "此目录的 mise 配置文件尚未被信任。在信任前，环境变量与任务不会运行。",
+      "body": "此目录的 mise 配置文件尚未受信任。信任之前，其中的环境变量与任务不会生效。",
       "action": "信任此目录",
       "errorLabel": "目录探测失败",
       "errorBody": "MiseDeck 无法读取此目录的信任状态，写入操作已被禁用。"
@@ -73,7 +73,7 @@
   },
   "home": {
     "title": "首页",
-    "hint": "检测 mise 是否已安装且版本满足 MiseDeck 的要求；引导安装与自更新都在这里进行，所有操作都通过执行面板实时显示。",
+    "hint": "检测 mise 是否已安装且版本满足 MiseDeck 的要求；引导安装与更新都在这里进行，所有操作都通过执行面板实时显示。",
     "commandHint": "mise version · mise self-update",
     "rawLabel": "RAW",
     "success": {
@@ -82,12 +82,12 @@
   },
   "tools": {
     "title": "工具",
-    "hint": "当前目录中已安装并处于活动状态的工具——在下方搜索添加，「使用」一步完成安装并启用。",
+    "hint": "当前目录中已安装并正在使用的工具——在下方搜索添加，「使用」一步完成安装并启用。",
     "commandHint": "mise registry · mise use · mise ls · mise outdated · mise upgrade · mise unuse · mise ls-remote · mise install · mise uninstall · mise link",
     "columns": {
       "tool": "工具",
       "version": "版本",
-      "requested": "请求版本",
+      "requested": "声明的版本",
       "backend": "后端",
       "source": "来源",
       "actions": "操作"
@@ -107,7 +107,7 @@
     },
     "missing": {
       "title": "工具列表不可用",
-      "body": "MiseDeck 需要 mise CLI 才能列出已安装的工具。请返回并安装 mise 以填充此页面。"
+      "body": "MiseDeck 需要 mise CLI 才能列出已安装的工具。请返回首页安装 mise，然后回到此页面。"
     },
     "error": {
       "title": "加载工具列表失败",
@@ -131,7 +131,7 @@
       "inUseTitle": "在用",
       "installedTitle": "已安装",
       "notInstalledTitle": "未安装",
-      "activeBadge": "活动",
+      "activeBadge": "使用中",
       "created": "发布时间",
       "filterPlaceholder": "过滤版本…",
       "notInstalledUninstallTooltip": "该版本尚未安装，没有可删除的安装文件",
@@ -201,7 +201,7 @@
       "unused": "{{tool}} 已取消使用",
       "linked": "{{tool}}@{{version}} 已链接"
     },
-    "hintGlobal": "全局模式下已安装并处于活动状态的工具——在下方搜索添加，「使用」一步完成安装并启用。"
+    "hintGlobal": "全局模式下已安装并正在使用的工具——在下方搜索添加，「使用」一步完成安装并启用。"
   },
   "preview": {
     "titleGlobal": "全局概览",
@@ -344,8 +344,8 @@
     "filterPlaceholder": "过滤任务…",
     "count": "{{count}} 个任务",
     "count_one": "{{count}} 个任务",
-    "countFiltered": "{{total}} 个任务中的 {{count}} 个",
-    "countFiltered_one": "{{total}} 个任务中的 {{count}} 个",
+    "countFiltered": "{{count}} / {{total}} 个任务",
+    "countFiltered_one": "{{count}} / {{total}} 个任务",
     "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit · mise config ls",
     "columns": {
       "name": "名称",
@@ -466,7 +466,7 @@
   },
   "doctor": {
     "title": "诊断",
-    "hint": "mise 健康检查——针对全局环境或所选目录。当结构化报告不可用时，原始 doctor 输出会以行级色调渲染。",
+    "hint": "mise 健康检查——针对全局安装或所选目录。结构化报告不可用时，直接显示原始 doctor 输出，并按行着色。",
     "commandHint": "mise doctor",
     "statusLabel": "健康检查",
     "status": {
@@ -475,7 +475,7 @@
     },
     "missing": {
       "title": "诊断不可用",
-      "body": "MiseDeck 需要 mise CLI 才能运行健康检查。请返回并安装 mise 以填充此页面。"
+      "body": "MiseDeck 需要 mise CLI 才能运行健康检查。请返回首页安装 mise，然后回到此页面。"
     },
     "summary": {
       "status": "状态",
@@ -531,7 +531,7 @@
     },
     "installForm": {
       "title": "安装插件",
-      "explanation": "以 CLI 的方式添加自定义插件：名称加上插件的 git URL——这是没有内置短名的工具在 asdf 生态中的标准做法。",
+      "explanation": "按 CLI 的方式添加自定义插件：填写名称和插件的 git URL——对没有内置简写名的工具，这是 asdf 生态的标准做法。",
       "namePlaceholder": "插件名称",
       "urlPlaceholder": "Git URL — https://github.com/<owner>/<repo>"
     },
@@ -543,7 +543,7 @@
     },
     "installedEmpty": {
       "title": "未安装插件",
-      "body": "大多数工具根本不需要插件——去工具页搜索即可安装。要添加自定义插件，请使用上方表单：名称加上其 git URL。",
+      "body": "大多数工具根本不需要插件——去工具页搜索即可安装。要添加自定义插件，请使用上方表单：填写名称和插件的 git URL。",
       "action": "搜索工具"
     },
     "installedError": {
@@ -560,12 +560,12 @@
     "ready": "就绪",
     "notInstalled": {
       "title": "未找到 mise",
-      "body": "在本机上未找到 mise 可执行文件。下方的引导式安装会通过执行面板运行官方安装脚本；安装指南提供了手动安装的步骤。",
+      "body": "在本机上未找到 mise 可执行文件。下方的引导安装会通过执行面板运行官方安装脚本；安装指南提供了手动安装的步骤。",
       "installHint": "阅读安装指南"
     },
     "tooOld": {
       "title": "mise 版本过旧",
-      "body": "检测到 {{found}}，但 MiseDeck 要求至少 {{minimum}}。请用 `mise self-update` 升级。"
+      "body": "检测到 {{found}}，但 MiseDeck 要求至少 {{minimum}}。请运行 `mise self-update` 更新 mise。"
     },
     "commandFailed": {
       "title": "mise 执行失败",
@@ -578,12 +578,12 @@
   },
   "labels": {
     "version": "版本",
-    "binary": "路径",
+    "binary": "二进制路径",
     "latestVersion": "最新版本"
   },
   "errors": {
     "miseNotFound": "未在这台机器上找到 mise CLI。请按 https://mise.jdx.dev/installing.html 安装后重新启动 MiseDeck。",
-    "miseTooOld": "检测到 mise {{found}}，但 MiseDeck 要求至少 {{minimum}}。请运行 `mise self-update` 升级。",
+    "miseTooOld": "检测到 mise {{found}}，但 MiseDeck 要求至少 {{minimum}}。请运行 `mise self-update` 更新 mise。",
     "terminalNotFound": "未在这个 Linux 系统上找到终端模拟器（已查找 gnome-terminal、konsole、xfce4-terminal）。",
     "timeout": "mise 未在超时时间内响应。",
     "unknown": "出现了未知错误，详情请见执行面板。"
@@ -603,8 +603,8 @@
     "title": "执行面板",
     "statusRunning": "运行中",
     "statusOk": "成功 · {{duration}}s",
-    "statusFailed": "失败 ({{duration}}s, 退出码 {{code}})",
-    "statusFailedNoCode": "失败 ({{duration}}s)",
+    "statusFailed": "失败（{{duration}}s，退出码 {{code}}）",
+    "statusFailedNoCode": "失败（{{duration}}s）",
     "statusCancelled": "已取消",
     "copy": "复制命令",
     "copyHint": "复制确切命令到剪贴板",
@@ -626,7 +626,7 @@
     "openInTerminalError": "无法在 {{path}} 打开终端。请复制命令后手动执行。",
     "openInTerminalSuccess": "已通过 {{terminal}} 在 {{path}} 打开终端。",
     "bannerLabel": "Shell 激活缺失",
-    "bannerBody": "你的 {{shell}} 配置文件 {{rcPath}} 中没有 `mise activate`。请在下方添加该行，以便在 shell 中使用 mise。",
+    "bannerBody": "你的 {{shell}} 配置文件 {{rcPath}} 中没有 `mise activate`。请在下方添加该行，以便在交互式 shell 中使用 mise。",
     "bannerBodyUnknownShell": "MiseDeck 无法识别你的 shell（{{name}}）。请在对应 shell 的 rc 文件中添加 `mise activate <shell>` 行，以在交互式 shell 中使用 mise。",
     "copyLineButton": "复制该行",
     "dismissButton": "关闭"
