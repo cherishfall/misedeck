@@ -479,6 +479,7 @@ fn run_mise_timed<F>(
     mut on_event: F,
     timeout: Duration,
     run_id: Option<&str>,
+    safe_mode: bool,
 ) -> Result<RunOutcome, AppError>
 where
     F: FnMut(RunEvent) + Send + 'static,
@@ -488,6 +489,17 @@ where
     cmd.arg("-C").arg(anchor);
     for a in &req.args {
         cmd.arg(a);
+    }
+    // Read-only views run with `MISE_SAFE=1` (issue #230) — the
+    // contract `docs/agents/architecture.md` states for reads of
+    // directories the user has not trusted: mise resolves the same
+    // config and emits the same data (verified against `mise ls`,
+    // `env`, `config ls`, `tasks ls`, `plugins ls`, `trust --show`,
+    // `doctor`, `outdated`), while config hooks/plugins stay disabled.
+    // Streaming commands (mutations, `mise run`) must NOT set it: they
+    // are already gated by the trust check in the UI layer.
+    if safe_mode {
+        cmd.env("MISE_SAFE", "1");
     }
     cmd.stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -644,7 +656,10 @@ pub fn run_mise_tracked<F>(
 where
     F: FnMut(RunEvent) + Send + 'static,
 {
-    run_mise_timed(mise_path, req, on_event, STREAMING_TIMEOUT, run_id)
+    // Streaming surface: mutations, `mise run`, install and trust.
+    // These are already gated by the trust check in the UI layer, so
+    // they must NOT run with MISE_SAFE (issue #230).
+    run_mise_timed(mise_path, req, on_event, STREAMING_TIMEOUT, run_id, false)
 }
 
 /// The timed core with an explicit deadline, exposed for tests that
@@ -660,7 +675,7 @@ pub fn run_mise_with_timeout<F>(
 where
     F: FnMut(RunEvent) + Send + 'static,
 {
-    run_mise_timed(mise_path, req, on_event, timeout, None)
+    run_mise_timed(mise_path, req, on_event, timeout, None, true)
 }
 
 /// Normalize a completed streaming run for the `run_mise_command`
@@ -765,7 +780,12 @@ pub fn run_mise_json(
     mise_path: &Path,
     req: &RunRequest,
 ) -> Result<serde_json::Value, AppError> {
-    let outcome = run_mise_timed(mise_path, req, |_| {}, READ_TIMEOUT, None)?;
+    // Every read in the app funnels through here (`mise ls`, `env`,
+    // `config ls`, `tasks ls`, `plugins ls`, `outdated`, `doctor`,
+    // `registry`, `trust --show`, `tasks edit --path`, version
+    // detection), so this is the one place the read-only MISE_SAFE
+    // contract is enforced (issue #230).
+    let outcome = run_mise_timed(mise_path, req, |_| {}, READ_TIMEOUT, None, true)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise exited with status {}", outcome.exit_code),
@@ -885,13 +905,35 @@ pub fn mise_env_extended(
 /// alongside the other read-only commands. Used by the
 /// directory-preview page (#24) to surface the project's lockfile in
 /// a read-only block.
+/// Resolve the lockfile that actually governs `cwd`.
+///
+/// mise governs a directory through its *config* file, and the
+/// lockfile sits beside that config — not necessarily in the directory
+/// the user picked. Reading only `<cwd>/mise.lock` therefore reported
+/// "no lockfile" for a subdirectory of a project that does have one
+/// (issue #230). Walk up the directory tree (the same ancestry mise's
+/// config search uses) and take the nearest `mise.lock`.
+fn lockfile_path(cwd: &Path) -> Option<PathBuf> {
+    let mut dir = Some(cwd);
+    while let Some(current) = dir {
+        let candidate = current.join("mise.lock");
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+        dir = current.parent();
+    }
+    None
+}
+
 pub fn read_mise_lockfile(cwd: Option<&Path>) -> Result<Option<String>, AppError> {
     let Some(cwd) = cwd else {
         // The lockfile is a per-directory artifact; the global
         // context has no associated lockfile. Treat as "no lockfile".
         return Ok(None);
     };
-    let path = cwd.join("mise.lock");
+    let Some(path) = lockfile_path(cwd) else {
+        return Ok(None);
+    };
     match std::fs::read_to_string(&path) {
         Ok(s) => Ok(Some(s)),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
@@ -1121,7 +1163,7 @@ pub fn mise_tasks_edit_path(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None)?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!(
@@ -1186,7 +1228,7 @@ pub fn check_trust(mise_path: &Path, cwd: Option<&Path>) -> Result<TrustStatus, 
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None)?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise trust --show exited with status {}", outcome.exit_code),
@@ -1385,7 +1427,7 @@ fn doctor_text_fallback(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None)?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
     // A non-zero exit is still valuable diagnostic output for the
     // health page; surface the lines instead of failing the command.
     let lines: Vec<DoctorLine> = outcome
@@ -1417,7 +1459,16 @@ pub fn mise_doctor(
     };
     match run_mise_json(mise_path, &req) {
         Ok(v) => Ok(v),
-        Err(_) => doctor_text_fallback(mise_path, cwd),
+        // Only a *shape* failure justifies re-running without `--json`:
+        // the text fallback exists for a mise build that predates the
+        // flag or emits unparseable output. A timeout or a missing
+        // binary must NOT be retried — that doubles the blocking wait
+        // (2×120s with no cancel path, issue #230) and repeats a
+        // failure the user already saw.
+        Err(e) if e.code == code::PARSE_FAILED || e.code == code::COMMAND_FAILED => {
+            doctor_text_fallback(mise_path, cwd)
+        }
+        Err(e) => Err(e),
     }
 }
 
@@ -1430,7 +1481,7 @@ fn registry_table_fallback(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None)?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise registry exited with status {}", outcome.exit_code),
@@ -1466,7 +1517,14 @@ pub fn mise_registry(
     };
     match run_mise_json(mise_path, &req) {
         Ok(v) => Ok(v),
-        Err(_) => registry_table_fallback(mise_path, cwd),
+        // Same rule as `mise_doctor` (issue #230): the table fallback
+        // covers "this mise has no `--json` / emitted unparseable
+        // output", never a timeout or a missing binary — retrying those
+        // doubles the wait and repeats a known failure.
+        Err(e) if e.code == code::PARSE_FAILED || e.code == code::COMMAND_FAILED => {
+            registry_table_fallback(mise_path, cwd)
+        }
+        Err(e) => Err(e),
     }
 }
 
@@ -1491,7 +1549,7 @@ pub fn mise_plugins_ls(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None)?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise plugins ls exited with status {}", outcome.exit_code),
@@ -1710,7 +1768,7 @@ pub fn mise_tasks_add_argv(
 /// around the generalized runner for the probe path.
 pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
     let req = RunRequest::new(vec!["version".to_string(), "--json".to_string()]);
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, DETECT_TIMEOUT, None)?;
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, DETECT_TIMEOUT, None, true)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise exited with status {}", outcome.exit_code),
