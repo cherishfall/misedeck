@@ -32,20 +32,25 @@ To cut a release:
    - `misedeck/src-tauri/tauri.conf.json` (`"version"`)
    The Tauri CLI stamps the version into the bundle metadata; the
    `package.json` value is what Vite injects at build time.
-3. Release notes come from the tag annotation message, or fall back to
+3. **Bring the README up to date before tagging.** Check both locales
+   against what is actually shipping: the status line and version, the
+   page/command table, install steps (file names, signing caveats),
+   platform support, known limitations, and `docs/screenshots/` — re-capture
+   any page whose UI, copy, or data shape changed. A README that still
+   describes an older release blocks the release; it is not a follow-up.
+4. Release notes come from the tag annotation message, or fall back to
    `.github/release-template.md` for lightweight tags (see "Annotated vs
-   lightweight tags" below). The README has no changelog section, so
-   there is nothing else to update.
-4. Tag the commit with a `vMAJOR.MINOR.PATCH` tag and push it:
+   lightweight tags" below).
+5. Tag the commit with a `vMAJOR.MINOR.PATCH` tag and push it:
    ```sh
    git tag v0.2.0 <commit-sha>
    git push origin v0.2.0
    ```
    Pushing the tag is what triggers `release.yml`. Pushing a non-tag
    commit does **not** trigger the release build.
-5. Watch the run from the Actions tab. The matrix has three legs; all
+6. Watch the run from the Actions tab. The matrix has three legs; all
    three must succeed before the `release` job runs.
-6. Once the Release is published, download the `SHA256SUMS` file,
+7. Once the Release is published, download the `SHA256SUMS` file,
    spot-check at least one platform's hash against a freshly
    downloaded binary, and announce.
 

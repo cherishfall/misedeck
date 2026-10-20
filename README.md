@@ -139,6 +139,8 @@ Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on ma
 | --- | --- |
 | ![Tools](./docs/screenshots/tools-en.png) | ![工具](./docs/screenshots/tools-zh-CN.png) |
 | ![Directory overview](./docs/screenshots/overview-en.png) | ![目录概览](./docs/screenshots/overview-zh-CN.png) |
+| ![Env](./docs/screenshots/env-en.png) | ![环境变量](./docs/screenshots/env-zh-CN.png) |
+| ![Settings](./docs/screenshots/settings-en.png) | ![设置](./docs/screenshots/settings-zh-CN.png) |
 
 ## Contributing
 

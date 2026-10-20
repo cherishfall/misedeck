@@ -139,6 +139,8 @@ npm run tauri build
 | --- | --- |
 | ![工具](../docs/screenshots/tools-en.png) | ![工具](../docs/screenshots/tools-zh-CN.png) |
 | ![目录概览](../docs/screenshots/overview-en.png) | ![目录概览](../docs/screenshots/overview-zh-CN.png) |
+| ![环境变量](../docs/screenshots/env-en.png) | ![环境变量](../docs/screenshots/env-zh-CN.png) |
+| ![设置](../docs/screenshots/settings-en.png) | ![设置](../docs/screenshots/settings-zh-CN.png) |
 
 ## 参与贡献
 

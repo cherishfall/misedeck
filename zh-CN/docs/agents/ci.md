@@ -28,17 +28,20 @@ artifact 的那个。
    - `misedeck/src-tauri/tauri.conf.json`（`"version"`）
    Tauri CLI 会把版本号写入 bundle 元数据；`package.json` 的值是
    Vite 在构建时注入的。
-3. 发版说明来自 tag 附注消息；轻量 tag 则回退到
+3. **打 tag 之前先把 README 更新到位。** 按实际要发布的内容核对中英两份：
+   状态行与版本号、页面/命令对照表、安装步骤（文件名、签名注意事项）、
+   平台支持、已知限制，以及 `docs/screenshots/` —— 界面、文案或数据结构
+   有变化的页面要重拍。README 还停留在旧版本属于发版阻塞项，不是收尾工作。
+4. 发版说明来自 tag 附注消息；轻量 tag 则回退到
    `.github/release-template.md`（见下文「附注 tag vs 轻量 tag」）。
-   README 没有 changelog 章节，无需额外更新。
-4. 给该 commit 打 `vMAJOR.MINOR.PATCH` tag 并推送：
+5. 给该 commit 打 `vMAJOR.MINOR.PATCH` tag 并推送：
    ```sh
    git tag v0.2.0 <commit-sha>
    git push origin v0.2.0
    ```
    推送 tag 才会触发 `release.yml`。推送非 tag commit **不会**触发发版构建。
-5. 在 Actions 标签页观察运行情况。矩阵有三段；三段都成功后 `release` job 才会跑。
-6. Release 发布后，下载 `SHA256SUMS` 文件，对至少一个平台的 hash
+6. 在 Actions 标签页观察运行情况。矩阵有三段；三段都成功后 `release` job 才会跑。
+7. Release 发布后，下载 `SHA256SUMS` 文件，对至少一个平台的 hash
    做一次抽样校验，然后通告用户。
 
 ### 附注 tag vs 轻量 tag

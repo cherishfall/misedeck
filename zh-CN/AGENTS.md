@@ -34,6 +34,7 @@
 - 从第一天起跨平台：路径与进程创建只走 Tauri/Rust 的 API。
 - 新建或修改任何 Tauri command 前读 `docs/agents/architecture.md`；调用 mise、处理错误、写测试前读 `docs/agents/conventions.md`。
 - 维护者报告视觉或交互错误时，评估它是否能泛化为规则。能泛化就在修该实例的同时，把规则固化进 `docs/design/ui-ux-rules.md`（和/或 `visual-language.md`）的两种语言版本，作为同一反馈周期的一部分——让这一类 bug 在生成时就被拦住，而不是在后面的 beta 里反复出现。
+- 发版前必须让 README 反映实际发布的内容：打 tag 之前核对中英两份的状态行与版本、页面/命令表、安装步骤、平台支持、已知限制和截图；过时的 README 阻塞发版。流程归 `docs/agents/ci.md` → 发版流程。
 
 ## 文档语言
 
