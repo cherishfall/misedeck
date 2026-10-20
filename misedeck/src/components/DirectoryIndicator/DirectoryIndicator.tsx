@@ -22,6 +22,8 @@ import { useTranslation } from "react-i18next";
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
 import { pickDirectory } from "../../directory/pickDirectory";
+import { probeDirectory } from "../../api/directory";
+import type { DirectoryProbe } from "../../utils/directoryAvailability";
 import { usePageRefresh } from "../PageShell/pageRefresh";
 import {
   useActivation,
@@ -47,6 +49,11 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
   const { openInTerminal, openOutcome, consumeOpenOutcome } = useActivation();
   const pageRefresh = usePageRefresh();
   const [recentsOpen, setRecentsOpen] = useState(false);
+  // Recents outlive the directories they name (issue #214). Probe the
+  // list when the menu opens so a deleted entry is visible and inert
+  // before the user can select it; selecting a live entry is still
+  // re-probed by the context itself.
+  const [recentProbes, setRecentProbes] = useState<Record<string, DirectoryProbe>>({});
   const [openHint, setOpenHint] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const openHintTimer = useRef<number | null>(null);
 
@@ -93,6 +100,20 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
   const onPick = () => {
     void pickDirectory(t, setDirectory);
   };
+
+  useEffect(() => {
+    if (!recentsOpen) return;
+    let cancelled = false;
+    void Promise.all(
+      recents.map(async (path) => [path, await probeDirectory(path)] as const),
+    ).then((entries) => {
+      if (cancelled) return;
+      setRecentProbes(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [recentsOpen, recents]);
 
   const onOpenInTerminal = () => {
     const path = context.kind === "dir" ? context.path : null;
@@ -189,33 +210,42 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
             <div className={styles.popover}>
               <div className={styles.popoverHeader}>{t(I18N_KEYS.directory.recentsHeader)}</div>
               <ul className={styles.recentsList}>
-                {recents.map((recent) => (
-                  <li key={recent} className={styles.recentItem}>
-                    <button
-                      type="button"
-                      className={styles.recentPick}
-                      onClick={() => {
-                        setDirectory(recent);
-                        setRecentsOpen(false);
-                      }}
-                      role="menuitem"
-                      tabIndex={-1}
-                      title={recent}
-                    >
-                      <span className={styles.recentPath}>{recent}</span>
-                    </button>
-                    <IconButton
-                      aria-label={t(I18N_KEYS.directory.removeRecentLabel)}
-                      variant="ghost"
-                      size="sm"
-                      role="menuitem"
-                      tabIndex={-1}
-                      onClick={() => removeRecent(recent)}
-                    >
-                      ×
-                    </IconButton>
-                  </li>
-                ))}
+                {recents.map((recent) => {
+                  const unavailable = recentProbes[recent] === "missing";
+                  return (
+                    <li key={recent} className={styles.recentItem}>
+                      <button
+                        type="button"
+                        className={styles.recentPick}
+                        onClick={() => {
+                          setDirectory(recent);
+                          setRecentsOpen(false);
+                        }}
+                        role="menuitem"
+                        tabIndex={-1}
+                        title={recent}
+                        disabled={unavailable}
+                      >
+                        <span className={styles.recentPath}>{recent}</span>
+                        {unavailable && (
+                          <span className={styles.recentUnavailable}>
+                            {t(I18N_KEYS.directory.unavailableShort)}
+                          </span>
+                        )}
+                      </button>
+                      <IconButton
+                        aria-label={t(I18N_KEYS.directory.removeRecentLabel)}
+                        variant="ghost"
+                        size="sm"
+                        role="menuitem"
+                        tabIndex={-1}
+                        onClick={() => removeRecent(recent)}
+                      >
+                        ×
+                      </IconButton>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </FloatingMenu>

@@ -388,6 +388,24 @@ fn run_with_reprobe<T>(
     }
 }
 
+/// Probe whether an IPC-supplied path is an existing directory
+/// (issue #214). Directory availability is a filesystem fact, not a
+/// mise question, so this never spawns mise and never depends on the
+/// process PATH. `Ok(false)` means "not a directory" — deleted, moved,
+/// or a file — which the UI treats as an unusable directory context.
+/// An `Err` (IPC failure) is deliberately distinct: the UI must report
+/// an unanswerable probe as unknown, never as a negative fact.
+#[tauri::command]
+async fn directory_exists(path: String) -> Result<bool, AppError> {
+    // Off the main thread: an `is_dir` on a slow or disconnected
+    // volume must not stall the window.
+    spawn_run(move || Ok(path_is_directory(&path))).await
+}
+
+fn path_is_directory(path: &str) -> bool {
+    Path::new(path).is_dir()
+}
+
 /// Validate an IPC-supplied `cwd` (issue #210). `None` is Global mode.
 /// `Some` must name an existing directory: the runner turns it into
 /// `-C <dir>`, so an empty or stale path is a caller-side bug that would
@@ -717,6 +735,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             detect_mise,
+            directory_exists,
             run_mise_command,
             install_mise,
             mise_self_update,
@@ -865,5 +884,20 @@ mod tests {
             "got {:?}",
             err.message
         );
+    }
+
+    #[test]
+    fn directory_exists_reports_directories_and_rejects_everything_else() {
+        let dir = std::env::temp_dir();
+        assert!(path_is_directory(dir.to_str().unwrap()));
+
+        let missing = dir.join("misedeck-no-such-dir-214");
+        assert!(!path_is_directory(missing.to_str().unwrap()));
+
+        // A regular file is not a usable directory context either.
+        let file = dir.join("misedeck-directory-exists-214.tmp");
+        std::fs::write(&file, b"x").unwrap();
+        assert!(!path_is_directory(file.to_str().unwrap()));
+        std::fs::remove_file(&file).unwrap();
     }
 }

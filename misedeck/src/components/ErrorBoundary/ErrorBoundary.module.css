@@ -1,0 +1,103 @@
+/* ErrorBoundary fallback — the shared danger-state recipe from the
+ * page-level error panels (HomePage's detection states), reused so the
+ * root failure does not invent a second visual language. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  max-width: 1200px;
+  margin: 0 auto;
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--size-display);
+  letter-spacing: var(--tracking-display);
+  color: var(--text);
+  margin: 0;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 640px;
+}
+
+.stateIndicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stateLabel {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  color: var(--ice);
+}
+
+.stateBody {
+  font-family: var(--font-ui);
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.summary {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--breach);
+  background: var(--tint-danger-bg);
+  border: 1px solid var(--tint-danger);
+  border-radius: 4px;
+  padding: var(--space-3);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* Diagnostic dump: collapsed by default, scrolls vertically rather
+ * than growing the page without bound. */
+.details {
+  position: relative;
+  align-self: stretch;
+}
+
+.detailsText {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  background: var(--tint-danger-bg);
+  border: 1px solid var(--tint-danger);
+  border-radius: 4px;
+  padding: var(--space-3);
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.detailsCopy {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+}

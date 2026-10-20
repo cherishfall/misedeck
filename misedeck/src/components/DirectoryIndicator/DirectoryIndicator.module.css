@@ -139,10 +139,32 @@
 }
 
 .recentPath {
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+}
+
+/* A recents entry whose directory no longer exists (issue #214):
+ * greyed and inert, so selection can never install a dead context.
+ * The remove button stays live so the entry can be cleaned up. */
+.recentPick:disabled {
+  color: var(--ice);
+  cursor: default;
+}
+
+.recentPick:disabled:hover,
+.recentPick:disabled:focus-visible {
+  color: var(--ice);
+  background: transparent;
+}
+
+.recentUnavailable {
+  flex: none;
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  color: var(--ice);
 }
 
 .hintRow {

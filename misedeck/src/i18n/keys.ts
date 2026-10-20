@@ -66,6 +66,10 @@ export const I18N_KEYS = {
     pickerTitle: "directory.pickerTitle",
     chooseAnother: "directory.chooseAnother",
     removeRecentLabel: "directory.removeRecentLabel",
+    unavailableLabel: "directory.unavailableLabel",
+    unavailableBody: "directory.unavailableBody",
+    unavailableShort: "directory.unavailableShort",
+    unavailableDismiss: "directory.unavailableDismiss",
   },
   sidebar: {
     collapseLabel: "sidebar.collapseLabel",
@@ -722,6 +726,13 @@ export const I18N_KEYS = {
     version: "labels.version",
     binary: "labels.binary",
     latestVersion: "labels.latestVersion",
+  },
+  errorBoundary: {
+    title: "errorBoundary.title",
+    label: "errorBoundary.label",
+    body: "errorBoundary.body",
+    homeButton: "errorBoundary.homeButton",
+    detailsLabel: "errorBoundary.detailsLabel",
   },
   errors: {
     miseNotFound: "errors.miseNotFound",

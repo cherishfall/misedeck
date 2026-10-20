@@ -30,7 +30,11 @@
     "pickerLabel": "选择目录",
     "pickerTitle": "为 MiseDeck 选择一个目录",
     "chooseAnother": "选择其他目录",
-    "removeRecentLabel": "从最近列表移除"
+    "removeRecentLabel": "从最近列表移除",
+    "unavailableLabel": "目录不可用",
+    "unavailableBody": "{{path}} 不存在或无法打开。请重新选择目录以继续。",
+    "unavailableShort": "不可用",
+    "unavailableDismiss": "关闭"
   },
   "sidebar": {
     "collapseLabel": "折叠侧边栏",
@@ -586,6 +590,13 @@
     "version": "版本",
     "binary": "二进制路径",
     "latestVersion": "最新版本"
+  },
+  "errorBoundary": {
+    "title": "出现了问题",
+    "label": "渲染失败",
+    "body": "此页面在渲染时中断。mise 配置未被写入，请返回首页重试。",
+    "homeButton": "返回首页",
+    "detailsLabel": "错误详情"
   },
   "errors": {
     "miseNotFound": "未在这台机器上找到 mise CLI。请按 https://mise.jdx.dev/installing.html 安装后重新启动 MiseDeck。",

@@ -1,0 +1,7 @@
+/* DirectoryUnavailableBanner — same outer rhythm as ActivationBanner:
+ * a full-width banner between the directory strip and the page. */
+
+.wrap {
+  width: 100%;
+  padding: var(--space-3) var(--space-5) 0;
+}

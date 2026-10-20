@@ -15,6 +15,7 @@ import { useDirectory } from "../../state/directoryContext";
 
 import { ActivationBanner } from "../ActivationBanner/ActivationBanner";
 import { DirectoryIndicator } from "../DirectoryIndicator/DirectoryIndicator";
+import { DirectoryUnavailableBanner } from "../DirectoryUnavailableBanner/DirectoryUnavailableBanner";
 import { ExecutionPanel, ExecutionPanelAffordance, useExecutionContext } from "../ExecutionPanel";
 import { LanguageSwitcher } from "../LanguageSwitcher/LanguageSwitcher";
 import { ThemeSwitcher } from "../ThemeSwitcher/ThemeSwitcher";
@@ -121,6 +122,7 @@ export function PageShell({ children }: PageShellProps) {
 
       <div className={styles.content}>
         <DirectoryIndicator mode={context.kind === "dir" ? "directory" : "global"} />
+        <DirectoryUnavailableBanner />
         <ActivationBanner />
         <main className={styles.main}>{children}</main>
         <ExecutionPanelAffordance />

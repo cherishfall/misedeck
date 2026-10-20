@@ -30,7 +30,11 @@
     "pickerLabel": "Choose directory",
     "pickerTitle": "Choose a directory for MiseDeck",
     "chooseAnother": "Choose another directory",
-    "removeRecentLabel": "Remove from recents"
+    "removeRecentLabel": "Remove from recents",
+    "unavailableLabel": "Directory unavailable",
+    "unavailableBody": "{{path}} no longer exists or cannot be opened. Choose another directory to continue.",
+    "unavailableShort": "Unavailable",
+    "unavailableDismiss": "Dismiss"
   },
   "sidebar": {
     "collapseLabel": "Collapse sidebar",
@@ -586,6 +590,13 @@
     "version": "Version",
     "binary": "Binary path",
     "latestVersion": "Latest"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "label": "Render failed",
+    "body": "This page stopped while rendering. Nothing was written to your mise configuration — go back to Home and try again.",
+    "homeButton": "Back to Home",
+    "detailsLabel": "Error details"
   },
   "errors": {
     "miseNotFound": "The mise CLI was not found on this machine. Install it from https://mise.jdx.dev/installing.html and relaunch MiseDeck.",
