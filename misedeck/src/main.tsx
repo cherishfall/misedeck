@@ -3,6 +3,11 @@ import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router";
 
+// Self-hosted webfonts first: the @font-face rules must be registered
+// before tokens.css asks for the families (issue #241). Both are local —
+// the app's CSP is `default-src 'self'`, which is why the remote Google
+// Fonts link could never load.
+import "./fonts.css";
 import "./tokens.css";
 import "./i18n";
 import { LanguageProvider } from "./i18n/useLanguage";

@@ -4,12 +4,11 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Fonts are self-hosted (src/fonts.css, issue #241). The previous
+         Google Fonts <link> was never loaded: the app's CSP is
+         `default-src 'self'`, so style-src/font-src rejected the remote
+         origin — every platform silently fell back to its own system
+         stack. Bundling also removes the runtime network dependency. -->
     <title>MiseDeck</title>
     <script>
       // Theme bootstrap (#37, #54): read the persisted theme

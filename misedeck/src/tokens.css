@@ -70,11 +70,32 @@
    * Display is a serif — the editorial signature of mise.jdx.dev —
    * used for page titles and the wordmark, normal case, no tracking.
    * UI is a quiet grotesque; data is JetBrains Mono, the same face
-   * the mise site uses for code. zh-CN display text falls back to
-   * Songti SC / SimSun (Chinese serifs), UI text to PingFang SC. */
-  --font-display: "Cormorant Garamond", Georgia, "Songti SC", "SimSun", serif;
-  --font-ui: "Space Grotesk", "PingFang SC", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+   * the mise site uses for code.
+   *
+   * The three Latin families are **bundled** (`src/fonts.css`,
+   * issue #241) — they used to come from a Google Fonts <link> that the
+   * app's own CSP silently blocked, so every platform rendered its own
+   * fallback. CJK is still not bundled: zh-CN text falls through to the
+   * platform's Chinese face, which is the design intent (Songti SC /
+   * PingFang SC on macOS, Microsoft YaHei on Windows, Noto CJK on Linux).
+   *
+   * The fallback chain after each bundled family is therefore not dead
+   * weight: it is the controlled degradation path if a woff2 ever fails
+   * to decode, and it names the Windows / Linux faces explicitly instead
+   * of leaving them to `system-ui`.
+   *
+   * `--font-mono`'s first entry is load-bearing beyond looks:
+   * `utils/paths.ts` derives every path column's character budget from a
+   * 0.6em advance, which is JetBrains Mono's. Bundling the font is what
+   * makes that constant true on all three platforms — a lint
+   * (`scripts/check-css-tokens.ts`) keeps this first entry pinned to the
+   * bundled family. */
+  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", "Songti SC",
+    "SimSun", "Noto Serif CJK SC", serif;
+  --font-ui: "Space Grotesk", "PingFang SC", "Microsoft YaHei",
+    "Noto Sans CJK SC", system-ui, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Consolas,
+    "DejaVu Sans Mono", monospace;
 
   --size-display: 26px; /* page title (serif, normal case) */
   --size-base: 14px; /* body, nav, buttons */
