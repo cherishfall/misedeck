@@ -47,8 +47,8 @@
 
 ### macOS（Apple Silicon）
 
-1. 从最新 release 下载 `misedeck_<version>_aarch64.dmg`。
-2. 打开 DMG，把 **misedeck** 拖进 `/Applications`。
+1. 从最新 release 下载 `MiseDeck_<version>_aarch64.dmg`。
+2. 打开 DMG，把 **MiseDeck** 拖进 `/Applications`。
 3. 首次启动会被 Gatekeeper 拦下——见下一节。
 
 ### macOS：构建未签名
@@ -64,7 +64,7 @@
 文件没有损坏——这是 macOS 给未签名下载打上的隔离标记（`com.apple.quarantine`）。对已安装的副本清除它：
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/misedeck.app
+xattr -dr com.apple.quarantine /Applications/MiseDeck.app
 ```
 
 然后正常打开。不需要 `sudo`；`-d` 删除该属性，`-r` 递归作用于整个应用包。
@@ -74,21 +74,21 @@ xattr -dr com.apple.quarantine /Applications/misedeck.app
 仍然打不开时：
 
 - 运行 `/Applications` 里的副本，而不是挂载中 DMG 里的那个（后者只读）。
-- 确认标记已清除：`xattr -p com.apple.quarantine /Applications/misedeck.app` 应返回 *No such xattr*。
+- 确认标记已清除：`xattr -p com.apple.quarantine /Applications/MiseDeck.app` 应返回 *No such xattr*。
 - 每次重装后都要重新执行——新下载的文件会重新带上标记。
 - 避免全局关闭 Gatekeeper（`sudo spctl --master-disable`）；只清理这一个应用即可。
 
 ### Linux x86_64
 
-- Debian/Ubuntu：`misedeck_<version>_amd64.deb`
-- Fedora/RHEL：`misedeck-<version>-1.x86_64.rpm`
-- 任意发行版：`misedeck_<version>_amd64.AppImage`——先 `chmod +x`，再运行。
+- Debian/Ubuntu：`MiseDeck_<version>_amd64.deb`（deb 包名是 `mise-deck`）
+- Fedora/RHEL：`MiseDeck-<version>-1.x86_64.rpm`
+- 任意发行版：`MiseDeck_<version>_amd64.AppImage`——先 `chmod +x`，再运行。
 
 由 CI 打包，维护者尚未在真实桌面上运行过。
 
 ### Windows x64——实验性
 
-每个 release 都会附带 `misedeck_<version>_x64-setup.exe`。Windows 尚未验证：真机测试正在进行，Windows 上定位 mise 可执行文件的问题仍在修复（[#208](https://github.com/cherishfall/misedeck/issues/208)）。请预期尚不可用；欢迎反馈。
+每个 release 都会附带 `MiseDeck_<version>_x64-setup.exe`。Windows 尚未验证：真机测试正在进行，Windows 上定位 mise 可执行文件的问题仍在修复（[#208](https://github.com/cherishfall/misedeck/issues/208)）。请预期尚不可用；欢迎反馈。
 
 ## 从源码运行
 

@@ -1,8 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "misedeck",
+  "productName": "MiseDeck",
   "version": "1.0.0-beta.16",
-  "identifier": "com.lifan.misedeck",
+  "identifier": "io.github.cherishfall.misedeck",
+  "mainBinaryName": "misedeck",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",

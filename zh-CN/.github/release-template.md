@@ -26,10 +26,10 @@ brew install --cask cherishfall/tap/misedeck
 
 或者从下方 assets 下载 `.dmg`，打开后把 MiseDeck 拖入 Applications。
 
-> **首次启动（未签名）**：二进制**未做 Apple 公证**（参见 [ADR-0002](../../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)）。macOS Gatekeeper 会拦截首次打开，并可能提示应用已损坏。把 `misedeck.app` 拖入 `/Applications` 后，在终端移除 quarantine 标记：
+> **首次启动（未签名）**：二进制**未做 Apple 公证**（参见 [ADR-0002](../../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)）。macOS Gatekeeper 会拦截首次打开，并可能提示应用已损坏。把 `MiseDeck.app` 拖入 `/Applications` 后，在终端移除 quarantine 标记：
 >
 > ```bash
-> xattr -dr com.apple.quarantine /Applications/misedeck.app
+> xattr -dr com.apple.quarantine /Applications/MiseDeck.app
 > ```
 >
 > 然后正常启动即可。后续启动不再需要的额外步骤。

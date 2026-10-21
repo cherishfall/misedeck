@@ -47,8 +47,8 @@ Prebuilt (unsigned) binaries are attached to [GitHub Releases](https://github.co
 
 ### macOS (Apple Silicon)
 
-1. Download `misedeck_<version>_aarch64.dmg` from the latest release.
-2. Open the DMG and drag **misedeck** into `/Applications`.
+1. Download `MiseDeck_<version>_aarch64.dmg` from the latest release.
+2. Open the DMG and drag **MiseDeck** into `/Applications`.
 3. The first launch is blocked by Gatekeeper — see below.
 
 ### macOS: the build is unsigned
@@ -64,7 +64,7 @@ Published macOS builds carry no Apple Developer ID signature and are not notariz
 Nothing is corrupt — it is the quarantine flag (`com.apple.quarantine`) that macOS puts on unsigned downloads. Clear it on the installed copy:
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/misedeck.app
+xattr -dr com.apple.quarantine /Applications/MiseDeck.app
 ```
 
 Then open the app normally. No `sudo` needed; `-d` deletes the attribute, `-r` applies it to the whole bundle.
@@ -74,21 +74,21 @@ Without a terminal: launch once and dismiss the dialog, open **System Settings �
 If it still will not open:
 
 - Run the copy in `/Applications`, not the one inside the mounted DMG (that copy is read-only).
-- Check the flag is gone: `xattr -p com.apple.quarantine /Applications/misedeck.app` should answer *No such xattr*.
+- Check the flag is gone: `xattr -p com.apple.quarantine /Applications/MiseDeck.app` should answer *No such xattr*.
 - Re-apply after every reinstall — each new download carries the flag again.
 - Avoid disabling Gatekeeper system-wide (`sudo spctl --master-disable`); clearing this app is the narrow fix.
 
 ### Linux x86_64
 
-- Debian/Ubuntu: `misedeck_<version>_amd64.deb`
-- Fedora/RHEL: `misedeck-<version>-1.x86_64.rpm`
-- Any distro: `misedeck_<version>_amd64.AppImage` — `chmod +x`, then run.
+- Debian/Ubuntu: `MiseDeck_<version>_amd64.deb` (the deb package name is `mise-deck`)
+- Fedora/RHEL: `MiseDeck-<version>-1.x86_64.rpm`
+- Any distro: `MiseDeck_<version>_amd64.AppImage` — `chmod +x`, then run.
 
 Packaged by CI; the maintainer has not run these on a real desktop.
 
 ### Windows x64 — experimental
 
-Each release attaches `misedeck_<version>_x64-setup.exe`. Windows is not verified yet: testing on real hardware is in progress, and finding the mise binary on Windows is still being fixed ([#208](https://github.com/cherishfall/misedeck/issues/208)). Expect breakage; feedback is welcome.
+Each release attaches `MiseDeck_<version>_x64-setup.exe`. Windows is not verified yet: testing on real hardware is in progress, and finding the mise binary on Windows is still being fixed ([#208](https://github.com/cherishfall/misedeck/issues/208)). Expect breakage; feedback is welcome.
 
 ## Run from source
 

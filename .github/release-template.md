@@ -26,10 +26,10 @@ brew install --cask cherishfall/tap/misedeck
 
 Or download the `.dmg` from the assets below, open it, and drag MiseDeck to Applications.
 
-> **First launch (unsigned)**: the binary is **not notarized** (per [ADR-0002](../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)). macOS Gatekeeper will block the first open and may report that the app is damaged. After dragging `misedeck.app` to `/Applications`, remove the quarantine flag from Terminal:
+> **First launch (unsigned)**: the binary is **not notarized** (per [ADR-0002](../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)). macOS Gatekeeper will block the first open and may report that the app is damaged. After dragging `MiseDeck.app` to `/Applications`, remove the quarantine flag from Terminal:
 >
 > ```bash
-> xattr -dr com.apple.quarantine /Applications/misedeck.app
+> xattr -dr com.apple.quarantine /Applications/MiseDeck.app
 > ```
 >
 > Then launch normally. Subsequent launches work without extra steps.
