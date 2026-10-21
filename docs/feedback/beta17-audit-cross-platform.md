@@ -256,6 +256,11 @@ SPEC 父票 **#239**，八张 ticket 全部实现并提交（master）：
 | #246 G | `9870c95` | `scrollbar-gutter: stable`（PageShell main + Table scroller）；`check-css-tokens.ts` 新增字体栈断言 |
 | #242 #244 #245 | `422e096` | Windows 终端改 `current_dir` 传目录；PowerShell 5.1 profile 进 siblings + BOM 解码；Linux 终端表 11 项 |
 | #247 H | `e6d4a56` | release.yml Linux 腿 `ubuntu-22.04`；README 双语写明 WebKitGTK ≥ 2.40 / glibc 2.35 |
+| #240 补 | `58b2ded` | 首轮 Windows CI 抓到新单测的竞态（`try_wait` 只问一次），改轮询 |
+
+首轮 CI 的结果值得记一笔：`windows-latest` 腿**真的执行**了新加的四组断言（flag word、
+Terminal argv、PowerShell sibling、install 编码前缀）并且全绿 —— 也就是说这几个「无真机」的
+结论至少有一层可执行证据，不是纯读代码。唯一红的是测试自身的时序假设，已修。
 
 实现期的三处修正（审计原文不改，以此为准）：
 
