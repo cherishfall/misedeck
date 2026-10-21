@@ -99,29 +99,16 @@ jobs:
         working-directory: misedeck
         run: npm run tauri build -- --bundles ${{ matrix.bundles }}
 
-      - name: Compute SHA256SUMS
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd misedeck
-          # Hash the actual installers and signed binaries, not the
-          # unpacked .app bundle directory. Portable across the three
-          # runners because every GitHub-hosted image ships coreutils.
-          find src-tauri/target/release/bundle \
-            -type f \
-            \( -name '*.dmg' -o -name '*.exe' -o -name '*.msi' \
-               -o -name '*.deb' -o -name '*.rpm' -o -name '*.AppImage' \) \
-            -print0 \
-          | xargs -0 sha256sum > SHA256SUMS
-          cat SHA256SUMS
-
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: misedeck-${{ matrix.os }}
           # Only the installers, not the unpacked `.app` directory on
           # macOS. The `.app` is what gets bundled into the `.dmg` and
-          # is too large to attach to a Release.
+          # is too large to attach to a Release. Checksums are computed
+          # once in the `release` job, after every platform has landed
+          # (#251) — a per-platform file could only ever cover that
+          # platform.
           path: |
             misedeck/src-tauri/target/release/bundle/**/*.dmg
             misedeck/src-tauri/target/release/bundle/**/*.exe
@@ -129,7 +116,6 @@ jobs:
             misedeck/src-tauri/target/release/bundle/**/*.deb
             misedeck/src-tauri/target/release/bundle/**/*.rpm
             misedeck/src-tauri/target/release/bundle/**/*.AppImage
-            misedeck/SHA256SUMS
           if-no-files-found: error
 
   release:
@@ -151,6 +137,27 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
+
+      - name: Compute SHA256SUMS
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd artifacts
+          # One file for the whole release, computed after every platform
+          # has landed, over exactly the bytes that get attached (#251).
+          # Names are bare file names, not repo paths: this file is meant
+          # to be checked from the directory the user downloaded into.
+          # Sorted by name so re-running the job on the same assets
+          # reproduces the file byte for byte.
+          : > /tmp/SHA256SUMS.partial
+          for f in *; do
+            [ -f "$f" ] || continue
+            if [ "$f" = "SHA256SUMS" ]; then continue; fi
+            sha256sum "$f" >> /tmp/SHA256SUMS.partial
+          done
+          sort -k2 /tmp/SHA256SUMS.partial > SHA256SUMS
+          rm -f /tmp/SHA256SUMS.partial
+          cat SHA256SUMS
 
       - name: Resolve release notes
         id: notes
@@ -187,8 +194,9 @@ jobs:
           draft: false
           # Treat alpha/beta/rc/pre tags as pre-releases; stable tags are full releases.
           prerelease: ${{ contains(github.ref_name, '-alpha') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') || contains(github.ref_name, '-pre') }}
-          # Every file under artifacts/ — bundles and per-platform
-          # SHA256SUMS — is attached with its original filename.
+          # Every file under artifacts/ — the bundles plus the release-wide
+          # SHA256SUMS computed above — is attached with its original
+          # filename.
           files: |
             artifacts/**
         env:

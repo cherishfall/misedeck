@@ -50,15 +50,20 @@ Pick the package that matches your distro:
 
 ## Verify
 
-A `SHA256SUMS` file is attached below. Verify before installing:
+`SHA256SUMS` is attached below and lists **every** asset in this release — run it from the folder you downloaded into.
 
 ```sh
-# macOS / Linux
+# macOS
 shasum -a 256 -c SHA256SUMS
 
-# Windows (PowerShell)
-Get-FileHash -Algorithm SHA256 .\<file-you-downloaded>
+# Linux
+sha256sum -c SHA256SUMS
+
+# Windows (PowerShell) — one file at a time
+Get-FileHash -Algorithm SHA256 .\MiseDeck_<version>_x64-setup.exe
 ```
+
+This catches a truncated download, a proxy that served the wrong file, or an asset replaced after upload. It does not prove who built the binary — the builds are unsigned (see Notes).
 
 ## Notes
 

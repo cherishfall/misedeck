@@ -43,7 +43,7 @@ Beyond the pages:
 
 ## Install
 
-Prebuilt (unsigned) binaries are attached to [GitHub Releases](https://github.com/cherishfall/misedeck/releases).
+Prebuilt (unsigned) binaries are attached to [GitHub Releases](https://github.com/cherishfall/misedeck/releases). Each release carries a `SHA256SUMS` file covering every asset — run `shasum -a 256 -c SHA256SUMS` (macOS) or `sha256sum -c SHA256SUMS` (Linux) in the folder you downloaded into.
 
 ### macOS (Apple Silicon)
 

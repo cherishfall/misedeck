@@ -50,15 +50,20 @@ brew install --cask cherishfall/tap/misedeck
 
 ## 校验
 
-下方附 `SHA256SUMS` 文件。安装前请校验：
+下方附 `SHA256SUMS`，覆盖本版本**全部**资产 —— 在你下载到的目录里执行。
 
 ```sh
-# macOS / Linux
+# macOS
 shasum -a 256 -c SHA256SUMS
 
-# Windows (PowerShell)
-Get-FileHash -Algorithm SHA256 .\<你下载的文件>
+# Linux
+sha256sum -c SHA256SUMS
+
+# Windows（PowerShell）—— 逐个文件校验
+Get-FileHash -Algorithm SHA256 .\MiseDeck_<version>_x64-setup.exe
 ```
+
+它能挡住下载截断、代理返回了错文件、以及上传后被替换的资产。它不能证明二进制是谁构建的 —— 这些构建没有签名（见下方说明）。
 
 ## 说明
 

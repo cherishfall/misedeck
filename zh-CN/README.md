@@ -43,7 +43,7 @@
 
 ## 安装
 
-未签名的预构建文件附在 [GitHub Releases](https://github.com/cherishfall/misedeck/releases)。
+未签名的预构建文件附在 [GitHub Releases](https://github.com/cherishfall/misedeck/releases)。每个 release 都带一个覆盖全部资产的 `SHA256SUMS` —— 在下好包的目录里跑 `shasum -a 256 -c SHA256SUMS`（macOS）或 `sha256sum -c SHA256SUMS`（Linux）即可校验。
 
 ### macOS（Apple Silicon）
 
