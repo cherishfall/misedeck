@@ -1,7 +1,7 @@
 {
   "name": "misedeck",
   "private": true,
-  "version": "1.0.0-beta.16",
+  "version": "1.0.0-beta.17",
   "description": "MiseDeck — a faithful GUI for mise",
   "license": "MIT",
   "repository": {
