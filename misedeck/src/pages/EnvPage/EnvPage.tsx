@@ -509,13 +509,14 @@ function EnvRowActions({
     );
   }
 
-  // Write-scope check (issue #182): the write target is chosen by the
-  // mode (cwd === null → the global config via `-g`; otherwise the
-  // current directory's config), not by where the row is defined. A
-  // config row whose sourcePath falls outside that scope would be
-  // written to a different config file than its definition — a shadow
-  // entry or a silent no-op — so every confirm dialog for the row
-  // carries the out-of-scope warning below.
+  // Write-scope check (issues #182, #268): the write target is chosen
+  // by the mode (cwd === null → the global config via `-g`; otherwise
+  // the active directory's own config), not by where the row is
+  // defined. A config row sourced from anywhere else — the global
+  // config or a parent directory — would be written to a different
+  // file: a shadow entry for set, a no-op for unset. Unset is disabled
+  // for such a row, and every other write path carries the
+  // out-of-scope warning below.
   const outOfScope =
     row.sourcePath !== undefined && isEnvWriteScopeMismatch(row.sourcePath, cwd);
 
@@ -566,20 +567,20 @@ function EnvRowActions({
     );
     if (outcome === "ok") setEditing(false);
   };
-  // Sequential, never concurrent: the set runs only after the unset
-  // succeeds, so the two mise processes can never interleave their
-  // read-modify-write on the same TOML (beta11 4.3-B1). Any failure
-  // keeps the draft open; the success bar fires only after the set
-  // completes (issue #145).
+  // Sequential, never concurrent: the set runs first and the unset only
+  // after it succeeds, so a failure cannot destroy the old value. If the
+  // unset then fails, both keys exist (the new one shadows the old) —
+  // visible, not lost. Any failure keeps the draft open; the success bar
+  // fires only after both commands complete (issues #145, #268).
   const doRename = async () => {
     setConfirmingRename(false);
-    const unsetOutcome = await onWrite((cwd) => miseEnvUnsetArgs(row.name, cwd));
-    if (unsetOutcome !== "ok") return;
-    const setOutcome = await onWrite(
-      (cwd) => miseEnvSetArgs(name, value, cwd),
-      t(I18N_KEYS.env.success.set, { name }),
+    const setOutcome = await onWrite((cwd) => miseEnvSetArgs(name, value, cwd));
+    if (setOutcome !== "ok") return;
+    const unsetOutcome = await onWrite(
+      (cwd) => miseEnvUnsetArgs(row.name, cwd),
+      t(I18N_KEYS.env.success.rename, { from: row.name, to: name }),
     );
-    if (setOutcome === "ok") setEditing(false);
+    if (unsetOutcome === "ok") setEditing(false);
   };
 
   if (editing) {
@@ -633,8 +634,8 @@ function EnvRowActions({
           </Button>
         </KeyForm>
         {/* Renaming confirms first and the dialog teaches both exact
-            commands in execution order (unset old key, then set new
-            key) — same ConfirmDialog the row actions use for remove. */}
+            commands in execution order (write the new key, then remove
+            the old one) — same ConfirmDialog the row actions use. */}
         <ConfirmDialog
           open={confirmingRename}
           confirmBusy={disabled}
@@ -642,8 +643,8 @@ function EnvRowActions({
           title={t(I18N_KEYS.env.confirm.rename.title, { from: row.name, to: name })}
           body={t(I18N_KEYS.env.confirm.rename.body)}
           command={[
-            commandEcho("mise", cwd, miseEnvUnsetArgs(row.name, cwd)),
             commandEcho("mise", cwd, miseEnvSetArgs(name, value, cwd)),
+            commandEcho("mise", cwd, miseEnvUnsetArgs(row.name, cwd)),
           ]}
           confirmLabel={t(I18N_KEYS.common.save)}
           cancelLabel={t(I18N_KEYS.common.cancel)}
@@ -656,8 +657,9 @@ function EnvRowActions({
         </ConfirmDialog>
         {/* Renaming onto an existing key overwrites that var's value
             (issue #170), so this variant's copy says so honestly while
-            still teaching both exact commands in execution order. Same
-            sequential doRename as the plain rename confirm. */}
+            still teaching both exact commands in execution order (write
+            the new key, then remove the old one). Same sequential
+            doRename as the plain rename confirm. */}
         <ConfirmDialog
           open={confirmingRenameOverwrite}
           confirmBusy={disabled}
@@ -665,8 +667,8 @@ function EnvRowActions({
           title={t(I18N_KEYS.env.confirm.renameOverwrite.title, { from: row.name, to: name })}
           body={t(I18N_KEYS.env.confirm.renameOverwrite.body, { from: row.name, to: name })}
           command={[
-            commandEcho("mise", cwd, miseEnvUnsetArgs(row.name, cwd)),
             commandEcho("mise", cwd, miseEnvSetArgs(name, value, cwd)),
+            commandEcho("mise", cwd, miseEnvUnsetArgs(row.name, cwd)),
           ]}
           confirmLabel={t(I18N_KEYS.common.save)}
           cancelLabel={t(I18N_KEYS.common.cancel)}
@@ -717,14 +719,38 @@ function EnvRowActions({
       >
         {t(I18N_KEYS.env.editButton)}
       </Button>
-      <Button
-        variant="danger"
-        size="sm"
-        onClick={() => setConfirmingUnset(true)}
-        data-testid={`env-unset-${row.name}`}
-      >
-        {t(I18N_KEYS.env.unsetButton)}
-      </Button>
+      {outOfScope ? (
+        /* Outside the active directory the unset exits 0 without
+           removing the variable, so the button renders disabled and the
+           Tooltip says why (issues #182, #268; ui-ux-rules: disabled
+           control + discoverable reason). */
+        <Tooltip
+          focusable
+          text={t(I18N_KEYS.env.tooltip.unsetOutOfScope, {
+            source: row.sourcePath ?? "",
+          })}
+        >
+          <span>
+            <Button
+              variant="danger"
+              size="sm"
+              disabled
+              data-testid={`env-unset-${row.name}`}
+            >
+              {t(I18N_KEYS.env.unsetButton)}
+            </Button>
+          </span>
+        </Tooltip>
+      ) : (
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={() => setConfirmingUnset(true)}
+          data-testid={`env-unset-${row.name}`}
+        >
+          {t(I18N_KEYS.env.unsetButton)}
+        </Button>
+      )}
       {/* Removing an env var is destructive, so it confirms first and the
           dialog teaches the exact command that will run (ui-ux-rules:
           "uninstall, unset, overwrite always confirm"). Same ConfirmDialog
@@ -750,9 +776,7 @@ function EnvRowActions({
           );
         }}
         onCancel={() => setConfirmingUnset(false)}
-      >
-        {outOfScope && <OutOfScopeWarning sourcePath={row.sourcePath} />}
-      </ConfirmDialog>
+      />
     </span>
   );
 }

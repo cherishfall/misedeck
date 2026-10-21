@@ -322,7 +322,8 @@
     "tooltip": {
       "tool": "Injected by {{tool}} via mise env; resolved at runtime, not settable via mise set.",
       "default": "Inherited from the host environment; not written by mise, so not settable via mise set.",
-      "configTool": "Requested by the config file and injected by {{tool}}; overridable via mise set."
+      "configTool": "Requested by the config file and injected by {{tool}}; overridable via mise set.",
+      "unsetOutOfScope": "Defined in {{source}}, outside the active directory's config — Unset would not take effect."
     },
     "confirm": {
       "unset": {
@@ -336,11 +337,11 @@
       },
       "rename": {
         "title": "Rename {{from}} to {{to}}?",
-        "body": "Renaming runs the two exact commands below in order: first the old key is removed, then the new key is written. The second command runs only when the first succeeds. This cannot be undone."
+        "body": "Renaming runs the two exact commands below in order: first the new key is written, then the old key is removed. The removal runs only when the write succeeds, so a failure cannot destroy the old value. This cannot be undone."
       },
       "renameOverwrite": {
         "title": "Rename {{from}} to {{to}}?",
-        "body": "An env var named {{to}} already exists — the rename overwrites its current value with the value of {{from}}. Renaming runs the two exact commands below in order: first the old key is removed, then the new key is written. This cannot be undone."
+        "body": "An env var named {{to}} already exists — the rename overwrites its current value with the value of {{from}}. Renaming runs the two exact commands below in order: first the new key is written, then the old key is removed. The removal runs only when the write succeeds. This cannot be undone."
       },
       "update": {
         "title": "Update {{name}}?",
@@ -351,6 +352,7 @@
     },
     "success": {
       "set": "{{name}} set",
+      "rename": "{{from}} renamed to {{to}}",
       "unsetGlobal": "{{name}} removed from the global config",
       "unsetDirectory": "{{name}} removed from the current directory's config"
     },

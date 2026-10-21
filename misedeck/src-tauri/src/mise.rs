@@ -1228,15 +1228,23 @@ pub struct TrustStatus {
 /// Probe the trust state for `<cwd>` by running `mise trust --show`.
 /// The probe is read-only; `mise trust --show` exits 0 in every
 /// state — the only signal is the body of stdout. The output format
-/// is one line per config file in scope:
+/// is one line per config directory in scope:
 ///
-///   * `<path>: trusted`
-///   * `<path>: untrusted`
+///   * `<directory>: trusted`
+///   * `<directory>: untrusted`
+///
+/// (Real probe: `~/AiCodingProjects/mise-ui: trusted` — the line
+/// names the directory holding the config, and `~` abbreviates home.)
 ///
 /// When no `mise.toml` is in scope, mise prints
-/// `No trusted config files found.` (exit code 0). The first
-/// status-bearing line wins — `trust --show` lists the nearest
-/// config first, and that is the one governing the cwd.
+/// `No trusted config files found.` (exit code 0).
+///
+/// Trust is per config directory, and `trust --show` lists ancestors
+/// before descendants (probe: a trusted parent precedes an untrusted
+/// child), so the first line is NOT the decision for the cwd.
+/// `parse_trust_show` keeps every line that governs the cwd and fails
+/// closed: one untrusted directory anywhere in that chain makes the
+/// cwd untrusted (issue #268).
 ///
 /// **Fail closed** (issue #254): a line this parser does not recognise
 /// is not evidence that there is nothing to trust. If stdout carries
@@ -1259,53 +1267,126 @@ pub fn check_trust(mise_path: &Path, cwd: Option<&Path>) -> Result<TrustStatus, 
             outcome.stderr,
         ));
     }
+    parse_trust_show(&outcome.stdout, cwd)
+}
+
+/// Pure half of `check_trust`, so the decision is unit-testable
+/// without a mise binary. The `path` kept in `TrustStatus` is the
+/// string mise printed (home shorthand intact) — it is display-only.
+fn parse_trust_show(stdout: &str, cwd: Option<&Path>) -> Result<TrustStatus, AppError> {
     let cwd_fallback = cwd
         .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_default();
+    let mut entries: Vec<(PathBuf, bool, String)> = Vec::new();
     let mut unparsed = false;
-    for line in outcome.stdout.lines() {
+    for line in stdout.lines() {
         let line = line.trim();
-        if line.is_empty() {
+        if line.is_empty() || line.starts_with("No trusted") {
             continue;
         }
-        if line.starts_with("No trusted") {
+        // Split on the LAST colon to keep a Windows drive letter
+        // (`C:\repo: trusted`) intact.
+        let Some((path_part, status_part)) = line.rsplit_once(':') else {
+            unparsed = true;
             continue;
-        }
-        // `mise trust --show` emits lines like
-        //   `<path>: trusted` / `<path>: untrusted`
-        // and on some platforms the path may include a drive letter
-        // (Windows). Split on the LAST colon to keep the path
-        // intact.
-        if let Some((path_part, status_part)) = line.rsplit_once(':') {
-            let status = status_part.trim();
-            let path = path_part.trim().to_string();
-            if status == "trusted" {
-                return Ok(TrustStatus {
-                    source: TrustSource::ConfigTrusted,
-                    path,
-                });
+        };
+        let displayed = path_part.trim();
+        let trusted = match status_part.trim() {
+            "trusted" => true,
+            "untrusted" => false,
+            _ => {
+                unparsed = true;
+                continue;
             }
-            if status == "untrusted" {
-                return Ok(TrustStatus {
-                    source: TrustSource::ConfigUntrusted,
-                    path,
-                });
-            }
-        }
-        unparsed = true;
+        };
+        entries.push((expand_home(displayed), trusted, displayed.to_string()));
     }
-    if unparsed {
+    if entries.is_empty() && unparsed {
         // The raw payload *is* the detail here: mise exited 0, so there
         // is no stderr to surface. The panel shows it verbatim.
         return Err(AppError::command_failed(
             "mise trust --show printed output the app could not parse",
-            outcome.stdout,
+            stdout,
         ));
     }
+    // Only directories in the cwd's own chain apply. Without a cwd the
+    // probe ran at the process default, so every line applies.
+    let mut applicable: Vec<_> = entries
+        .into_iter()
+        .filter(|(dir, _, _)| cwd.is_none_or(|cwd| trust_dir_applies(dir, cwd)))
+        .collect();
+    // Longest path last: the nearest directory is the most specific
+    // line for the cwd.
+    applicable.sort_by_key(|(dir, _, _)| dir.components().count());
+    if applicable.is_empty() {
+        return Ok(TrustStatus {
+            source: TrustSource::NoConfig,
+            path: cwd_fallback,
+        });
+    }
+    // Fail closed: any untrusted directory in the chain blocks the
+    // cwd, even when a nearer line says "trusted".
+    if let Some((_, _, path)) = applicable.iter().rev().find(|(_, trusted, _)| !trusted) {
+        return Ok(TrustStatus {
+            source: TrustSource::ConfigUntrusted,
+            path: path.clone(),
+        });
+    }
+    let (_, _, path) = applicable.last().expect("applicable is non-empty");
     Ok(TrustStatus {
-        source: TrustSource::NoConfig,
-        path: cwd_fallback,
+        source: TrustSource::ConfigTrusted,
+        path: path.clone(),
     })
+}
+
+/// Expand mise's `~` shorthand so a reported directory compares
+/// against the absolute cwd.
+fn expand_home(path: &str) -> PathBuf {
+    if path == "~" {
+        return dirs::home_dir().unwrap_or_else(|| PathBuf::from(path));
+    }
+    if let Some(rest) = path.strip_prefix("~/").or_else(|| path.strip_prefix("~\\")) {
+        if let Some(home) = dirs::home_dir() {
+            return home.join(rest);
+        }
+    }
+    PathBuf::from(path)
+}
+
+/// True when a reported directory is `cwd` itself or one of its
+/// ancestors — the configs mise resolves `cwd` from. Sibling and child
+/// directories never govern it.
+fn trust_dir_applies(dir: &Path, cwd: &Path) -> bool {
+    let norm = |p: &Path| {
+        let raw = p.to_string_lossy().replace('\\', "/");
+        let trimmed = raw.trim_end_matches('/');
+        let out = if trimmed.is_empty() && raw.starts_with('/') {
+            "/".to_string()
+        } else {
+            trimmed.to_string()
+        };
+        // macOS/Windows filesystems fold case by default; compare the
+        // same way mise reports paths on those hosts.
+        if cfg!(any(windows, target_os = "macos")) {
+            out.to_lowercase()
+        } else {
+            out
+        }
+    };
+    let dir = norm(dir);
+    let cwd = norm(cwd);
+    if dir.is_empty() || cwd.is_empty() {
+        return false;
+    }
+    if cwd == dir {
+        return true;
+    }
+    let prefix = if dir.ends_with('/') {
+        dir
+    } else {
+        format!("{dir}/")
+    };
+    cwd.starts_with(&prefix)
 }
 
 /// `mise trust` — mark the active directory's `mise.toml` as
@@ -2100,6 +2181,81 @@ mod tests {
         };
         let v = serde_json::to_value(&no_config).unwrap();
         assert_eq!(v["source"], "noConfig");
+    }
+
+    // The real `mise trust --show` probe lists the trusted parent
+    // before the untrusted child; the first line must not decide the
+    // cwd's trust state (issue #268). Lines name directories.
+    #[test]
+    fn parse_trust_show_flags_untrusted_child_under_trusted_parent() {
+        let stdout = "/repo: trusted\n/repo/child: untrusted\n";
+        let status = parse_trust_show(stdout, Some(Path::new("/repo/child"))).unwrap();
+        assert_eq!(status.source, TrustSource::ConfigUntrusted);
+        assert_eq!(status.path, "/repo/child");
+    }
+
+    #[test]
+    fn parse_trust_show_fails_closed_when_a_parent_is_untrusted() {
+        // A trusted nearest directory cannot vouch for an untrusted
+        // ancestor: mise still treats the ancestor's contents as
+        // untrusted when resolving the cwd.
+        let stdout = "/repo: untrusted\n/repo/child: trusted\n";
+        let status = parse_trust_show(stdout, Some(Path::new("/repo/child"))).unwrap();
+        assert_eq!(status.source, TrustSource::ConfigUntrusted);
+        assert_eq!(status.path, "/repo");
+    }
+
+    #[test]
+    fn parse_trust_show_accepts_a_trusted_chain() {
+        let stdout = "/repo: trusted\n/repo/child: trusted\n";
+        let status = parse_trust_show(stdout, Some(Path::new("/repo/child"))).unwrap();
+        assert_eq!(status.source, TrustSource::ConfigTrusted);
+        assert_eq!(status.path, "/repo/child");
+    }
+
+    #[test]
+    fn parse_trust_show_ignores_directories_outside_the_cwd_chain() {
+        // A sibling or child directory does not govern this cwd, so
+        // its status must not leak into the decision.
+        let stdout = "/other: untrusted\n/repo/child: trusted\n";
+        let status = parse_trust_show(stdout, Some(Path::new("/repo/child"))).unwrap();
+        assert_eq!(status.source, TrustSource::ConfigTrusted);
+        assert_eq!(status.path, "/repo/child");
+    }
+
+    #[test]
+    fn parse_trust_show_expands_home_shorthand() {
+        // The real probe abbreviates home: `~/proj: trusted`. The
+        // expansion must land inside the absolute cwd's chain.
+        let home = dirs::home_dir().expect("test environment has a home dir");
+        let stdout = "~/repo: trusted\n~/repo/child: untrusted\n";
+        let cwd = home.join("repo").join("child");
+        let status = parse_trust_show(stdout, Some(&cwd)).unwrap();
+        assert_eq!(status.source, TrustSource::ConfigUntrusted);
+        assert_eq!(status.path, "~/repo/child");
+    }
+
+    #[test]
+    fn parse_trust_show_reports_no_config_for_the_documented_sentence() {
+        let stdout = "No trusted config files found.\n";
+        let status = parse_trust_show(stdout, Some(Path::new("/repo"))).unwrap();
+        assert_eq!(status.source, TrustSource::NoConfig);
+        assert_eq!(status.path, "/repo");
+    }
+
+    #[test]
+    fn parse_trust_show_rejects_output_without_a_status_line() {
+        let stdout = "trust: ???\n";
+        let err = parse_trust_show(stdout, Some(Path::new("/repo"))).unwrap_err();
+        assert_eq!(err.code, code::COMMAND_FAILED);
+        assert_eq!(err.stderr, stdout);
+    }
+
+    #[test]
+    fn parse_trust_show_without_a_cwd_considers_every_line() {
+        let stdout = "/repo: trusted\n/repo/child: untrusted\n";
+        let status = parse_trust_show(stdout, None).unwrap();
+        assert_eq!(status.source, TrustSource::ConfigUntrusted);
     }
 
     #[test]

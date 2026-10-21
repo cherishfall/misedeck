@@ -19,7 +19,7 @@ import type {
   SettingsItem,
 } from "../types/tauri";
 
-import { normalizePathForCompare } from "../utils/paths";
+import { isPathUnder, normalizePathForCompare } from "../utils/paths";
 
 function asString(v: unknown): string {
   return typeof v === "string" ? v : "";
@@ -289,16 +289,27 @@ export function isGlobalConfigPath(path: string): boolean {
 
 /**
  * True when a config-sourced env row's sourcePath is outside the
- * current write scope (issue #182). The write target is chosen by the
- * mode — global mode (`cwd === null`) writes only the global config
- * (`set -g` / `unset -g`), directory mode writes only non-global
- * (current-directory / local) config — so a row defined on the other
- * side would be written to a different config file than its definition:
- * a shadow entry or a silent no-op. The env page's confirm dialogs warn
- * before letting such a write through.
+ * current write scope (issues #182, #268). The write target is chosen
+ * by the mode, not by where the row is defined:
+ *
+ *   * global mode (`cwd === null`) writes only the global config
+ *     (`set -g` / `unset -g`);
+ *   * directory mode writes the active directory's own config.
+ *
+ * In directory mode a parent config is out of scope too, not just the
+ * global one: `mise unset` exits 0 by writing an empty table into the
+ * child config while the parent's value stays active, and `mise set`
+ * only shadows it. A row sourced from anywhere outside the active
+ * directory therefore gets the confirm warning, and Unset is disabled.
  */
 export function isEnvWriteScopeMismatch(sourcePath: string, cwd: string | null): boolean {
-  return cwd === null ? !isGlobalConfigPath(sourcePath) : isGlobalConfigPath(sourcePath);
+  if (cwd === null) return !isGlobalConfigPath(sourcePath);
+  // The global config can sit inside the active directory tree (e.g.
+  // cwd = $HOME); it is still a different write target.
+  if (isGlobalConfigPath(sourcePath)) return true;
+  const normalized = normalizePathForCompare(sourcePath);
+  const sourceDir = normalized.slice(0, Math.max(0, normalized.lastIndexOf("/")));
+  return !isPathUnder(cwd, sourceDir);
 }
 
 /**

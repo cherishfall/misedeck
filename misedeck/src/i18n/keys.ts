@@ -477,6 +477,7 @@ export const I18N_KEYS = {
       tool: "env.tooltip.tool",
       default: "env.tooltip.default",
       configTool: "env.tooltip.configTool",
+      unsetOutOfScope: "env.tooltip.unsetOutOfScope",
     },
     confirm: {
       unset: {
@@ -509,6 +510,8 @@ export const I18N_KEYS = {
     },
     success: {
       set: "env.success.set",
+      /** Fired only after both rename commands succeed (issue #268). */
+      rename: "env.success.rename",
       /** Removal-source copy split per mode (#201), same split as
           `env.confirm.unset` (a1dd173): which config loses the key
           depends on `cwd === null`. */

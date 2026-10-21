@@ -173,6 +173,20 @@ test("isEnvWriteScopeMismatch: directory mode accepts a current-directory config
   assert.equal(isEnvWriteScopeMismatch("/repo/.mise/config.toml", "/repo"), false);
 });
 
+// A parent config is outside the active directory: `mise unset` exits 0
+// without removing the value, and `mise set` only shadows it (#268).
+test("isEnvWriteScopeMismatch: directory mode flags a parent config source", () => {
+  assert.equal(isEnvWriteScopeMismatch("/repo/mise.toml", "/repo/child"), true);
+  assert.equal(isEnvWriteScopeMismatch(String.raw`C:\repo\mise.toml`, String.raw`C:\repo\child`), true);
+});
+
+test("isEnvWriteScopeMismatch: directory mode is segment-aware and case-folded", () => {
+  // `/repo/childhood` is not inside `/repo/child`.
+  assert.equal(isEnvWriteScopeMismatch("/repo/childhood/mise.toml", "/repo/child"), true);
+  // macOS/Windows case differences on the same directory stay in scope.
+  assert.equal(isEnvWriteScopeMismatch("/Repo/Mise.toml", "/repo"), false);
+});
+
 test("isEnvWriteScopeMismatch: global mode accepts only the global config", () => {
   assert.equal(isEnvWriteScopeMismatch("/home/u/.config/mise/config.toml", null), false);
   assert.equal(isEnvWriteScopeMismatch(String.raw`C:\Users\u\.config\mise\config.toml`, null), false);
