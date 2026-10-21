@@ -138,9 +138,13 @@ npm run tauri build
 
 | English | 简体中文 |
 | --- | --- |
+| ![首页](../docs/screenshots/home-en.png) | ![首页](../docs/screenshots/home-zh-CN.png) |
+| ![概览](../docs/screenshots/preview-en.png) | ![概览](../docs/screenshots/preview-zh-CN.png) |
 | ![工具](../docs/screenshots/tools-en.png) | ![工具](../docs/screenshots/tools-zh-CN.png) |
-| ![目录概览](../docs/screenshots/overview-en.png) | ![目录概览](../docs/screenshots/overview-zh-CN.png) |
 | ![环境变量](../docs/screenshots/env-en.png) | ![环境变量](../docs/screenshots/env-zh-CN.png) |
+| ![任务](../docs/screenshots/tasks-en.png) | ![任务](../docs/screenshots/tasks-zh-CN.png) |
+| ![插件](../docs/screenshots/plugins-en.png) | ![插件](../docs/screenshots/plugins-zh-CN.png) |
+| ![诊断](../docs/screenshots/doctor-en.png) | ![诊断](../docs/screenshots/doctor-zh-CN.png) |
 | ![设置](../docs/screenshots/settings-en.png) | ![设置](../docs/screenshots/settings-zh-CN.png) |
 
 ## 参与贡献

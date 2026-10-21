@@ -138,9 +138,13 @@ Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on ma
 
 | English | 简体中文 |
 | --- | --- |
+| ![Home](./docs/screenshots/home-en.png) | ![首页](./docs/screenshots/home-zh-CN.png) |
+| ![Overview](./docs/screenshots/preview-en.png) | ![概览](./docs/screenshots/preview-zh-CN.png) |
 | ![Tools](./docs/screenshots/tools-en.png) | ![工具](./docs/screenshots/tools-zh-CN.png) |
-| ![Directory overview](./docs/screenshots/overview-en.png) | ![目录概览](./docs/screenshots/overview-zh-CN.png) |
 | ![Env](./docs/screenshots/env-en.png) | ![环境变量](./docs/screenshots/env-zh-CN.png) |
+| ![Tasks](./docs/screenshots/tasks-en.png) | ![任务](./docs/screenshots/tasks-zh-CN.png) |
+| ![Plugins](./docs/screenshots/plugins-en.png) | ![插件](./docs/screenshots/plugins-zh-CN.png) |
+| ![Doctor](./docs/screenshots/doctor-en.png) | ![诊断](./docs/screenshots/doctor-zh-CN.png) |
 | ![Settings](./docs/screenshots/settings-en.png) | ![设置](./docs/screenshots/settings-zh-CN.png) |
 
 ## Contributing
