@@ -20,9 +20,12 @@ export interface CopyButtonProps {
   text: string;
   /** Extra class for call-site positioning (e.g. overlaying a block). */
   className?: string;
+  /** Resting label for copies whose object needs naming ("Copy report").
+   *  The Copied / Copy failed acknowledgements are shared. */
+  label?: string;
 }
 
-export function CopyButton({ text, className }: CopyButtonProps) {
+export function CopyButton({ text, className, label }: CopyButtonProps) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
@@ -47,20 +50,20 @@ export function CopyButton({ text, className }: CopyButtonProps) {
     }, COPIED_MS);
   };
 
-  const label = copyFailed
+  const shown = copyFailed
     ? t(I18N_KEYS.common.copyFailed)
     : copied
       ? t(I18N_KEYS.common.copied)
-      : t(I18N_KEYS.tooltip.copy);
+      : (label ?? t(I18N_KEYS.tooltip.copy));
 
   return (
     <button
       type="button"
       className={`${styles.copy}${className ? ` ${className}` : ""}`}
       onClick={() => void onCopy()}
-      aria-label={label}
+      aria-label={shown}
     >
-      {label}
+      {shown}
     </button>
   );
 }

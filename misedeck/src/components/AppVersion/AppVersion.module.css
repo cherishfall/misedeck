@@ -28,6 +28,7 @@
 .trigger {
   display: inline-flex;
   align-items: center;
+  gap: var(--space-1-5);
   padding: 0;
   border: none;
   border-radius: 4px;
@@ -62,6 +63,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-1-5);
   padding: var(--space-2);
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
@@ -86,6 +88,18 @@
   justify-content: center;
   width: 20px;
   height: 20px;
+}
+
+/* A newer build is known (#238). --flare is the existing attention
+ * color — the dot is only the visual half: the trigger's accessible
+ * name and tooltip carry the meaning. Static (no pulse): the visual
+ * language's ambient motions are not spent on this line. */
+.updateDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--flare);
+  flex: none;
 }
 
 .version {

@@ -77,5 +77,5 @@ The MiseDeck build's own version (`1.0.0-beta.17`), read from the Tauri context 
 _Avoid_: build number, current release (unqualified)
 
 **Update check**:
-Asking GitHub whether a newer MiseDeck build exists, and stopping at a link to that build's Release page — MiseDeck never downloads or installs a build itself (ADR-0009). Manual, bounded at eight seconds, one sentence on failure. Unqualified "update" means mise's own update (`mise self-update`); a Tool's newer version is an "Upgrade".
+Asking GitHub whether a newer MiseDeck build exists, and stopping at a link to that build's Release page — MiseDeck never downloads or installs a build itself (ADR-0009). A silent check runs after launch, at most once per 24 hours, and marks a newer build with a dot on the sidebar's version line; a manual check is always available. Bounded at eight seconds, one sentence on failure. Unqualified "update" means mise's own update (`mise self-update`); a Tool's newer version is an "Upgrade".
 _Avoid_: auto-update, self-update (of MiseDeck)

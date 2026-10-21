@@ -873,7 +873,8 @@ fn cancel_run(run_id: String) {
 
 /// Is there a newer MiseDeck build? (#236, spec #234)
 ///
-/// Manual only — nothing calls this at launch. The blocking curl runs on
+/// Called by the manual panel check and, at most once per throttle
+/// window, by the silent launch check (#238). The blocking curl runs on
 /// the shared blocking pool, so a throttled request never freezes the
 /// window, and every failure mode collapses into the same retryable
 /// `Err` variant instead of surfacing as an unhandled rejection.

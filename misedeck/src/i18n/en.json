@@ -533,6 +533,10 @@
       "emptyBodyDirectory": "mise doctor --json reported an empty toolset for the current directory."
     },
     "rawTitle": "Raw doctor output",
+    "report": {
+      "copy": "Copy report",
+      "header": "MiseDeck {{version}}"
+    },
     "error": {
       "title": "Failed to load doctor",
       "body": "mise doctor --json did not return. Stderr is shown below.",
@@ -692,6 +696,7 @@
   "about": {
     "name": "MiseDeck",
     "triggerLabel": "MiseDeck {{version}} — version and updates",
+    "triggerLabelUpdate": "MiseDeck {{version}} — update {{available}} available",
     "panelLabel": "MiseDeck version and updates",
     "check": "Check for MiseDeck updates",
     "checking": "Checking for MiseDeck updates…",

@@ -4,9 +4,10 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useCallback, useMemo, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 
+import { getAppVersion } from "../../api/app";
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
 import { detectMise, isAppError } from "../../api/mise";
@@ -31,6 +32,7 @@ import { activationPresence } from "../../state/activationPresence";
 import type { DoctorLine, DoctorPayload } from "../../types/tauri";
 import { stderrBodyKey } from "../../utils/stderrBody";
 
+import { composeDoctorReport, doctorReportBody } from "./doctorReport";
 import styles from "./DoctorPage.module.css";
 
 interface ToolsetRow {
@@ -53,11 +55,33 @@ export function DoctorPage() {
 
   const doctor = useParsedDoctor();
 
+  // The report's header names the running MiseDeck build (#238). It is
+  // clipboard-only: the on-screen transcription stays mise's verbatim.
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void getAppVersion().then((value) => {
+      if (alive) setAppVersion(value);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   // Top-toolbar refresh (issue #98): invalidate this page's query.
   const onRefresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["doctor", cwd] });
   }, [queryClient, cwd]);
   useRegisterPageRefresh(onRefresh);
+
+  const doctorError = doctor.error?.kind === "err" ? doctor.error.err : null;
+  const reportText = useMemo(() => {
+    if (doctorError || !doctor.data) return null;
+    const header = t(I18N_KEYS.doctor.report.header, {
+      version: appVersion ?? "—",
+    });
+    return composeDoctorReport(header, doctorReportBody(doctor.data, doctor.raw));
+  }, [appVersion, doctor.data, doctor.raw, doctorError, t]);
 
   if (detect.isPending) {
     return <DoctorLoading />;
@@ -79,8 +103,6 @@ export function DoctorPage() {
     }
   }
 
-  const doctorError = doctor.error?.kind === "err" ? doctor.error.err : null;
-
   return (
     <PageShell>
       <div className={styles.page}>
@@ -101,6 +123,12 @@ export function DoctorPage() {
             text={t(I18N_KEYS.doctor.statusLabel)}
             onRetry={onRefresh}
           />
+          {/* The whole report (#238): MiseDeck's version first, then the
+              mise doctor content. Clipboard-only — the raw block below
+              stays mise's verbatim output. */}
+          {reportText !== null && (
+            <CopyButton text={reportText} label={t(I18N_KEYS.doctor.report.copy)} />
+          )}
         </div>
 
 

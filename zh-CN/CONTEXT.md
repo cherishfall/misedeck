@@ -77,5 +77,5 @@ MiseDeck 自身构建的版本号（`1.0.0-beta.17`），从 Tauri 上下文读�
 _Avoid_: build number、当前发布（无限定语）
 
 **Update check**（更新检查）:
-向 GitHub 询问是否存在更新的 MiseDeck 构建，并止步于该构建 Release 页的链接——MiseDeck 从不自行下载或安装构建（ADR-0009）。手动触发，上限八秒，失败只说一句话。无限定语的 "update" 指 mise 自身的更新（`mise self-update`）；Tool 的更新版本叫 "Upgrade"。
+向 GitHub 询问是否存在更新的 MiseDeck 构建，并止步于该构建 Release 页的链接——MiseDeck 从不自行下载或安装构建（ADR-0009）。启动后静默检查，每个 24 小时窗口最多一次，在侧栏版本行上用一个点标记更新的构建；手动检查始终可用。上限八秒，失败只说一句话。无限定语的 "update" 指 mise 自身的更新（`mise self-update`）；Tool 的更新版本叫 "Upgrade"。
 _Avoid_: auto-update、self-update（指 MiseDeck 时）

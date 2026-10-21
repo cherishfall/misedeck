@@ -11,9 +11,11 @@
 // The version string itself is never translated and never captioned with
 // "Version": `labels.version` already means mise's version.
 //
-// The check is manual by design (ADR-0009). MiseDeck's network egress
-// starts here, when the user asks for it, and ends at a link — the app
-// never downloads or installs a build itself.
+// The check is manual when the user asks, and — since #238 — silently
+// at most once per throttle window after launch. Both paths stop at a
+// link: the app never downloads or installs a build itself (ADR-0009,
+// revision). A newer build known from either path renders a dot on the
+// version line; the panel it opens is the same four-state panel.
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -28,6 +30,15 @@ import { ProgressDot } from "../ProgressDot/ProgressDot";
 import { UpgradeArrow } from "../UpgradeArrow/UpgradeArrow";
 
 import { summarizeCheck, type UpdateCheckState } from "./appVersionCopy";
+import {
+  LAUNCH_CHECK_DELAY_MS,
+  applyCheckResult,
+  isCheckDue,
+  isStoredUpdateNewer,
+  loadUpdateState,
+  saveUpdateState,
+  type AvailableUpdate,
+} from "./appUpdateState";
 import styles from "./AppVersion.module.css";
 
 interface AppVersionProps {
@@ -43,19 +54,64 @@ export function AppVersion({ collapsed = false }: AppVersionProps) {
   const [version, setVersion] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [check, setCheck] = useState<UpdateCheckState>({ kind: "idle" });
+  // The build a persisted or launch-time check told us about. Its only
+  // visual is the dot; the panel seeded from it is the same four-state
+  // panel a manual check uses.
+  const [knownUpdate, setKnownUpdate] = useState<AvailableUpdate | null>(null);
 
   useEffect(() => {
     let alive = true;
     void getAppVersion().then((value) => {
-      if (alive) setVersion(value);
+      if (!alive) return;
+      setVersion(value);
+      if (value === null) return;
+      // A marker belongs to a build still newer than this one. Upgrading
+      // past it is the only thing that makes it stale — clear the stored
+      // copy so the dot does not survive the upgrade (ADR-0009 revision).
+      const stored = loadUpdateState();
+      const marker = isStoredUpdateNewer(stored.available, value)
+        ? stored.available
+        : null;
+      if (stored.available !== null && marker === null) {
+        saveUpdateState({ ...stored, available: null });
+      }
+      if (marker !== null) {
+        setKnownUpdate(marker);
+        setCheck((prev) =>
+          prev.kind === "idle"
+            ? { kind: "available", version: marker.version, url: marker.url }
+            : prev,
+        );
+      }
     });
     return () => {
       alive = false;
     };
   }, []);
 
+  /** Record an attempt before the request leaves, so a crash or a kill
+   *  mid-check cannot buy a second attempt on the next launch. */
+  const beginAttempt = useCallback(() => {
+    const now = Date.now();
+    const stored = loadUpdateState();
+    saveUpdateState({ ...stored, lastAttemptAt: now });
+    return { stored, attemptedAt: now };
+  }, []);
+
+  const showMarker = useCallback((marker: AvailableUpdate | null) => {
+    setKnownUpdate(marker);
+    if (marker !== null) {
+      setCheck((prev) =>
+        prev.kind === "idle"
+          ? { kind: "available", version: marker.version, url: marker.url }
+          : prev,
+      );
+    }
+  }, []);
+
   const runCheck = useCallback(async () => {
     setCheck({ kind: "checking" });
+    const { stored, attemptedAt } = beginAttempt();
     try {
       const result = await checkAppUpdate();
       if (result.status === "available") {
@@ -65,17 +121,70 @@ export function AppVersion({ collapsed = false }: AppVersionProps) {
       } else {
         setCheck({ kind: "error" });
       }
+      const next = applyCheckResult(
+        { ...stored, lastAttemptAt: attemptedAt },
+        result,
+        version,
+        Date.now(),
+      );
+      saveUpdateState(next);
+      showMarker(next.available);
     } catch {
       // The command collapses its own failures; a rejected invoke means
       // the bridge itself is gone. Same sentence either way.
       setCheck({ kind: "error" });
     }
-  }, []);
+  }, [beginAttempt, showMarker, version]);
+
+  // The silent launch check (#238): fire-and-forget after the shell has
+  // settled, at most once per window, with every failure swallowed. It
+  // never opens the panel, never writes a notification, and never awaits
+  // anything on the startup path.
+  const runSilentCheck = useCallback(
+    async (running: string) => {
+      const current = loadUpdateState();
+      if (!isCheckDue(current.lastAttemptAt, Date.now())) return;
+      const attemptedAt = Date.now();
+      saveUpdateState({ ...current, lastAttemptAt: attemptedAt });
+      try {
+        const result = await checkAppUpdate();
+        const next = applyCheckResult(
+          { ...current, lastAttemptAt: attemptedAt },
+          result,
+          running,
+          Date.now(),
+        );
+        saveUpdateState(next);
+        showMarker(next.available);
+      } catch {
+        // Offline, proxy, curl missing, bridge gone: all the same quiet
+        // outcome. The attempt timestamp already throttles the next
+        // launch, and nothing may surface from a check nobody asked for.
+      }
+    },
+    [showMarker],
+  );
+
+  useEffect(() => {
+    if (version === null) return;
+    const timer = window.setTimeout(() => {
+      void runSilentCheck(version);
+    }, LAUNCH_CHECK_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [runSilentCheck, version]);
 
   // A missing version is a dead Tauri context, not a reason to break the
   // shell: render a placeholder and keep the Release page reachable.
   const shown = version ?? "—";
-  const triggerLabel = t(I18N_KEYS.about.triggerLabel, { version: shown });
+  // With a known newer build the trigger's name and tooltip say so — the
+  // dot itself is decorative and never the only channel (ui-ux-rules.md).
+  const triggerLabel =
+    knownUpdate !== null
+      ? t(I18N_KEYS.about.triggerLabelUpdate, {
+          version: shown,
+          available: knownUpdate.version,
+        })
+      : t(I18N_KEYS.about.triggerLabel, { version: shown });
   const summary = summarizeCheck(check);
 
   const statusText =
@@ -104,7 +213,7 @@ export function AppVersion({ collapsed = false }: AppVersionProps) {
             aria-controls={tp["aria-controls"]}
             ref={tp.ref}
             aria-label={triggerLabel}
-            title={collapsed ? triggerLabel : undefined}
+            title={collapsed || knownUpdate !== null ? triggerLabel : undefined}
           >
             {collapsed ? (
               <span className={styles.glyph} aria-hidden="true">
@@ -112,6 +221,9 @@ export function AppVersion({ collapsed = false }: AppVersionProps) {
               </span>
             ) : (
               <span className={styles.version}>{shown}</span>
+            )}
+            {knownUpdate !== null && (
+              <span className={styles.updateDot} aria-hidden="true" />
             )}
           </button>
         )}

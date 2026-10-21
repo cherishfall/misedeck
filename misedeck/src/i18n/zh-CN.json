@@ -533,6 +533,10 @@
       "emptyBodyDirectory": "mise doctor --json 报告当前目录的工具集为空。"
     },
     "rawTitle": "原始 doctor 输出",
+    "report": {
+      "copy": "复制报告",
+      "header": "MiseDeck {{version}}"
+    },
     "error": {
       "title": "加载诊断失败",
       "body": "mise doctor --json 未返回结果。stderr 如下所示。",
@@ -692,6 +696,7 @@
   "about": {
     "name": "MiseDeck",
     "triggerLabel": "MiseDeck {{version}}——版本与更新",
+    "triggerLabelUpdate": "MiseDeck {{version}}——有可用更新 {{available}}",
     "panelLabel": "MiseDeck 版本与更新",
     "check": "检查 MiseDeck 更新",
     "checking": "正在检查 MiseDeck 更新…",

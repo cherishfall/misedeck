@@ -91,19 +91,28 @@ function useDoctor(): UseQueryResult<JsonResult> {
   });
 }
 
-/** Parse a `JsonResult` from `useDoctor` into a typed payload. */
+/** Parse a `JsonResult` from `useDoctor` into a typed payload. `raw` is
+ *  the payload exactly as the command returned it, kept for the
+ *  copyable report (#238): the parsed shape adds camelCase aliases the
+ *  report must not contain. */
 export function useParsedDoctor(): {
   isPending: boolean;
   data: DoctorPayload | null;
   error: JsonResult | null;
+  raw: unknown;
 } {
   const q = useDoctor();
-  if (q.isPending) return { isPending: true, data: null, error: null };
-  if (q.error) return { isPending: false, data: null, error: toErr(q.error) };
+  if (q.isPending) return { isPending: true, data: null, error: null, raw: null };
+  if (q.error) return { isPending: false, data: null, error: toErr(q.error), raw: null };
   if (!q.data || q.data.kind === "err") {
-    return { isPending: false, data: null, error: q.data ?? null };
+    return { isPending: false, data: null, error: q.data ?? null, raw: null };
   }
-  return { isPending: false, data: parseDoctorPayload(q.data.value), error: null };
+  return {
+    isPending: false,
+    data: parseDoctorPayload(q.data.value),
+    error: null,
+    raw: q.data.value,
+  };
 }
 
 /** Read-only mise registry list (`mise registry --json`). Cache key is

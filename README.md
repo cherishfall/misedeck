@@ -33,7 +33,7 @@ Beyond the pages:
 - **Trust**: an untrusted directory is read-only, with a banner and a one-click `mise trust`.
 - **Shell activation**: detects a missing `mise activate` line in your shell rc and shows what to add; can open a terminal at the current directory.
 - **Failures stay visible**: a failed load or command keeps its stderr and a retry on screen instead of rendering an empty page.
-- **App version and updates**: the running version sits in the sidebar footer; checking for a newer build is manual, and a newer build hands you its GitHub Release page — the app never downloads or installs a build itself (ADR-0009).
+- **App version and updates**: the running version sits in the sidebar footer; a silent check at most once per 24 hours marks a newer build with a dot, checking manually is always available, and a newer build hands you its GitHub Release page — the app never downloads or installs a build itself (ADR-0009).
 - Bilingual UI (English / 简体中文) and light/dark themes.
 
 ## Requirements

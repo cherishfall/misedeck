@@ -716,6 +716,12 @@ export const I18N_KEYS = {
       emptyBodyDirectory: "doctor.toolset.emptyBodyDirectory",
     },
     rawTitle: "doctor.rawTitle",
+    /** The copyable whole report (#238): a header naming the running
+        MiseDeck build, then the mise doctor content verbatim. */
+    report: {
+      copy: "doctor.report.copy",
+      header: "doctor.report.header",
+    },
     error: {
       title: "doctor.error.title",
       body: "doctor.error.body",
@@ -849,6 +855,9 @@ export const I18N_KEYS = {
   about: {
     name: "about.name",
     triggerLabel: "about.triggerLabel",
+    /** The version line while a newer build is known (#238): names the
+        newer build, so the dot is never the only signal. */
+    triggerLabelUpdate: "about.triggerLabelUpdate",
     panelLabel: "about.panelLabel",
     check: "about.check",
     checking: "about.checking",

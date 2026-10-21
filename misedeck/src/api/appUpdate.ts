@@ -5,7 +5,9 @@
 // variant, so this module never has to distinguish them — the panel says
 // one sentence and offers a retry.
 //
-// Nothing calls this at launch. It runs when the user asks, and only then.
+// Nothing calls this on the startup path. The manual panel runs it when
+// the user asks; the sidebar's silent launch check (#238) runs it at
+// most once per throttle window, fire-and-forget.
 
 import { invoke } from "@tauri-apps/api/core";
 
