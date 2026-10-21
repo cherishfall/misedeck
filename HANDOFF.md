@@ -6,7 +6,7 @@ This document is a continuation marker between autonomous driver sessions.
 
 Owner pulled the whole pre-release audit into 1.0.0 (P0 + P1 + P2, plus #238 and #249). 21 commits from the audit baseline `37d27fb` to the release commit `99e0aad`; every ticket below is closed. The only open issue is **#239**, the cross-platform spec, which the owner deliberately leaves open — the READMEs keep "macOS polished / Linux unverified / Windows experimental" in step with it.
 
-Release: lightweight tag **`v1.0.0`** on `99e0aad` (pushed 2026-10-21T17:04Z; the template supplies the body, non-prerelease because the tag has no `-beta`). Workflow run **39640446328**, three platform legs then the release job. At handoff time the run was still queued — **the six assets and the release-wide SHA256SUMS are NOT yet confirmed**.
+Release: lightweight tag **`v1.0.0`** on `99e0aad` (pushed 2026-10-21T17:04Z; the template supplied the body, non-prerelease because the tag has no `-beta`). Workflow run **39640446328** is **green** — all three platform legs and the release job. The published Release has the six expected assets (`dmg`, `deb`, `AppImage`, `rpm`, `nsis`, and a 469-byte `SHA256SUMS`); the manifest lists all five packages by bare basename, and the macOS asset was downloaded and spot-checked: `shasum -a 256 -c` returns `MiseDeck_1.0.0_aarch64.dmg: OK` (`615ec479…535954`).
 
 | Issue | Commit | Scope |
 | --- | --- | --- |
@@ -39,10 +39,10 @@ Release: lightweight tag **`v1.0.0`** on `99e0aad` (pushed 2026-10-21T17:04Z; th
 **Not verified — do not claim otherwise:** click-driven flows (dialogs, directory picker, cancel, retry buttons, mutation success) need Accessibility permission and remain the owner's terminal acceptance; the timeout state was not re-captured; malformed payloads on pages other than Tools were not simulated individually; below-the-fold and hover/focus/keyboard states were not inspected; no real Windows/Linux/Intel hardware or non-@2x display; packaging, signing, notarization, SHA256SUMS generation and template rendering were out of scope before the tag.
 
 **Next move:**
-1. Watch run `39640446328` to green. Then confirm the release has six assets (`dmg`, `deb`, `AppImage`, `rpm`, `nsis`, `SHA256SUMS`), download `SHA256SUMS` and spot-check at least one hash against a freshly downloaded asset, and only then close **#252** with the evidence.
-2. If the release job fails (SHA256SUMS was the beta.17 failure mode), fix the workflow and re-cut the tag per the precedent — a re-run replays the old workflow definition.
-3. Owner's terminal acceptance of the click paths listed above; #239 stays open until real Windows/Linux hardware exists.
-4. The failure-notice rule lives in `docs/design/ui-ux-rules.md`; the wrapper guard is in `npm run ci` — don't bypass either when adding commands.
+1. Owner's terminal acceptance of the click paths listed above on the 1.0.0 build. Everything else in the GA gate is verified and closed; if the owner finds a bug, it is a 1.0.1 fix, not an unfinished 1.0.0 ticket.
+2. #239 stays open until real Windows/Linux hardware exists; it is the only open issue and it is owner-gated (no `ready-for-agent`).
+3. The failure-notice rule lives in `docs/design/ui-ux-rules.md`; the wrapper guard is in `npm run ci` — don't bypass either when adding commands.
+4. Release procedure for the next cut is unchanged: bump the six version sites, refresh the READMEs and screenshots, tag `vMAJOR.MINOR.PATCH`, push the tag, then spot-check `SHA256SUMS` as done here.
 
 ---
 
