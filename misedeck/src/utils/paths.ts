@@ -95,10 +95,19 @@ function isAbsolutePathLike(value: string): boolean {
  * the rendered string past the cell and let the cell's own end
  * `text-overflow: ellipsis` re-truncate the tail — hiding the file
  * name, the exact bug head-elision exists to fix.
+ *
+ * Why a constant and not a runtime `measureText`: since #241 JetBrains
+ * Mono is **bundled** (`src/fonts.css`), so the 0.6em advance is the
+ * same on macOS, Windows and Linux — before that, every platform fell
+ * back to a different mono face (Consolas 0.55em, DejaVu 0.602em) and
+ * this number quietly overstated the budget on Windows by ~2
+ * characters. `scripts/check-css-tokens.ts` now fails the build if
+ * `--font-mono` stops naming the bundled family, which is the only way
+ * the assumption can break (#246).
  */
 export function columnCharBudget(widthPx: number): number {
   const CELL_PADDING_PX = 2 * 12; // --space-3 on each side
-  const MONO_ADVANCE_PX = 7.2; // 0.6em at --size-data (12px)
+  const MONO_ADVANCE_PX = 7.2; // 0.6em at --size-data (12px), guaranteed by the bundled font
   return Math.floor((widthPx - CELL_PADDING_PX) / MONO_ADVANCE_PX);
 }
 

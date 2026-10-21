@@ -4,6 +4,11 @@
 .scroller {
   width: 100%;
   overflow-x: auto;
+  /* Reserve the gutter (issue #246): the horizontal scroller can appear or
+   * disappear with the column budget, and letting it change the box width
+   * feeds back into the table's own min-width. Overlay scrollbars (macOS)
+   * ignore this, so nothing shifts there. */
+  scrollbar-gutter: stable;
 }
 
 .table {

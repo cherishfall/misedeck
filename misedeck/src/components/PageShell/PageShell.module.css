@@ -193,6 +193,14 @@
   min-width: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  /* Reserve the scrollbar's width whether or not it is showing (issue
+   * #246). macOS uses overlay scrollbars that take no space, so the page
+   * widths were tuned against the full width; Windows' classic scrollbar
+   * is ~15px and GTK's ~12px, which silently shrank the content area and
+   * could push the tables into their own horizontal scroller. On overlay
+   * scrollbars this property has no effect, so the macOS layout is
+   * unchanged. */
+  scrollbar-gutter: stable;
   padding: var(--space-6);
   max-width: var(--layout-page-max-width);
   margin: 0 auto;
