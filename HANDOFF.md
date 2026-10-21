@@ -2,9 +2,9 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-10-21, later — beta17 "app version + update check" implemented, NOT visually verified)
+## CURRENT STATE (2026-10-21, evening — **v1.0.0-beta.17 SHIPPED**, six assets + working SHA256SUMS)
 
-Owner asked for three things in beta17: show MiseDeck's own version, check for updates, and (his own doubt) auto-update. Grilled to three decisions: scope ② (show + manual check + hand off to the browser), placement A (sidebar footer colophon), vocabulary ① (verb always carries its subject). Spec **#234** (still open — owner closes it), tickets **#235 / #236 / #237** all closed.
+Owner asked for three things in beta17: show MiseDeck's own version, check for updates, and (his own doubt) auto-update. Grilled to three decisions: scope ② (show + manual check + hand off to the browser), placement A (sidebar footer colophon), vocabulary ① (verb always carries its subject). Spec **#234** closed once #235/#236 had shipped; tickets **#235 / #236 / #237** all closed.
 
 | Issue | Commit | Scope |
 | --- | --- | --- |
@@ -14,7 +14,13 @@ Owner asked for three things in beta17: show MiseDeck's own version, check for u
 
 **Decisions worth not re-litigating:** auto-update is deferred behind Apple Developer ID + notarization — unsigned macOS builds get re-quarantined after a bundle swap, so auto-update would not save the `xattr` step. Every MiseDeck tag is a prerelease, so the documented `latest.json` route cannot see this repo's releases at all. Check is manual: nothing fires at launch, deliberately (a launch-time check needs throttle + persisted state; separate ticket if wanted).
 
-**Not verified:** no app launch, no click-through, no screenshots — the owner's rule (beta9) keeps agent-side visual verification off. Nothing exercised the panel against a live feed from inside the app; the `curl` + parse path was verified against the real feed from the shell.
+**Release:** tag **`v1.0.0-beta.17`** on `3a6ead3`, prerelease, six assets — `MiseDeck_1.0.0-beta.17_aarch64.dmg`, `…_amd64.deb`, `…_amd64.AppImage`, `…-1.x86_64.rpm`, `…_x64-setup.exe`, and a 509-byte `SHA256SUMS` whose five lines match GitHub's own `assets[].digest` byte for byte. Release body was written with `gh release edit --notes-file` (the annotation still does not survive to the runner).
+
+**Screenshots:** all eight pages re-shot in both languages (`docs/screenshots/{home,preview,tools,env,tasks,plugins,doctor,settings}-{en,zh-CN}.png`, 2560×1718 @2x, `bd97b7b`). The old `overview-*` pair was renamed `home-*` — the name collided with the Overview page, which is `/preview`. Method worth reusing: a temporary `src/__shotSeed.ts` imported first in `main.tsx` reads a timestamped localStorage counter, picks page + language, and `history.replaceState`s before React mounts; a debug `.app` is then launched once per capture with `env -i` (an inherited PATH leaked WorkBuddy's own paths into the Overview table), and `screencapture -l` grabs the window. Window height is capped by the screen (859 logical) — a taller window is clamped, so "the whole page" is not reachable this way.
+
+**SHA256SUMS, second failure in a row:** #251's script globbed `*` at the top of `artifacts/`, but `download-artifact` + `merge-multiple` keeps the uploaded layout (`dmg/`, `deb/`, `rpm/`, `appimage/`, `nsis/`), so it hashed nothing and uploaded a 0-byte file — the release job failed with `size must be greater than or equal to 1` and beta.17 went out once with no manifest at all. Fixed in `3a6ead3` (`find -print0`, bare basenames, `test -s` guard); the tag was deleted and re-cut on the fix rather than re-running the job, because a re-run replays the workflow definition stored in the original tag.
+
+**Not verified:** the update-check panel has still never been clicked inside a running app — the owner's rule (beta9) keeps agent-side visual verification off, and nothing here overrode it.
 
 **Known gaps left open (not ticketed yet):**
 - README (en+zh) has not gained a line about the check. `## Known limitations` → "No auto-update" is still accurate, so the release is not blocked, but the feature is undocumented for users.
