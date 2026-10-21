@@ -2,7 +2,51 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-10-21, evening — **v1.0.0-beta.17 SHIPPED**, six assets + working SHA256SUMS)
+## CURRENT STATE (2026-10-22, early — **v1.0.0 GA CUT**: every 1.0.0 ticket closed, tag pushed, release building)
+
+Owner pulled the whole pre-release audit into 1.0.0 (P0 + P1 + P2, plus #238 and #249). 21 commits from the audit baseline `37d27fb` to the release commit `99e0aad`; every ticket below is closed. The only open issue is **#239**, the cross-platform spec, which the owner deliberately leaves open — the READMEs keep "macOS polished / Linux unverified / Windows experimental" in step with it.
+
+Release: lightweight tag **`v1.0.0`** on `99e0aad` (pushed 2026-10-21T17:04Z; the template supplies the body, non-prerelease because the tag has no `-beta`). Workflow run **39640446328**, three platform legs then the release job. At handoff time the run was still queued — **the six assets and the release-wide SHA256SUMS are NOT yet confirmed**.
+
+| Issue | Commit | Scope |
+| --- | --- | --- |
+| #263 | `3658ff1` | Release surface (P0): dropped the nonexistent tap, aligned artifact docs. |
+| #253 | `df6081c` | Rust platform correctness: no terminal-launched environment assumed. |
+| #259 | `7eeed67` + `b04720f` | Upgrades stay inside the configured range, structured doctor, four-column plugins; `config ls` shows override files. |
+| #265 | `befa619` | Default window fits (tables ≤ content column), floating menus flip near the viewport edge, failed states share the page baseline. |
+| #252 | `f3bc043` | The five-dimension pre-release audit with visual/simulation evidence (working doc in `docs/feedback/`). |
+| #264 | `072820e` + `fd7b213` | Docs consistency: current inventories, reachable mirrors, semantic citations, zh section headings. |
+| #256 | `7cfba55` | Truthful copy and terminology sweep (en + zh). |
+| #257 | `02a817b` | Focus order, startup safety, tab semantics. |
+| #258 | `3caa91b` | Frontend dead weight removed, hooks lint, font licenses. |
+| #260 | `d83e9ce` | Task arguments and navigation order. |
+| #261 | `429a1df` + `ad55e40` | README becomes the 1.0.0 front door. |
+| #262 | `fe16d90` | Every failure has a visible, recoverable surface (stderr body, timeout affordance, copy that matches what renders). |
+| #254 | `ad09af7` | Rust contract and runner gaps. |
+| #255 | `db805d7` | Five coverage gaps closed, tools argv pinned. |
+| #238 | `3b8a945` + `e548f9f` | Silent launch update check (≤ 1/24h, dot marker, manual check) and the doctor report header carries the MiseDeck build; a seeded panel stays honest after a silent check. |
+| #249 | `95efe48` | Global failure notices: every Tauri invoke goes through `src/api/invoke.ts`; rejections enqueue a dismissible danger banner (dedupe, cap 3, 6s, pause on hover/focus). A lint guard (`lint:invoke-wrapper`) blocks direct `@tauri-apps/api/core` imports. |
+| #252 | `99e0aad` | **GA release commit**: version `1.0.0` in all six sites, both READMEs aligned to what ships (mise floor 2025.12.5, 18 CI steps, doctor report, failure notices), all 16 screenshots re-captured at 1.0.0, post-fix matrix recorded in the audit doc. |
+
+**Gates at `99e0aad`** (run independently in the main session): `npm run ci` exit 0 — 18 steps, 14 lint guards including the invoke wrapper, 197 node tests, production build; `cargo test --all-targets` exit 0 — 18 suites, 258 passed.
+
+**Post-fix verification** (details in `docs/feedback/1.0.0-pre-release-audit.md` → "Post-fix re-verification (GA)"):
+- README captures: 8 pages × en/zh at 1.0.0, 16/16 pass, sidebar footer reads 1.0.0.
+- Failure simulation with stub homes at 1200×720: missing / too-old 2025.1.0 / unparsable version × en/zh × light/dark, 12/12 pass.
+- Tools failed load: 2/2 pass — the narrow centred column (V-6) and the promised-but-absent stderr copy (V-7) are gone.
+- Layout: Tools/Env/Overview × en/zh × light/dark at 1200×720, 12/12 pass, no horizontal overflow (V-1/#265).
+
+**Not verified — do not claim otherwise:** click-driven flows (dialogs, directory picker, cancel, retry buttons, mutation success) need Accessibility permission and remain the owner's terminal acceptance; the timeout state was not re-captured; malformed payloads on pages other than Tools were not simulated individually; below-the-fold and hover/focus/keyboard states were not inspected; no real Windows/Linux/Intel hardware or non-@2x display; packaging, signing, notarization, SHA256SUMS generation and template rendering were out of scope before the tag.
+
+**Next move:**
+1. Watch run `39640446328` to green. Then confirm the release has six assets (`dmg`, `deb`, `AppImage`, `rpm`, `nsis`, `SHA256SUMS`), download `SHA256SUMS` and spot-check at least one hash against a freshly downloaded asset, and only then close **#252** with the evidence.
+2. If the release job fails (SHA256SUMS was the beta.17 failure mode), fix the workflow and re-cut the tag per the precedent — a re-run replays the old workflow definition.
+3. Owner's terminal acceptance of the click paths listed above; #239 stays open until real Windows/Linux hardware exists.
+4. The failure-notice rule lives in `docs/design/ui-ux-rules.md`; the wrapper guard is in `npm run ci` — don't bypass either when adding commands.
+
+---
+
+## BETA17 STATE (2026-10-21, evening — **v1.0.0-beta.17 SHIPPED**, six assets + working SHA256SUMS)
 
 Owner asked for three things in beta17: show MiseDeck's own version, check for updates, and (his own doubt) auto-update. Grilled to three decisions: scope ② (show + manual check + hand off to the browser), placement A (sidebar footer colophon), vocabulary ① (verb always carries its subject). Spec **#234** closed once #235/#236 had shipped; tickets **#235 / #236 / #237** all closed.
 
