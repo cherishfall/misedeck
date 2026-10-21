@@ -49,14 +49,20 @@
 
 /* ---------- Table cells ---------- */
 
-/* min-width = sum of declared column widths (150 tool + 220 version +
- * 130 requested + 120 backend (conditional) + 216 source + 140
- * actions): below this the shared scroller scrolls horizontally instead
- * of crushing columns (issues #90, #103; source widened again in #225 so
- * the measured 26-char budget keeps the global config's `.config`
- * segment visible). */
+/* min-width = sum of declared column widths (120 tool + 220 version +
+ * 130 requested + 90 backend (conditional) + 216 source + 140 actions
+ * = 916). The floor must fit the default 1200×720 window's content
+ * column (921px after the sidebar, the page padding and both classic
+ * scrollbar gutters — see `npm run lint:page-layout`), otherwise the
+ * page opens with a horizontal scroller and the trailing Actions
+ * column — the only entry point to version management — starts out of
+ * view (issue #265, V-1). The trim is column widths, not a smaller type
+ * step: Version keeps the 220px its upgrade chip needs, Source keeps
+ * the 216px `SOURCE_CELL_CHARS` is measured against (#225), Requested
+ * keeps the 130px its "Requested version" header needs, and Actions
+ * keeps the 140px its full button label needs. */
 .toolsTable {
-  min-width: 976px;
+  min-width: 916px;
 }
 
 /* The Version cell's wrapper (#189): the version-switch trigger renders

@@ -18,7 +18,14 @@
   box-shadow: 0 8px 24px color-mix(in srgb, var(--void) 60%, transparent);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* The vertical clamp (issue #265) pins the layer to the 4px viewport
+   * margin on both axes. A layer taller than the window therefore has to
+   * shrink and scroll here — otherwise its lower items would be painted
+   * outside the window, unreachable by pointer and invisible to keyboard
+   * focus. The 8px keeps the two margins. */
+  max-height: calc(100vh - 8px);
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Dialog mode (issue #235): the layer itself takes focus so a screen

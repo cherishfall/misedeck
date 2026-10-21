@@ -452,7 +452,9 @@ export function ToolsPage() {
   const backendColumn: TableColumn<ToolRow> = {
     key: "backend",
     header: t(I18N_KEYS.tools.columns.backend),
-    width: "120px",
+    // 90px (issue #265): backend names are short identifiers, so the
+    // column only has to hold its header plus the sort glyph.
+    width: "90px",
     sortValue: (r) => r.backend ?? "",
     cell: (r) =>
       r.backend !== undefined ? (
@@ -467,7 +469,10 @@ export function ToolsPage() {
     {
       key: "tool",
       header: t(I18N_KEYS.tools.columns.tool),
-      width: "150px",
+      // 120px (issue #265): trimmed from 150px to fit the default
+      // window's content column. Long plugin names ellipsize; the
+      // Tooltip above carries the full identifier.
+      width: "120px",
       minWidth: "120px",
       sortValue: (r) => r.tool,
       cell: (r) => (
@@ -569,6 +574,9 @@ export function ToolsPage() {
       // lives in that region and confirms through the dialog below.
       key: "actions",
       header: t(I18N_KEYS.tools.columns.actions),
+      // 140px: unchanged in #265 — it must hold the ghost button's full
+      // label ("Manage versions" / 「版本管理」) at --size-data plus its
+      // padding, so the trim came from the columns above instead.
       width: "140px",
       cell: (r) => (
         <Button

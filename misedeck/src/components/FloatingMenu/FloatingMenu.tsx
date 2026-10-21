@@ -89,6 +89,8 @@ export interface FloatingMenuProps {
 }
 
 const MENU_ITEM_SELECTOR = '[role="menuitem"]:not([disabled])';
+/** Gap kept between the layer and the viewport edge, on every axis. */
+const VIEWPORT_MARGIN = 4;
 
 export function FloatingMenu({
   open,
@@ -116,11 +118,31 @@ export function FloatingMenu({
     const t = triggerEl.getBoundingClientRect();
     const m = layerEl.getBoundingClientRect();
 
-    const top = placement === "up" ? t.top - m.height - gap : t.bottom + gap;
+    // `placement` names the side the caller prefers; when that side has
+    // no room, the menu flips to the other one (issue #265). Before
+    // this, a version menu opened from a lower row was painted past the
+    // window's bottom edge, and ArrowDown walked focus into items that
+    // were not on screen.
+    const above = t.top - m.height - gap;
+    const below = t.bottom + gap;
+    const fitsAbove = above >= VIEWPORT_MARGIN;
+    const fitsBelow = below + m.height <= window.innerHeight - VIEWPORT_MARGIN;
+    const preferredFits = placement === "up" ? fitsAbove : fitsBelow;
+    const flippedFits = placement === "up" ? fitsBelow : fitsAbove;
+    let top = placement === "up" ? above : below;
+    if (!preferredFits && flippedFits) top = placement === "up" ? below : above;
+    // Clamp either way: when neither side fits, the layer pins to the
+    // top margin and scrolls inside itself (FloatingMenu.module.css caps
+    // its height), so every item stays reachable.
+    top = Math.max(
+      VIEWPORT_MARGIN,
+      Math.min(top, window.innerHeight - m.height - VIEWPORT_MARGIN),
+    );
+
     let left = align === "end" ? t.right - m.width : t.left;
     // Keep the menu inside the viewport horizontally (no auto-flip).
-    const maxLeft = window.innerWidth - m.width - 4;
-    left = Math.max(4, Math.min(left, maxLeft));
+    const maxLeft = window.innerWidth - m.width - VIEWPORT_MARGIN;
+    left = Math.max(VIEWPORT_MARGIN, Math.min(left, maxLeft));
     setCoords({ top, left });
   }, [placement, align, gap]);
 

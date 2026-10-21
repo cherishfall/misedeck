@@ -106,12 +106,17 @@
 /* ---------- Cells ---------- */
 
 /* The shared `fixed` prop (issue #57) holds the declared column widths;
- * min-width = their sum (220 name + 320 value + 220 source + 220 actions;
- * the value column's 320px declared in #225 so its elision budget is
- * measured) — below this the scroller scrolls horizontally instead of
- * crushing columns (issue #90). */
+ * min-width = their sum (190 name + 320 value + 190 source + 200
+ * actions) — below this the scroller scrolls horizontally instead of
+ * crushing columns (issue #90). The floor must fit the default
+ * 1200×720 window's content column (~921px after the sidebar, the page
+ * padding and both classic scrollbar gutters — see
+ * `npm run lint:page-layout`), or the page opens already scrolled and
+ * the Actions column is clipped (issue #265, V-1). The Value column
+ * keeps 320px because `ENV_VALUE_CELL_CHARS` is measured against it
+ * (#225); the rest were trimmed. */
 .envTable {
-  min-width: 980px;
+  min-width: 900px;
 }
 
 .cellName {

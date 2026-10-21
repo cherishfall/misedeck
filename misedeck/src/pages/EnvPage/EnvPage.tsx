@@ -225,7 +225,10 @@ export function EnvPage() {
       header: t(I18N_KEYS.env.columns.name),
       sortValue: (r) => r.name,
       cell: (r) => <Tooltip text={r.name}><span className={styles.cellName}>{r.name}</span></Tooltip>,
-      width: "220px",
+      // 190px (issue #265): trimmed from 220px so the table fits the
+      // default window's content column; long names ellipsize and the
+      // Tooltip carries the full value.
+      width: "190px",
     },
     {
       key: "value",
@@ -253,7 +256,10 @@ export function EnvPage() {
       header: t(I18N_KEYS.env.columns.source),
       sortValue: (r) => `${r.source} ${r.sourceDetail ?? ""}`.trim(),
       cell: (r) => <EnvSourceCell row={r} />,
-      width: "220px",
+      // 190px (issue #265): trimmed from 220px to fit the default
+      // window's content column. The path head-elides and the badge row
+      // ("Inherited" / "Tool · go") still fits.
+      width: "190px",
     },
     {
       key: "actions",
@@ -268,8 +274,10 @@ export function EnvPage() {
         />
       ),
       // Sized for the two rest-state buttons (Edit / Unset) — the
-      // inline editor wraps inside the cell (beta11, issue #148).
-      width: "220px",
+      // inline editor wraps inside the cell (beta11, issue #148) — and
+      // trimmed to 200px in #265 so the table fits the default
+      // window's content column.
+      width: "200px",
     },
   ];
 

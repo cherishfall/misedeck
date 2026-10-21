@@ -193,6 +193,17 @@
   min-width: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  /* The box always fills the content area (issue #265, V-6). `margin: 0
+   * auto` below is a *cross-axis* auto margin on this flex item: auto
+   * margins suppress `align-items: stretch`, so without a definite width
+   * `.main` shrink-wrapped to its children's max-content width and then
+   * centred itself. A page carrying a wide table happened to fill the
+   * row and read as aligned; a narrow state (a failed read, an empty
+   * list) collapsed to a ~490px centred column and its title jumped
+   * ~180px right of the loaded page's baseline. `width: 100%` restores
+   * the stretch; the auto margins still centre the box once the window
+   * is wide enough for `--layout-page-max-width` to bind. */
+  width: 100%;
   /* Reserve the scrollbar's width whether or not it is showing (issue
    * #246). macOS uses overlay scrollbars that take no space, so the page
    * widths were tuned against the full width; Windows' classic scrollbar
