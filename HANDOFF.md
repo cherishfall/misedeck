@@ -2,7 +2,25 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-10-21, night — beta16 batch FULLY VERIFIED by agent; v1.0.0-beta.16 tagged)
+## CURRENT STATE (2026-10-21, later — beta17 "app version + update check" implemented, NOT visually verified)
+
+Owner asked for three things in beta17: show MiseDeck's own version, check for updates, and (his own doubt) auto-update. Grilled to three decisions: scope ② (show + manual check + hand off to the browser), placement A (sidebar footer colophon), vocabulary ① (verb always carries its subject). Spec **#234** (still open — owner closes it), tickets **#235 / #236 / #237** all closed.
+
+| Issue | Commit | Scope |
+| --- | --- | --- |
+| #235 | `d00cc6c` | Sidebar footer gains a colophon line: the app version from `getVersion()`, `--size-label` mono in `--ice`, no "Version" caption (that word is mise's). Collapsed 56px rail degrades to a tag-glyph button with the version in its tooltip — never hidden. `FloatingMenu` grew a `role` prop (`menu` default, `dialog` for panels holding status copy), so no second popover primitive. |
+| #236 | `6e48944` | `check_app_update` command: `curl` against `github.com/…/releases.atom` (8s), hand-rolled Atom extraction, `semver` comparison, returns `available`/`current`/`err`. Panel renders four states; the download action is a link to that tag's Release page — the app never downloads. 10 parser tests + 4 wire-shape tests + 6 copy-mapping tests. |
+| #237 | `7f60254` | ADR-0009 (en+zh) records why in-place updating is off the table; CONTEXT.md gains App version / Update check; ui-ux-rules gains the placement + vocabulary rules (en+zh); architecture.md names the one `status`-tagged boundary enum exception. |
+
+**Decisions worth not re-litigating:** auto-update is deferred behind Apple Developer ID + notarization — unsigned macOS builds get re-quarantined after a bundle swap, so auto-update would not save the `xattr` step. Every MiseDeck tag is a prerelease, so the documented `latest.json` route cannot see this repo's releases at all. Check is manual: nothing fires at launch, deliberately (a launch-time check needs throttle + persisted state; separate ticket if wanted).
+
+**Not verified:** no app launch, no click-through, no screenshots — the owner's rule (beta9) keeps agent-side visual verification off. Nothing exercised the panel against a live feed from inside the app; the `curl` + parse path was verified against the real feed from the shell.
+
+**Known gaps left open (not ticketed yet):**
+- README (en+zh) has not gained a line about the check. `## Known limitations` → "No auto-update" is still accurate, so the release is not blocked, but the feature is undocumented for users.
+- `mise doctor`'s report — the thing users paste into a bug report — still has no MiseDeck version in it. The colophon made the version visible; this is the surface where it would actually be useful.
+
+## BETA16 STATE (2026-10-21, night — beta16 batch FULLY VERIFIED by agent; v1.0.0-beta.16 tagged)
 
 **Owner authorized full visual + runtime verification this cycle (beta9 exception, second use).** The agent ran the complete matrix on real builds: 23 happy-path captures (8 pages × en/zh light + 4 dark + 3 dir-mode), failure simulations (all-fail / garbage-output / missing-mise stubs, every page), and class sweeps. All beta16 acceptance items verified green. One new bug found and fixed: **#233** (Doctor page fabricated "Status: OK" from zero data when mise was completely broken — `doctor_text_fallback` swallowed a zero-line non-zero exit into `Ok`; now `Err(COMMAND_FAILED)`, frontend untouched, +2 Rust tests). Three verification-gate SPECs (#220 / #215 / #201) closed after the agent's verification pass; interactive flows that need clicks (dialogs #227, picker #228, run-panel cancel #223, mutation success paths #221) remain the owner's terminal check.
 
