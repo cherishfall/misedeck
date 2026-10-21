@@ -3,6 +3,7 @@
 // values, no new animations beyond the three allowed.
 
 export { ActivationBanner } from "./ActivationBanner/ActivationBanner";
+export { AppVersion } from "./AppVersion/AppVersion";
 export { Badge } from "./Badge/Badge";
 export { Banner } from "./Banner/Banner";
 export { Button } from "./Button/Button";

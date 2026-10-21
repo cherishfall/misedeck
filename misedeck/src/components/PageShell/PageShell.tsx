@@ -14,6 +14,7 @@ import { usePersistentState } from "../../hooks/usePersistentState";
 import { useDirectory } from "../../state/directoryContext";
 
 import { ActivationBanner } from "../ActivationBanner/ActivationBanner";
+import { AppVersion } from "../AppVersion/AppVersion";
 import { DirectoryIndicator } from "../DirectoryIndicator/DirectoryIndicator";
 import { DirectoryUnavailableBanner } from "../DirectoryUnavailableBanner/DirectoryUnavailableBanner";
 import { ExecutionPanel, ExecutionPanelAffordance, useExecutionContext } from "../ExecutionPanel";
@@ -117,6 +118,11 @@ export function PageShell({ children }: PageShellProps) {
             <LanguageSwitcher iconOnly={collapsed} />
             <ThemeSwitcher iconOnly={collapsed} />
           </div>
+
+          {/* Colophon (#235): the app's own version sits below the app's
+              own preferences, and nowhere else. Every page above is about
+              mise — this line is the one thing that is about MiseDeck. */}
+          <AppVersion collapsed={collapsed} />
         </div>
       </aside>
 

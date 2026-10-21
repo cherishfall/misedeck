@@ -20,3 +20,10 @@
   flex-direction: column;
   overflow: hidden;
 }
+
+/* Dialog mode (issue #235): the layer itself takes focus so a screen
+ * reader announces the panel before its controls. The container carries
+ * no ring — its focusable children do. */
+.layer:focus-visible {
+  outline: none;
+}

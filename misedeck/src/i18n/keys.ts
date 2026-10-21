@@ -767,6 +767,17 @@ export const I18N_KEYS = {
     light: "theme.light",
     dark: "theme.dark",
   },
+  /** The app's own identity (#234/#235). Every string names MiseDeck as
+      the subject on purpose: `update`, `upgrade`, `release` and
+      `new version` already mean mise / a Tool elsewhere in this catalog,
+      so a bare verb here would be ambiguous. The version string itself is
+      data — it is never translated and never captioned "Version". */
+  about: {
+    name: "about.name",
+    triggerLabel: "about.triggerLabel",
+    panelLabel: "about.panelLabel",
+    releasePage: "about.releasePage",
+  },
 } as const;
 
 /** Union of every leaf key path the catalog declares. */

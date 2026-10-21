@@ -1,0 +1,161 @@
+/* AppVersion — the colophon at the bottom of the sidebar (#235).
+ *
+ * Why it looks like this (do not soften these without re-reading the
+ * decision in #234):
+ *   - It is the LAST line of the sidebar, below the language/theme row.
+ *     Language, theme and version are all facts about MiseDeck itself;
+ *     every page is about mise. That layering is what tells the two
+ *     versions apart, so it belongs at the bottom, not in a page.
+ *   - --size-label (10px), one step below the --size-data (12px) that
+ *     every mise version uses. The size difference *is* the hint: this
+ *     number is not your mise version. No "Version" caption — a caption
+ *     would put the word back on screen and re-open the ambiguity.
+ *   - Monospace from --font-mono: it is a version string, same face as
+ *     tool versions. No tracking: --tracking-label is for eyebrows.
+ *   - Borderless text trigger: it is metadata, not a control. Two boxed
+ *     controls sit above it; a third box would compete with them.
+ */
+
+.colophon,
+.colophonCollapsed {
+  display: flex;
+}
+
+.colophonCollapsed {
+  justify-content: center;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ice);
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: 1.4;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--motion-state-change) ease;
+}
+
+.trigger:hover,
+.trigger:focus-visible {
+  color: var(--text);
+  outline: none;
+}
+
+.trigger:focus-visible {
+  box-shadow: var(--ring);
+}
+
+/* Collapsed rail: 13 characters do not fit in 56px, so the string gives
+ * way to a glyph button with the same hit area as a rail nav item. It is
+ * never hidden — the rail keeps every capability reachable with a
+ * tooltip naming it (ui-ux-rules.md). */
+.railTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease;
+}
+
+.railTrigger:hover,
+.railTrigger:focus-visible {
+  color: var(--text);
+  border-color: var(--line-strong);
+  outline: none;
+}
+
+.glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.version {
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  letter-spacing: normal;
+}
+
+/* ---------- Panel (dialog role) ---------- */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 208px;
+  padding: var(--space-3);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.name {
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  color: var(--text);
+  letter-spacing: normal;
+}
+
+.versionValue {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--dim);
+  letter-spacing: normal;
+}
+
+.divider {
+  height: 1px;
+  background: var(--line);
+}
+
+/* External link — same quiet-ice-to-beam reading as the release-notes
+ * link on Home (the project's only other outbound <a>). */
+.link {
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  color: var(--ice);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding: var(--space-0-5) 0;
+  letter-spacing: normal;
+  transition:
+    color var(--motion-state-change) ease,
+    border-color var(--motion-state-change) ease;
+}
+
+.link:hover,
+.link:focus-visible {
+  color: var(--beam);
+  border-bottom-color: var(--line-strong);
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger,
+  .railTrigger,
+  .link {
+    transition: none;
+  }
+}

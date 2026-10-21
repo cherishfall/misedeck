@@ -49,11 +49,23 @@ export type FloatingAlign = "start" | "end";
 /** Props the caller spreads onto its trigger button. */
 export interface FloatingTriggerProps {
   ref: (node: HTMLElement | null) => void;
-  "aria-haspopup": "menu";
+  "aria-haspopup": "menu" | "dialog";
   "aria-expanded": boolean;
   "aria-controls": string;
   onClick: (event: ReactMouseEvent) => void;
 }
+
+/** What the layer is, semantically.
+ *
+ *  `menu` (default): a list of `role="menuitem"` choices — the language
+ *  menu. Arrow/Home/End roving focus applies.
+ *
+ *  `dialog` (issue #235): a small panel holding status text and ordinary
+ *  controls (the app-version popover). It is NOT a menu — a menu item may
+ *  not contain a paragraph of status copy — so focus lands on the layer
+ *  itself and the arrow-key roving is off. Non-modal: it does not trap
+ *  focus and Tab leaves it, which is what the primitive already did. */
+export type FloatingRole = "menu" | "dialog";
 
 export interface FloatingMenuProps {
   /** Open state, controlled by the caller. */
@@ -66,6 +78,8 @@ export interface FloatingMenuProps {
   align?: FloatingAlign;
   /** Gap between trigger and menu, in px. Defaults to 6. */
   gap?: number;
+  /** What the layer is — see `FloatingRole`. Defaults to `menu`. */
+  role?: FloatingRole;
   /** Accessible label for the menu when it has no visible caption. */
   "aria-label"?: string;
   /** Trigger render-prop — spread the result onto the trigger button. */
@@ -82,6 +96,7 @@ export function FloatingMenu({
   placement = "up",
   align = "start",
   gap = 6,
+  role = "menu",
   "aria-label": ariaLabel,
   trigger,
   children,
@@ -156,17 +171,22 @@ export function FloatingMenu({
     };
   }, [open, onOpenChange]);
 
-  // Focus management: enter the first item on open, return to the trigger
-  // on close (except when Tab closed the menu).
+  // Focus management: enter the first item on open (menu) or the layer
+  // itself (dialog), and return to the trigger on close (except when Tab
+  // closed it).
   useEffect(() => {
     if (open && !prevOpen.current) {
-      layerRef.current?.querySelector<HTMLElement>(MENU_ITEM_SELECTOR)?.focus();
+      if (role === "dialog") {
+        layerRef.current?.focus();
+      } else {
+        layerRef.current?.querySelector<HTMLElement>(MENU_ITEM_SELECTOR)?.focus();
+      }
     } else if (!open && prevOpen.current) {
       if (returnFocus.current) triggerRef.current?.focus();
       returnFocus.current = true;
     }
     prevOpen.current = open;
-  }, [open]);
+  }, [open, role]);
 
   // Keyboard navigation between menu items (WAI-ARIA Menu Button Pattern).
   const onMenuKeyDown = useCallback(
@@ -204,7 +224,7 @@ export function FloatingMenu({
     ref: (node) => {
       triggerRef.current = node;
     },
-    "aria-haspopup": "menu",
+    "aria-haspopup": role,
     "aria-expanded": open,
     "aria-controls": menuId,
     onClick: () => onOpenChange(!open),
@@ -218,11 +238,12 @@ export function FloatingMenu({
           <div
             ref={layerRef}
             id={menuId}
-            role="menu"
+            role={role}
+            tabIndex={role === "dialog" ? -1 : undefined}
             aria-label={ariaLabel}
             className={styles.layer}
             style={coords ? { top: coords.top, left: coords.left } : undefined}
-            onKeyDown={onMenuKeyDown}
+            onKeyDown={role === "menu" ? onMenuKeyDown : undefined}
           >
             {children}
           </div>,

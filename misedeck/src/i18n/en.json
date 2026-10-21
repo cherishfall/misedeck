@@ -651,5 +651,11 @@
     "bannerBodyUnknownShell": "MiseDeck could not detect your shell ({{name}}). Add the appropriate mise activate <shell> line to your shell's rc file to use mise in interactive sessions.",
     "copyLineButton": "Copy the line",
     "dismissButton": "Dismiss"
+  },
+  "about": {
+    "name": "MiseDeck",
+    "triggerLabel": "MiseDeck {{version}} — version and updates",
+    "panelLabel": "MiseDeck version and updates",
+    "releasePage": "Release page"
   }
 }
