@@ -24,7 +24,7 @@ Every page works on **Global** (`mise -g`) or on a **directory** you choose; rec
 | **Env** | Add, edit, rename, unset vars; source badges; warns when a var is defined outside the write scope | `mise env`, `mise set`, `mise unset` |
 | **Tasks** | List, filter, run with live output, create and edit, open the config in your editor | `mise tasks ls`, `mise run`, `mise tasks add`, `mise tasks edit` |
 | **Settings** | View, filter, edit, unset settings, including `--all`; table-typed keys are read-only with an explanation | `mise settings ls`, `mise settings set`, `mise settings unset` |
-| **Doctor** | Status, shell activation, warnings, config files, resolved toolset; tinted raw output as fallback | `mise doctor` |
+| **Doctor** | Status, shell activation, warnings, config files, resolved toolset; a copyable report whose header names the running MiseDeck build; tinted raw output as fallback | `mise doctor` |
 | **Plugins** | Installed plugins; install from a git URL; uninstall | `mise plugins ls`, `mise plugins install`, `mise plugins uninstall` |
 
 Beyond the pages:
@@ -32,13 +32,13 @@ Beyond the pages:
 - **Execution panel**: exact argv, working directory, streamed logs, duration, exit code, copy-command, cancel, dismiss. Several commands can run at once.
 - **Trust**: an untrusted directory is read-only, with a banner and a one-click `mise trust`.
 - **Shell activation**: detects a missing `mise activate` line in your shell rc and shows what to add; can open a terminal at the current directory.
-- **Failures stay visible**: a failed load or command keeps its stderr and a retry on screen instead of rendering an empty page.
+- **Failures stay visible**: a failed load keeps its stderr and a retry on screen instead of rendering an empty page, and a rejected command with no place on the page raises a dismissible notice instead of failing silently.
 - **App version and updates**: the running version sits in the sidebar footer; a silent check at most once per 24 hours marks a newer build with a dot, checking manually is always available, and a newer build hands you its GitHub Release page — the app never downloads or installs a build itself (ADR-0009).
 - Bilingual UI (English / 简体中文) and light/dark themes.
 
 ## Requirements
 
-- **mise ≥ 2025.1.0** — MiseDeck calls the CLI rather than bundling it; the Home page can install it.
+- **mise ≥ 2025.12.5** — MiseDeck calls the CLI rather than bundling it; the Home page can install it.
 - **macOS on Apple Silicon** for the prebuilt app; Linux x86_64 packages are attached but unverified on real hardware; Windows x64 is experimental.
 - Building from source: Rust stable and Node.js 22+.
 
@@ -123,7 +123,7 @@ npm run tauri build
 
 Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on macOS, `nsis/` on Windows, `deb/`, `rpm/`, `appimage/` on Linux. macOS builds come out unsigned, exactly like the released ones.
 
-`npm run ci` is the full frontend gate — CI's Windows job runs it verbatim. Its 17 steps, in order: `typecheck`, `lint:eslint` (React Hooks rules), `test`, thirteen lint guards (i18n parity and concatenation, CSS tokens/type/spacing/tracking, ellipsis, command hints, install-echo parity, tool-argv parity, modal focus, nested interactives, page layout), and `build`. The Rust checks are separate — `cargo check --all-targets` and `cargo test --all-targets` on Linux, plus a `cargo test --lib` + `cargo build` compile smoke on Windows.
+`npm run ci` is the full frontend gate — CI's Windows job runs it verbatim. Its 18 steps, in order: `typecheck`, `lint:eslint` (React Hooks rules), `test`, fourteen lint guards (i18n parity and concatenation, CSS tokens/type/spacing/tracking, ellipsis, command hints, install-echo parity, tool-argv parity, modal focus, nested interactives, page layout, invoke wrapper), and `build`. The Rust checks are separate — `cargo check --all-targets` and `cargo test --all-targets` on Linux, plus a `cargo test --lib` + `cargo build` compile smoke on Windows.
 
 ## Known limitations
 

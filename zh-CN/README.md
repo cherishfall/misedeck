@@ -24,7 +24,7 @@
 | **环境变量** | 新增、编辑、重命名、取消设置；来源标记；变量定义在写入作用域之外时给出警告 | `mise env`、`mise set`、`mise unset` |
 | **任务** | 列出、过滤、带实时输出运行、新建与编辑、在编辑器中打开配置 | `mise tasks ls`、`mise run`、`mise tasks add`、`mise tasks edit` |
 | **设置** | 查看、过滤、编辑、取消设置，含 `--all`；表类型的键只读并说明原因 | `mise settings ls`、`mise settings set`、`mise settings unset` |
-| **诊断** | 状态、shell 激活、警告、配置文件、解析出的工具集；结构化数据不可用时回退到带染色的原始输出 | `mise doctor` |
+| **诊断** | 状态、shell 激活、警告、配置文件、解析出的工具集；可复制的报告（首行是当前 MiseDeck 构建的版本）；结构化数据不可用时回退到带染色的原始输出 | `mise doctor` |
 | **插件** | 已安装插件；按 git URL 安装；卸载 | `mise plugins ls`、`mise plugins install`、`mise plugins uninstall` |
 
 页面之外：
@@ -32,13 +32,13 @@
 - **执行面板**：完整命令行、工作目录、流式日志、耗时、退出码、复制命令、取消、收起；可同时运行多条命令。
 - **信任机制**：未信任的目录为只读，附横幅与一键 `mise trust`。
 - **Shell 激活**：检测 shell rc 中缺失的 `mise activate` 并给出该行内容；可在当前目录打开终端。
-- **失败可见**：加载或命令失败时，stderr 与重试留在界面上，而不是渲染一个空页面。
+- **失败可见**：加载失败时 stderr 与重试留在界面上，而不是渲染一个空页面；页面上没有位置可展示的被拒命令会弹出可关闭的提示，不会静默失败。
 - **应用版本与更新**：正在运行的版本显示在侧栏页脚；最多每 24 小时静默检查一次，用圆点标记更新的构建，手动检查始终可用；发现更新的构建时给出它的 GitHub Release 页——应用从不自行下载或安装构建（ADR-0009）。
 - 双语界面（English / 简体中文）与明暗两套主题。
 
 ## 环境要求
 
-- **mise ≥ 2025.1.0**——MiseDeck 调用 CLI，不内置它；mise 缺失时首页可以安装。
+- **mise ≥ 2025.12.5**——MiseDeck 调用 CLI，不内置它；mise 缺失时首页可以安装。
 - **macOS（Apple Silicon）** 使用预构建包；Linux x86_64 有包但未在真机上验证；Windows x64 为实验性支持。
 - 从源码构建：Rust stable 与 Node.js 22+。
 
@@ -123,7 +123,7 @@ npm run tauri build
 
 产物在 `src-tauri/target/release/bundle/`——macOS 是 `dmg/` 与 `macos/`，Windows 是 `nsis/`，Linux 是 `deb/`、`rpm/`、`appimage/`。macOS 构建和正式发布的一样，都是未签名的。
 
-`npm run ci` 是完整的前端闸门——CI 的 Windows 任务原样运行它。共 17 步，按顺序为：`typecheck`、`lint:eslint`（React Hooks 规则）、`test`、13 个 lint 守卫（i18n 键一致性与拼接、CSS token/字号/间距/字距、省略号、命令提示、安装回显一致性、工具参数一致性、模态焦点、嵌套交互、页面布局）和 `build`。Rust 检查是另一套——Linux 上跑 `cargo check --all-targets` 与 `cargo test --all-targets`，Windows 上跑 `cargo test --lib` 与 `cargo build` 编译冒烟。
+`npm run ci` 是完整的前端闸门——CI 的 Windows 任务原样运行它。共 18 步，按顺序为：`typecheck`、`lint:eslint`（React Hooks 规则）、`test`、14 个 lint 守卫（i18n 键一致性与拼接、CSS token/字号/间距/字距、省略号、命令提示、安装回显一致性、工具参数一致性、模态焦点、嵌套交互、页面布局、invoke 包装）和 `build`。Rust 检查是另一套——Linux 上跑 `cargo check --all-targets` 与 `cargo test --all-targets`，Windows 上跑 `cargo test --lib` 与 `cargo build` 编译冒烟。
 
 ## 已知限制
 
