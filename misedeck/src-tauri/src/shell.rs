@@ -26,10 +26,13 @@
 //                  login rc differs.
 //   * fish       → `~/.config/fish/config.fish`
 //   * pwsh       → `~/Documents/PowerShell/Microsoft.PowerShell_profile.ps1`,
-//                  the documented per-user-current-host default. There
-//                  is no `$PROFILE` *environment* variable — `$PROFILE`
-//                  is a PowerShell variable, invisible to a spawned
-//                  process — so the lookup always missed (issue #229).
+//                  the documented per-user-current-host default for
+//                  pwsh 6+. Windows PowerShell 5.1 uses the sibling
+//                  `~/Documents/WindowsPowerShell/…` path, which the
+//                  probe checks too (issue #244). There is no `$PROFILE`
+//                  *environment* variable — `$PROFILE` is a PowerShell
+//                  variable, invisible to a spawned process — so the
+//                  lookup always missed (issue #229).
 
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, ExitStatus, Stdio};
@@ -218,13 +221,15 @@ fn which_exists(name: &str) -> bool {
     // rejects the arg (non-zero exit) — both are fine for our
     // presence check. The wait is bounded: `status()` would wait
     // forever on a binary that hangs during startup.
-    let child = Command::new(name)
-        .arg("--version")
+    let mut cmd = Command::new(name);
+    cmd.arg("--version")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .stdin(Stdio::null())
-        .spawn();
-    match child {
+        .stdin(Stdio::null());
+    // Windows: the probe is a console program spawned from a GUI
+    // process — without this flag it flashes a console window (issue #240).
+    crate::process_tree::hide_console_window(&mut cmd);
+    match cmd.spawn() {
         Ok(mut child) => wait_with_timeout(&mut child, PROBE_TIMEOUT)
             .map(|s| s.success() || s.code().is_some())
             .unwrap_or(false),
@@ -261,11 +266,13 @@ pub fn rc_path_for(shell: &ShellKind) -> String {
         }
         ShellKind::Fish => home.join(".config").join("fish").join("config.fish"),
         ShellKind::PowerShell => {
-            // PowerShell's documented per-user-current-host profile.
-            // NOT verified on real Windows — no Windows machine in the
-            // review loop; this is the path `about_Profiles` documents
-            // for pwsh 6+, and it is derived from the same
-            // `dirs::home_dir()` the rest of the probe uses.
+            // PowerShell's documented per-user-current-host profile for
+            // pwsh 6/7. NOT verified on real Windows — no Windows machine
+            // in the review loop; this is the path `about_Profiles`
+            // documents, derived from the same `dirs::home_dir()` the
+            // rest of the probe uses. Windows PowerShell 5.1's profile
+            // lives beside it under `WindowsPowerShell/` and is checked
+            // through `rc_sibling_paths` (issue #244).
             home.join("Documents")
                 .join("PowerShell")
                 .join("Microsoft.PowerShell_profile.ps1")
@@ -289,24 +296,95 @@ pub fn rc_sibling_paths(shell: &ShellKind) -> Vec<String> {
     match shell {
         ShellKind::Bash => vec![home.join(".bash_profile").to_string_lossy().to_string()],
         ShellKind::Zsh => vec![home.join(".zshenv").to_string_lossy().to_string()],
+        // Windows ships two PowerShells with two different profiles:
+        // pwsh 6+ reads `Documents/PowerShell`, Windows PowerShell 5.1
+        // reads `Documents/WindowsPowerShell`. The primary path above is
+        // the pwsh one, so a machine with only 5.1 used to read a file
+        // that does not exist and report "activation missing" with a
+        // path the user has never seen (issue #244).
+        ShellKind::PowerShell => vec![home
+            .join("Documents")
+            .join("WindowsPowerShell")
+            .join("Microsoft.PowerShell_profile.ps1")
+            .to_string_lossy()
+            .to_string()],
         _ => Vec::new(),
     }
 }
 
-/// Read the rc file at `path` into a `String`. Returns `None` when
-/// the file does not exist (the `NotFound` IO error), `Some(s)` on
-/// success (which may be the empty string), and propagates other IO
-/// errors. Kept in this module so the test seam is one function
-/// call away from the matcher.
-pub fn read_rc_file(path: &str) -> Result<Option<String>, std::io::Error> {
+/// Read the rc file at `path`. A missing file is `RcFile::Missing`; an
+/// existing one is decoded with BOM awareness (issue #244).
+///
+/// Encoding is not decoration: on Windows a profile written by Notepad
+/// ("Unicode") is UTF-16 LE, and reading it with `read_to_string` failed
+/// with `InvalidData`, which the caller propagated as a command error —
+/// the activation banner degraded to an error state instead of saying
+/// "cannot tell". A UTF-8 BOM is worse: the read succeeds, but the first
+/// line carries a leading `U+FEFF` that `trim_start` does not strip
+/// (a BOM is not whitespace), so a first-line `mise activate` missed.
+/// Only I/O failures that are not `NotFound` still propagate.
+pub fn read_rc_file(path: &str) -> Result<RcFile, std::io::Error> {
     if path.is_empty() {
-        return Ok(None);
+        return Ok(RcFile::Missing);
     }
-    match std::fs::read_to_string(path) {
-        Ok(s) => Ok(Some(s)),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(e) => Err(e),
+    let bytes = match std::fs::read(path) {
+        Ok(b) => b,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(RcFile::Missing),
+        Err(e) => return Err(e),
+    };
+    Ok(decode_rc_bytes(&bytes))
+}
+
+/// What a rc file turned out to be (issue #244).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RcFile {
+    /// No such file (or no path worth probing).
+    Missing,
+    /// Decoded text — the only case the activation matcher can judge.
+    Text(String),
+    /// The file exists but is neither BOM-tagged UTF-16 nor valid UTF-8
+    /// (a legacy single-byte encoding). Guessing would risk a false
+    /// "not activated", so the probe reports "cannot tell" instead —
+    /// the `None` state from issue #166.
+    Undecodable,
+}
+
+/// Decode rc-file bytes: UTF-8 BOM (stripped), UTF-16 LE/BE BOM
+/// (decoded), otherwise valid UTF-8 only. A file that is none of those
+/// is `Undecodable` rather than lossily mangled — a wrong decode turns
+/// `mise activate` into mojibake and reports a false negative.
+pub fn decode_rc_bytes(bytes: &[u8]) -> RcFile {
+    if let Some(rest) = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
+        // UTF-8 BOM: the body is ordinary UTF-8.
+        return match std::str::from_utf8(rest) {
+            Ok(text) => RcFile::Text(text.to_string()),
+            Err(_) => RcFile::Undecodable,
+        };
     }
+    if let Some(rest) = bytes.strip_prefix(&[0xFF, 0xFE]) {
+        return RcFile::Text(decode_utf16(rest, true));
+    }
+    if let Some(rest) = bytes.strip_prefix(&[0xFE, 0xFF]) {
+        return RcFile::Text(decode_utf16(rest, false));
+    }
+    match std::str::from_utf8(bytes) {
+        Ok(text) => RcFile::Text(text.to_string()),
+        Err(_) => RcFile::Undecodable,
+    }
+}
+
+fn decode_utf16(bytes: &[u8], little_endian: bool) -> String {
+    let units: Vec<u16> = bytes
+        .chunks_exact(2)
+        .map(|pair| {
+            if little_endian {
+                u16::from_le_bytes([pair[0], pair[1]])
+            } else {
+                u16::from_be_bytes([pair[0], pair[1]])
+            }
+        })
+        .collect();
+    String::from_utf16_lossy(&units)
 }
 
 /// Decide whether the rc file contents already contain a
@@ -377,32 +455,62 @@ pub fn check_shell_activation_for(shell: &ShellKind) -> Result<ActivationStatus,
         });
     }
 
-    // Read the primary rc file first. On NotFound, fall through to
-    // the siblings (the .bash_profile / .zshenv case).
-    let (rc_path, contents) = match read_rc_file(&primary)? {
-        Some(c) => (primary.clone(), c),
-        None => {
-            // Try siblings.
-            let mut found: Option<(String, String)> = None;
-            for sib in &siblings {
-                if let Some(c) = read_rc_file(sib)? {
-                    found = Some((sib.clone(), c));
-                    break;
+    // Primary file first, then the shell's siblings (`.bash_profile`,
+    // `.zshenv`, the Windows PowerShell 5.1 profile). An activation line
+    // in any of them wins; the first readable file that lacks it is the
+    // one the banner names. A file that exists but cannot be decoded is
+    // "cannot tell", never "not activated" (issues #166, #244).
+    let mut first_text: Option<(String, String)> = None;
+    let mut undecodable: Option<String> = None;
+    for candidate in std::iter::once(&primary).chain(siblings.iter()) {
+        match read_rc_file(candidate)? {
+            RcFile::Missing => continue,
+            RcFile::Text(text) => {
+                if rc_has_mise_activate(&text) {
+                    return Ok(ActivationStatus {
+                        shell: shell.clone(),
+                        rc_path: candidate.clone(),
+                        rc_contents: text,
+                        activated: Some(true),
+                    });
+                }
+                if first_text.is_none() {
+                    first_text = Some((candidate.clone(), text));
                 }
             }
-            match found {
-                Some((path, c)) => (path, c),
-                None => (primary.clone(), String::new()),
+            RcFile::Undecodable => {
+                if undecodable.is_none() {
+                    undecodable = Some(candidate.clone());
+                }
             }
         }
-    };
+    }
 
-    let activated = Some(rc_has_mise_activate(&contents));
+    if let Some((rc_path, rc_contents)) = first_text {
+        return Ok(ActivationStatus {
+            shell: shell.clone(),
+            rc_path,
+            rc_contents,
+            activated: Some(false),
+        });
+    }
+
+    if let Some(rc_path) = undecodable {
+        return Ok(ActivationStatus {
+            shell: shell.clone(),
+            rc_path,
+            rc_contents: String::new(),
+            activated: None,
+        });
+    }
+
+    // Nothing exists on disk: report "not activated" for the primary
+    // path, which is also the path the banner tells the user to edit.
     Ok(ActivationStatus {
         shell: shell.clone(),
-        rc_path,
-        rc_contents: contents,
-        activated,
+        rc_path: primary,
+        rc_contents: String::new(),
+        activated: Some(false),
     })
 }
 
@@ -421,25 +529,25 @@ pub fn check_shell_activation_for(shell: &ShellKind) -> Result<ActivationStatus,
 //                That is documented as a limitation; the
 //                "Copy command" affordance is the precise
 //                alternative.
-//   * Windows → `cmd /c start "" <%MISEDECK_TERM_DIR%>` opens a new
-//                window rooted at the path. The path travels through
-//                an environment variable rather than the command
-//                line, because cmd.exe re-parses that line and
-//                expands `%…%` even inside quotes (see
-//                `windows_cmd_start_plan`). The PowerShell
-//                equivalent is `Start-Process -WorkingDirectory
-//                <path> powershell` but `cmd /c start` is the
-//                smallest dependable surface that does not require
-//                a present user profile.
-//   * Linux   → best-effort probe: try `gnome-terminal`, then
-//                `konsole`, then `xfce4-terminal`, each with a
-//                `--working-directory=` flag. If none is found,
-//                return `TERMINAL_NOT_FOUND` so the UI surfaces
-//                the copyable command instead. The probe is a
-//                `which` lookup; we do not actually launch the
-//                terminal here — we hand the argv to the shell so
-//                the user can take the same action manually if
-//                the spawn ever fails.
+//   * Windows → `cmd /c start "" cmd` opens a console window whose
+//                working directory is the path. The directory is the
+//                child's cwd, not command-line text: cmd.exe re-parses
+//                its line and expands `%…%` even inside quotes, so no
+//                quoting can make an arbitrary directory safe (issues
+//                #210 → #242, see `windows_cmd_start_plan`). `start`
+//                with the directory itself is *not* a terminal launch —
+//                it opens File Explorer (issue #242).
+//   * Linux   → probe `LINUX_TERMINALS` in order (Debian's alternatives
+//                entry, the current GNOME/Fedora defaults, the legacy
+//                trio, then standalone emulators), each with its own
+//                cwd flag; the child also gets `current_dir`, so an
+//                emulator that ignores the flag still opens in the right
+//                place (issue #245). If none is found, return
+//                `TERMINAL_NOT_FOUND` so the UI surfaces the copyable
+//                command instead. The probe is a `which` lookup; we do
+//                not actually launch the terminal here — we hand the
+//                argv to the shell so the user can take the same action
+//                manually if the spawn ever fails.
 //
 // All three code paths are cross-platform enough to be called from
 // a single `open_in_terminal(path: Option<&str>)` entry point; the
@@ -467,47 +575,159 @@ pub struct TerminalOpenOutcome {
     pub argv: Vec<String>,
 }
 
-/// Environment variable that carries the directory into the Windows
-/// launcher.
-pub const WINDOWS_TERM_DIR_ENV: &str = "MISEDECK_TERM_DIR";
-
-/// The `cmd.exe` invocation that opens a window at a directory.
+/// The `cmd.exe` invocation that opens a window at a directory
+/// (issue #242).
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 pub struct WindowsCmdStartPlan {
-    /// Raw command-line tail handed to `cmd.exe` via `raw_arg`. It is
-    /// not argv: cmd.exe re-parses it, so it is spelled out here.
-    pub raw_args: String,
-    /// The directory, handed over through `WINDOWS_TERM_DIR_ENV`.
-    pub env_value: String,
     /// Human-readable argv reported in `TerminalOpenOutcome`.
     pub argv: Vec<String>,
 }
 
-/// Plan the Windows launch without letting the directory reach cmd's
-/// parser.
+/// Plan the Windows launch.
 ///
-/// `cmd.exe` re-parses its command line: `&` splits the command, `^`
-/// escapes the next character, and `%NAME%` expands — the last one
-/// *even inside double quotes*. Quoting the path therefore cannot make
-/// an arbitrary directory safe: `C:\50%off%` would silently become
-/// `C:\50` (issue #210). Passing the directory through an environment
-/// variable removes the class instead of patching characters: cmd
-/// expands `%MISEDECK_TERM_DIR%` in a single pass and never re-scans
-/// the value, so `&`, `^`, `%`, spaces, `(`, `)` and `!` all arrive
-/// intact. The empty `""` is still `start`'s title argument.
+/// `start` with a **directory** argument is not a terminal launch: it
+/// hands the folder to ShellExecute, so the user got File Explorer with
+/// a "opened cmd.exe at …" toast (issue #242). The target is now `cmd`
+/// itself, and the directory is handed over as the child's **working
+/// directory** (`Command::current_dir`) rather than as text in the
+/// command line — which also supersedes #210's environment-variable
+/// hand-off. cmd.exe parses its command line and expands `%NAME%` even
+/// inside quotes, so *no* directory string can be made safe there;
+/// keeping it out of the command line entirely is the only structural
+/// fix. `C:\50%off%`, `C:\A & B` and `C:\caret^dir` now arrive intact
+/// because they never pass through a parser.
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
-pub fn windows_cmd_start_plan(dir: &str) -> WindowsCmdStartPlan {
+pub fn windows_cmd_start_plan() -> WindowsCmdStartPlan {
+    // `start "" cmd`: the empty argument is `start`'s title, which must
+    // be present or `start` treats the command as the title and opens
+    // nothing. The new console window inherits the inherited cwd.
     WindowsCmdStartPlan {
-        raw_args: format!("/c start \"\" \"%{WINDOWS_TERM_DIR_ENV}%\""),
-        env_value: dir.to_string(),
         argv: vec![
-            "cmd".to_string(),
+            "cmd.exe".to_string(),
             "/c".to_string(),
             "start".to_string(),
             String::new(),
-            format!("%{WINDOWS_TERM_DIR_ENV}%"),
+            "cmd.exe".to_string(),
         ],
     }
+}
+
+/// One Linux terminal candidate (issue #245).
+///
+/// Every launch also sets the child's working directory (`current_dir`),
+/// which is what most emulators actually honour — the flag is belt and
+/// braces for the ones that would otherwise start in `$HOME`. A spec with
+/// no flags (`x-terminal-emulator`, whose target is unknown by design)
+/// relies on the inherited cwd alone.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LinuxTerminalSpec {
+    pub binary: &'static str,
+    /// Argv tail placed before the path.
+    pub args: &'static [&'static str],
+    /// True when the path joins the last flag with `=` (the GNOME / KDE
+    /// `--flag=<path>` form), false when it is its own argv element.
+    pub equals_form: bool,
+}
+
+/// Probe order for Linux (issue #245). `x-terminal-emulator` comes first
+/// because on Debian it is the user's declared choice; then the current
+/// defaults of the big distros (Ubuntu 24.04 ships GNOME Console `kgx`,
+/// Fedora 40+ `ptyxis`, both of which dropped `gnome-terminal`), then the
+/// long-standing ones, then standalone emulators a developer installed.
+pub const LINUX_TERMINALS: &[LinuxTerminalSpec] = &[
+    LinuxTerminalSpec {
+        binary: "x-terminal-emulator",
+        // Debian alternative: the target could be anything, so no flag
+        // is safe to pass. The inherited cwd still lands the shell in
+        // the right directory.
+        args: &[],
+        equals_form: false,
+    },
+    LinuxTerminalSpec {
+        binary: "kgx",
+        args: &["--working-directory"],
+        equals_form: true,
+    },
+    LinuxTerminalSpec {
+        binary: "ptyxis",
+        args: &["--working-directory"],
+        equals_form: true,
+    },
+    LinuxTerminalSpec {
+        binary: "gnome-terminal",
+        args: &["--working-directory"],
+        equals_form: true,
+    },
+    LinuxTerminalSpec {
+        binary: "konsole",
+        args: &["--workdir"],
+        equals_form: true,
+    },
+    LinuxTerminalSpec {
+        binary: "xfce4-terminal",
+        args: &["--working-directory"],
+        equals_form: true,
+    },
+    LinuxTerminalSpec {
+        binary: "alacritty",
+        args: &["--working-directory"],
+        equals_form: false,
+    },
+    LinuxTerminalSpec {
+        binary: "kitty",
+        args: &["--directory"],
+        equals_form: false,
+    },
+    LinuxTerminalSpec {
+        binary: "wezterm",
+        args: &["start", "--cwd"],
+        equals_form: false,
+    },
+    LinuxTerminalSpec {
+        binary: "foot",
+        args: &["--working-directory"],
+        equals_form: true,
+    },
+    LinuxTerminalSpec {
+        binary: "urxvt",
+        args: &["-cd"],
+        equals_form: false,
+    },
+];
+
+/// argv for one candidate at `path`. Pure, so the per-terminal flag
+/// shapes are testable without launching anything.
+pub fn linux_terminal_argv(spec: &LinuxTerminalSpec, path: &str) -> Vec<String> {
+    let mut argv = vec![spec.binary.to_string()];
+    match spec.args.split_last() {
+        None => {}
+        Some((last, init)) => {
+            argv.extend(init.iter().map(|a| a.to_string()));
+            if spec.equals_form {
+                argv.push(format!("{last}={path}"));
+            } else {
+                argv.push((*last).to_string());
+                argv.push(path.to_string());
+            }
+        }
+    }
+    argv
+}
+
+/// Pick the first available terminal from `LINUX_TERMINALS` and build its
+/// argv. `available` is injected so the order and the argv shapes are
+/// unit-tested on every platform; production passes `which_exists`.
+pub fn linux_terminal_plan(
+    path: &str,
+    mut available: impl FnMut(&str) -> bool,
+) -> Option<(LinuxTerminalSpec, Vec<String>)> {
+    for spec in LINUX_TERMINALS {
+        if available(spec.binary) {
+            return Some((*spec, linux_terminal_argv(spec, path)));
+        }
+    }
+    None
 }
 
 pub fn open_in_terminal(path: Option<&str>) -> Result<TerminalOpenOutcome, AppError> {
@@ -554,15 +774,12 @@ pub fn open_in_terminal(path: Option<&str>) -> Result<TerminalOpenOutcome, AppEr
 
     #[cfg(target_os = "windows")]
     {
-        // `cmd /c start "" <%MISEDECK_TERM_DIR%>` opens a window rooted
-        // at the directory. The empty quoted string is the "title"
-        // argument (otherwise `start` treats the target as the title
-        // and the command does not run). The directory itself travels
-        // through an environment variable — see
+        // A `cmd` window rooted at the directory (issue #242). The
+        // directory travels as the child's working directory — see
         // `windows_cmd_start_plan` for why it must not appear in the
         // command line.
-        let plan = windows_cmd_start_plan(&path_str);
-        run_cmd_start(&plan, &path_str)?;
+        let plan = windows_cmd_start_plan();
+        run_cmd_start(&resolved, &plan.argv, &path_str)?;
         return Ok(TerminalOpenOutcome {
             platform: "Windows".to_string(),
             terminal_app: "cmd.exe".to_string(),
@@ -573,66 +790,47 @@ pub fn open_in_terminal(path: Option<&str>) -> Result<TerminalOpenOutcome, AppEr
 
     #[cfg(all(unix, not(target_os = "macos")))]
     {
-        // Linux (and other Unixes that are not macOS). Best-effort
-        // probe for a common terminal. The list is short on
-        // purpose — adding "kde-open" / "exo-open" / etc. is
-        // easy but each adds a maintenance surface; the common
-        // three cover the bulk of the Linux desktop world.
-        let path_for_arg = path_str.clone();
-        for (binary, argv_factory) in [
-            (
-                "gnome-terminal",
-                Box::new(move |p: String| vec![
-                    "gnome-terminal".to_string(),
-                    format!("--working-directory={p}"),
-                ]) as Box<dyn Fn(String) -> Vec<String>>,
-            ),
-            (
-                "konsole",
-                Box::new(move |p: String| vec![
-                    "konsole".to_string(),
-                    format!("--workdir={p}"),
-                ]),
-            ),
-            (
-                "xfce4-terminal",
-                Box::new(move |p: String| vec![
-                    "xfce4-terminal".to_string(),
-                    format!("--working-directory={p}"),
-                ]),
-            ),
-        ] {
-            if which_exists(binary) {
-                let argv = argv_factory(path_str.clone());
-                run_argv(&argv, "Linux", binary, &path_for_arg)?;
-                return Ok(TerminalOpenOutcome {
+        // Linux (and other Unixes that are not macOS). The table covers
+        // the current defaults of the major distros, not just the 2015
+        // trio (issue #245); the cwd is set on the child as well as
+        // passed as a flag, so an emulator that ignores its own flag
+        // still opens in the right directory.
+        match linux_terminal_plan(&path_str, which_exists) {
+            Some((spec, argv)) => {
+                let (bin, args) = argv.split_first().expect("argv is non-empty");
+                let mut cmd = Command::new(bin);
+                cmd.args(args).current_dir(&resolved);
+                run_prepared(cmd, "Linux", spec.binary, &path_str, &argv)?;
+                Ok(TerminalOpenOutcome {
                     platform: "Linux".to_string(),
-                    terminal_app: binary.to_string(),
+                    terminal_app: spec.binary.to_string(),
                     path: path_str,
                     argv,
-                });
+                })
             }
+            None => Err(AppError::new(
+                code::TERMINAL_NOT_FOUND,
+                "errors.terminalNotFound",
+                String::new(),
+            )),
         }
-        return Err(AppError::new(
-            code::TERMINAL_NOT_FOUND,
-            "errors.terminalNotFound",
-            String::new(),
-        ));
     }
 }
 
-/// Launcher for the Windows `cmd /c start` path. `raw_arg` is required
-/// because the default argv quoting would escape the quotes cmd.exe
-/// needs to see; the directory itself arrives through
-/// `WINDOWS_TERM_DIR_ENV`, never through the command line.
+/// Launcher for the Windows `start` path (issue #242). The directory is
+/// the child's working directory, never command-line text; the new
+/// console window `start` creates inherits it.
+///
+/// The wrapper itself is deliberately *not* given
+/// `CREATE_NO_WINDOW` (issue #240): suppressing it risks suppressing the
+/// console `start` hands to the new window, and the wrapper lives for a
+/// few milliseconds anyway.
 #[cfg(target_os = "windows")]
-fn run_cmd_start(plan: &WindowsCmdStartPlan, path: &str) -> Result<(), AppError> {
-    use std::os::windows::process::CommandExt;
-
-    let mut cmd = Command::new("cmd.exe");
-    cmd.env(WINDOWS_TERM_DIR_ENV, &plan.env_value)
-        .raw_arg(&plan.raw_args);
-    run_prepared(cmd, "Windows", "cmd.exe", path, &plan.argv)
+fn run_cmd_start(dir: &Path, argv: &[String], path: &str) -> Result<(), AppError> {
+    let (bin, args) = argv.split_first().expect("plan argv is non-empty");
+    let mut cmd = Command::new(bin);
+    cmd.args(args).current_dir(dir);
+    run_prepared(cmd, "Windows", "cmd.exe", path, argv)
 }
 
 /// Helper: spawn an argv in the background (the terminal launches
@@ -757,6 +955,97 @@ mod tests {
         assert!(!rc_has_mise_activate("\n\n   \n"));
     }
 
+    /// Issue #244: Windows profiles are routinely written as UTF-16
+    /// ("Unicode" in Notepad) or carry a UTF-8 BOM. Both used to lose
+    /// the activation line — one as a read error, one as a `U+FEFF`
+    /// glued to the first line.
+    #[test]
+    fn decode_rc_bytes_handles_boms() {
+        let line = "mise activate pwsh | Out-String | Invoke-Expression";
+
+        // Plain UTF-8, no BOM.
+        assert_eq!(
+            decode_rc_bytes(line.as_bytes()),
+            RcFile::Text(line.to_string())
+        );
+
+        // UTF-8 BOM: stripped, so the first line is matchable.
+        let mut utf8_bom = vec![0xEF, 0xBB, 0xBF];
+        utf8_bom.extend_from_slice(line.as_bytes());
+        match decode_rc_bytes(&utf8_bom) {
+            RcFile::Text(text) => {
+                assert_eq!(text, line);
+                assert!(rc_has_mise_activate(&text), "BOM must not hide the line");
+            }
+            other => panic!("expected text, got {other:?}"),
+        }
+
+        // UTF-16 LE / BE with their BOMs.
+        for little_endian in [true, false] {
+            let units: Vec<u16> = line.encode_utf16().collect();
+            let mut bytes = if little_endian {
+                vec![0xFF, 0xFE]
+            } else {
+                vec![0xFE, 0xFF]
+            };
+            for unit in &units {
+                let pair = if little_endian {
+                    unit.to_le_bytes()
+                } else {
+                    unit.to_be_bytes()
+                };
+                bytes.extend_from_slice(&pair);
+            }
+            match decode_rc_bytes(&bytes) {
+                RcFile::Text(text) => {
+                    assert_eq!(text, line);
+                    assert!(
+                        rc_has_mise_activate(&text),
+                        "UTF-16 (le={little_endian}) must decode matchably"
+                    );
+                }
+                other => panic!("expected text, got {other:?}"),
+            }
+        }
+    }
+
+    /// A legacy single-byte file is neither UTF-8 nor BOM-tagged: the
+    /// probe must report "cannot tell" instead of guessing a decode that
+    /// would hide the activation line (issue #244, #166).
+    #[test]
+    fn decode_rc_bytes_marks_undecodable_instead_of_guessing() {
+        // 0xFF is never valid UTF-8, and the file carries no BOM.
+        assert_eq!(
+            decode_rc_bytes(b"mise activate \xFF\x00"),
+            RcFile::Undecodable
+        );
+        assert!(matches!(
+            decode_rc_bytes(b"plain ascii"),
+            RcFile::Text(ref text) if text == "plain ascii"
+        ));
+    }
+
+    /// The PowerShell probe must look at both profiles (issues #229, #244).
+    /// Written with `Path` components so the assertion holds on both
+    /// separators — this file runs on the Windows CI leg too.
+    #[test]
+    fn powershell_rc_siblings_cover_windows_powershell_5() {
+        let siblings = rc_sibling_paths(&ShellKind::PowerShell);
+        assert_eq!(siblings.len(), 1);
+        let path = Path::new(&siblings[0]);
+        assert_eq!(
+            path.file_name().unwrap().to_string_lossy(),
+            "Microsoft.PowerShell_profile.ps1"
+        );
+        assert_eq!(
+            path.parent().unwrap().file_name().unwrap().to_string_lossy(),
+            "WindowsPowerShell"
+        );
+        // The pwsh 7 profile is the primary path, not a sibling — the two
+        // must not be the same file.
+        assert_ne!(siblings[0], rc_path_for(&ShellKind::PowerShell));
+    }
+
     #[test]
     fn activation_line_matches_shell() {
         assert!(ShellKind::Zsh.activation_line().contains("mise activate zsh"));
@@ -767,10 +1056,12 @@ mod tests {
 
     #[test]
     fn windows_cmd_start_plan_keeps_the_directory_out_of_the_command_line() {
-        // cmd.exe splits on `&`, eats `^`, and expands `%NAME%` even
-        // inside double quotes, so no directory may be interpolated
-        // into the command line — it travels through the environment
-        // variable instead (issue #210).
+        // `start` with a directory argument opens File Explorer, so the
+        // target is `cmd` and the directory is the child's cwd (issues
+        // #210 → #242). Nothing that a cmd parser could re-interpret may
+        // appear in the argv, for any directory shape.
+        let plan = windows_cmd_start_plan();
+        assert_eq!(plan.argv, vec!["cmd.exe", "/c", "start", "", "cmd.exe"]);
         for dir in [
             r"C:\A & B",
             r"C:\50%off%",
@@ -778,13 +1069,11 @@ mod tests {
             r"C:\paren(dir)",
             r"C:\bang!dir",
             r"C:\space dir",
+            r"\\server\share",
         ] {
-            let plan = windows_cmd_start_plan(dir);
-            assert_eq!(plan.raw_args, r#"/c start "" "%MISEDECK_TERM_DIR%""#);
-            assert_eq!(plan.env_value, dir);
             assert!(
-                !plan.raw_args.contains(dir),
-                "directory leaked into the cmd command line: {dir}"
+                !plan.argv.iter().any(|arg| arg.contains(dir)),
+                "directory leaked into the cmd argv: {dir}"
             );
         }
     }
@@ -815,6 +1104,69 @@ mod tests {
         }
         // Unknown shells have no rc to probe — not a path under home.
         assert!(rc_path_for(&ShellKind::Unknown { name: "nu".to_string() }).is_empty());
+    }
+
+    /// Issue #245: the probe order and each emulator's cwd flag shape.
+    /// Pure, so this runs on every platform — including the Windows and
+    /// macOS legs where no Linux terminal exists.
+    #[test]
+    fn linux_terminal_plan_prefers_the_distro_defaults() {
+        // Nothing installed: no plan, so the caller returns
+        // TERMINAL_NOT_FOUND and the copyable command takes over.
+        assert!(linux_terminal_plan("/x", |_| false).is_none());
+
+        // A stock Ubuntu 24.04 (GNOME Console, no gnome-terminal).
+        let (spec, argv) = linux_terminal_plan("/x", |bin| matches!(bin, "kgx")).expect("plan");
+        assert_eq!(spec.binary, "kgx");
+        assert_eq!(argv, vec!["kgx", "--working-directory=/x"]);
+
+        // A Fedora 40+ box.
+        let (spec, _) = linux_terminal_plan("/x", |bin| bin == "ptyxis").expect("plan");
+        assert_eq!(spec.binary, "ptyxis");
+
+        // Debian: the alternatives symlink wins, and it gets no flag
+        // because its target is unknown (the inherited cwd carries it).
+        let (spec, argv) = linux_terminal_plan("/x", |bin| {
+            matches!(bin, "x-terminal-emulator" | "gnome-terminal")
+        })
+        .expect("plan");
+        assert_eq!(spec.binary, "x-terminal-emulator");
+        assert_eq!(argv, vec!["x-terminal-emulator"]);
+
+        // A developer box with only kitty: separate-argument form.
+        let (_, argv) = linux_terminal_plan("/x", |bin| bin == "kitty").expect("plan");
+        assert_eq!(argv, vec!["kitty", "--directory", "/x"]);
+
+        // wezterm takes a subcommand before its flag.
+        let (_, argv) = linux_terminal_plan("/x", |bin| bin == "wezterm").expect("plan");
+        assert_eq!(argv, vec!["wezterm", "start", "--cwd", "/x"]);
+    }
+
+    /// The old trio must still be reachable — an install that only has
+    /// konsole keeps working.
+    #[test]
+    fn linux_terminal_plan_keeps_the_legacy_trio() {
+        for binary in ["gnome-terminal", "konsole", "xfce4-terminal"] {
+            let (spec, argv) = linux_terminal_plan("/p", |bin| bin == binary).expect("plan");
+            assert_eq!(spec.binary, binary);
+            assert!(argv.last().unwrap().contains("/p"));
+        }
+        let (_, argv) = linux_terminal_plan("/p", |bin| bin == "konsole").expect("plan");
+        assert_eq!(argv, vec!["konsole", "--workdir=/p"]);
+    }
+
+    /// Paths are data here (argv, never a shell line): spaces and shell
+    /// metacharacters must survive verbatim.
+    #[test]
+    fn linux_terminal_argv_keeps_hostile_paths_intact() {
+        let spec = LINUX_TERMINALS
+            .iter()
+            .find(|s| s.binary == "gnome-terminal")
+            .expect("spec");
+        for path in ["/tmp/a b", "/tmp/$(rm -rf /)", "/tmp/x&y"] {
+            let argv = linux_terminal_argv(spec, path);
+            assert_eq!(argv, vec!["gnome-terminal".to_string(), format!("--working-directory={path}")]);
+        }
     }
 
     #[cfg(unix)]
