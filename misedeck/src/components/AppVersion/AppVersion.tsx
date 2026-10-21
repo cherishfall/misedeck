@@ -156,6 +156,22 @@ export function AppVersion({ collapsed = false }: AppVersionProps) {
         );
         saveUpdateState(next);
         showMarker(next.available);
+        // A panel seeded from the old marker must not keep claiming a
+        // build the feed just disowned. Only an already-open "available"
+        // state is corrected; nothing opens on its own.
+        if (result.status === "current") {
+          setCheck((prev) =>
+            prev.kind === "available"
+              ? { kind: "current", version: result.version }
+              : prev,
+          );
+        } else if (result.status === "available") {
+          setCheck((prev) =>
+            prev.kind === "available"
+              ? { kind: "available", version: result.version, url: result.url }
+              : prev,
+          );
+        }
       } catch {
         // Offline, proxy, curl missing, bridge gone: all the same quiet
         // outcome. The attempt timestamp already throttles the next
