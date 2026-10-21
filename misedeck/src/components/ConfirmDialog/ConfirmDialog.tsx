@@ -35,10 +35,10 @@ import { useEffect, useId, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
-import { FOCUSABLE_SELECTOR } from "../../utils/focusable";
 import { Button } from "../Button/Button";
 import styles from "./ConfirmDialog.module.css";
-import { initialDialogFocusTarget, nextFocusIndex } from "./focusTarget";
+import { subscribeDialogKeys } from "./dialogKeys";
+import { initialDialogFocusTarget } from "./focusTarget";
 
 export interface ConfirmDialogProps {
   /** When false the dialog renders nothing. */
@@ -114,36 +114,7 @@ export function ConfirmDialog({
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onCancel();
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const root = dialogRef.current;
-      if (!root) return;
-      const nodes = Array.from(
-        root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-      );
-      // Always preventDefault: Tab is ours to place now, whether there
-      // is somewhere inside to send it or not.
-      e.preventDefault();
-      const index = nextFocusIndex(
-        nodes.length,
-        nodes.indexOf(document.activeElement as HTMLElement),
-        e.shiftKey,
-      );
-      if (index < 0) {
-        // Nothing focusable inside (busy dialog: Confirm is disabled) —
-        // park focus on the dialog itself rather than let Tab escape.
-        root.focus();
-        return;
-      }
-      nodes[index].focus();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return subscribeDialogKeys(window, () => dialogRef.current, onCancel);
   }, [open, onCancel]);
 
   if (!open) return null;

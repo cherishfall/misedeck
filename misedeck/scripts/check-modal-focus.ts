@@ -12,6 +12,9 @@
 //      tells assistive tech the page behind is inert but does not stop
 //      Tab, so a second hand-rolled modal would ship without the trap
 //      even with `aria-modal="true"` set.
+//   3. The shared dialog's keydown listener stays in the capture phase.
+//      Forms that render a dialog inside themselves (KeyForm) stop
+//      Escape in their own handler, which swallows a bubble listener (#272).
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
@@ -20,6 +23,7 @@ import { fileURLToPath } from "node:url";
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const SRC_DIR = join(REPO_ROOT, "src");
 const SHARED_DIALOG = "src/components/ConfirmDialog/ConfirmDialog.tsx";
+const DIALOG_KEYS = join(REPO_ROOT, "src/components/ConfirmDialog/dialogKeys.ts");
 
 function listSource(dir: string): string[] {
   const out: string[] = [];
@@ -50,6 +54,14 @@ for (const file of listSource(SRC_DIR)) {
         "not inherit the focus trap",
     );
   }
+}
+
+const dialogKeys = readFileSync(DIALOG_KEYS, "utf8");
+if (!/addEventListener\("keydown",\s*onKey,\s*true\)/.test(dialogKeys)) {
+  failures.push(
+    "src/components/ConfirmDialog/dialogKeys.ts: keydown must be registered " +
+      "in the capture phase; a nested KeyForm otherwise swallows Escape (#272)",
+  );
 }
 
 if (failures.length > 0) {
