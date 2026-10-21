@@ -656,6 +656,13 @@
     "name": "MiseDeck",
     "triggerLabel": "MiseDeck {{version}} — version and updates",
     "panelLabel": "MiseDeck version and updates",
+    "check": "Check for MiseDeck updates",
+    "checking": "Checking for MiseDeck updates…",
+    "upToDate": "MiseDeck is up to date",
+    "available": "MiseDeck {{version}} is available",
+    "checkFailed": "Could not check for MiseDeck updates",
+    "retry": "Try again",
+    "download": "Download {{version}}",
     "releasePage": "Release page"
   }
 }

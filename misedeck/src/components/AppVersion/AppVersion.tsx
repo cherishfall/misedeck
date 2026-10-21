@@ -1,5 +1,5 @@
-// AppVersion — the running build's own version and the panel it opens
-// (#235, spec #234).
+// AppVersion — the running build's own version, and the panel it opens
+// (#235) where the user can ask whether a newer build exists (#236).
 //
 // Placement rationale lives in the CSS module header; the short version:
 // language, theme and the app's version are all facts about *this app*,
@@ -10,14 +10,22 @@
 //
 // The version string itself is never translated and never captioned with
 // "Version": `labels.version` already means mise's version.
+//
+// The check is manual by design (ADR-0009). MiseDeck's network egress
+// starts here, when the user asks for it, and ends at a link — the app
+// never downloads or installs a build itself.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { RELEASES_URL, getAppVersion } from "../../api/app";
+import { checkAppUpdate } from "../../api/appUpdate";
 import { I18N_KEYS } from "../../i18n/keys";
+import { Button } from "../Button/Button";
 import { FloatingMenu } from "../FloatingMenu";
+import { ProgressDot } from "../ProgressDot/ProgressDot";
 
+import { summarizeCheck, type UpdateCheckState } from "./appVersionCopy";
 import styles from "./AppVersion.module.css";
 
 interface AppVersionProps {
@@ -32,6 +40,7 @@ export function AppVersion({ collapsed = false }: AppVersionProps) {
   const { t } = useTranslation();
   const [version, setVersion] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [check, setCheck] = useState<UpdateCheckState>({ kind: "idle" });
 
   useEffect(() => {
     let alive = true;
@@ -43,10 +52,36 @@ export function AppVersion({ collapsed = false }: AppVersionProps) {
     };
   }, []);
 
+  const runCheck = useCallback(async () => {
+    setCheck({ kind: "checking" });
+    try {
+      const result = await checkAppUpdate();
+      if (result.status === "available") {
+        setCheck({ kind: "available", version: result.version, url: result.url });
+      } else if (result.status === "current") {
+        setCheck({ kind: "current", version: result.version });
+      } else {
+        setCheck({ kind: "error" });
+      }
+    } catch {
+      // The command collapses its own failures; a rejected invoke means
+      // the bridge itself is gone. Same sentence either way.
+      setCheck({ kind: "error" });
+    }
+  }, []);
+
   // A missing version is a dead Tauri context, not a reason to break the
   // shell: render a placeholder and keep the Release page reachable.
   const shown = version ?? "—";
   const triggerLabel = t(I18N_KEYS.about.triggerLabel, { version: shown });
+  const summary = summarizeCheck(check);
+
+  const statusText =
+    summary.statusKey === null
+      ? null
+      : check.kind === "available"
+        ? t(summary.statusKey, { version: check.version })
+        : t(summary.statusKey);
 
   return (
     <div className={collapsed ? styles.colophonCollapsed : styles.colophon}>
@@ -85,14 +120,62 @@ export function AppVersion({ collapsed = false }: AppVersionProps) {
             <span className={styles.versionValue}>{shown}</span>
           </div>
           <div className={styles.divider} />
-          <a
-            className={styles.link}
-            href={RELEASES_URL}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {t(I18N_KEYS.about.releasePage)}
-          </a>
+
+          {/* Always mounted so a result is announced when it arrives;
+              empty until the user asks. */}
+          <div className={styles.status} role="status" aria-live="polite">
+            {statusText !== null && (
+              <span className={styles.statusLine} data-tone={summary.statusTone}>
+                {summary.busy && <ProgressDot tone="ice" />}
+                {statusText}
+              </span>
+            )}
+            {check.kind === "available" && (
+              <span className={styles.versionPair}>
+                {shown}
+                <span className={styles.arrow} aria-hidden="true">
+                  →
+                </span>
+                {check.version}
+              </span>
+            )}
+          </div>
+
+          <div className={styles.actions}>
+            {summary.action === "download" && check.kind === "available" ? (
+              <a
+                className={styles.download}
+                href={check.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t(I18N_KEYS.about.download, { version: check.version })}
+              </a>
+            ) : (
+              <span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={summary.busy}
+                  onClick={() => void runCheck()}
+                >
+                  {t(
+                    summary.action === "retry"
+                      ? I18N_KEYS.about.retry
+                      : I18N_KEYS.about.check,
+                  )}
+                </Button>
+              </span>
+            )}
+            <a
+              className={styles.link}
+              href={RELEASES_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t(I18N_KEYS.about.releasePage)}
+            </a>
+          </div>
         </div>
       </FloatingMenu>
     </div>

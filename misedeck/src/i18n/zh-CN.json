@@ -656,6 +656,13 @@
     "name": "MiseDeck",
     "triggerLabel": "MiseDeck {{version}} — 版本与更新",
     "panelLabel": "MiseDeck 版本与更新",
+    "check": "检查 MiseDeck 更新",
+    "checking": "正在检查 MiseDeck 更新…",
+    "upToDate": "MiseDeck 已是最新版本",
+    "available": "MiseDeck {{version}} 已发布",
+    "checkFailed": "无法检查 MiseDeck 更新",
+    "retry": "重试",
+    "download": "下载 {{version}}",
     "releasePage": "发布页"
   }
 }

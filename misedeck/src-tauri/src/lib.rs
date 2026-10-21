@@ -17,8 +17,10 @@ pub mod install;
 pub mod mise;
 pub mod process_tree;
 pub mod shell;
+pub mod update;
 
 use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
+use update::AppUpdateResult;
 use mise::{
     check_trust, detect_mise as run_mise_probe, locate_mise, mise_config_files, mise_doctor,
     mise_env, mise_env_extended, mise_outdated, mise_plugins_ls,
@@ -855,6 +857,27 @@ fn cancel_run(run_id: String) {
     process_tree::request_cancel(&run_id);
 }
 
+/// Is there a newer MiseDeck build? (#236, spec #234)
+///
+/// Manual only — nothing calls this at launch. The blocking curl runs on
+/// the shared blocking pool, so a throttled request never freezes the
+/// window, and every failure mode collapses into the same retryable
+/// `Err` variant instead of surfacing as an unhandled rejection.
+#[tauri::command]
+async fn check_app_update(app: tauri::AppHandle) -> AppUpdateResult {
+    let current = app.package_info().version.to_string();
+    let probe = current.clone();
+    match spawn_run(move || update::check(&probe)).await {
+        Ok(Some(tag)) => AppUpdateResult::Available {
+            version: tag.version,
+            url: tag.url,
+            published_at: tag.published_at,
+        },
+        Ok(None) => AppUpdateResult::Current { version: current },
+        Err(err) => AppUpdateResult::Err { err },
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -881,7 +904,8 @@ pub fn run() {
             plugins_ls,
             shell_activation_check,
             open_in_terminal,
-            set_window_theme
+            set_window_theme,
+            check_app_update
         ])
         .setup(|_app| {
             let mut guard = MISE_BINARY.lock().expect("mise path mutex poisoned");

@@ -345,3 +345,79 @@ fn terminal_open_result_err() {
     .unwrap();
     assert_eq!(v, err_json());
 }
+
+// ---------- The app's own update check (issue #236) ----------
+//
+// Deliberately NOT a `{kind: "ok" | "err"}` union: the panel's three
+// states are distinctions the UI renders differently (nothing to do /
+// here is a build / the check failed), not a success channel with an
+// error side-channel. `status` carries them.
+
+#[test]
+fn app_update_result_available() {
+    let v = serde_json::to_value(misedeck_lib::update::AppUpdateResult::Available {
+        version: "1.0.0-beta.17".to_string(),
+        url: "https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.17".to_string(),
+        published_at: Some("2026-11-02T09:14:00Z".to_string()),
+    })
+    .unwrap();
+    assert_eq!(
+        v,
+        json!({
+            "status": "available",
+            "version": "1.0.0-beta.17",
+            "url": "https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.17",
+            "publishedAt": "2026-11-02T09:14:00Z",
+        })
+    );
+}
+
+#[test]
+fn app_update_result_available_omits_absent_date() {
+    let v = serde_json::to_value(misedeck_lib::update::AppUpdateResult::Available {
+        version: "1.0.0-beta.17".to_string(),
+        url: "https://example.invalid/v1.0.0-beta.17".to_string(),
+        published_at: None,
+    })
+    .unwrap();
+    assert_eq!(
+        v,
+        json!({
+            "status": "available",
+            "version": "1.0.0-beta.17",
+            "url": "https://example.invalid/v1.0.0-beta.17",
+        })
+    );
+}
+
+#[test]
+fn app_update_result_current() {
+    let v = serde_json::to_value(misedeck_lib::update::AppUpdateResult::Current {
+        version: "1.0.0-beta.17".to_string(),
+    })
+    .unwrap();
+    assert_eq!(v, json!({ "status": "current", "version": "1.0.0-beta.17" }));
+}
+
+#[test]
+fn app_update_result_err() {
+    let v = serde_json::to_value(misedeck_lib::update::AppUpdateResult::Err {
+        err: AppError::new(
+            "app_update_check_failed",
+            "the release feed request did not succeed",
+            "curl: (28) timed out",
+        ),
+    })
+    .unwrap();
+    assert_eq!(
+        v,
+        json!({
+            "status": "err",
+            "err": {
+                "code": "app_update_check_failed",
+                "message": "the release feed request did not succeed",
+                "stderr": "curl: (28) timed out",
+            },
+        })
+    );
+}

@@ -130,6 +130,84 @@
   background: var(--line);
 }
 
+/* ---------- Check result (#236) ---------- */
+
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+}
+
+/* Four tones, four meanings: neutral while working, success when there is
+ * nothing to do, attention when there is something to fetch, error when
+ * the check itself failed. Same palette roles as ProgressDot. */
+.statusLine {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  letter-spacing: normal;
+  line-height: 1.5;
+}
+
+.statusLine[data-tone="ice"] {
+  color: var(--ice);
+}
+
+.statusLine[data-tone="grove"] {
+  color: var(--grove);
+}
+
+.statusLine[data-tone="flare"] {
+  color: var(--flare);
+}
+
+.statusLine[data-tone="breach"] {
+  color: var(--breach);
+}
+
+/* `old → new`, the same shape the Tools table uses for an outdated Tool:
+ * the arrow carries the attention colour, the versions stay data-quiet. */
+.versionPair {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--dim);
+  letter-spacing: normal;
+}
+
+.arrow {
+  color: var(--flare);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+/* The one link that is the point of the panel: beam, not ice. */
+.download {
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  color: var(--beam);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line-strong);
+  padding: var(--space-0-5) 0;
+  letter-spacing: normal;
+}
+
+.download:hover,
+.download:focus-visible {
+  color: color-mix(in srgb, var(--beam) 78%, var(--text));
+  border-bottom-color: var(--beam);
+  outline: none;
+}
+
 /* External link — same quiet-ice-to-beam reading as the release-notes
  * link on Home (the project's only other outbound <a>). */
 .link {

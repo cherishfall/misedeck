@@ -776,6 +776,13 @@ export const I18N_KEYS = {
     name: "about.name",
     triggerLabel: "about.triggerLabel",
     panelLabel: "about.panelLabel",
+    check: "about.check",
+    checking: "about.checking",
+    upToDate: "about.upToDate",
+    available: "about.available",
+    checkFailed: "about.checkFailed",
+    retry: "about.retry",
+    download: "about.download",
     releasePage: "about.releasePage",
   },
 } as const;
