@@ -4,7 +4,7 @@
 
 **A desktop GUI for [mise](https://mise.jdx.dev), the polyglot tool version manager.** It is built from mise's own concepts, not an invented layer on top: each page mirrors a part of the CLI, and every change it makes runs a real `mise` command, shown verbatim — command, logs, exit code — in the execution panel. MiseDeck is an independent community project, not affiliated with mise or its maintainer.
 
-> **Status: public beta, `v1.0.0-beta.17`** (16 builds since August 2026). 1.0 is not final; copy and layout still change between betas. macOS on Apple Silicon is the polished target; Linux is packaged but unverified; Windows is experimental.
+> **Status: 1.0.0** — the first stable release, after 16 tagged betas (`v1.0.0-beta.1` through `v1.0.0-beta.17`, September–October 2026). macOS on Apple Silicon is the polished target; Linux is packaged but not verified on real hardware; Windows is experimental.
 
 ## Why
 
@@ -33,12 +33,13 @@ Beyond the pages:
 - **Trust**: an untrusted directory is read-only, with a banner and a one-click `mise trust`.
 - **Shell activation**: detects a missing `mise activate` line in your shell rc and shows what to add; can open a terminal at the current directory.
 - **Failures stay visible**: a failed load or command keeps its stderr and a retry on screen instead of rendering an empty page.
+- **App version and updates**: the running version sits in the sidebar footer; checking for a newer build is manual, and a newer build hands you its GitHub Release page — the app never downloads or installs a build itself (ADR-0009).
 - Bilingual UI (English / 简体中文) and light/dark themes.
 
 ## Requirements
 
 - **mise ≥ 2025.1.0** — MiseDeck calls the CLI rather than bundling it; the Home page can install it.
-- **macOS on Apple Silicon** for the prebuilt app; Linux x86_64 packages are attached but unverified; Windows x64 is experimental.
+- **macOS on Apple Silicon** for the prebuilt app; Linux x86_64 packages are attached but unverified on real hardware; Windows x64 is experimental.
 - Building from source: Rust stable and Node.js 22+.
 
 ## Install
@@ -88,7 +89,7 @@ Packaged by CI; the maintainer has not run these on a real desktop.
 
 ### Windows x64 — experimental
 
-Each release attaches `MiseDeck_<version>_x64-setup.exe`. Windows is not verified yet: testing on real hardware is in progress, and finding the mise binary on Windows is still being fixed ([#208](https://github.com/cherishfall/misedeck/issues/208)). Expect breakage; feedback is welcome.
+Each release attaches `MiseDeck_<version>_x64-setup.exe`. Windows is experimental: CI compiles it and runs its unit tests, but it has not been run on real hardware yet ([#239](https://github.com/cherishfall/misedeck/issues/239)). Expect breakage; feedback is welcome.
 
 ## Run from source
 
@@ -122,17 +123,16 @@ npm run tauri build
 
 Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on macOS, `nsis/` on Windows, `deb/`, `rpm/`, `appimage/` on Linux. macOS builds come out unsigned, exactly like the released ones.
 
-`npm run ci` runs CI's frontend job locally: typecheck, tests, the i18n/CSS lint guards, and a production frontend build. The Rust job is separate — `cargo check --all-targets` and `cargo test --all-targets` on Linux, plus a `cargo test --lib` + `cargo build` smoke on Windows.
+`npm run ci` is the full frontend gate — CI's Windows job runs it verbatim. Its 16 steps, in order: `typecheck`, `lint:eslint` (React Hooks rules), `test`, twelve lint guards (i18n parity and concatenation, CSS tokens/type/spacing/tracking, ellipsis, command hints, install-echo parity, modal focus, nested interactives, page layout), and `build`. The Rust checks are separate — `cargo check --all-targets` and `cargo test --all-targets` on Linux, plus a `cargo test --lib` + `cargo build` compile smoke on Windows.
 
 ## Known limitations
 
 - macOS builds are unsigned and not notarized (see above).
-- No auto-update: the version in the sidebar footer opens a panel that checks GitHub for a newer build, then hands you its Release page. MiseDeck never downloads or installs it — and macOS needs the `xattr` fix re-applied afterwards.
+- No auto-update: even when a newer build exists, the panel stops at its Release page — you download and install it yourself, and macOS needs the `xattr` fix re-applied afterwards.
 - Cancel does not wait for the process: the panel marks the run cancelled immediately and MiseDeck then kills the run's whole process tree (a `curl | sh` install, a `mise run` task shell). Closing the app kills anything still running.
-- Windows is experimental ([#208](https://github.com/cherishfall/misedeck/issues/208)); Linux is unverified.
+- Windows is experimental: CI compiles it and runs its unit tests, but it has not been run on real hardware ([#239](https://github.com/cherishfall/misedeck/issues/239)); Linux packages are built but not verified on a desktop.
 - Linux needs **WebKitGTK 2.40 or newer** (Ubuntu 22.04+, Debian 12+, Fedora 38+). The whole palette is derived with `color-mix()`, so an older webview does not degrade gracefully — borders and elevated surfaces lose their colours. Packages are built against Ubuntu 22.04, so they run on any distro with glibc 2.35+. Verified on: none. Ubuntu 24.04 is the target, not a tested environment.
 - No Intel macOS build; build from source if you need one.
-- Beta: UI copy and layout can change between releases.
 
 ## Screenshots
 

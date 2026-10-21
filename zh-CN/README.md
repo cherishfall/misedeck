@@ -4,7 +4,7 @@
 
 **[mise](https://mise.jdx.dev)（多语言工具版本管理器）的桌面 GUI。** 它用 mise 自己的概念构建，而不是在上面另造一层：每个页面镜像 CLI 的一部分，每次改动都真实执行一条 `mise` 命令，命令行、日志与退出码都原样留在执行面板里。MiseDeck 是独立的社区项目，与 mise 及其维护者没有隶属关系。
 
-> **状态：公开测试版 `v1.0.0-beta.17`**（自 2026 年 8 月起共 16 个构建）。1.0 尚未定稿，文案与布局在 beta 之间仍会变化。macOS（Apple Silicon）是打磨过的目标平台；Linux 有包但未验证；Windows 为实验性支持。
+> **状态：1.0.0**——首个稳定版本，此前历经 16 个带 tag 的 beta（`v1.0.0-beta.1` 至 `v1.0.0-beta.17`，2026 年 9 月至 10 月）。macOS（Apple Silicon）是打磨过的目标平台；Linux 有包但未在真机上验证；Windows 为实验性支持。
 
 ## 为什么
 
@@ -33,12 +33,13 @@
 - **信任机制**：未信任的目录为只读，附横幅与一键 `mise trust`。
 - **Shell 激活**：检测 shell rc 中缺失的 `mise activate` 并给出该行内容；可在当前目录打开终端。
 - **失败可见**：加载或命令失败时，stderr 与重试留在界面上，而不是渲染一个空页面。
+- **应用版本与更新**：正在运行的版本显示在侧栏页脚；检查更新需手动触发，发现更新的构建时给出它的 GitHub Release 页——应用从不自行下载或安装构建（ADR-0009）。
 - 双语界面（English / 简体中文）与明暗两套主题。
 
 ## 环境要求
 
 - **mise ≥ 2025.1.0**——MiseDeck 调用 CLI，不内置它；mise 缺失时首页可以安装。
-- **macOS（Apple Silicon）** 使用预构建包；Linux x86_64 有包但未验证；Windows x64 为实验性支持。
+- **macOS（Apple Silicon）** 使用预构建包；Linux x86_64 有包但未在真机上验证；Windows x64 为实验性支持。
 - 从源码构建：Rust stable 与 Node.js 22+。
 
 ## 安装
@@ -88,7 +89,7 @@ xattr -dr com.apple.quarantine /Applications/MiseDeck.app
 
 ### Windows x64——实验性
 
-每个 release 都会附带 `MiseDeck_<version>_x64-setup.exe`。Windows 尚未验证：真机测试正在进行，Windows 上定位 mise 可执行文件的问题仍在修复（[#208](https://github.com/cherishfall/misedeck/issues/208)）。请预期尚不可用；欢迎反馈。
+每个 release 都会附带 `MiseDeck_<version>_x64-setup.exe`。Windows 为实验性支持：CI 会编译它并运行单元测试，但尚未有人在真机上运行过（[#239](https://github.com/cherishfall/misedeck/issues/239)）。请预期出现故障；欢迎反馈。
 
 ## 从源码运行
 
@@ -122,17 +123,16 @@ npm run tauri build
 
 产物在 `src-tauri/target/release/bundle/`——macOS 是 `dmg/` 与 `macos/`，Windows 是 `nsis/`，Linux 是 `deb/`、`rpm/`、`appimage/`。macOS 构建和正式发布的一样，都是未签名的。
 
-`npm run ci` 在本地跑的就是 CI 的前端任务：类型检查、测试、i18n/CSS 的 lint 守卫，以及生产前端构建。Rust 任务是另一套——Linux 上跑 `cargo check --all-targets` 与 `cargo test --all-targets`，Windows 上跑 `cargo test --lib` 与 `cargo build` 编译冒烟。
+`npm run ci` 是完整的前端闸门——CI 的 Windows 任务原样运行它。共 16 步，按顺序为：`typecheck`、`lint:eslint`（React Hooks 规则）、`test`、12 个 lint 守卫（i18n 键一致性与拼接、CSS token/字号/间距/字距、省略号、命令提示、安装回显一致性、模态焦点、嵌套交互、页面布局）和 `build`。Rust 检查是另一套——Linux 上跑 `cargo check --all-targets` 与 `cargo test --all-targets`，Windows 上跑 `cargo test --lib` 与 `cargo build` 编译冒烟。
 
 ## 已知限制
 
 - macOS 构建未签名、未公证（见上）。
-- 没有自动更新：侧栏页脚的版本号点开可以检查 GitHub 上有没有更新的构建，然后给出它的 Release 页。MiseDeck 不会自行下载或安装——macOS 装好后仍需重新执行一次 `xattr`。
+- 没有自动更新：即使存在更新的构建，面板也停在其 Release 页——需要你自己下载安装，且 macOS 装好后仍需重新执行一次 `xattr`。
 - 取消不会等待进程结束：面板立即把这次运行标记为 cancelled，随后 MiseDeck 终止该次运行的整个进程树（`curl | sh` 安装、`mise run` 的任务 shell）。退出应用时仍在运行的进程也会被清理。
-- Windows 为实验性支持（[#208](https://github.com/cherishfall/misedeck/issues/208)）；Linux 未验证。
+- Windows 为实验性支持：CI 会编译它并运行单元测试，但尚未在真机上运行（[#239](https://github.com/cherishfall/misedeck/issues/239)）；Linux 有安装包，但未在真实桌面上验证。
 - Linux 需要 **WebKitGTK 2.40 或更高**（Ubuntu 22.04+、Debian 12+、Fedora 38+）。整套配色由 `color-mix()` 派生，旧版 webview 不会优雅降级——边框和浮层面板会直接失去颜色。安装包以 Ubuntu 22.04 为构建基准，因此需要 glibc 2.35+。已实测的发行版：无。Ubuntu 24.04 是目标环境，不是已验证环境。
 - 没有 Intel macOS 构建；需要请从源码构建。
-- beta 阶段：界面文案与布局在版本之间可能变化。
 
 ## 截图
 
