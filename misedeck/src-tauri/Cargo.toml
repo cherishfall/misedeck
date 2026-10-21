@@ -3,6 +3,9 @@ name = "misedeck"
 version = "1.0.0-beta.16"
 description = "MiseDeck — a faithful GUI for mise"
 authors = ["cherishfall"]
+license = "MIT"
+repository = "https://github.com/cherishfall/misedeck"
+homepage = "https://github.com/cherishfall/misedeck#readme"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

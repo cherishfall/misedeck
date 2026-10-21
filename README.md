@@ -2,7 +2,7 @@
 
 > [简体中文](./zh-CN/README.md)
 
-**A desktop GUI for [mise](https://mise.jdx.dev), the polyglot tool version manager.** It is built from mise's own concepts, not an invented layer on top: each page mirrors a part of the CLI, and every change it makes runs a real `mise` command, shown verbatim — command, logs, exit code — in the execution panel.
+**A desktop GUI for [mise](https://mise.jdx.dev), the polyglot tool version manager.** It is built from mise's own concepts, not an invented layer on top: each page mirrors a part of the CLI, and every change it makes runs a real `mise` command, shown verbatim — command, logs, exit code — in the execution panel. MiseDeck is an independent community project, not affiliated with mise or its maintainer.
 
 > **Status: public beta, `v1.0.0-beta.16`** (15 builds since August 2026). 1.0 is not final; copy and layout still change between betas. macOS on Apple Silicon is the polished target; Linux is packaged but unverified; Windows is experimental.
 
