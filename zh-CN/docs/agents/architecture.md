@@ -31,6 +31,8 @@ React UI (src/)
 
 **Wire 形状漂移守卫**（issue #129）：每一个跨越 Tauri IPC 边界的 `*Result` 枚举都是 `{kind:"ok"|"err", …}` 判别联合，前端按其确切 JSON 形状做模式匹配。`src-tauri/tests/wire_shapes.rs` 断言每个变体的确切序列化形状；任何对边界枚举的 serde 属性或字段的修改都必须保持该测试通过，新增边界枚举时在同一笔提交里把它的变体补进该测试。绝不要对前端期望挂在自有键下的嵌套载荷使用 `#[serde(flatten)]` —— flatten 恰好曾把这个契约打破过一次。
 
+唯一的例外是 `AppUpdateResult`（beta17），它的判别键是 `status` 而非 `kind`：它的三种状态（`available` / `current` / `err`）是界面要分别渲染的东西，而不是"成功通道 + 错误侧通道"，把其中两种折进 `ok` 会抹掉真实区别。它的变体同样在 `wire_shapes.rs` 中被钉住，与其他边界枚举一致。
+
 ## Stack (prescribed — do not substitute)
 
 中等能力的模型将实现这些 ticket；每一个未事先规定的选择都是一次漂移的机会。在此钉住大版本；其余交给 lockfile。

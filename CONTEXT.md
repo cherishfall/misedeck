@@ -71,3 +71,11 @@ _Avoid_: remove, delete (at version level)
 **Orphan installation**:
 A Tool that is installed but requested by no Config file (e.g. from a manual CLI `mise install`). `mise ls` reports it as an unrequested item; in the GUI its row carries an orphan badge, and its versions are removed one by one in the version-management section — `mise uninstall --all` never enters the GUI (beta13 batch-operation ban, #189). UI copy: "Orphan" / 孤立安装.
 _Avoid_: stray, unused tool
+
+**App version**:
+The MiseDeck build's own version (`1.0.0-beta.16`), read from the Tauri context and shown in the sidebar footer. Distinct from a Tool version and from mise's own version — both of those belong to mise. In UI copy MiseDeck is always the subject when its own build is meant; the number never carries a bare "Version" caption.
+_Avoid_: build number, current release (unqualified)
+
+**Update check**:
+Asking GitHub whether a newer MiseDeck build exists, and stopping at a link to that build's Release page — MiseDeck never downloads or installs a build itself (ADR-0009). Manual, bounded at eight seconds, one sentence on failure. Unqualified "update" means mise's own update (`mise self-update`); a Tool's newer version is an "Upgrade".
+_Avoid_: auto-update, self-update (of MiseDeck)

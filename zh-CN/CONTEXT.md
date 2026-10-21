@@ -71,3 +71,11 @@ _Avoid_: remove, delete（版本级）
 **Orphan installation**（孤立安装）:
 已安装但没有任何 Config file 请求的 Tool（例如手动执行 CLI `mise install` 装上的）。`mise ls` 会将其报告为未请求项；GUI 中该行带有孤立安装徽标，其版本在「版本管理」区逐版本卸载——`mise uninstall --all` 不进入 GUI（beta13 批量禁令，#189）。UI 文案："Orphan" / 孤立安装。
 _Avoid_: stray, unused tool
+
+**App version**（应用版本）:
+MiseDeck 自身构建的版本号（`1.0.0-beta.16`），从 Tauri 上下文读取，显示在侧栏页脚。与 Tool 的版本、与 mise 自身的版本都不同——后两者归 mise。指的是应用自己的构建时，UI 文案一律以 MiseDeck 作主语；版本号永远不带裸的 "Version" 说明。
+_Avoid_: build number、当前发布（无限定语）
+
+**Update check**（更新检查）:
+向 GitHub 询问是否存在更新的 MiseDeck 构建，并止步于该构建 Release 页的链接——MiseDeck 从不自行下载或安装构建（ADR-0009）。手动触发，上限八秒，失败只说一句话。无限定语的 "update" 指 mise 自身的更新（`mise self-update`）；Tool 的更新版本叫 "Upgrade"。
+_Avoid_: auto-update、self-update（指 MiseDeck 时）

@@ -31,6 +31,8 @@ Prefer mise `--json` output mapped to typed structs at the runner boundary; the 
 
 **Wire-shape drift guard** (issue #129): every `*Result` enum crossing the Tauri IPC boundary is a `{kind:"ok"|"err", …}` discriminated union whose exact JSON the frontend pattern-matches on. `src-tauri/tests/wire_shapes.rs` asserts the exact serialized shape of each variant; any change to a boundary enum's serde attributes or fields must keep that test green, and a new boundary enum adds its variants there in the same commit. Never `#[serde(flatten)]` a nested payload the frontend expects under its own key — flattening broke exactly this contract once.
 
+The one exception is `AppUpdateResult` (beta17), tagged `status` instead of `kind`: its three states (`available` / `current` / `err`) are things the UI renders differently rather than a success channel with an error side-channel, so folding two of them into `ok` would hide a real distinction. Its variants are still pinned in `wire_shapes.rs` like every other boundary enum.
+
 ## Stack (prescribed — do not substitute)
 
 Mid-capability models implement these tickets; every unprescribed choice is a chance for drift. Pin majors here; lockfiles pin the rest.

@@ -111,6 +111,9 @@ One vocabulary, four variants (color/type semantics owned by `visual-language.md
 - Window chrome (title bar) follows the resolved theme; verify, because it is configured on the Rust side, not in CSS.
 - Light and dark are designed counterparts. A screen is done when it has been *seen* in both.
 - Refresh is a page-level capability owned by the top toolbar: one shared refresh button, wired to the page's registered refresh (invalidate everything the page fetched). Pages and sections never place their own refresh buttons (beta8).
+- App-level metadata lives in the sidebar footer's colophon line, never on a page: the running MiseDeck version — and the panel it opens — sits below language and theme. Pages describe mise; the footer describes the app. That layering is the disambiguator between two version numbers on screen (beta17).
+- The app version renders one type step below the `--size-data` every mise version uses, in `--ice`, and carries no "Version" caption — `labels.version` owns that word for mise. Its collapsed-rail form is a glyph button with the version in its tooltip, never a hidden line (ui-ux-rules.md:27).
+- Update vocabulary always names its subject: "Check for MiseDeck updates", "MiseDeck is up to date". Unqualified "update" is mise's (`mise self-update`); "upgrade" is a Tool's. The check is manual — nothing fires at launch — bounded at eight seconds, ends at the Release page, and a failure is one sentence plus a retry: never a modal, never an automatic retry, never a request that interrupts a running mise command (ADR-0009, beta17).
 
 ## Copy
 
