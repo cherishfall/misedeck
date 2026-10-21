@@ -408,6 +408,7 @@ export const I18N_KEYS = {
     source: {
       global: "preview.source.global",
       project: "preview.source.project",
+      parent: "preview.source.parent",
       tool: "preview.source.tool",
       toolDetail: "preview.source.toolDetail",
       default: "preview.source.default",
@@ -415,6 +416,7 @@ export const I18N_KEYS = {
     toolSource: {
       global: "preview.toolSource.global",
       project: "preview.toolSource.project",
+      parent: "preview.toolSource.parent",
     },
     env: {
       emptyTitle: "preview.env.emptyTitle",
@@ -453,6 +455,7 @@ export const I18N_KEYS = {
     source: {
       global: "env.source.global",
       project: "env.source.project",
+      parent: "env.source.parent",
       tool: "env.source.tool",
       toolDetail: "env.source.toolDetail",
       default: "env.source.default",

@@ -20,6 +20,7 @@ export function envSourceVariant(source: EnvSource): BadgeVariant {
     case "tool":
       return "info";
     case "global":
+    case "parent":
     case "default":
     default:
       return "default";

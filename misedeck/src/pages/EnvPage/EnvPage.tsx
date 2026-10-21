@@ -403,7 +403,7 @@ export function EnvPage() {
  * beta4 U1 decision still holds for that subset).
  */
 function isConfigSource(source: EnvSource): boolean {
-  return source === "project" || source === "global";
+  return source === "project" || source === "parent" || source === "global";
 }
 
 function EnvSourceCell({ row }: { row: EnvRow }) {

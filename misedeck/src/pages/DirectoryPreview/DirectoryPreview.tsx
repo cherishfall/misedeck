@@ -39,7 +39,7 @@ import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
 import { pickDirectory } from "../../directory/pickDirectory";
 import { detectMise, isAppError } from "../../api/mise";
-import { reconcileEnvSources, type EnvSource } from "../../api/miseTools";
+import { reconcileEnvSources, configScopeForPath, type ConfigScope, type EnvSource } from "../../api/miseTools";
 import type { ConfigFile } from "../../types/tauri";
 import {
   useConfigFiles,
@@ -48,7 +48,7 @@ import {
   useParsedToolsList,
   useLockfile,
 } from "../../hooks/useToolsList";
-import { isPathUnder } from "../../utils/paths";
+import { shortenPathTail } from "../../utils/paths";
 import { resolveAppErrorMessage } from "../../utils/appError";
 import { envSourceVariant } from "../../utils/envSource";
 import { readErrorBody } from "../../utils/readErrorBody";
@@ -74,12 +74,17 @@ interface ToolRow {
   id: string;
   tool: string;
   version: string;
-  /** "Global" or "Current directory" (i18n) — derived from `source.path`.
-   *  `undefined` when mise reports no config-file source (an orphan
-   *  installation): the cell renders a dim "—" instead of claiming a
-   *  scope mise never stated (issue #224) — the same conclusion the
-   *  Tools page draws for the same row. */
-  source: "global" | "project" | undefined;
+  /** Project / parent config / global (i18n) — derived from
+   *  `source.path` (issue #274). `undefined` when mise reports no
+   *  config-file source (an orphan installation): the cell renders a
+   *  dim "—" instead of claiming a scope mise never stated (issue
+   *  #224) — the same conclusion the Tools page draws for the same
+   *  row. */
+  source: ConfigScope | undefined;
+  /** The config file the row came from, named in the cell for a
+   *  parent config so "Parent directory" is not left unattributed
+   *  (issue #274). */
+  sourcePath?: string;
 }
 
 interface EnvRow {
@@ -92,39 +97,19 @@ interface EnvRow {
 
 // ---------- Helpers ----------
 
-/**
- * Classify a tool's config source: did the version come from the
- * global mise config, or from the project's mise.toml? We compare
- * `source.path` against the cwd: when the path is under the cwd, the
- * project is the source of truth; otherwise the global config (or
- * some other ancestor) is. Separator- and case-normalized via the
- * shared path util so Windows backslash paths classify correctly
- * (issue #159). A tool with no config-file source at all (an orphan
- * installation) has no honest answer here: `undefined` renders the
- * em-dash — never a fabricated "Global" (issue #224).
- */
-function toolSourceKind(
-  sourcePath: string | undefined,
-  cwd: string,
-): "global" | "project" | undefined {
-  if (!sourcePath) return undefined;
-  return isPathUnder(cwd, sourcePath) ? "project" : "global";
-}
-
 /** Map a tool's source category to the badge variant. */
-function toolSourceVariant(
-  source: "global" | "project" | undefined,
-): "default" | "info" {
+function toolSourceVariant(source: ConfigScope | undefined): "default" | "info" {
   return source === "project" ? "info" : "default";
 }
 
 /**
  * Only config-file-sourced rows are settable via `mise set`; tool and
  * host-inherited rows get the explanation Tooltip (same wording as the
- * Env page — issue #154).
+ * Env page — issue #154). A parent config is still a config file: its
+ * rows are settable, with the write-scope warning (issue #268).
  */
 function isConfigSource(source: EnvSource): boolean {
-  return source === "project" || source === "global";
+  return source === "project" || source === "parent" || source === "global";
 }
 
 // ---------- Page ----------
@@ -225,7 +210,8 @@ export function DirectoryPreview() {
         id: `${tool}@${active.version}`,
         tool,
         version: active.version,
-        source: toolSourceKind(srcPath, cwd),
+        source: configScopeForPath(srcPath, cwd),
+        sourcePath: srcPath,
       });
     }
     return out;
@@ -304,21 +290,38 @@ export function DirectoryPreview() {
     {
       key: "source",
       header: t(I18N_KEYS.preview.columns.source),
-      width: "120px",
+      // Wide enough for the badge plus a parent config's path line
+      // (issue #274); the tools table floor moves to 440px.
+      width: "160px",
+      minWidth: "100px",
       sortValue: (r) => r.source ?? "",
-      cell: (r) =>
+      cell: (r) => {
         // No config-file source — mise never said where this row came
         // from, so the cell claims nothing: a dim "—" (issue #224),
         // the same conclusion the Tools page shows for the row.
-        r.source === undefined ? (
-          <span className={styles.dim}>—</span>
-        ) : (
-          <Badge variant={toolSourceVariant(r.source)}>
-            {r.source === "project"
-              ? t(I18N_KEYS.preview.toolSource.project)
-              : t(I18N_KEYS.preview.toolSource.global)}
-          </Badge>
-        ),
+        if (r.source === undefined) return <span className={styles.dim}>—</span>;
+        const label =
+          r.source === "project"
+            ? t(I18N_KEYS.preview.toolSource.project)
+            : r.source === "parent"
+              ? t(I18N_KEYS.preview.toolSource.parent)
+              : t(I18N_KEYS.preview.toolSource.global);
+        return (
+          <span className={styles.sourceCell}>
+            <Badge variant={toolSourceVariant(r.source)}>{label}</Badge>
+            {/* A parent config is named by path, not just labelled —
+                "Parent directory" alone leaves which file unanswered
+                (issue #274). */}
+            {r.source === "parent" && r.sourcePath && (
+              <Tooltip text={r.sourcePath}>
+                <span className={styles.sourcePath}>
+                  {shortenPathTail(r.sourcePath, 24)}
+                </span>
+              </Tooltip>
+            )}
+          </span>
+        );
+      },
     },
   ];
 

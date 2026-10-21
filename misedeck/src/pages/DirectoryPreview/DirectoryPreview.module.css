@@ -67,9 +67,10 @@
 
 /* min-width = sum of declared column widths so narrow windows scroll
  * horizontally instead of crushing columns (issues #90, #103):
- * tools = 160 + 120 + 120; env = 240 + 160 + value column. */
+ * tools = 160 + 120 + 160 (parent path line, #274); env = 240 + 160 +
+ * value column. */
 .toolsTable {
-  min-width: 400px;
+  min-width: 440px;
 }
 
 .envTable {
@@ -140,6 +141,27 @@
  * source mise did not report (issue #224). */
 .dim {
   color: var(--dim);
+}
+
+/* Source badge with the parent config's path underneath (issue #274);
+ * the path head-elides and the tooltip carries it whole, the same
+ * pattern as the Env page. */
+.sourceCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.sourcePath {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--size-label);
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 /* ---------- Error / lockfile ---------- */

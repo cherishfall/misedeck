@@ -256,13 +256,15 @@
     "source": {
       "global": "全局",
       "project": "当前目录",
+      "parent": "上级目录",
       "tool": "工具",
       "toolDetail": "{{source}} · {{detail}}",
       "default": "继承"
     },
     "toolSource": {
       "global": "全局",
-      "project": "当前目录"
+      "project": "当前目录",
+      "parent": "上级目录"
     },
     "env": {
       "emptyTitle": "没有环境变量",
@@ -298,6 +300,7 @@
     "source": {
       "global": "全局",
       "project": "当前目录",
+      "parent": "上级目录",
       "tool": "工具",
       "toolDetail": "{{source}} · {{detail}}",
       "default": "继承"

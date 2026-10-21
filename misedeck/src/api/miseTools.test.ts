@@ -6,11 +6,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  configScopeForPath,
   isConfigFilesResult,
   isDoctorPayload,
   isEnvWriteScopeMismatch,
   miseRunTaskArgs,
   parseDoctorPayload,
+  parseEnvExtendedPayload,
   parseFailedError,
   parseInstalledPlugin,
   parseLsRemotePayload,
@@ -28,6 +30,7 @@ import {
   readSettingsPayload,
   readTasksLsPayload,
   readToolsLsPayload,
+  reconcileEnvSources,
   splitShellWords,
 } from "./miseTools";
 
@@ -437,4 +440,58 @@ test("isConfigFilesResult: accepts the documented ok/err union only", () => {
   assert.equal(isConfigFilesResult({ kind: "other" }), false);
   assert.equal(isConfigFilesResult(null), false);
   assert.equal(isConfigFilesResult([]), false);
+});
+
+// Issue #274: a config outside the active directory is a parent
+// config, not the global one; the global one is recognised by its
+// documented path wherever it sits.
+test("configScopeForPath: cwd, parent, and global configs classify apart", () => {
+  const cwd = "/Users/demo/project";
+  assert.equal(configScopeForPath("/Users/demo/project/mise.toml", cwd), "project");
+  assert.equal(configScopeForPath("/Users/demo/mise.toml", cwd), "parent");
+  assert.equal(
+    configScopeForPath("/Users/demo/.config/mise/config.toml", cwd),
+    "global",
+  );
+  // A global config can sit inside the directory tree; it is still
+  // global, never project.
+  assert.equal(
+    configScopeForPath("/Users/demo/project/.config/mise/config.toml", cwd),
+    "global",
+  );
+  assert.equal(configScopeForPath(undefined, cwd), undefined);
+});
+
+test("parseEnvExtendedPayload: Directory mode tags parent config rows as parent", () => {
+  const rows = parseEnvExtendedPayload(
+    {
+      FROM_PROJECT: { value: "1", source: "/Users/demo/project/mise.toml" },
+      FROM_PARENT: { value: "2", source: "/Users/demo/mise.toml" },
+      FROM_GLOBAL: {
+        value: "3",
+        source: "/Users/demo/.config/mise/config.toml",
+      },
+      FROM_TOOL: { value: "4", tool: "rust" },
+    },
+    "/Users/demo/project",
+  );
+  const byName = new Map(rows.map((r) => [r.name, r]));
+  assert.equal(byName.get("FROM_PROJECT")?.source, "project");
+  assert.equal(byName.get("FROM_PARENT")?.source, "parent");
+  assert.equal(byName.get("FROM_PARENT")?.sourcePath, "/Users/demo/mise.toml");
+  assert.equal(byName.get("FROM_GLOBAL")?.source, "global");
+  assert.equal(byName.get("FROM_TOOL")?.source, "tool");
+});
+
+test("reconcileEnvSources: a parent tag survives the global cross-check", () => {
+  const entries = [
+    {
+      name: "FROM_PARENT",
+      value: "2",
+      source: "parent" as const,
+      sourcePath: "/Users/demo/mise.toml",
+    },
+  ];
+  reconcileEnvSources(entries, []);
+  assert.equal(entries[0].source, "parent");
 });

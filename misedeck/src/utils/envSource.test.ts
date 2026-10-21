@@ -10,8 +10,8 @@ test("envSourceVariant: a config- or tool-provided source is info, never warning
   }
 });
 
-test("envSourceVariant: global and host-inherited sources stay neutral", () => {
-  for (const source of ["global", "default"] as EnvSource[]) {
+test("envSourceVariant: global, parent, and host-inherited sources stay neutral", () => {
+  for (const source of ["global", "parent", "default"] as EnvSource[]) {
     assert.equal(envSourceVariant(source), "default");
   }
 });

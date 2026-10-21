@@ -45,6 +45,7 @@ export function useParsedEnvList(): {
   error: JsonResult | null;
 } {
   const q = useEnvList();
+  const { cwd } = useDirectory();
   if (q.isPending) {
     return { isPending: true, data: null, error: null };
   }
@@ -54,7 +55,7 @@ export function useParsedEnvList(): {
   if (!q.data || q.data.kind === "err") {
     return { isPending: false, data: null, error: q.data ?? null };
   }
-  const parsed = readEnvExtendedPayload(q.data.value);
+  const parsed = readEnvExtendedPayload(q.data.value, cwd);
   return { isPending: false, data: parsed.data, error: parsed.error };
 }
 

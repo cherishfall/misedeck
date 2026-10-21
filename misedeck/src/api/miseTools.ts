@@ -175,10 +175,13 @@ export function parseLsRemotePayload(value: unknown): MiseLsRemoteItem[] {
  *      keys we always treat as project-set, e.g. `NODE_ENV`).
  *   * `global` — the var comes from the global config (every var
  *      that the global context also surfaces, with the same value).
+ *   * `parent` — the var comes from a config file outside the active
+ *      directory that is not the global config (an ancestor
+ *      `mise.toml`, issue #274).
  *   * `tool` — a tool-derived var like `JAVA_HOME` or `GOROOT`.
  *   * `default` — inherited from the host environment (e.g. `PATH`).
  */
-export type EnvSource = "global" | "project" | "tool" | "default";
+export type EnvSource = "global" | "project" | "parent" | "tool" | "default";
 
 export interface EnvEntry {
   /** The env var name. */
@@ -293,6 +296,28 @@ export function isGlobalConfigPath(path: string): boolean {
   return normalized.endsWith(".config/mise/config.toml") || normalized.endsWith("/mise/config.toml");
 }
 
+/** Where a config file sits relative to the active directory. */
+export type ConfigScope = "project" | "parent" | "global";
+
+/**
+ * Classify a config-file source path (issue #274): the global config
+ * is `global` regardless of its location; a file under the active
+ * directory is `project`; any other file is an ancestor/sibling
+ * config (`parent`) rather than being mislabelled global. With no
+ * active directory there is no parent to speak of, so non-global
+ * paths keep the old `project` tag (the Env page renders it as
+ * Global in that context).
+ */
+export function configScopeForPath(
+  sourcePath: string | undefined,
+  cwd: string | null,
+): ConfigScope | undefined {
+  if (!sourcePath) return undefined;
+  if (isGlobalConfigPath(sourcePath)) return "global";
+  if (cwd === null) return "project";
+  return isPathUnder(cwd, sourcePath) ? "project" : "parent";
+}
+
 /**
  * True when a config-sourced env row's sourcePath is outside the
  * current write scope (issues #182, #268). The write target is chosen
@@ -333,9 +358,14 @@ export function isEnvWriteScopeMismatch(sourcePath: string, cwd: string | null):
  * sourcePath is a pure injection, and pure injections stay read-only
  * (the beta4 U1 decision still holds for them). The tool name is
  * kept as `sourceDetail` on a config-sourced row so the badge can
- * render the combined「Current directory · rust」label.
+ * render the combined「Current directory · rust」label. In Directory
+ * mode a config outside the active directory is tagged `parent`
+ * (issue #274) instead of `project`.
  */
-export function parseEnvExtendedPayload(value: unknown): EnvEntry[] {
+export function parseEnvExtendedPayload(
+  value: unknown,
+  cwd: string | null = null,
+): EnvEntry[] {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return [];
   const obj = value as Record<string, unknown>;
   const out: EnvEntry[] = [];
@@ -368,7 +398,7 @@ export function parseEnvExtendedPayload(value: unknown): EnvEntry[] {
       source = "global";
       sourceDetail = sourceTool;
     } else if (sourcePath && sourcePath.length > 0) {
-      source = "project";
+      source = configScopeForPath(sourcePath, cwd) ?? "project";
       sourceDetail = sourceTool;
     } else if (sourceTool && sourceTool.length > 0) {
       source = "tool";
@@ -409,6 +439,12 @@ export function reconcileEnvSources(
     if (entry.source === "project") {
       // Keep the project tag. The convention already chose it for
       // anything that isn't tool-derived or default.
+      continue;
+    }
+    if (entry.source === "parent") {
+      // A parent-config source is already identified by path
+      // (issue #274); the global-vs-directory comparison can't
+      // improve on it.
       continue;
     }
     if (entry.source === "tool" || entry.source === "default") {
@@ -876,13 +912,15 @@ export function readEnvPayload(value: unknown) {
   );
 }
 
-/** `mise env --json-extended` is an object keyed by variable name. */
-export function readEnvExtendedPayload(value: unknown) {
+/** `mise env --json-extended` is an object keyed by variable name.
+ *  `cwd` lets a non-global source outside the active directory be
+ *  tagged `parent` instead of `project` (issue #274). */
+export function readEnvExtendedPayload(value: unknown, cwd: string | null = null) {
   return parseReadPayload(
     value,
     isJsonObject,
     "mise env --json-extended did not return an object keyed by variable",
-    parseEnvExtendedPayload,
+    (payload) => parseEnvExtendedPayload(payload, cwd),
   );
 }
 

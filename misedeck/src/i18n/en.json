@@ -256,13 +256,15 @@
     "source": {
       "global": "Global",
       "project": "Current directory",
+      "parent": "Parent directory",
       "tool": "Tool",
       "toolDetail": "{{source}} · {{detail}}",
       "default": "Inherited"
     },
     "toolSource": {
       "global": "Global",
-      "project": "Current directory"
+      "project": "Current directory",
+      "parent": "Parent directory"
     },
     "env": {
       "emptyTitle": "No env vars",
@@ -298,6 +300,7 @@
     "source": {
       "global": "Global",
       "project": "Current directory",
+      "parent": "Parent directory",
       "tool": "Tool",
       "toolDetail": "{{source}} · {{detail}}",
       "default": "Inherited"
