@@ -127,7 +127,7 @@ npm run tauri build
 ## 已知限制
 
 - macOS 构建未签名、未公证（见上）。
-- 没有自动更新：请下载新构建，装好后重新执行一次 `xattr`。
+- 没有自动更新：侧栏页脚的版本号点开可以检查 GitHub 上有没有更新的构建，然后给出它的 Release 页。MiseDeck 不会自行下载或安装——macOS 装好后仍需重新执行一次 `xattr`。
 - 取消不会等待进程结束：面板立即把这次运行标记为 cancelled，随后 MiseDeck 终止该次运行的整个进程树（`curl | sh` 安装、`mise run` 的任务 shell）。退出应用时仍在运行的进程也会被清理。
 - Windows 为实验性支持（[#208](https://github.com/cherishfall/misedeck/issues/208)）；Linux 未验证。
 - 没有 Intel macOS 构建；需要请从源码构建。

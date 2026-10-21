@@ -127,7 +127,7 @@ Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on ma
 ## Known limitations
 
 - macOS builds are unsigned and not notarized (see above).
-- No auto-update: download a new build, and re-apply the `xattr` fix afterwards.
+- No auto-update: the version in the sidebar footer opens a panel that checks GitHub for a newer build, then hands you its Release page. MiseDeck never downloads or installs it — and macOS needs the `xattr` fix re-applied afterwards.
 - Cancel does not wait for the process: the panel marks the run cancelled immediately and MiseDeck then kills the run's whole process tree (a `curl | sh` install, a `mise run` task shell). Closing the app kills anything still running.
 - Windows is experimental ([#208](https://github.com/cherishfall/misedeck/issues/208)); Linux is unverified.
 - No Intel macOS build; build from source if you need one.
