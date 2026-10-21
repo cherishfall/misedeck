@@ -6,7 +6,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { compareToolVersions, hasUpgradeTarget } from "./versions";
+import { compareToolVersions, hasUpgradeTarget, selectToolVersion } from "./versions";
 
 const desc = (versions: string[]): string[] =>
   [...versions].sort((a, b) => compareToolVersions(b, a));
@@ -83,6 +83,55 @@ test("hasUpgradeTarget: a missing or empty latest is not an update", () => {
   assert.equal(hasUpgradeTarget({ name: "node", current: "20.11.0", latest: "" }), false);
 });
 
-test("hasUpgradeTarget: a latest with no current still counts", () => {
-  assert.equal(hasUpgradeTarget({ name: "node", latest: "20.18.1" }), true);
+test("hasUpgradeTarget: a latest with no current is not an upgrade", () => {
+  // Requested-but-missing (`installed:false`, `current:null`): there is
+  // nothing installed to upgrade, and the row carries the not-installed
+  // badge instead (issue #269).
+  assert.equal(hasUpgradeTarget({ name: "node", latest: "20.18.1" }), false);
+  const rawNull = { name: "node", current: null, latest: "20.18.1" } as never;
+  assert.equal(hasUpgradeTarget(rawNull), false);
+});
+
+test("hasUpgradeTarget: a missing-request list never contributes an outdated count", () => {
+  const rows = [
+    { name: "node", current: null, latest: "22.0.0" } as never,
+    { name: "python", current: "3.13.2", latest: "3.13.3" },
+  ];
+  assert.equal(rows.filter(hasUpgradeTarget).length, 1);
+});
+
+// Row selection (issue #269): active → newest installed → missing request.
+// The real `mise ls` probe returns the missing request alongside an
+// installed version; picking `items[0]` showed the uninstalled version
+// as if it were in use.
+test("selectToolVersion: the active version wins", () => {
+  const picked = selectToolVersion([
+    { version: "22.0.0", installed: false, active: false },
+    { version: "20.19.0", installed: true, active: true },
+    { version: "21.7.0", installed: true, active: false },
+  ]);
+  assert.equal(picked?.item.version, "20.19.0");
+  assert.equal(picked?.missing, false);
+});
+
+test("selectToolVersion: without an active row the newest installed wins", () => {
+  const picked = selectToolVersion([
+    { version: "22.0.0", installed: false, active: false },
+    { version: "20.9.0", installed: true, active: false },
+    { version: "20.19.0", installed: true, active: false },
+  ]);
+  assert.equal(picked?.item.version, "20.19.0");
+  assert.equal(picked?.missing, false);
+});
+
+test("selectToolVersion: nothing installed surfaces the missing request", () => {
+  const picked = selectToolVersion([
+    { version: "22.0.0", requestedVersion: "22.0.0", installed: false, active: false },
+  ]);
+  assert.equal(picked?.item.version, "22.0.0");
+  assert.equal(picked?.missing, true);
+});
+
+test("selectToolVersion: an empty list selects nothing", () => {
+  assert.equal(selectToolVersion([]), null);
 });

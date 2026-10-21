@@ -111,6 +111,10 @@ interface AddToolSectionProps {
    *  and scrolls itself into view. The disclosure/search state stays
    *  internal — this is the one controlled input the page drives. */
   focusTool?: { tool: string; seq: number } | null;
+  /** Bumped by the toolbar Refresh (#269) after the page drops every
+   *  cached per-tool `ls-remote` entry: re-dispatch the selected
+   *  tool's upstream list instead of trusting the session cache. */
+  refreshTick?: number;
 }
 
 export function AddToolSection({
@@ -120,6 +124,7 @@ export function AddToolSection({
   onUnuse,
   onUpgrade,
   focusTool,
+  refreshTick = 0,
 }: AddToolSectionProps) {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
@@ -186,7 +191,8 @@ export function AddToolSection({
   // (ADR-0005). A failed read caches its `{kind:"err"}` result and
   // nothing retries it on its own (issue #172) — the retry button drops
   // the cached error and bumps `remoteRetryTick`, re-running this
-  // effect and dispatching the read again.
+  // effect and dispatching the read again. The page toolbar's Refresh
+  // drops every tool's entry and bumps `refreshTick` (issue #269).
   const [remoteRetryTick, setRemoteRetryTick] = useState(0);
   const remoteKey = useMemo(
     () => ["tools", "ls-remote", cwd, selectedTool ?? ""],
@@ -198,7 +204,15 @@ export function AddToolSection({
     void readIntoCache(remoteKey, cwd, ["ls-remote", "--json", selectedTool], {
       background: true,
     });
-  }, [remoteKey, cwd, selectedTool, queryClient, readIntoCache, remoteRetryTick]);
+  }, [
+    remoteKey,
+    cwd,
+    selectedTool,
+    queryClient,
+    readIntoCache,
+    remoteRetryTick,
+    refreshTick,
+  ]);
 
   const onRetryRemote = () => {
     // `type:"all"` — the query is still active (this component
@@ -718,7 +732,12 @@ export function AddToolSection({
                   empty={
                     <EmptyState
                       title={t(I18N_KEYS.tools.addTool.emptyInstalledTitle)}
-                      body={t(I18N_KEYS.tools.addTool.emptyInstalledBody, { tool: selectedTool })}
+                      body={t(
+                        activeRows.length > 0
+                          ? I18N_KEYS.tools.addTool.emptyInstalledBody
+                          : I18N_KEYS.tools.addTool.emptyInstalledBodyNoActive,
+                        { tool: selectedTool },
+                      )}
                     />
                   }
                 />

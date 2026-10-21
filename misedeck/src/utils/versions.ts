@@ -1,4 +1,4 @@
-import type { MiseOutdatedItem } from "../types/tauri";
+import type { MiseLsItem, MiseOutdatedItem } from "../types/tauri";
 
 /**
  * Directional compare for mise's date-based versions (e.g. 2026.9.2):
@@ -87,15 +87,51 @@ function toolVersionKey(v: string): ToolVersionKey {
 
 /**
  * True when a `mise outdated` row names a real upgrade target: a
- * non-empty `latest` that differs from the row's own `current`. mise can
+ * non-empty `latest` that differs from a non-empty `current`. mise can
  * report the same value for both — rust requested as `latest` reports
  * `current: "stable"` and `latest: "stable"` — and an upgrade hint whose
  * target equals the current version promises a change that cannot
- * happen (issue #224). This is the one predicate behind every upgrade
- * surface: the Tools table's Version-cell chip, the "N tools outdated"
- * count, and the version-management section's in-use hint all derive
- * from it, so they can never disagree.
+ * happen (issue #224). A requested-but-missing version also reports
+ * `current: null` (probe: `[tools] node = "22.0.0"` with another
+ * version installed) — there is nothing installed to upgrade, so the
+ * row must never count as outdated (issue #269). This is the one
+ * predicate behind every upgrade surface: the Tools table's Version-cell
+ * chip, the "N tools outdated" count, and the version-management
+ * section's in-use hint all derive from it, so they can never disagree.
  */
 export function hasUpgradeTarget(item: MiseOutdatedItem): boolean {
-  return item.latest !== undefined && item.latest !== "" && item.latest !== item.current;
+  // `current` may arrive as JSON null for a missing request; the parser
+  // turns it into `undefined`, and this guard keeps the raw shape safe
+  // too.
+  return (
+    typeof item.current === "string" &&
+    item.current !== "" &&
+    typeof item.latest === "string" &&
+    item.latest !== "" &&
+    item.latest !== item.current
+  );
+}
+
+/**
+ * The `mise ls --json` row the Tools table shows for one tool, plus
+ * whether the requested version is missing from disk (issue #269).
+ *
+ * Selection order: the active version; otherwise the newest installed
+ * version; only when nothing is installed does the requested-but-missing
+ * row appear — a row that must be labelled "not installed" rather than
+ * passed off as a working install.
+ */
+export interface ToolVersionSelection {
+  item: MiseLsItem;
+  missing: boolean;
+}
+
+export function selectToolVersion(items: MiseLsItem[]): ToolVersionSelection | null {
+  const active = items.find((it) => it.active);
+  const newestInstalled = items
+    .filter((it) => it.installed)
+    .sort((a, b) => compareToolVersions(b.version, a.version))[0];
+  const item = active ?? newestInstalled ?? items[0];
+  if (!item) return null;
+  return { item, missing: !item.installed && !item.active };
 }

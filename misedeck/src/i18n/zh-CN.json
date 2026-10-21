@@ -109,6 +109,7 @@
       "noVersion": "没有已安装的版本——请在下方「版本管理」中找到该工具并安装。"
     },
     "upgradeChip": "可升级 · {{latest}}",
+    "missingBadge": "未安装",
     "empty": {
       "title": "尚未安装任何工具",
       "body": "在下方「版本管理」中搜索并安装你的第一个工具。"
@@ -150,6 +151,7 @@
       "emptyInUse": "没有正在使用的版本。",
       "emptyInstalledTitle": "没有已安装版本",
       "emptyInstalledBody": "除在用版本外，mise ls {{tool}} 没有报告 {{tool}} 的其他已安装版本。",
+      "emptyInstalledBodyNoActive": "mise ls {{tool}} 没有报告 {{tool}} 的任何已安装版本。",
       "emptyAvailableTitle": "没有可安装版本",
       "emptyAvailableBody": "mise ls-remote {{tool}} 没有返回任何版本。"
     },

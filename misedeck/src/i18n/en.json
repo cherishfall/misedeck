@@ -109,6 +109,7 @@
       "noVersion": "No installed versions — find the tool in Manage versions below and install one."
     },
     "upgradeChip": "Upgrade available · {{latest}}",
+    "missingBadge": "Not installed",
     "empty": {
       "title": "No tools installed",
       "body": "Use the Manage versions search below to install your first tool."
@@ -150,6 +151,7 @@
       "emptyInUse": "No version is in use.",
       "emptyInstalledTitle": "No installed versions",
       "emptyInstalledBody": "mise ls {{tool}} reports no installed versions of {{tool}} besides the one in use.",
+      "emptyInstalledBodyNoActive": "mise ls {{tool}} reports no installed versions of {{tool}}.",
       "emptyAvailableTitle": "No available versions",
       "emptyAvailableBody": "mise ls-remote {{tool}} returned no versions."
     },

@@ -83,7 +83,7 @@ import {
 import { FloatingMenu } from "../../components/FloatingMenu";
 import tableStyles from "../../components/Table/Table.module.css";
 import { SOURCE_CELL_CHARS, shortenPathTail } from "../../utils/paths";
-import { hasUpgradeTarget } from "../../utils/versions";
+import { hasUpgradeTarget, selectToolVersion } from "../../utils/versions";
 import { stderrBodyKey } from "../../utils/stderrBody";
 import {
   confirmUseBodyKey,
@@ -124,6 +124,10 @@ interface ToolRow {
    *  carries the orphan badge and a dim "—" request. Tool-level removal
    *  stays in the version-management section's in-use rows (#189). */
   orphan: boolean;
+  /** True when the shown version is requested by the config but not
+   *  installed (issue #269) — the row carries a "not installed" badge
+   *  and can never be outdated. */
+  missing: boolean;
   /** Stable key. */
   id: string;
 }
@@ -202,6 +206,9 @@ export function ToolsPage() {
   // action; failures are unchanged — the panel still auto-opens.
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [successTick, setSuccessTick] = useState(0);
+  // Bumped by the toolbar refresh to invalidate the version-management
+  // section's per-tool `ls-remote` cache and re-dispatch it (#269).
+  const [remoteRefreshTick, setRemoteRefreshTick] = useState(0);
 
   // The Link form (`mise link`) is an advanced low-frequency flow, so it
   // lives in a collapsed "Advanced" section off the first screen
@@ -275,6 +282,16 @@ export function ToolsPage() {
     // too so the toolbar refresh covers every query this page fetches
     // (issue #181).
     void queryClient.invalidateQueries({ queryKey: ["registry", cwd] });
+    // Per-tool upstream lists are cached and dispatched by
+    // AddToolSection; drop every tool's entry for this directory and
+    // bump the token so the selected tool dispatches again — otherwise
+    // a newly released version stays invisible for the whole session
+    // (issue #269).
+    void queryClient.removeQueries({
+      queryKey: ["tools", "ls-remote", cwd],
+      type: "all",
+    });
+    setRemoteRefreshTick((n) => n + 1);
   }, [queryClient, cwd]);
   // Top-toolbar refresh (issue #98); the page keeps no local button.
   useRegisterPageRefresh(onRefresh);
@@ -332,10 +349,13 @@ export function ToolsPage() {
     const out: ToolRow[] = [];
     for (const { tool, items } of tools.data) {
       // Pick the active version when there is one; otherwise the
-      // most recent installed version. mise orders its items with
-      // the active row first when there is one.
-      const active = items.find((it) => it.active) ?? items[0];
-      if (!active) continue;
+      // most recent installed version. Only when nothing is installed
+      // does the requested-but-missing row appear, labelled honestly
+      // (issue #269) — `mise ls --json` lists the missing request even
+      // when another version is installed.
+      const picked = selectToolVersion(items);
+      if (!picked) continue;
+      const { item: active, missing } = picked;
       const outdatedEntry = outdatedByTool.get(tool);
       out.push({
         id: `${tool}@${active.version}`,
@@ -347,6 +367,7 @@ export function ToolsPage() {
         outdated: outdatedEntry !== undefined,
         latest: outdatedEntry?.latest ?? "",
         orphan: active.requestedVersion == null,
+        missing,
       });
     }
     return out;
@@ -474,10 +495,18 @@ export function ToolsPage() {
               )
             }
           />
-          {r.outdated && (
-            <Badge variant="warning" data-testid={`tools-upgrade-chip-${r.tool}`}>
-              {t(I18N_KEYS.tools.upgradeChip, { latest: r.latest })}
+          {r.missing ? (
+            /* Requested but never installed: no upgrade target exists,
+               and the row must not read as a working install (#269). */
+            <Badge variant="info" data-testid={`tools-missing-badge-${r.tool}`}>
+              {t(I18N_KEYS.tools.missingBadge)}
             </Badge>
+          ) : (
+            r.outdated && (
+              <Badge variant="warning" data-testid={`tools-upgrade-chip-${r.tool}`}>
+                {t(I18N_KEYS.tools.upgradeChip, { latest: r.latest })}
+              </Badge>
+            )
           )}
         </span>
       ),
@@ -654,6 +683,7 @@ export function ToolsPage() {
             never run-locked (issues #135 + #138). */}
         <AddToolSection
           focusTool={manageFocus}
+          refreshTick={remoteRefreshTick}
           onUse={(tool, version) => setPendingAction({ kind: "use", tool, version })}
           onInstall={(tool, version) => setPendingAction({ kind: "install", tool, version })}
           onUninstall={(tool, version, active) =>

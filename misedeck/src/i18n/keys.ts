@@ -227,6 +227,10 @@ export const I18N_KEYS = {
     /** The in-cell chip naming the newest version on an outdated row
      *  (#189): pure information, not a control. */
     upgradeChip: "tools.upgradeChip",
+    /** The in-cell badge on a requested-but-not-installed row (#269):
+     *  the row is real (`mise ls` reports the request) but has no
+     *  installed version behind it. */
+    missingBadge: "tools.missingBadge",
     empty: {
       title: "tools.empty.title",
       body: "tools.empty.body",
@@ -327,6 +331,9 @@ export const I18N_KEYS = {
       emptyInUse: "tools.addTool.emptyInUse",
       emptyInstalledTitle: "tools.addTool.emptyInstalledTitle",
       emptyInstalledBody: "tools.addTool.emptyInstalledBody",
+      /** Same section when nothing is in use at all — the default
+       *  body's "besides the one in use" would be false (#269). */
+      emptyInstalledBodyNoActive: "tools.addTool.emptyInstalledBodyNoActive",
       emptyAvailableTitle: "tools.addTool.emptyAvailableTitle",
       emptyAvailableBody: "tools.addTool.emptyAvailableBody",
     },
