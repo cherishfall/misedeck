@@ -37,9 +37,20 @@ use once_cell::sync::Lazy;
 
 /// `CREATE_NEW_PROCESS_GROUP` from `winbase.h`. `std::process::Command`
 /// does not expose it as a named constant, so the raw flag is spelled
-/// out here (the only Windows-specific literal in this module).
+/// out here (the only Windows-specific literals in this module).
 #[cfg(windows)]
 const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+
+/// `CREATE_NO_WINDOW` from `winbase.h` (issue #240).
+///
+/// The release binary is a GUI-subsystem process (`main.rs`), so it owns
+/// no console. A console program spawned from a console-less parent gets
+/// a **new console allocated by Windows, with a visible window** — which
+/// is why every `mise` invocation, the install script's `powershell` and
+/// the `pwsh --version` probe all flashed a black box on Windows.
+/// `CREATE_NO_WINDOW` gives the child a console the user cannot see.
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 struct Registry {
     /// pid → process group of every child this process spawned and has
@@ -102,9 +113,43 @@ fn detach_into_process_group(cmd: &mut Command) {
         // A new group is what lets `taskkill /T` (and a future
         // Ctrl-Break style cancel) treat the child's subtree as one
         // unit instead of inheriting the app's group.
-        cmd.creation_flags(CREATE_NEW_PROCESS_GROUP);
+        //
+        // Both flags in one call: `Command::creation_flags` **assigns**
+        // the flag word (it does not OR into it), so a second call would
+        // silently drop the first — the exact way the console window
+        // suppression was lost before issue #240.
+        cmd.creation_flags(child_creation_flags());
     }
 }
+
+/// The `CreateProcess` flag word every tracked child gets: its own
+/// process group (tree teardown) **and** no console window (issue #240).
+/// Named so a test can assert the combination — `creation_flags` takes
+/// the word whole, and there is no getter to read it back from a
+/// `Command`.
+#[cfg(windows)]
+fn child_creation_flags() -> u32 {
+    CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW
+}
+
+/// Hide the console window Windows allocates for a console program this
+/// GUI process spawns (issue #240). For the children `ChildGuard` owns,
+/// `detach_into_process_group` already sets the flag; this is for the
+/// spawns that deliberately stay in the app's group (presence probes,
+/// the update check's `curl`). No-op off Windows.
+///
+/// NOT for `shell::run_cmd_start`: the whole point of that spawn is to
+/// open a *visible* window, and suppressing the wrapper's console risks
+/// hiding the window `start` creates.
+#[cfg(windows)]
+pub(crate) fn hide_console_window(cmd: &mut Command) {
+    use std::os::windows::process::CommandExt;
+
+    cmd.creation_flags(CREATE_NO_WINDOW);
+}
+
+#[cfg(not(windows))]
+pub(crate) fn hide_console_window(_cmd: &mut Command) {}
 
 /// Force-kill one process group. Signal-only: it never reaps, so the
 /// owner of the `Child` handle stays responsible for `wait()`.
@@ -349,5 +394,24 @@ mod tests {
     fn alive(pid: i32) -> bool {
         // SAFETY: signal 0 only checks for existence/ownership.
         unsafe { libc::kill(pid, 0) == 0 }
+    }
+
+    /// Issue #240: both flags must reach `CreateProcess` together — the
+    /// process-group one for tree teardown, the no-window one so the GUI
+    /// process never flashes a console on the user's screen.
+    #[cfg(windows)]
+    #[test]
+    fn windows_spawn_flag_word_carries_group_and_no_window() {
+        assert_eq!(CREATE_NEW_PROCESS_GROUP, 0x0000_0200);
+        assert_eq!(CREATE_NO_WINDOW, 0x0800_0000);
+        assert_eq!(child_creation_flags(), 0x0800_0200);
+
+        // `creation_flags` assigns rather than ORs; two separate calls
+        // would leave only the last flag. Prove the single call still
+        // launches (the flag word is accepted by CreateProcess).
+        let mut cmd = Command::new("cmd.exe");
+        cmd.args(["/c", "exit", "0"]);
+        let mut guard = ChildGuard::spawn(&mut cmd, None).expect("spawn");
+        assert!(matches!(guard.try_wait(), Ok(Some(_))));
     }
 }

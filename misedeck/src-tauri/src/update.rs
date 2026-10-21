@@ -89,15 +89,20 @@ fn fetch_feed(current_version: &str) -> Result<String, AppError> {
     } else {
         "curl"
     };
-    let output = Command::new(program)
-        .arg("-fsSL")
+    let mut cmd = Command::new(program);
+    cmd.arg("-fsSL")
         .arg("--max-time")
         .arg(MAX_TIME_S)
         .arg("--connect-timeout")
         .arg(CONNECT_TIMEOUT_S)
         .arg("-A")
         .arg(format!("misedeck/{current_version}"))
-        .arg(RELEASES_FEED_URL)
+        .arg(RELEASES_FEED_URL);
+    // Windows: `curl.exe` is a console program and this is a GUI
+    // process — without the flag a console window flashes on every
+    // update check (issue #240).
+    crate::process_tree::hide_console_window(&mut cmd);
+    let output = cmd
         .output()
         .map_err(|err| {
             AppError::new(
