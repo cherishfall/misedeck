@@ -382,6 +382,10 @@
     "runFailedBadge": "失败",
     "editButton": "编辑",
     "openInEditorButton": "在编辑器中打开",
+    "editBlocked": {
+      "scope": "无法内联编辑：该任务定义在其他配置文件中，或来自文件任务。请使用「在编辑器中打开」。",
+      "lossy": "无法内联编辑：该任务包含表单无法重写的字段（aliases、dir、shell、sources、outputs、hide 等）。请使用「在编辑器中打开」。"
+    },
     "editForm": {
       "title": "编辑任务",
       "addTitle": "新建任务",

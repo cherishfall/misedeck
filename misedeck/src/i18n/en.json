@@ -382,6 +382,10 @@
     "runFailedBadge": "failed",
     "editButton": "Edit",
     "openInEditorButton": "Open in editor",
+    "editBlocked": {
+      "scope": "Inline edit is unavailable: this task is defined in another config or comes from a file task. Use Open in editor.",
+      "lossy": "Inline edit is unavailable: this task has fields the form cannot rewrite (aliases, dir, shell, sources, outputs, hide, …). Use Open in editor."
+    },
     "editForm": {
       "title": "Edit task",
       "addTitle": "New task",

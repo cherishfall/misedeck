@@ -421,16 +421,80 @@ function parseTask(value: unknown): MiseTask | null {
   const o = value as Record<string, unknown>;
   const name = asString(o.name);
   if (name === "") return null;
+  const source = asString(o.source);
+  const run = asStringArray(o.run);
+  const aliases = asStringArray(o.aliases);
+  const hide = asBoolean(o.hide, false);
+  const dir = asString(o.dir);
+  const tools = o.tools;
   return {
     name,
-    aliases: asStringArray(o.aliases),
+    aliases,
     description: asString(o.description),
-    run: asStringArray(o.run),
+    run,
     depends: asStringArray(o.depends),
-    source: asString(o.source),
-    dir: asString(o.dir),
-    hide: asBoolean(o.hide, false),
+    source,
+    dir,
+    hide,
+    fileTask: o.file !== null && o.file !== undefined && o.file !== "",
+    // `mise tasks add` replaces the whole [tasks.<name>] table, so a
+    // non-default value in any field the form does not write makes the
+    // inline save lossy. `dir` defaults to the config's directory.
+    roundTripsInline:
+      run.length > 0 &&
+      aliases.length === 0 &&
+      !hide &&
+      asStringArray(o.depends_post).length === 0 &&
+      asStringArray(o.wait_for).length === 0 &&
+      asStringArray(o.sources).length === 0 &&
+      asStringArray(o.outputs).length === 0 &&
+      asStringArray(o.env).length === 0 &&
+      asStringArray(o.daemons).length === 0 &&
+      asStringArray(o.secrets).length === 0 &&
+      asStringArray(o.args).length === 0 &&
+      asString(o.shell) === "" &&
+      !asBoolean(o.quiet, false) &&
+      !asBoolean(o.silent, false) &&
+      !asBoolean(o.raw, false) &&
+      !asBoolean(o.interactive, false) &&
+      (tools === null ||
+        tools === undefined ||
+        (typeof tools === "object" && Object.keys(tools).length === 0)) &&
+      (o.timeout === null || o.timeout === undefined) &&
+      asString(o.usage) === "" &&
+      (dir === "" || normalizeTaskPath(dir) === parentDir(source)),
   };
+}
+
+function normalizeTaskPath(path: string): string {
+  return path.replace(/\\/g, "/").replace(/\/+$/, "");
+}
+
+function parentDir(path: string): string {
+  const normalized = normalizeTaskPath(path);
+  const cut = normalized.lastIndexOf("/");
+  return cut > 0 ? normalized.slice(0, cut) : "";
+}
+
+export type TaskEditBlock = "scope" | "lossy" | null;
+
+/** Why inline Edit is unavailable for a task, or `null` when it is safe.
+ *  `mise tasks add` writes to the nearest project config and has no
+ *  `--global`, so editing a task from another config would create a
+ *  shadow copy; it also replaces the whole task table, so a task with
+ *  fields the form cannot write would lose them. */
+export function taskEditBlock(
+  task: MiseTask,
+  cwd: string | null,
+): TaskEditBlock {
+  if (cwd === null || task.fileTask) return "scope";
+  if (
+    task.source === "" ||
+    parentDir(task.source) !== normalizeTaskPath(cwd)
+  ) {
+    return "scope";
+  }
+  return task.roundTripsInline ? null : "lossy";
 }
 
 /** Parse the `mise tasks ls --json` payload (`[MiseTask]`). The

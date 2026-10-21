@@ -121,6 +121,12 @@ export interface MiseTask {
   dir: string;
   /** True when the task is marked `hide = true` in the TOML. */
   hide: boolean;
+  /** True for a file task (`mise-tasks/<name>`), false for a TOML task. */
+  fileTask: boolean;
+  /** True when every field visible in `mise tasks ls --json` can be
+   *  rewritten by the inline form. `run_windows` is absent from that
+   *  JSON, so it cannot be checked here. */
+  roundTripsInline: boolean;
 }
 
 /**

@@ -49,10 +49,12 @@ import { detectMise, isAppError } from "../../api/mise";
 import { useOwnRun } from "../../components/ExecutionPanel";
 import {
   miseRunTaskArgs,
+  taskEditBlock,
   taskRunDisplay,
   parseDependsInput,
   parseRunInput,
   splitShellWords,
+  type TaskEditBlock,
 } from "../../api/miseTools";
 import {
   Badge,
@@ -103,6 +105,8 @@ interface TaskRow {
   description: string;
   /** Names this task depends on. */
   depends: string[];
+  /** Why inline Edit is unavailable, or `null` when it is safe. */
+  editBlock: TaskEditBlock;
 }
 
 // ---------- Args builders (mirror the Rust helpers) ----------
@@ -458,8 +462,9 @@ export function TasksPage() {
       run: taskRunDisplay(t.run),
       description: t.description,
       depends: t.depends,
+      editBlock: taskEditBlock(t, cwd),
     }));
-  }, [tasks.data]);
+  }, [tasks.data, cwd]);
 
   // Text filter over the full row set (issue #106), shared with the
   // tools / env / settings tables via `useTableFilter`.
@@ -619,14 +624,42 @@ export function TasksPage() {
           >
             {t(I18N_KEYS.tasks.runButton)}
           </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => beginEdit(r.name)}
-            data-testid={`tasks-edit-${r.name}`}
-          >
-            {t(I18N_KEYS.tasks.editButton)}
-          </Button>
+          {(() => {
+            const block = r.editBlock;
+            if (block === null) {
+              return (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => beginEdit(r.name)}
+                  data-testid={`tasks-edit-${r.name}`}
+                >
+                  {t(I18N_KEYS.tasks.editButton)}
+                </Button>
+              );
+            }
+            return (
+              <Tooltip
+                focusable
+                text={t(
+                  block === "scope"
+                    ? I18N_KEYS.tasks.editBlocked.scope
+                    : I18N_KEYS.tasks.editBlocked.lossy,
+                )}
+              >
+                <span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled
+                    data-testid={`tasks-edit-${r.name}`}
+                  >
+                    {t(I18N_KEYS.tasks.editButton)}
+                  </Button>
+                </span>
+              </Tooltip>
+            );
+          })()}
           <Button
             variant="ghost"
             size="sm"
@@ -897,10 +930,11 @@ export function TasksPage() {
  * task renders the name read-only (v1 does not support renaming —
  * `mise tasks add` updates in place but the rename path is
  * non-trivial); creating leaves the name editable. Both modes
- * edit the run, depends, and description — the same fields
- * `mise tasks add` writes, so a save never silently drops a
- * field mise would otherwise wipe (the command replaces the
- * task's whole TOML table).
+ * edit the run, depends, and description. `mise tasks add` replaces
+ * the task's whole TOML table, so inline Edit is offered only when
+ * `taskEditBlock` proves the task is defined directly in the active
+ * directory and carries no field this form cannot write (issue #267);
+ * every other task stays on "Open in editor".
  *
  * The run field is a `<textarea>` edited one command per line.
  * Enter inserts a newline there instead of submitting (issue

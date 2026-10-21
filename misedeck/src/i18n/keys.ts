@@ -543,6 +543,10 @@ export const I18N_KEYS = {
     runFailedBadge: "tasks.runFailedBadge",
     editButton: "tasks.editButton",
     openInEditorButton: "tasks.openInEditorButton",
+    editBlocked: {
+      scope: "tasks.editBlocked.scope",
+      lossy: "tasks.editBlocked.lossy",
+    },
     editForm: {
       title: "tasks.editForm.title",
       addTitle: "tasks.editForm.addTitle",

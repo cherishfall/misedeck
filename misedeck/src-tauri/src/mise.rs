@@ -1834,7 +1834,10 @@ pub fn mise_run_task_argv(name: &str) -> Vec<String> {
 /// TOML table, so an argv without `-- <run>` drops the existing
 /// `run` key (and any field the argv does not name). Callers
 /// editing an existing task must always pass `run_tokens` and
-/// every other field the task has.
+/// every other field the task has; the Tasks page only offers
+/// inline edit when `taskEditBlock` proves the form can round-trip
+/// every field it can see, and leaves the rest to `mise tasks edit`
+/// (issue #267).
 ///
 /// `depends` is appended as a sequence of `--depends <name>` pairs;
 /// the `description` flag is appended when present. Both are
