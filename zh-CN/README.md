@@ -122,7 +122,7 @@ npm run tauri build
 
 产物在 `src-tauri/target/release/bundle/`——macOS 是 `dmg/` 与 `macos/`，Windows 是 `nsis/`，Linux 是 `deb/`、`rpm/`、`appimage/`。macOS 构建和正式发布的一样，都是未签名的。
 
-`npm run ci` 跑的就是 CI 那一套：类型检查、测试、i18n/CSS 的 lint 守卫，以及生产前端构建。
+`npm run ci` 在本地跑的就是 CI 的前端任务：类型检查、测试、i18n/CSS 的 lint 守卫，以及生产前端构建。Rust 任务是另一套——Linux 上跑 `cargo check --all-targets` 与 `cargo test --all-targets`，Windows 上跑 `cargo test --lib` 与 `cargo build` 编译冒烟。
 
 ## 已知限制
 
@@ -138,14 +138,14 @@ npm run tauri build
 
 | English | 简体中文 |
 | --- | --- |
-| ![首页](../docs/screenshots/home-en.png) | ![首页](../docs/screenshots/home-zh-CN.png) |
-| ![概览](../docs/screenshots/preview-en.png) | ![概览](../docs/screenshots/preview-zh-CN.png) |
-| ![工具](../docs/screenshots/tools-en.png) | ![工具](../docs/screenshots/tools-zh-CN.png) |
-| ![环境变量](../docs/screenshots/env-en.png) | ![环境变量](../docs/screenshots/env-zh-CN.png) |
-| ![任务](../docs/screenshots/tasks-en.png) | ![任务](../docs/screenshots/tasks-zh-CN.png) |
-| ![插件](../docs/screenshots/plugins-en.png) | ![插件](../docs/screenshots/plugins-zh-CN.png) |
-| ![诊断](../docs/screenshots/doctor-en.png) | ![诊断](../docs/screenshots/doctor-zh-CN.png) |
-| ![设置](../docs/screenshots/settings-en.png) | ![设置](../docs/screenshots/settings-zh-CN.png) |
+| ![Home](../docs/screenshots/home-en.png) | ![首页](../docs/screenshots/home-zh-CN.png) |
+| ![Overview](../docs/screenshots/preview-en.png) | ![概览](../docs/screenshots/preview-zh-CN.png) |
+| ![Tools](../docs/screenshots/tools-en.png) | ![工具](../docs/screenshots/tools-zh-CN.png) |
+| ![Env](../docs/screenshots/env-en.png) | ![环境变量](../docs/screenshots/env-zh-CN.png) |
+| ![Tasks](../docs/screenshots/tasks-en.png) | ![任务](../docs/screenshots/tasks-zh-CN.png) |
+| ![Plugins](../docs/screenshots/plugins-en.png) | ![插件](../docs/screenshots/plugins-zh-CN.png) |
+| ![Doctor](../docs/screenshots/doctor-en.png) | ![诊断](../docs/screenshots/doctor-zh-CN.png) |
+| ![Settings](../docs/screenshots/settings-en.png) | ![设置](../docs/screenshots/settings-zh-CN.png) |
 
 ## 参与贡献
 

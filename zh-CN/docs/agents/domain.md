@@ -19,7 +19,8 @@
 │   ├── 0005-execution-panel-is-the-single-runner-for-reads-too.md
 │   ├── 0006-split-panel-chrome-elevated-roles.md
 │   ├── 0007-gui-layer-affordances-are-orthogonal.md
-│   └── 0008-tool-removal-is-unuse-not-uninstall.md
+│   ├── 0008-tool-removal-is-unuse-not-uninstall.md
+│   └── 0009-app-update-check-is-manual-and-ends-at-the-release-page.md
 └── src/
 ```
 

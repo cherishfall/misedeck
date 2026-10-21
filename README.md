@@ -122,7 +122,7 @@ npm run tauri build
 
 Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on macOS, `nsis/` on Windows, `deb/`, `rpm/`, `appimage/` on Linux. macOS builds come out unsigned, exactly like the released ones.
 
-`npm run ci` runs what CI runs: typecheck, tests, the i18n/CSS lint guards, and a production frontend build.
+`npm run ci` runs CI's frontend job locally: typecheck, tests, the i18n/CSS lint guards, and a production frontend build. The Rust job is separate — `cargo check --all-targets` and `cargo test --all-targets` on Linux, plus a `cargo test --lib` + `cargo build` smoke on Windows.
 
 ## Known limitations
 

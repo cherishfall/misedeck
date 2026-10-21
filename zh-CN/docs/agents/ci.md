@@ -1,6 +1,6 @@
 # 持续集成（CI）
 
-> [English](../../docs/agents/ci.md)
+> [English](../../../docs/agents/ci.md)
 
 本仓库在 `.github/workflows/` 下运行两个 GitHub Actions workflow。本页说明
 它们各自的职责、触发时机，以及维护者如何发版。

@@ -1,6 +1,6 @@
 # 视觉语言
 
-> [English](../../docs/design/visual-language.md)
+> [English](../../../docs/design/visual-language.md)
 
 MiseDeck 界面的设计系统基础。在 issue #37 中重写：首个设计冲刺（#33）的黑客 HUD 美学被废弃，视觉语言改为**派生自 [mise.jdx.dev](https://mise.jdx.dev)** —— MiseDeck 在浅色与深色两个主题下都读作 mise 家族的一员（product-logic 策略 6「视觉继承」）。实现为 `misedeck/src/tokens.css` 中的 token；所有 UI 工单的颜色、字体、动效都从这里推导——不允许临时发明。
 

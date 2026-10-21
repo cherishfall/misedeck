@@ -1,6 +1,6 @@
 # 将 `--panel` 拆分为框架色（侧边栏 / 工具栏 / 执行面板）与抬升表面（弹层 / 对话框 / 横幅 / 面板）两种角色
 
-> [English](../../docs/adr/0006-split-panel-chrome-elevated-roles.md)
+> [English](../../../docs/adr/0006-split-panel-chrome-elevated-roles.md)
 
 在 issue #78 中，三个框架面板——侧边栏、顶工具栏、执行面板——共用同一种扁平表面色（`--hull`），在浅色下显得寡淡、在深色下缺乏层级。修复方案引入了三层*框架*层级（`--hull` → 侧边栏、`--hull-soft` → 工具栏、`--hull-deep` → 执行面板），按角色对位映射自 mise.jdx.dev 的调色板，并把 `--panel` 从 `--hull` 解耦，使抬升表面获得自己的暖色值。本 ADR 记录塑造这次 token 拆分的三个决策，因为每个都难以回退、脱离上下文会令人困惑、且带有真实的取舍。
 

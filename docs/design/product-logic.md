@@ -1,6 +1,6 @@
 # MiseDeck — Product Logic
 
-> [简体中文](../../../zh-CN/docs/design/product-logic.md)
+> [简体中文](../../zh-CN/docs/design/product-logic.md)
 
 Status: ratified by product owner (beta.3 feedback round, 2026-09). This document is the single source of truth for **what the product shows and how it behaves**. Visual styling lives in `docs/design/visual-language.md`; domain vocabulary in `CONTEXT.md`; the three product principles in `AGENTS.md`.
 
