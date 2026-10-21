@@ -30,7 +30,14 @@ jobs:
       # is visible in the same run, not hidden behind a cancelled matrix.
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        # ubuntu-22.04, not ubuntu-latest (issue #247): the Linux binary
+        # links the build host's glibc, so building on 24.04 (glibc 2.39)
+        # produced packages that refuse to start on Ubuntu 22.04 (2.35) and
+        # Debian 12 (2.36) with "GLIBC_2.39 not found". 22.04 is the
+        # oldest LTS with libwebkit2gtk-4.1, and it is Tauri's documented
+        # Linux build baseline. `ci.yml` keeps ubuntu-latest — that job is
+        # about checking against current dependencies, not portability.
+        os: [macos-latest, windows-latest, ubuntu-22.04]
         # Per-platform bundle subset — the Tauri 2 defaults that the
         # host runner can actually produce. The frontend bundle and the
         # Rust binary are always built; this only controls the installers.
@@ -39,7 +46,7 @@ jobs:
             bundles: app,dmg
           - os: windows-latest
             bundles: nsis
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             bundles: deb,rpm,appimage
 
     steps:
@@ -69,7 +76,7 @@ jobs:
           cache-dependency-path: misedeck/package-lock.json
 
       - name: Install Linux system dependencies
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \

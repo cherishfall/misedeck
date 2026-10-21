@@ -130,6 +130,7 @@ npm run tauri build
 - 没有自动更新：侧栏页脚的版本号点开可以检查 GitHub 上有没有更新的构建，然后给出它的 Release 页。MiseDeck 不会自行下载或安装——macOS 装好后仍需重新执行一次 `xattr`。
 - 取消不会等待进程结束：面板立即把这次运行标记为 cancelled，随后 MiseDeck 终止该次运行的整个进程树（`curl | sh` 安装、`mise run` 的任务 shell）。退出应用时仍在运行的进程也会被清理。
 - Windows 为实验性支持（[#208](https://github.com/cherishfall/misedeck/issues/208)）；Linux 未验证。
+- Linux 需要 **WebKitGTK 2.40 或更高**（Ubuntu 22.04+、Debian 12+、Fedora 38+）。整套配色由 `color-mix()` 派生，旧版 webview 不会优雅降级——边框和浮层面板会直接失去颜色。安装包以 Ubuntu 22.04 为构建基准，因此需要 glibc 2.35+。已实测的发行版：无。Ubuntu 24.04 是目标环境，不是已验证环境。
 - 没有 Intel macOS 构建；需要请从源码构建。
 - beta 阶段：界面文案与布局在版本之间可能变化。
 

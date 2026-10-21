@@ -130,6 +130,7 @@ Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on ma
 - No auto-update: the version in the sidebar footer opens a panel that checks GitHub for a newer build, then hands you its Release page. MiseDeck never downloads or installs it — and macOS needs the `xattr` fix re-applied afterwards.
 - Cancel does not wait for the process: the panel marks the run cancelled immediately and MiseDeck then kills the run's whole process tree (a `curl | sh` install, a `mise run` task shell). Closing the app kills anything still running.
 - Windows is experimental ([#208](https://github.com/cherishfall/misedeck/issues/208)); Linux is unverified.
+- Linux needs **WebKitGTK 2.40 or newer** (Ubuntu 22.04+, Debian 12+, Fedora 38+). The whole palette is derived with `color-mix()`, so an older webview does not degrade gracefully — borders and elevated surfaces lose their colours. Packages are built against Ubuntu 22.04, so they run on any distro with glibc 2.35+. Verified on: none. Ubuntu 24.04 is the target, not a tested environment.
 - No Intel macOS build; build from source if you need one.
 - Beta: UI copy and layout can change between releases.
 
