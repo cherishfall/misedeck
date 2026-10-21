@@ -236,6 +236,10 @@ export function SettingsPage() {
     {
       key: "value",
       header: t(I18N_KEYS.settings.columns.value),
+      // Declared width (issue #271): fixed layout gave an undeclared
+      // column the leftover space — zero at 900×600, hiding every value.
+      width: "200px",
+      minWidth: "140px",
       sortValue: (r) => formatValue(r.value),
       cell: (r) => (
         <Tooltip text={formatValue(r.value)}>

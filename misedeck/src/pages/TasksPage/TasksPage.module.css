@@ -58,11 +58,14 @@
   max-width: 70ch;
 }
 
-/* min-width = sum of declared column widths (200 name + 260 run + 180
- * depends + 200 actions): narrow windows scroll horizontally instead of
- * crushing columns (issues #90, #103). */
+/* min-width = sum of declared column widths (168 name + 200 run + 140
+ * description + 165 depends + 248 actions): narrow windows scroll
+ * horizontally instead of crushing a column (issues #90, #103, #271).
+ * Every column declares a width so fixed layout never hands one zero
+ * space; the floor stays inside the 921px content column (page-layout
+ * guard). */
 .tasksTable {
-  min-width: 840px;
+  min-width: 921px;
 }
 
 .toolbar {

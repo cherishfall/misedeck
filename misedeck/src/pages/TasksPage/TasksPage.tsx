@@ -544,6 +544,11 @@ export function TasksPage() {
   const descriptionColumn: TableColumn<TaskRow> = {
     key: "description",
     header: t(I18N_KEYS.tasks.columns.description),
+    // Declared width (issue #271): with no width, fixed layout gives this
+    // column whatever is left — zero once the others fill the floor, so
+    // at 900×600 the header and body collapsed to 0 px.
+    width: "140px",
+    minWidth: "120px",
     sortValue: (r) => r.description ?? "",
     cell: (r) =>
       r.description ? (
@@ -558,7 +563,7 @@ export function TasksPage() {
     {
       key: "name",
       header: t(I18N_KEYS.tasks.columns.name),
-      width: "200px",
+      width: "168px",
       minWidth: "140px",
       sortValue: (r) => r.name,
       cell: (r) => (
@@ -575,8 +580,8 @@ export function TasksPage() {
     {
       key: "run",
       header: t(I18N_KEYS.tasks.columns.run),
-      width: "260px",
-      minWidth: "180px",
+      width: "200px",
+      minWidth: "160px",
       sortValue: (r) => r.run ?? "",
       cell: (r) =>
         r.run ? (
@@ -593,7 +598,8 @@ export function TasksPage() {
     {
       key: "depends",
       header: t(I18N_KEYS.tasks.columns.depends),
-      width: "180px",
+      width: "165px",
+      minWidth: "120px",
       sortValue: (r) => r.depends.join(", "),
       cell: (r) =>
         r.depends.length > 0 ? (
@@ -611,7 +617,10 @@ export function TasksPage() {
     {
       key: "actions",
       header: t(I18N_KEYS.tasks.columns.actions),
-      width: "200px",
+      // Wide enough for Run + Edit + Open in editor without clipping
+      // (issue #271): 220px of buttons + 24px cell padding + slack.
+      width: "248px",
+      minWidth: "248px",
       cell: (r) => (
         <span className={styles.cellActions}>
           <Button
