@@ -20,7 +20,9 @@
    * search: "Search tools, backends, aliases…"); a cut-off placeholder
    * is a bug. */
   width: 260px;
-  transition: border-color var(--motion-state-change) ease;
+  transition:
+    border-color var(--motion-state-change) ease,
+    box-shadow var(--motion-state-change) ease;
 }
 
 .input::placeholder {
@@ -31,9 +33,12 @@
   border-color: var(--line-strong);
 }
 
-.input:focus {
+/* Shared focus recipe (issue #257): a 1px line-strong border alone left
+ * the filter materially quieter than every other focus target. */
+.input:focus-visible {
   outline: none;
-  border-color: var(--line-strong);
+  border-color: var(--beam);
+  box-shadow: var(--ring);
 }
 
 .clear {

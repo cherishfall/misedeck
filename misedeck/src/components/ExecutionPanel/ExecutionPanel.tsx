@@ -13,7 +13,13 @@
 // panel itself is presentational. The command echo itself lives in
 // `commandEcho.ts` (pure, unit-tested; issue #191).
 
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
@@ -35,6 +41,12 @@ const PANEL_HEIGHT_KEY = "misedeck.panelHeight.v1";
 const DEFAULT_PANEL_HEIGHT = 240;
 const MIN_PANEL_HEIGHT = 120;
 const MAX_PANEL_HEIGHT = 600;
+/** Keyboard resize step — one text line at the panel's data size. */
+const RESIZE_STEP = 16;
+
+function clampPanelHeight(px: number): number {
+  return Math.round(Math.min(MAX_PANEL_HEIGHT, Math.max(MIN_PANEL_HEIGHT, px)));
+}
 
 /** Map a run's status to the status-dot tone used by the run switcher. */
 function runTone(status: ExecutionStatus): "beam" | "ok" | "fail" | "dim" {
@@ -69,7 +81,7 @@ export function ExecutionPanel() {
   // stored value clamps into bounds.
   const [storedHeight, setStoredHeight] = usePersistentState(PANEL_HEIGHT_KEY, DEFAULT_PANEL_HEIGHT);
   const panelHeight = Number.isFinite(storedHeight)
-    ? Math.min(MAX_PANEL_HEIGHT, Math.max(MIN_PANEL_HEIGHT, storedHeight))
+    ? clampPanelHeight(storedHeight)
     : DEFAULT_PANEL_HEIGHT;
 
   // Drag the panel's top edge to resize: moving up grows the log. Same
@@ -78,12 +90,10 @@ export function ExecutionPanel() {
     e.preventDefault();
     const startY = e.clientY;
     const startHeight = panelHeight;
-    const clamp = (px: number) =>
-      Math.round(Math.min(MAX_PANEL_HEIGHT, Math.max(MIN_PANEL_HEIGHT, px)));
     const previousUserSelect = document.body.style.userSelect;
     document.body.style.userSelect = "none";
     const onMove = (ev: PointerEvent) => {
-      const next = clamp(startHeight + (startY - ev.clientY));
+      const next = clampPanelHeight(startHeight + (startY - ev.clientY));
       setStoredHeight((prev) => (prev === next ? prev : next));
     };
     // `pointercancel` ends the gesture without a `pointerup` (the OS or
@@ -98,6 +108,16 @@ export function ExecutionPanel() {
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onEnd);
     window.addEventListener("pointercancel", onEnd);
+  };
+
+  // Keyboard path for the same handle (issue #257): the separator takes
+  // focus and ArrowUp / ArrowDown resize by the same clamped step the
+  // pointer uses. Without this the control was pointer-only.
+  const onHandleKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    e.preventDefault();
+    const delta = e.key === "ArrowUp" ? RESIZE_STEP : -RESIZE_STEP;
+    setStoredHeight(clampPanelHeight(panelHeight + delta));
   };
 
   // A run switch is a fresh transcript (issue #209): re-arm the
@@ -161,16 +181,32 @@ export function ExecutionPanel() {
 
   return (
     <div className={styles.deck}>
+      {/* A focusable window splitter (issue #257): pointer drag plus
+          ArrowUp / ArrowDown, with the current log height exposed through
+          aria-valuenow. It is no longer aria-hidden — a control with no
+          keyboard path is not an acceptable "decorative" element. */}
       <div
         className={styles.heightHandle}
-        aria-hidden="true"
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label={t(I18N_KEYS.execution.resizeHandle)}
+        aria-valuenow={panelHeight}
+        aria-valuemin={MIN_PANEL_HEIGHT}
+        aria-valuemax={MAX_PANEL_HEIGHT}
+        tabIndex={0}
         onPointerDown={beginHeightResize}
+        onKeyDown={onHandleKeyDown}
       />
       <div className={styles.deckInner}>
         {showSwitcher && (
+          // Run selection is a button group, not a tablist (issue #257):
+          // the row also holds per-run close buttons and Clear, so the
+          // tabs pattern (roving tabindex, arrow keys, aria-controls →
+          // tabpanel) cannot describe it honestly. aria-pressed matches
+          // the actual click-to-switch behaviour.
           <div
             className={styles.switcher}
-            role="tablist"
+            role="group"
             aria-label={t(I18N_KEYS.execution.title)}
           >
             <span className={styles.switcherCount}>
@@ -185,10 +221,9 @@ export function ExecutionPanel() {
                 <span key={r.id} className={styles.runChipWrap}>
                   <button
                     type="button"
-                    role="tab"
                     className={styles.runChip}
                     data-active={r.id === activeRunId}
-                    aria-selected={r.id === activeRunId}
+                    aria-pressed={r.id === activeRunId}
                     onClick={() => selectRun(r.id)}
                     title={echo}
                     data-testid="execution-run-chip"

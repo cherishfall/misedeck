@@ -11,25 +11,42 @@
 // Reducer-based state (the execution panel's `isOpen`) reuses the
 // exported load/save pair directly so every persisted value shares one
 // serialization contract.
+//
+// The theme and language keys predate JSON persistence and stay raw
+// strings (`light`, `en`): `index.html`'s pre-paint script and
+// i18next's language detector read them without going through this
+// module. Both call sites pass an identity codec, so the guarded read
+// and write still cover them (issue #257 — a throwing localStorage at
+// boot must not blank the window).
 
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 
 /** Read a persisted value, falling back to `initial` on a missing key,
- *  corrupt JSON, or a denied storage. */
-export function loadPersistent<T>(key: string, initial: T): T {
+ *  a decode failure, or a denied storage. `parse` overrides the default
+ *  JSON decoding for keys whose on-disk format is a raw string. */
+export function loadPersistent<T>(
+  key: string,
+  initial: T,
+  parse: (raw: string) => T = (raw) => JSON.parse(raw) as T,
+): T {
   try {
     const raw = localStorage.getItem(key);
     if (raw === null) return initial;
-    return JSON.parse(raw) as T;
+    return parse(raw);
   } catch {
     return initial;
   }
 }
 
-/** Write a persisted value; failures are swallowed (quota, private mode). */
-export function savePersistent<T>(key: string, value: T): void {
+/** Write a persisted value; failures are swallowed (quota, private mode).
+ *  `stringify` overrides the default JSON encoding for raw-string keys. */
+export function savePersistent<T>(
+  key: string,
+  value: T,
+  stringify: (value: T) => string = (value) => JSON.stringify(value),
+): void {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    localStorage.setItem(key, stringify(value));
   } catch {
     // Persistence is best-effort; the in-memory state stays authoritative.
   }

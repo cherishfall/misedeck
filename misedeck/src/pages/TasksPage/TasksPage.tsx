@@ -949,7 +949,7 @@ function TaskForm({
           // Tooltip says why — the same disabled-control-plus-Tooltip
           // language as the version-management section's in-use row
           // (beta11 2-f).
-          <Tooltip text={t(I18N_KEYS.tasks.editForm.runReadonlyTooltip)}>
+          <Tooltip text={t(I18N_KEYS.tasks.editForm.runReadonlyTooltip)} focusable>
             <textarea
               id={runId}
               name="run"

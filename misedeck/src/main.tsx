@@ -77,6 +77,12 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                         <Route path="/settings" element={<SettingsPage />} />
                         <Route path="/doctor" element={<DoctorPage />} />
                         <Route path="/plugins" element={<PluginsPage />} />
+                        {/* Unknown paths fall back to Home (issue #257):
+                            React Router renders null for an unmatched
+                            location, which leaves a chrome-less window with
+                            no way back — reachable through a stray
+                            `window.open` or a webview reload at a deep path. */}
+                        <Route path="*" element={<Navigate to="/" replace />} />
                       </Routes>
                     </RoutedErrorBoundary>
                   </PageRefreshProvider>

@@ -21,6 +21,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "./keys";
+import { loadPersistent, savePersistent } from "../hooks/usePersistentState";
 
 /** The two languages MiseDeck ships with. Keep in sync with `supportedLngs`. */
 export const SUPPORTED_LANGUAGES = ["en", "zh-CN"] as const;
@@ -59,9 +60,12 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     // (which may be set by a previous session); otherwise "en".
     const detected = i18n.resolvedLanguage ?? i18n.language ?? "";
     if (isSupportedLanguage(detected)) return detected;
-    const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (isSupportedLanguage(stored)) return stored;
-    return "en";
+    // Guarded read (issue #257): the key stays a raw string because
+    // i18next's detector reads it directly, but a throwing localStorage
+    // must not take the provider — and the whole window — down.
+    return loadPersistent<SupportedLanguage>(LANGUAGE_STORAGE_KEY, "en", (raw) =>
+      isSupportedLanguage(raw) ? raw : "en",
+    );
   });
 
   // Keep our state in sync with i18next if anything else changes the language
@@ -80,7 +84,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 
   const setLanguage = useCallback(
     (next: SupportedLanguage) => {
-      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, next);
+      savePersistent(LANGUAGE_STORAGE_KEY, next, (value) => value);
       void i18n.changeLanguage(next);
       // `languageChanged` will also fire, which sets state — but updating
       // here too makes the toggle feel instant even before the event lands.

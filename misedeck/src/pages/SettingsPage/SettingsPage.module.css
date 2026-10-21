@@ -157,7 +157,9 @@
   border-radius: 4px;
   padding: var(--space-1) var(--space-2);
   min-width: 0;
-  transition: border-color var(--motion-state-change) ease;
+  transition:
+    border-color var(--motion-state-change) ease,
+    box-shadow var(--motion-state-change) ease;
 }
 
 .input {
@@ -170,10 +172,13 @@
   width: 18ch;
 }
 
-.input:focus,
-.inputName:focus {
+/* Shared focus recipe (issue #257): the ring is the app's single focus
+ * signal; a 1px border change alone was not one. */
+.input:focus-visible,
+.inputName:focus-visible {
   outline: none;
-  border-color: var(--line-strong);
+  border-color: var(--beam);
+  box-shadow: var(--ring);
 }
 
 .input:disabled,

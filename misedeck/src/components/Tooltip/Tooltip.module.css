@@ -18,6 +18,15 @@
   max-width: 100%;
 }
 
+/* Only explanation tooltips with `focusable` put the wrapper in the tab
+ * order (issue #257); when they do, focus needs the shared ring so the
+ * keyboard user can see where they landed. */
+.trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: 4px;
+}
+
 .layer {
   position: fixed;
   z-index: var(--z-popover);

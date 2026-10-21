@@ -197,6 +197,19 @@
   opacity: 1;
 }
 
+/* The handle is a focusable separator (issue #257): focus shows the same
+ * grip line in the accent plus the shared ring, so the keyboard path is
+ * as visible as the pointer one. */
+.heightHandle:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.heightHandle:focus-visible::after {
+  opacity: 1;
+  background: var(--beam);
+}
+
 .log {
   max-height: 240px;
   overflow-y: auto;

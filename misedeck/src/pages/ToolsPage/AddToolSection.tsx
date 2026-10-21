@@ -456,7 +456,10 @@ export function AddToolSection({
               {t(I18N_KEYS.tools.actions.uninstall)}
             </Button>
           ) : (
-            <Tooltip text={t(I18N_KEYS.tools.addTool.notInstalledUninstallTooltip)}>
+            <Tooltip
+              text={t(I18N_KEYS.tools.addTool.notInstalledUninstallTooltip)}
+              focusable
+            >
               <span>
                 <Button
                   variant="secondary"

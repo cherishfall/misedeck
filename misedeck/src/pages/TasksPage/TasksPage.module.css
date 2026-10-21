@@ -237,11 +237,16 @@
   border-radius: 4px;
   padding: var(--space-1-5) var(--space-2-5);
   outline: none;
-  transition: border-color var(--motion-state-change) ease-out;
+  transition:
+    border-color var(--motion-state-change) ease-out,
+    box-shadow var(--motion-state-change) ease-out;
 }
 
-.editFormInput:focus {
+/* The accent border alone was the task editor's weak copy of the focus
+ * state; every input now uses the shared ring (issue #257). */
+.editFormInput:focus-visible {
   border-color: var(--beam);
+  box-shadow: var(--ring);
 }
 
 /* The edit form's fixed task name renders as read-only text, not an
@@ -266,11 +271,14 @@
   padding: var(--space-1-5) var(--space-2-5);
   outline: none;
   resize: vertical;
-  transition: border-color var(--motion-state-change) ease-out;
+  transition:
+    border-color var(--motion-state-change) ease-out,
+    box-shadow var(--motion-state-change) ease-out;
 }
 
-.editFormTextarea:focus {
+.editFormTextarea:focus-visible {
   border-color: var(--beam);
+  box-shadow: var(--ring);
 }
 
 /* A multi-line run is not editable in the GUI (issue #170): the

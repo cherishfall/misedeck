@@ -22,6 +22,7 @@ import {
 } from "react";
 
 import { setWindowTheme } from "../api/window";
+import { loadPersistent, savePersistent } from "../hooks/usePersistentState";
 
 /** The two choices the pill offers. Default is `light`. */
 export const THEME_SETTINGS = ["light", "dark"] as const;
@@ -55,9 +56,14 @@ interface ThemeProviderProps {
  */
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<ThemeSetting>(() => {
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-    // Legacy `system` values and anything unknown migrate to light.
-    return isThemeSetting(stored) ? stored : "light";
+    // Same guarded read as every other persisted value (issue #257): a
+    // denied storage falls back to light instead of throwing above the
+    // error boundary. The key stays a raw string because the pre-paint
+    // script in `index.html` reads it directly.
+    return loadPersistent<ThemeSetting>(THEME_STORAGE_KEY, "light", (raw) =>
+      // Legacy `system` values and anything unknown migrate to light.
+      isThemeSetting(raw) ? raw : "light",
+    );
   });
 
   // Apply the theme to the document whenever it changes, and follow
@@ -71,7 +77,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   }, [theme]);
 
   const setTheme = useCallback((next: ThemeSetting) => {
-    window.localStorage.setItem(THEME_STORAGE_KEY, next);
+    savePersistent(THEME_STORAGE_KEY, next, (value) => value);
     setThemeState(next);
   }, []);
 

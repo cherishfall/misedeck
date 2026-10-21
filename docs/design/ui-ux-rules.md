@@ -37,7 +37,7 @@ Before shipping any screen, ask: **could a mise CLI user predict what this scree
 
 - Destructive actions (uninstall, unset, overwrite) always confirm first.
 - A destructive confirmation never arms itself. The shared `ConfirmDialog` opens a `danger` dialog with focus on **Cancel**, cycles Tab / Shift-Tab inside the dialog while it is open (`aria-modal` alone does not contain focus — it only tells assistive tech the rest of the page is inert), keeps Escape as cancel, and returns focus to whatever opened it. Otherwise opening the dialog with Enter and pressing Enter again runs the destructive command before it was read, and focus walks out onto the page behind the overlay (beta16, issue #227). Non-destructive confirmations still open on Confirm. Guarded by `npm run lint:modal-focus` (no `autoFocus` anywhere; only the shared component may declare a modal).
-- Every explanation is reachable without a mouse. A control disabled with a reason, a row that is read-only, an ellipsized value: each carries its reason in a Tooltip, and the Tooltip answers focus as well as hover (Floating layers below) — a reason only a pointer can reach is not a reason (beta16, issue #227). In-dialog, a Confirm disabled because its own command is still in flight says so in the dialog body (`common.confirmBusy`) and links it to the button with `aria-describedby`, since a disabled button cannot be focused to hear its own tooltip.
+- Every explanation a control needs is reachable without a mouse. A control disabled with a reason carries that reason in a Tooltip whose wrapper takes the focus stop the disabled control cannot (Floating layers below) — a reason only a pointer can reach is not a reason (beta16, issue #227). A data value's Tooltip is a hover enhancement, not a tab stop: the value already lives in the DOM, and making every wrapped cell focusable put 90+ stops in front of the row actions (issue #257). In-dialog, a Confirm disabled because its own command is still in flight says so in the dialog body (`common.confirmBusy`) and links it to the button with `aria-describedby`, since a disabled button cannot be focused to hear its own tooltip.
 - A control that would be a no-op right now renders disabled — an active-looking button that does nothing reads as broken. When the enabled state depends on a count, put the count in the label so the user can see the button has real work behind it (e.g. a bulk action that names how many rows it will act on).
 - An action cell whose row has no reachable action renders a dim `—` — a blank action cell is a bug. The reason must be discoverable on the `—` itself: the `—` must carry a Tooltip stating why (the source-badge Tooltip remains a secondary contact, beta12, issue #185). A row whose single action is blocked renders a disabled button + Tooltip instead; two side-by-side disabled buttons are noise, not information (beta11, issue #148).
 - Rows render read-only by default; an explicit Edit expands the inline form. A field the CLI cannot write (pure tool-injected env vars — ones with no config sourcePath; a config-requested tool var IS overridable via `mise set`, beta11 issue #156) or that must not be typed by hand (picker-owned path) renders as read-only text — never an editable input.
@@ -105,6 +105,7 @@ One vocabulary, four variants (color/type semantics owned by `visual-language.md
 - History keeps at most **3 finished runs**; pruning drops the oldest and happens only when a new command starts. A running run never counts toward the cap, may exceed it, and can never be closed or cleared — the panel is the only surface for an in-flight command (#138, #180).
 - Every finished run's switcher chip carries a single-entry close control, and the switcher row offers **Clear** (the shared `common.clear` label) — Clear removes finished runs only; running runs always survive. Removing the active run falls back to the most recent remaining run, or the idle empty state when history is empty (#180).
 - Run-locking (issue #135, refined by #138): a control disables only while the specific command *it* dispatched is in flight — locking is per action, not a global "at most one command at a time" rule, so several mise commands may run concurrently. Browsing of already-loaded data never locks: expanding/collapsing rows, filtering, sorting, and paginating all keep working through a multi-minute install. Opening an edit draft is not command-firing either — a row's Edit button, and the draft's inputs and Cancel, stay enabled during a run; only the form's Save locks. The same split holds for standing forms (add env var, add setting, the version-management search, link tool): their inputs and directory pickers stay editable, only the submit (Add / Use / Link) locks. Confirm dialogs are run-aware: the shared `ConfirmDialog` disables its own Confirm button while a command runs (Cancel always stays enabled), so the buttons that merely *open* a confirm dialog (Unset, Unuse, per-version Uninstall, plugin Uninstall) are not command-firing and never lock.
+- The panel's top-edge resize handle is a focusable separator: pointer drag plus ArrowUp / ArrowDown, current height exposed through `aria-valuenow` / `aria-valuemin` / `aria-valuemax`, and the shared focus ring — a control that resizes a surface is never pointer-only (issue #257).
 
 ## Chrome & themes
 
@@ -172,11 +173,14 @@ floating layer is a bug.
   layer is open on focus, `aria-describedby` lands on the keyboard path as
   well, which is where the app's "why is this disabled / read-only"
   explanations live (beta16, issue #227).
-- A floating layer whose trigger is not focusable makes its trigger
-  focusable: the Tooltip gives its wrapper `tabindex="0"` unless something
-  inside it can already take focus. Disabled controls do not count — they
-  are exactly the case most in need of an explanation the keyboard can
-  reach (beta16, issue #227).
+- A Tooltip over static content adds no tab stop: hover is its channel,
+  and the content stays readable as plain text. The wrapper takes a tab
+  stop only when the tooltip is the sole keyboard channel for an
+  explanation — a disabled control's reason, where the control itself
+  cannot focus and the call site opts in with `focusable` (beta16, issue
+  #227; issue #257). An interactive child (a button, a link) keeps its
+  own stop and receives the tooltip's `aria-describedby` while the layer
+  is open.
 
 ## Verification
 

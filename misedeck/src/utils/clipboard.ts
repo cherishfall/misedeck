@@ -31,16 +31,29 @@ export async function writeClipboard(text: string): Promise<boolean> {
     // fall through
   }
   try {
+    // The execCommand path needs a focused textarea, so it moves focus.
+    // Restore the previous target afterwards (issue #257): a keyboard
+    // user's position must not silently reset to <body> on a copy.
+    const previousFocus = document.activeElement;
     const ta = document.createElement("textarea");
     ta.value = text;
     ta.style.position = "fixed";
     ta.style.opacity = "0";
     document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    const ok = document.execCommand("copy");
-    document.body.removeChild(ta);
-    return ok;
+    try {
+      ta.focus();
+      ta.select();
+      return document.execCommand("copy");
+    } finally {
+      ta.remove();
+      if (
+        previousFocus instanceof HTMLElement &&
+        previousFocus !== document.body &&
+        previousFocus.isConnected
+      ) {
+        previousFocus.focus();
+      }
+    }
   } catch {
     return false;
   }

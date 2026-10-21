@@ -569,6 +569,7 @@ function RowActions({
            says why (beta11 4.7-M1; ui-ux-rules: disabled control +
            discoverable reason). */
         <Tooltip
+          focusable
           text={
             row.source
               ? t(I18N_KEYS.settings.tooltip.unsetOutOfScope, { source: row.source })

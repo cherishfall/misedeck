@@ -6,6 +6,9 @@
   grid-template-columns: 96px 1fr;
   gap: var(--space-3);
   align-items: baseline;
+  /* The root is a <dl> (issue #257); strip the UA's block margins so
+   * stacked rows keep the parent's gap as their only spacing. */
+  margin: 0;
 }
 
 .full {

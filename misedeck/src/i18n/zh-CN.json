@@ -641,6 +641,7 @@
     "runsRunning": "{{count}} 个命令运行中",
     "runsRecent": "{{count}} 条运行记录",
     "closeRun": "关闭",
+    "resizeHandle": "调整执行面板高度",
     "workingDirHome": "运行目录：~（主目录）"
   },
   "tooltip": {

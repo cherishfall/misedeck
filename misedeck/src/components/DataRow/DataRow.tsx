@@ -2,6 +2,12 @@
 // the Home page and everywhere else a label → value pair shows up
 // (settings pages, env panels, plugin details). Promoted into its own
 // component so the visual treatment stays consistent.
+//
+// The component renders its own `<dl>` wrapper (issue #257): a dt/dd
+// pair outside a list is invalid HTML and loses the label → value
+// association for assistive tech, and requiring every caller to
+// remember the wrapper is what produced the bug. Callers stack rows in
+// a plain container; each row is a complete description list.
 
 import type { ReactNode } from "react";
 
@@ -39,7 +45,7 @@ export function DataRow({
     .filter(Boolean)
     .join(" ");
   return (
-    <div className={classes}>
+    <dl className={classes}>
       <dt className={styles.label}>{label}</dt>
       <dd
         className={[
@@ -52,6 +58,6 @@ export function DataRow({
       >
         {value}
       </dd>
-    </div>
+    </dl>
   );
 }

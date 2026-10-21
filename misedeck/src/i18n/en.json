@@ -641,6 +641,7 @@
     "runsRunning": "{{count}} running",
     "runsRecent": "{{count}} recent",
     "closeRun": "Close",
+    "resizeHandle": "Resize execution panel",
     "workingDirHome": "Working directory: ~ (home)"
   },
   "tooltip": {

@@ -114,6 +114,9 @@ export const I18N_KEYS = {
     runsRecent: "execution.runsRecent",
     /** Close one finished run entry from the switcher (issue #180). */
     closeRun: "execution.closeRun",
+    /** Accessible name for the panel's top-edge resize handle, a
+        focusable separator with ArrowUp / ArrowDown support (issue #257). */
+    resizeHandle: "execution.resizeHandle",
     /**
      * Working-directory context line paired with the terminal-perspective
      * echo in Global mode, where the echo omits `-C $HOME` (issue #191).

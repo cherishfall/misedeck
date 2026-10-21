@@ -189,7 +189,9 @@
   border-radius: 4px;
   padding: var(--space-1) var(--space-2);
   min-width: 0;
-  transition: border-color var(--motion-state-change) ease;
+  transition:
+    border-color var(--motion-state-change) ease,
+    box-shadow var(--motion-state-change) ease;
 }
 
 .inputName {
@@ -202,10 +204,14 @@
   width: 18ch;
 }
 
-.inputName:focus,
-.inputValue:focus {
+/* Shared focus recipe (issue #257): the env add-form has two adjacent
+ * inputs, so a quiet 1px border change left the focused field to be
+ * hunted for. */
+.inputName:focus-visible,
+.inputValue:focus-visible {
   outline: none;
-  border-color: var(--line-strong);
+  border-color: var(--beam);
+  box-shadow: var(--ring);
 }
 
 .inputName:disabled,

@@ -13,13 +13,19 @@
 // Two channels open the same layer (issue #227): hover, with the intent
 // delay below, and focus, immediately — no delay, because a keyboard
 // user has already expressed intent by landing there. `aria-describedby`
-// therefore attaches on the keyboard path too; before, it attached only
-// while the layer was open and only a mouse could open it, leaving every
-// "why is this disabled / why is this row read-only" explanation
-// unreachable without one. When nothing inside the trigger is focusable
-// (a plain span of ellipsized text, a badge, a disabled Button) the
-// trigger takes its own tab stop — an explanation nobody can tab to is
-// not an explanation.
+// therefore attaches on the keyboard path too, and while the layer is
+// open it lands on the element that actually holds focus — the wrapper
+// when this Tooltip owns the tab stop, otherwise the interactive child
+// (a version-switch button, a link).
+//
+// The wrapper does NOT take a tab stop by default (issue #257): a plain
+// data value is already in the DOM for assistive tech, and making every
+// wrapped cell focusable added 90+ stops per table before the row
+// actions were reachable. Hover remains the channel for static content.
+// `focusable` opts a tooltip into the old behaviour for the cases where
+// the wrapper is the only keyboard path to an explanation — a disabled
+// control cannot focus, so its wrapper hosts the stop. Interactive
+// children keep their own tab stop in every case.
 //
 // Shares the floating-layer rules with FloatingMenu: createPortal into
 // document.body (custom properties live on :root, so themed tokens
@@ -27,12 +33,15 @@
 // from --z-popover, no entrance animation.
 
 import {
+  cloneElement,
+  isValidElement,
   useCallback,
   useEffect,
   useId,
   useLayoutEffect,
   useRef,
   useState,
+  type ReactElement,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -52,9 +61,16 @@ export interface TooltipProps {
   /** The full value: shown in the layer and copied by its button. */
   text: string;
   children: ReactNode;
+  /** Take a tab stop when nothing inside can take focus. Only for
+   *  tooltips that are the sole keyboard channel for an explanation —
+   *  the reason a control is disabled (issue #257). Static data values
+   *  leave this off: hover is their channel. */
+  focusable?: boolean;
 }
 
-export function Tooltip({ text, children }: TooltipProps) {
+type DescribedChild = ReactElement<{ "aria-describedby"?: string }>;
+
+export function Tooltip({ text, children, focusable = false }: TooltipProps) {
   const triggerRef = useRef<HTMLSpanElement | null>(null);
   const layerRef = useRef<HTMLDivElement | null>(null);
   const tooltipId = useId();
@@ -158,18 +174,35 @@ export function Tooltip({ text, children }: TooltipProps) {
   const trimmed = text.trim();
   if (!trimmed || trimmed === "—") return <>{children}</>;
 
+  // While the layer is open the description belongs on the element AT
+  // actually has focused. The wrapper hosts it when this tooltip owns
+  // the tab stop; otherwise an interactive child (the version-switch
+  // button, a link) carries it. Cloning only while open leaves React
+  // the sole owner of the attribute the rest of the time.
+  const describedChild =
+    open && isValidElement(children)
+      ? cloneElement(children as DescribedChild, {
+          "aria-describedby": [
+            (children.props as { "aria-describedby"?: string })["aria-describedby"],
+            tooltipId,
+          ]
+            .filter(Boolean)
+            .join(" "),
+        })
+      : children;
+
   return (
     <span
       ref={triggerRef}
       className={styles.trigger}
-      tabIndex={focusableInside ? undefined : 0}
+      tabIndex={focusable && !focusableInside ? 0 : undefined}
       onMouseEnter={scheduleOpen}
       onMouseLeave={scheduleClose}
       onFocus={openNow}
       onBlur={scheduleClose}
       aria-describedby={open ? tooltipId : undefined}
     >
-      {children}
+      {describedChild}
       {open &&
         createPortal(
           <div

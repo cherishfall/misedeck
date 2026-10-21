@@ -203,7 +203,9 @@ export function HomePage() {
               <ProgressDot tone="grove" />
               <span className={styles.stateLabel}>{t(I18N_KEYS.states.ready)}</span>
             </div>
-            <dl className={styles.dataList}>
+            {/* DataRow renders its own <dl> (issue #257); the wrapper is a
+                plain container, not a second description list. */}
+            <div className={styles.dataList}>
               <DataRow
                 label={t(I18N_KEYS.labels.version)}
                 value={view.ok.versionDate}
@@ -233,7 +235,7 @@ export function HomePage() {
                   tone="flare"
                 />
               )}
-            </dl>
+            </div>
             {/* Diagnostic-grade raw output (the `mise version --json`
                 payload) renders collapsed by default behind a
                 disclosure (beta11, Q3); expanded is the previous
