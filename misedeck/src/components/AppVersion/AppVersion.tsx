@@ -157,7 +157,7 @@ export function AppVersion({ collapsed = false }: AppVersionProps) {
                 >
                   {t(
                     summary.action === "retry"
-                      ? I18N_KEYS.about.retry
+                      ? I18N_KEYS.common.retry
                       : I18N_KEYS.about.check,
                   )}
                 </Button>

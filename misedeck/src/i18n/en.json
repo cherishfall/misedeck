@@ -10,15 +10,15 @@
     "copyFailed": "Copy failed",
     "outdatedCount": "{{count}} tools outdated",
     "outdatedCount_one": "{{count}} tool outdated",
-    "outdatedChecking": "Checking for updates…",
+    "outdatedChecking": "Checking for outdated tools…",
     "allUpToDate": "All installed tools are up to date.",
-    "outdatedError": "Could not check for updates",
-    "loadFailed": "Could not load the data",
+    "outdatedError": "Could not check for outdated tools",
+    "loadFailed": "Could not load this data",
     "retry": "Retry",
     "confirmBusy": "This command is already running — wait for it to finish.",
     "filter": {
       "noMatchTitle": "No matching rows",
-      "noMatchBody": "No rows match the current filter. Edit or clear the filter to bring the full list back."
+      "noMatchBody": "No rows match the current filter. Edit or clear it to bring the full list back."
     }
   },
   "directory": {
@@ -26,7 +26,7 @@
     "regionLabel": "Directory",
     "globalButton": "Global",
     "globalMode": "GLOBAL MODE",
-    "recentsButton": "Recent",
+    "recentsButton": "Recent directories",
     "recentsHeader": "Recent directories",
     "pickerLabel": "Choose directory",
     "pickerTitle": "Choose a directory for MiseDeck",
@@ -107,7 +107,7 @@
       "singleVersion": "Only one version installed — find the tool in Manage versions below and install another version to switch.",
       "noVersion": "No installed versions — find the tool in Manage versions below and install one."
     },
-    "upgradeChip": "Update available · {{latest}}",
+    "upgradeChip": "Upgrade available · {{latest}}",
     "empty": {
       "title": "No tools installed",
       "body": "Use the Manage versions search below to install your first tool."
@@ -208,7 +208,7 @@
       "installed": "{{tool}}@{{version}} installed",
       "upgraded": "{{tool}} upgraded",
       "uninstalled": "{{tool}}@{{version}} uninstalled",
-      "unused": "{{tool}} removed",
+      "unused": "{{tool}} unused",
       "linked": "{{tool}}@{{version}} linked"
     },
     "hintGlobal": "Tools installed and active in Global mode — add one with the search below; Use installs and activates in one step."
@@ -221,7 +221,7 @@
     "commandHint": "mise trust · mise -C <dir> ls · mise env · mise config",
     "nav": "Overview",
     "empty": {
-      "body": "The env and config sections already show the global resolution; this list is directory-scoped. Choose a directory to see what mise -C <dir> ls reports there.",
+      "body": "The env and config sections already show the global resolution; this list is per-directory. Choose a directory to see what mise -C <dir> ls reports there.",
       "action": "Choose directory"
     },
     "sections": {
@@ -333,7 +333,7 @@
       },
       "renameOverwrite": {
         "title": "Rename {{from}} to {{to}}?",
-        "body": "An env var named {{to}} already exists — the rename overwrites its current value with this one. Renaming runs the two exact commands below in order: first the old key is removed, then the new key is written. This cannot be undone."
+        "body": "An env var named {{to}} already exists — the rename overwrites its current value with the value of {{from}}. Renaming runs the two exact commands below in order: first the old key is removed, then the new key is written. This cannot be undone."
       },
       "update": {
         "title": "Update {{name}}?",
@@ -480,7 +480,7 @@
   },
   "doctor": {
     "title": "Doctor",
-    "hint": "A health check for mise — the global setup or the chosen directory. When the structured report is unavailable, the raw doctor output renders with row tinting.",
+    "hint": "A health check for mise — the global setup or the chosen directory. When the structured report is unavailable, the raw doctor output renders with warnings highlighted.",
     "commandHint": "mise doctor",
     "statusLabel": "Health check",
     "status": {
@@ -548,7 +548,7 @@
     },
     "installForm": {
       "title": "Install plugin",
-      "explanation": "Add a custom plugin the CLI way: a name plus the plugin's git URL — the asdf-ecosystem standard for tools with no built-in shorthand.",
+      "explanation": "Add a custom plugin the way the CLI does: a name plus the plugin's git URL — the asdf-ecosystem standard for tools with no built-in shorthand.",
       "namePlaceholder": "Plugin name",
       "urlPlaceholder": "Git URL — github.com/<owner>/<repo>"
     },
@@ -577,7 +577,7 @@
     "ready": "Ready",
     "notInstalled": {
       "title": "mise not found",
-      "body": "MiseDeck could not locate the mise binary on this machine. Guided install below runs the official install script through the execution panel; the install guide has the manual steps.",
+      "body": "MiseDeck could not locate the mise binary on this machine. Guided install below runs the official install script through the execution panel; the install guide lists the manual steps.",
       "installHint": "Read the install guide"
     },
     "tooOld": {
@@ -609,8 +609,8 @@
   "errors": {
     "miseNotFound": "The mise CLI was not found on this machine. Install it from https://mise.jdx.dev/installing.html and relaunch MiseDeck.",
     "miseTooOld": "Found mise {{found}}, but MiseDeck requires at least {{minimum}}. Update mise by running mise self-update.",
-    "terminalNotFound": "No terminal emulator was found on this Linux system (looked for gnome-terminal, konsole, xfce4-terminal).",
-    "timeout": "mise did not respond within the timeout.",
+    "terminalNotFound": "No terminal emulator was found on this Linux system.",
+    "timeout": "mise did not respond within the timeout. Try the action again; if it keeps happening, run the command in a terminal to see more.",
     "unknown": "Something went wrong. The execution panel has the details."
   },
   "languages": {
@@ -652,7 +652,7 @@
     "openInTerminalSuccess": "Opened {{terminal}} at {{path}}.",
     "bannerLabel": "Shell activation missing",
     "bannerBody": "Your {{shell}} config at {{rcPath}} does not have the mise activate line. Add the line below to use mise in interactive sessions.",
-    "bannerBodyUnknownShell": "MiseDeck could not detect your shell ({{name}}). Add the appropriate mise activate <shell> line to your shell's rc file to use mise in interactive sessions.",
+    "bannerBodyUnknownShell": "MiseDeck does not know how to activate {{name}}. Add the appropriate mise activate line to its rc file to use mise in interactive sessions.",
     "copyLineButton": "Copy the line",
     "dismissButton": "Dismiss"
   },
@@ -665,7 +665,6 @@
     "upToDate": "MiseDeck is up to date",
     "available": "MiseDeck {{version}} is available",
     "checkFailed": "Could not check for MiseDeck updates",
-    "retry": "Try again",
     "download": "Download {{version}}",
     "releasePage": "Release page"
   }

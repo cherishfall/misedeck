@@ -642,7 +642,7 @@ function EnvRowActions({
           confirmBusy={disabled}
           cwd={cwd}
           title={t(I18N_KEYS.env.confirm.renameOverwrite.title, { from: row.name, to: name })}
-          body={t(I18N_KEYS.env.confirm.renameOverwrite.body, { to: name })}
+          body={t(I18N_KEYS.env.confirm.renameOverwrite.body, { from: row.name, to: name })}
           command={[
             commandEcho("mise", cwd, miseEnvUnsetArgs(row.name, cwd)),
             commandEcho("mise", cwd, miseEnvSetArgs(name, value, cwd)),

@@ -8,17 +8,17 @@
     "clear": "清除",
     "copied": "已复制",
     "copyFailed": "复制失败",
-    "outdatedCount": "{{count}} 个工具可更新",
-    "outdatedCount_one": "{{count}} 个工具可更新",
-    "outdatedChecking": "正在检查更新…",
+    "outdatedCount": "{{count}} 个工具可升级",
+    "outdatedCount_one": "{{count}} 个工具可升级",
+    "outdatedChecking": "正在检查可升级的工具…",
     "allUpToDate": "所有已安装工具均为最新版本。",
-    "outdatedError": "无法检查更新",
+    "outdatedError": "无法检查可升级的工具",
     "loadFailed": "无法加载数据",
     "retry": "重试",
     "confirmBusy": "该命令正在运行中，请等待其结束。",
     "filter": {
       "noMatchTitle": "无匹配行",
-      "noMatchBody": "当前过滤条件没有匹配任何行。修改或清除过滤条件即可恢复完整列表。"
+      "noMatchBody": "当前过滤条件没有匹配任何行。修改或清除它即可恢复完整列表。"
     }
   },
   "directory": {
@@ -26,7 +26,7 @@
     "regionLabel": "目录",
     "globalButton": "全局",
     "globalMode": "全局模式",
-    "recentsButton": "最近",
+    "recentsButton": "最近的目录",
     "recentsHeader": "最近的目录",
     "pickerLabel": "选择目录",
     "pickerTitle": "为 MiseDeck 选择一个目录",
@@ -81,7 +81,7 @@
     "title": "首页",
     "hint": "检测 mise 是否已安装且版本满足 MiseDeck 的要求；引导安装与更新都在这里进行，所有操作都通过执行面板实时显示。",
     "commandHint": "mise version · mise self-update",
-    "rawLabel": "RAW",
+    "rawLabel": "原始输出",
     "success": {
       "selfUpdated": "mise 已更新"
     }
@@ -100,7 +100,7 @@
     },
     "orphan": {
       "badge": "孤立安装",
-      "tooltip": "没有 Config 文件请求此工具"
+      "tooltip": "没有配置文件请求此工具"
     },
     "tooltip": {
       "switchVersion": "点击切换版本",
@@ -152,7 +152,7 @@
     },
     "linkForm": {
       "title": "链接工具",
-      "explanation": "链接会将你本地构建的目录作为已安装版本接入，而不是下载：mise link <tool>@<version> <path> 会把它软链进 mise。",
+      "explanation": "链接会将你本地构建的目录作为已安装版本接入，而不是下载：mise link <tool>@<version> <path> 会以符号链接（symlink）方式把它接入 mise。",
       "toolPlaceholder": "工具名（如 node）",
       "versionPlaceholder": "版本（如 22.11.0）",
       "noPath": "未选择目录",
@@ -216,7 +216,7 @@
   "preview": {
     "titleGlobal": "全局概览",
     "titleDirectory": "目录概览",
-    "hint": "当前目录解析出的工具、环境变量、配置文件与 lockfile。",
+    "hint": "当前目录解析出的工具、环境变量、配置文件与锁文件。",
     "hintGlobal": "全局模式下解析出的环境变量与配置文件。",
     "commandHint": "mise trust · mise -C <dir> ls · mise env · mise config",
     "nav": "概览",
@@ -271,7 +271,7 @@
     "lockfile": {
       "title": "mise.lock",
       "empty": "（空文件）",
-      "errorTitle": "读取 lockfile 失败",
+      "errorTitle": "读取锁文件失败",
       "errorBody": "MiseDeck 无法读取当前目录的 mise.lock。错误信息如下所示。"
     }
   },
@@ -314,7 +314,7 @@
     },
     "tooltip": {
       "tool": "由 {{tool}} 通过 mise env 注入；在运行时解析，无法通过 mise set 设置。",
-      "default": "继承自宿主环境；并非由 mise 写入，因此无法通过 mise set 设置。",
+      "default": "继承自系统环境；并非由 mise 写入，因此无法通过 mise set 设置。",
       "configTool": "由配置文件请求、{{tool}} 注入；可通过 mise set 覆盖。"
     },
     "confirm": {
@@ -333,7 +333,7 @@
       },
       "renameOverwrite": {
         "title": "将 {{from}} 重命名为 {{to}}？",
-        "body": "名为 {{to}} 的环境变量已存在——重命名会用新值覆盖它的现有值。重命名将按顺序运行以下两条确切命令：先移除旧键，再写入新键。此操作无法撤销。"
+        "body": "名为 {{to}} 的环境变量已存在——重命名会用 {{from}} 的值覆盖它的现有值。重命名将按顺序运行以下两条确切命令：先移除旧键，再写入新键。此操作无法撤销。"
       },
       "update": {
         "title": "更新 {{name}}？",
@@ -434,7 +434,7 @@
       "body": "添加一项设置，即可写入 mise 配置。",
       "action": "添加一项设置",
       "titleShowAll": "没有显式设置",
-      "bodyShowAll": "mise 的默认值仍然生效——此列表只显示显式设置的项目。",
+      "bodyShowAll": "mise 的默认值仍然生效——此列表只显示显式设置过的项。",
       "showAllAction": "显示全部（--all）"
     },
     "error": {
@@ -472,7 +472,7 @@
       }
     },
     "tooltip": {
-      "objectReadOnly": "整表设置无法通过 mise settings set 写入，请直接编辑配置文件。",
+      "objectReadOnly": "表（table）类型的设置无法通过 mise settings set 写入，请直接编辑配置文件。",
       "unsetOutOfScope": "该设置定义在 {{source}}，不在当前目录的配置里——移除不会生效。",
       "unsetDefault": "该键只有内置默认值，没有可移除的设置。"
     },
@@ -480,7 +480,7 @@
   },
   "doctor": {
     "title": "诊断",
-    "hint": "mise 健康检查——针对全局安装或所选目录。结构化报告不可用时，直接显示原始 doctor 输出，并按行着色。",
+    "hint": "mise 健康检查——针对全局安装或所选目录。结构化报告不可用时，原始 doctor 输出会高亮显示警告行。",
     "commandHint": "mise doctor",
     "statusLabel": "健康检查",
     "status": {
@@ -550,7 +550,7 @@
       "title": "安装插件",
       "explanation": "按 CLI 的方式添加自定义插件：填写名称和插件的 git URL——对没有内置简写名的工具，这是 asdf 生态的标准做法。",
       "namePlaceholder": "插件名称",
-      "urlPlaceholder": "Git URL — github.com/<owner>/<repo>"
+      "urlPlaceholder": "Git URL：github.com/<owner>/<repo>"
     },
     "confirm": {
       "uninstall": {
@@ -560,7 +560,7 @@
     },
     "installedEmpty": {
       "title": "未安装插件",
-      "body": "大多数工具根本不需要插件——去工具页搜索即可安装。要添加自定义插件，请使用上方表单：填写名称和插件的 git URL。",
+      "body": "大多数工具根本不需要插件——前往「工具」页搜索即可安装。要添加自定义插件，请使用上方表单：填写名称和插件的 git URL。",
       "action": "搜索工具"
     },
     "installedError": {
@@ -607,10 +607,10 @@
     "detailsLabel": "错误详情"
   },
   "errors": {
-    "miseNotFound": "未在这台机器上找到 mise CLI。请按 https://mise.jdx.dev/installing.html 安装后重新启动 MiseDeck。",
+    "miseNotFound": "未在这台机器上找到 mise CLI。请访问 https://mise.jdx.dev/installing.html 安装，然后重新启动 MiseDeck。",
     "miseTooOld": "检测到 mise {{found}}，但 MiseDeck 要求至少 {{minimum}}。请运行 mise self-update 更新 mise。",
-    "terminalNotFound": "未在这个 Linux 系统上找到终端模拟器（已查找 gnome-terminal、konsole、xfce4-terminal）。",
-    "timeout": "mise 未在超时时间内响应。",
+    "terminalNotFound": "未在这个 Linux 系统上找到终端模拟器。",
+    "timeout": "mise 未在超时时间内响应。请重试该操作；若反复出现，请在终端中运行该命令查看详情。",
     "unknown": "出现了未知错误，详情请见执行面板。"
   },
   "languages": {
@@ -638,8 +638,8 @@
     "emptyHint": "尚未执行任何命令。",
     "reopen": "执行面板",
     "reopenRunning": "执行面板 · 运行中",
-    "runsRunning": "{{count}} 运行中",
-    "runsRecent": "{{count}} 条历史",
+    "runsRunning": "{{count}} 个命令运行中",
+    "runsRecent": "{{count}} 条运行记录",
     "closeRun": "关闭",
     "workingDirHome": "运行目录：~（主目录）"
   },
@@ -652,20 +652,19 @@
     "openInTerminalSuccess": "已通过 {{terminal}} 在 {{path}} 打开终端。",
     "bannerLabel": "Shell 激活缺失",
     "bannerBody": "你的 {{shell}} 配置文件 {{rcPath}} 中没有 mise activate。请在下方添加该行，以便在交互式 shell 中使用 mise。",
-    "bannerBodyUnknownShell": "MiseDeck 无法识别你的 shell（{{name}}）。请在对应 shell 的 rc 文件中添加 mise activate <shell> 行，以在交互式 shell 中使用 mise。",
+    "bannerBodyUnknownShell": "MiseDeck 不知道如何激活 {{name}}。请在其 rc 文件中添加相应的 mise activate 行，以便在交互式 shell 中使用 mise。",
     "copyLineButton": "复制该行",
     "dismissButton": "关闭"
   },
   "about": {
     "name": "MiseDeck",
-    "triggerLabel": "MiseDeck {{version}} — 版本与更新",
+    "triggerLabel": "MiseDeck {{version}}——版本与更新",
     "panelLabel": "MiseDeck 版本与更新",
     "check": "检查 MiseDeck 更新",
     "checking": "正在检查 MiseDeck 更新…",
     "upToDate": "MiseDeck 已是最新版本",
     "available": "MiseDeck {{version}} 已发布",
     "checkFailed": "无法检查 MiseDeck 更新",
-    "retry": "重试",
     "download": "下载 {{version}}",
     "releasePage": "发布页"
   }

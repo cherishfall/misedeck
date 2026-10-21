@@ -785,7 +785,6 @@ export const I18N_KEYS = {
     upToDate: "about.upToDate",
     available: "about.available",
     checkFailed: "about.checkFailed",
-    retry: "about.retry",
     download: "about.download",
     releasePage: "about.releasePage",
   },
