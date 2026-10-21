@@ -16,10 +16,10 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import { doctor, pluginsLs, registry } from "../api/mise";
 import {
-  parseDoctorPayload,
-  parsePluginsLsPayload,
-  parseRegistryPayload,
-  parseSettingsPayload,
+  readDoctorPayload,
+  readPluginsLsPayload,
+  readRegistryPayload,
+  readSettingsPayload,
 } from "../api/miseTools";
 import { toJsonResult, useExecutionContext } from "../components/ExecutionPanel";
 import { useDirectory } from "../state/directoryContext";
@@ -76,7 +76,8 @@ export function useParsedSettingsList(all: boolean): {
   if (!q.data || q.data.kind === "err") {
     return { isPending: false, data: null, error: q.data ?? null };
   }
-  return { isPending: false, data: parseSettingsPayload(q.data.value), error: null };
+  const parsed = readSettingsPayload(q.data.value);
+  return { isPending: false, data: parsed.data, error: parsed.error };
 }
 
 /** Read-only mise doctor check (`mise doctor --json`). Cache key is
@@ -107,11 +108,13 @@ export function useParsedDoctor(): {
   if (!q.data || q.data.kind === "err") {
     return { isPending: false, data: null, error: q.data ?? null, raw: null };
   }
+  // A wrong-shaped report is an error, never an all-clear (issue #270).
+  const parsed = readDoctorPayload(q.data.value);
   return {
     isPending: false,
-    data: parseDoctorPayload(q.data.value),
-    error: null,
-    raw: q.data.value,
+    data: parsed.data,
+    error: parsed.error,
+    raw: parsed.error ? null : q.data.value,
   };
 }
 
@@ -139,7 +142,8 @@ export function useParsedRegistry(): {
   if (!q.data || q.data.kind === "err") {
     return { isPending: false, data: null, error: q.data ?? null };
   }
-  return { isPending: false, data: parseRegistryPayload(q.data.value), error: null };
+  const parsed = readRegistryPayload(q.data.value);
+  return { isPending: false, data: parsed.data, error: parsed.error };
 }
 
 /** Read-only installed plugins list (`mise plugins ls --urls`,
@@ -166,7 +170,8 @@ export function useParsedPluginsList(): {
   if (!q.data || q.data.kind === "err") {
     return { isPending: false, data: null, error: q.data ?? null };
   }
-  return { isPending: false, data: parsePluginsLsPayload(q.data.value), error: null };
+  const parsed = readPluginsLsPayload(q.data.value);
+  return { isPending: false, data: parsed.data, error: parsed.error };
 }
 
 /** Wrap a thrown IPC error as the structured `{kind: "err"}` shape

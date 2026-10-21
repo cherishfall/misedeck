@@ -29,10 +29,10 @@ import {
   type RunOptions,
 } from "../components/ExecutionPanel";
 import {
-  parseEnvPayload,
-  parseLsPayload,
-  parseLsRemotePayload,
-  parseOutdatedPayload,
+  readEnvPayload,
+  readLsRemotePayload,
+  readOutdatedPayload,
+  readToolsLsPayload,
   type EnvEntry,
 } from "../api/miseTools";
 import { useDirectory } from "../state/directoryContext";
@@ -185,7 +185,8 @@ export function useParsedToolsList(): {
   if (!q.data || q.data.kind === "err") {
     return { isPending: false, data: null, error: q.data ?? null };
   }
-  return { isPending: false, data: parseLsPayload(q.data.value), error: null };
+  const parsed = readToolsLsPayload(q.data.value);
+  return { isPending: false, data: parsed.data, error: parsed.error };
 }
 
 /** Same convenience for `useOutdatedTools`. */
@@ -204,7 +205,8 @@ export function useParsedOutdatedTools(): {
   if (!q.data || q.data.kind === "err") {
     return { isPending: false, data: null, error: q.data ?? null };
   }
-  return { isPending: false, data: parseOutdatedPayload(q.data.value), error: null };
+  const parsed = readOutdatedPayload(q.data.value);
+  return { isPending: false, data: parsed.data, error: parsed.error };
 }
 
 /** Same convenience for `useLsRemote`. */
@@ -225,7 +227,8 @@ export function useParsedLsRemote(
   if (!q.data || q.data.kind === "err") {
     return { isPending: false, data: null, error: q.data ?? null };
   }
-  return { isPending: false, data: parseLsRemotePayload(q.data.value), error: null };
+  const parsed = readLsRemotePayload(q.data.value);
+  return { isPending: false, data: parsed.data, error: parsed.error };
 }
 
 /**
@@ -261,7 +264,8 @@ export function useParsedEnv(): {
   if (!q.data || q.data.kind === "err") {
     return { isPending: false, data: null, error: q.data ?? null };
   }
-  return { isPending: false, data: parseEnvPayload(q.data.value), error: null };
+  const parsed = readEnvPayload(q.data.value);
+  return { isPending: false, data: parsed.data, error: parsed.error };
 }
 
 /** Same for the global context, used to cross-check the project
@@ -278,13 +282,15 @@ function useGlobalEnv(): UseQueryResult<JsonResult> {
   });
 }
 
-/** Parse the global env payload. */
+/** Parse the global env payload. A wrong-shaped payload yields `null`
+ *  (no cross-check) rather than an empty "global has nothing" map — the
+ *  active read's own shape error is the one the page surfaces. */
 export function useParsedGlobalEnv(): EnvEntry[] | null {
   const q = useGlobalEnv();
   if (q.isPending || q.error || !q.data || q.data.kind === "err") {
     return null;
   }
-  return parseEnvPayload(q.data.value);
+  return readEnvPayload(q.data.value).data;
 }
 
 /**

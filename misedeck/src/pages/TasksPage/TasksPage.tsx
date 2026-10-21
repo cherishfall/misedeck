@@ -81,7 +81,7 @@ import { useParsedTasksList } from "../../hooks/useTasksList";
 import { useTableFilter } from "../../hooks/useTableFilter";
 
 import type { ConfigFile, MiseTask } from "../../types/tauri";
-import { stderrBodyKey } from "../../utils/stderrBody";
+import { readErrorBody } from "../../utils/readErrorBody";
 import tableStyles from "../../components/Table/Table.module.css";
 
 import styles from "./TasksPage.module.css";
@@ -749,12 +749,11 @@ export function TasksPage() {
               {t(I18N_KEYS.tasks.readError.title)}
             </div>
             <p className={styles.errorBody}>
-              {t(
-                stderrBodyKey(
-                  tasksError.stderr,
-                  I18N_KEYS.tasks.readError.body,
-                  I18N_KEYS.tasks.readError.bodyNoStderr,
-                ),
+              {readErrorBody(
+                tasksError,
+                t,
+                I18N_KEYS.tasks.readError.body,
+                I18N_KEYS.tasks.readError.bodyNoStderr,
               )}
             </p>
             {tasksError.stderr && (

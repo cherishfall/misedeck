@@ -17,6 +17,7 @@ import type {
   TrustResult,
 } from "../types/tauri";
 import { isAppError } from "../utils/isAppError";
+import { isConfigFilesResult, parseFailedError } from "./miseTools";
 import { invoke, type InvokeOptions } from "./invoke";
 
 /** Type-guard for the structured AppError shape. Re-exported here (its
@@ -106,11 +107,22 @@ export async function readMiseLockfile(
 /** Calls the `config_files` Tauri command (`mise config ls --json`).
  *  Returns the loaded config files in precedence order (highest
  *  first), each with its raw text for the read-only content view.
- *  Used by the preview page (issue #42). */
+ *  Used by the preview page (issue #42). A response that is not the
+ *  documented union is a PARSE_FAILED error, never an empty "no config
+ *  files" list (issue #270). */
 export async function configFiles(
   cwd: string | null,
 ): Promise<ConfigFilesResult> {
-  return (await invoke("config_files", { cwd })) as ConfigFilesResult;
+  const result = (await invoke("config_files", { cwd })) as unknown;
+  if (!isConfigFilesResult(result)) {
+    return {
+      kind: "err",
+      err: parseFailedError(
+        'config_files did not return a {kind: "ok", files} result',
+      ),
+    };
+  }
+  return result;
 }
 
 /** Calls the `trust_check` Tauri command (`mise trust --show`).

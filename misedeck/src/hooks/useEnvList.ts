@@ -8,7 +8,7 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import { envLs } from "../api/mise";
-import { parseEnvExtendedPayload, type EnvEntry } from "../api/miseTools";
+import { readEnvExtendedPayload, type EnvEntry } from "../api/miseTools";
 import { useDirectory } from "../state/directoryContext";
 import type { JsonResult } from "../types/tauri";
 
@@ -54,6 +54,7 @@ export function useParsedEnvList(): {
   if (!q.data || q.data.kind === "err") {
     return { isPending: false, data: null, error: q.data ?? null };
   }
-  return { isPending: false, data: parseEnvExtendedPayload(q.data.value), error: null };
+  const parsed = readEnvExtendedPayload(q.data.value);
+  return { isPending: false, data: parsed.data, error: parsed.error };
 }
 

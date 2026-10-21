@@ -84,7 +84,7 @@ import { FloatingMenu } from "../../components/FloatingMenu";
 import tableStyles from "../../components/Table/Table.module.css";
 import { SOURCE_CELL_CHARS, shortenPathTail } from "../../utils/paths";
 import { hasUpgradeTarget, selectToolVersion } from "../../utils/versions";
-import { stderrBodyKey } from "../../utils/stderrBody";
+import { readErrorBody } from "../../utils/readErrorBody";
 import {
   confirmUseBodyKey,
   uninstallConfirmBodyKey,
@@ -636,12 +636,11 @@ export function ToolsPage() {
           <div className={styles.errorState}>
             <div className={styles.errorLabel}>{t(I18N_KEYS.tools.error.title)}</div>
             <p className={styles.errorBody}>
-              {t(
-                stderrBodyKey(
-                  toolsError.stderr,
-                  I18N_KEYS.tools.error.body,
-                  I18N_KEYS.tools.error.bodyNoStderr,
-                ),
+              {readErrorBody(
+                toolsError,
+                t,
+                I18N_KEYS.tools.error.body,
+                I18N_KEYS.tools.error.bodyNoStderr,
               )}
             </p>
             {toolsError.stderr && (

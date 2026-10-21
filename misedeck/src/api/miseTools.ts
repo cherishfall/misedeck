@@ -1,15 +1,20 @@
 // Pure parsers for the JSON mise returns from the read-only tools
 // commands. The Rust side ships the raw JSON value; this module
-// turns it into the typed shapes declared in `types/tauri.ts`. Each
-// parser is intentionally tolerant: unknown fields are ignored,
-// missing fields fall back to the type's default, and one bad row
-// never poisons the rest. The runner is the trust boundary; this
-// module is just a presentational convenience.
+// turns it into the typed shapes declared in `types/tauri.ts`. Rows
+// are intentionally tolerant: unknown fields are ignored, missing
+// fields fall back to the type's default, and one bad row never
+// poisons the rest. The top-level shape is NOT tolerant (issue #270):
+// the `read*` wrappers reject a payload that is not the documented
+// array/object before parsing, so a wrong shape becomes a
+// `PARSE_FAILED` result instead of an empty success.
 
 import type {
+  AppError,
+  ConfigFilesResult,
   DoctorLine,
   DoctorPayload,
   InstalledPlugin,
+  JsonResult,
   MiseLsItem,
   MiseLsRemoteItem,
   MiseOutdatedItem,
@@ -19,6 +24,7 @@ import type {
   SettingsItem,
 } from "../types/tauri";
 
+import { isAppError } from "../utils/isAppError";
 import { isPathUnder, normalizePathForCompare } from "../utils/paths";
 
 function asString(v: unknown): string {
@@ -787,4 +793,175 @@ export function parsePluginsLsPayload(value: unknown): InstalledPlugin[] {
   }
   out.sort((a, b) => a.name.localeCompare(b.name));
   return out;
+}
+
+// ---------- Payload shape validation (issue #270) ----------
+//
+// The boundary guarantees syntactically valid JSON, not the shape a
+// command documents. Coercing a wrong top-level shape to `[]`/`{}`
+// renders a valid-looking empty page (and doctor's `{}` as a green
+// "Status: OK"), so every read validates its shape before parsing and
+// surfaces a PARSE_FAILED result otherwise. The detail strings are raw
+// text, matching the Rust boundary's own parse-failure messages.
+
+/** Typed result of one read: parsed data or the failure to render. */
+export interface ReadPayload<T> {
+  data: T | null;
+  error: JsonResult | null;
+}
+
+/** The structured PARSE_FAILED error for a payload that parsed as JSON
+ *  but does not match the command's documented shape. */
+export function parseFailedError(message: string, stderr = ""): AppError {
+  return { code: "PARSE_FAILED", message, stderr };
+}
+
+/** Validate a payload's top-level shape (plus any command-specific
+ *  minimum) before parsing it. A mismatch is a PARSE_FAILED error,
+ *  never an empty success. */
+export function parseReadPayload<T>(
+  value: unknown,
+  valid: (value: unknown) => boolean,
+  detail: string,
+  parse: (value: unknown) => T,
+): ReadPayload<T> {
+  if (!valid(value)) {
+    return { data: null, error: { kind: "err", err: parseFailedError(detail) } };
+  }
+  return { data: parse(value), error: null };
+}
+
+/** True for a JSON object (not null, not an array). */
+export function isJsonObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+/** `mise ls --json` (whole list) is an object keyed by tool. */
+export function readToolsLsPayload(value: unknown) {
+  return parseReadPayload(
+    value,
+    isJsonObject,
+    "mise ls --json did not return an object keyed by tool",
+    parseLsPayload,
+  );
+}
+
+/** `mise outdated --json` is an object keyed by tool. */
+export function readOutdatedPayload(value: unknown) {
+  return parseReadPayload(
+    value,
+    isJsonObject,
+    "mise outdated --json did not return an object keyed by tool",
+    parseOutdatedPayload,
+  );
+}
+
+/** `mise ls-remote --json <tool>` is an array of rows. */
+export function readLsRemotePayload(value: unknown) {
+  return parseReadPayload(
+    value,
+    Array.isArray,
+    "mise ls-remote --json did not return an array",
+    parseLsRemotePayload,
+  );
+}
+
+/** `mise env --json` is an object keyed by variable name. */
+export function readEnvPayload(value: unknown) {
+  return parseReadPayload(
+    value,
+    isJsonObject,
+    "mise env --json did not return an object keyed by variable",
+    parseEnvPayload,
+  );
+}
+
+/** `mise env --json-extended` is an object keyed by variable name. */
+export function readEnvExtendedPayload(value: unknown) {
+  return parseReadPayload(
+    value,
+    isJsonObject,
+    "mise env --json-extended did not return an object keyed by variable",
+    parseEnvExtendedPayload,
+  );
+}
+
+/** `mise tasks ls --json` is an array of task rows. */
+export function readTasksLsPayload(value: unknown) {
+  return parseReadPayload(
+    value,
+    Array.isArray,
+    "mise tasks ls --json did not return an array",
+    parseTasksLsPayload,
+  );
+}
+
+/** `mise settings ls --json-extended` is an object keyed by setting. */
+export function readSettingsPayload(value: unknown) {
+  return parseReadPayload(
+    value,
+    isJsonObject,
+    "mise settings ls --json-extended did not return an object keyed by setting",
+    parseSettingsPayload,
+  );
+}
+
+/** `mise registry --json` is an array of registry rows. */
+export function readRegistryPayload(value: unknown) {
+  return parseReadPayload(
+    value,
+    Array.isArray,
+    "mise registry --json did not return an array",
+    parseRegistryPayload,
+  );
+}
+
+/** `mise plugins ls` rows are parsed behind the Rust boundary into an
+ *  array. */
+export function readPluginsLsPayload(value: unknown) {
+  return parseReadPayload(
+    value,
+    Array.isArray,
+    "mise plugins ls did not return an array",
+    parsePluginsLsPayload,
+  );
+}
+
+/** A doctor payload is either a structured report (a `version` string)
+ *  or the text fallback (`rawLines`). An object with neither is not a
+ *  report: rendering it would show an all-clear green status derived
+ *  from absent fields (issue #270). */
+export function isDoctorPayload(value: unknown): boolean {
+  if (!isJsonObject(value)) return false;
+  return typeof value.version === "string" || Array.isArray(value.rawLines);
+}
+
+/** `mise doctor --json` — validated before parsing so an unrecognized
+ *  object never becomes a green report. */
+export function readDoctorPayload(value: unknown) {
+  return parseReadPayload(
+    value,
+    isDoctorPayload,
+    "mise doctor --json returned an unrecognized report object",
+    parseDoctorPayload,
+  );
+}
+
+/** The `config_files` success union: `{kind:"ok", files:[…]}` with
+ *  well-formed rows, or the structured error variant. A wrong-shaped
+ *  response must not render as "no config files" (issue #270). */
+export function isConfigFilesResult(value: unknown): value is ConfigFilesResult {
+  if (!isJsonObject(value)) return false;
+  if (value.kind === "err") return isAppError(value.err);
+  if (value.kind !== "ok" || !Array.isArray(value.files)) return false;
+  return value.files.every((row) => {
+    if (!isJsonObject(row)) return false;
+    return (
+      typeof row.path === "string" &&
+      Array.isArray(row.tools) &&
+      row.tools.every((tool) => typeof tool === "string") &&
+      typeof row.override === "boolean" &&
+      (row.content === null || typeof row.content === "string")
+    );
+  });
 }

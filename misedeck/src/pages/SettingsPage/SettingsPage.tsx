@@ -58,7 +58,7 @@ import type { SettingsItem } from "../../types/tauri";
 
 import { settingsEmptyCopy } from "./settingsEmptyCopy";
 import { settingsUnsetInScope } from "./settingsUnsetScope";
-import { stderrBodyKey } from "../../utils/stderrBody";
+import { readErrorBody } from "../../utils/readErrorBody";
 import tableStyles from "../../components/Table/Table.module.css";
 import styles from "./SettingsPage.module.css";
 
@@ -350,12 +350,11 @@ export function SettingsPage() {
           <div className={styles.errorState} data-testid="settings-read-error">
             <div className={styles.errorLabel}>{t(I18N_KEYS.settings.error.title)}</div>
             <p className={styles.errorBody}>
-              {t(
-                stderrBodyKey(
-                  settingsError.stderr,
-                  I18N_KEYS.settings.error.body,
-                  I18N_KEYS.settings.error.bodyNoStderr,
-                ),
+              {readErrorBody(
+                settingsError,
+                t,
+                I18N_KEYS.settings.error.body,
+                I18N_KEYS.settings.error.bodyNoStderr,
               )}
             </p>
             {settingsError.stderr && (

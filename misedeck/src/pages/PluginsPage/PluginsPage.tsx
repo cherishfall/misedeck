@@ -38,7 +38,7 @@ import {
 } from "../../components";
 import { useParsedPluginsList } from "../../hooks/useIssue29";
 import type { InstalledPlugin } from "../../types/tauri";
-import { stderrBodyKey } from "../../utils/stderrBody";
+import { readErrorBody } from "../../utils/readErrorBody";
 
 import tableStyles from "../../components/Table/Table.module.css";
 import styles from "./PluginsPage.module.css";
@@ -234,12 +234,11 @@ export function PluginsPage() {
             <div className={styles.errorState} data-testid="plugins-installed-error">
               <div className={styles.errorLabel}>{t(I18N_KEYS.plugins.installedError.title)}</div>
               <p className={styles.errorBody}>
-                {t(
-                  stderrBodyKey(
-                    pluginsError.stderr,
-                    I18N_KEYS.plugins.installedError.body,
-                    I18N_KEYS.plugins.installedError.bodyNoStderr,
-                  ),
+                {readErrorBody(
+                  pluginsError,
+                  t,
+                  I18N_KEYS.plugins.installedError.body,
+                  I18N_KEYS.plugins.installedError.bodyNoStderr,
                 )}
               </p>
               {pluginsError.stderr && (

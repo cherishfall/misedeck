@@ -51,7 +51,7 @@ import {
 import { isPathUnder } from "../../utils/paths";
 import { resolveAppErrorMessage } from "../../utils/appError";
 import { envSourceVariant } from "../../utils/envSource";
-import { stderrBodyKey } from "../../utils/stderrBody";
+import { readErrorBody } from "../../utils/readErrorBody";
 import {
   Badge,
   Button,
@@ -434,12 +434,11 @@ export function DirectoryPreview() {
             <div className={styles.errorState}>
               <div className={styles.errorLabel}>{t(I18N_KEYS.preview.toolsError.title)}</div>
               <p className={styles.errorBody}>
-                {t(
-                  stderrBodyKey(
-                    toolsError.stderr,
-                    I18N_KEYS.preview.toolsError.body,
-                    I18N_KEYS.preview.toolsError.bodyNoStderr,
-                  ),
+                {readErrorBody(
+                  toolsError,
+                  t,
+                  I18N_KEYS.preview.toolsError.body,
+                  I18N_KEYS.preview.toolsError.bodyNoStderr,
                 )}
               </p>
               {toolsError.stderr && (
@@ -474,12 +473,11 @@ export function DirectoryPreview() {
             <div className={styles.errorState}>
               <div className={styles.errorLabel}>{t(I18N_KEYS.preview.env.errorTitle)}</div>
               <p className={styles.errorBody}>
-                {t(
-                  stderrBodyKey(
-                    envError.stderr,
-                    I18N_KEYS.preview.env.errorBody,
-                    I18N_KEYS.preview.env.errorBodyNoStderr,
-                  ),
+                {readErrorBody(
+                  envError,
+                  t,
+                  I18N_KEYS.preview.env.errorBody,
+                  I18N_KEYS.preview.env.errorBodyNoStderr,
                 )}
               </p>
               {envError.stderr && (
@@ -574,12 +572,11 @@ function ConfigFilesSection() {
         <div className={styles.errorState}>
           <div className={styles.errorLabel}>{t(I18N_KEYS.preview.config.errorTitle)}</div>
           <p className={styles.errorBody}>
-            {t(
-              stderrBodyKey(
-                configError.stderr,
-                I18N_KEYS.preview.config.errorBody,
-                I18N_KEYS.preview.config.errorBodyNoStderr,
-              ),
+            {readErrorBody(
+              configError,
+              t,
+              I18N_KEYS.preview.config.errorBody,
+              I18N_KEYS.preview.config.errorBodyNoStderr,
             )}
           </p>
           {configError.stderr && (

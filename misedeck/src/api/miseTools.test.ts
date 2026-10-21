@@ -6,14 +6,28 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  isConfigFilesResult,
+  isDoctorPayload,
   isEnvWriteScopeMismatch,
   miseRunTaskArgs,
   parseDoctorPayload,
+  parseFailedError,
   parseInstalledPlugin,
   parseLsRemotePayload,
   parseOutdatedItem,
+  parseReadPayload,
   parseRegistryItem,
   parseRunInput,
+  readDoctorPayload,
+  readEnvExtendedPayload,
+  readEnvPayload,
+  readLsRemotePayload,
+  readOutdatedPayload,
+  readPluginsLsPayload,
+  readRegistryPayload,
+  readSettingsPayload,
+  readTasksLsPayload,
+  readToolsLsPayload,
   splitShellWords,
 } from "./miseTools";
 
@@ -261,4 +275,166 @@ test("parseRegistryItem: keeps bins for the lowest search tier", () => {
     aliases: ["1password-cli"],
   });
   assert.deepEqual(row?.bins, ["op"]);
+});
+
+// ---------- Top-level shape validation (issue #270) ----------
+//
+// The Rust boundary guarantees valid JSON, not the documented shape.
+// A wrong top-level shape must become a PARSE_FAILED error — coercing
+// it to `[]`/`{}` used to render a valid-looking empty page, and
+// doctor's `{}` a green "Status: OK".
+
+function assertParseFailed(
+  parsed: { data: unknown; error: { kind: string; err?: { code: string; message: string } } | null },
+  detail: RegExp,
+) {
+  assert.equal(parsed.data, null);
+  assert.ok(parsed.error && parsed.error.kind === "err");
+  assert.equal(parsed.error.err?.code, "PARSE_FAILED");
+  assert.match(parsed.error.err?.message ?? "", detail);
+}
+
+test("parseReadPayload: a rejected shape is a PARSE_FAILED error, an accepted one parses", () => {
+  const rejected = parseReadPayload(
+    [],
+    (v) => v !== null && typeof v === "object" && !Array.isArray(v),
+    "expected an object",
+    () => ({ ok: true }),
+  );
+  assertParseFailed(rejected, /expected an object/);
+
+  const accepted = parseReadPayload({ a: 1 }, () => true, "unused", () => 42);
+  assert.deepEqual(accepted, { data: 42, error: null });
+});
+
+test("parseFailedError: carries the detail and an empty stderr", () => {
+  assert.deepEqual(parseFailedError("detail"), {
+    code: "PARSE_FAILED",
+    message: "detail",
+    stderr: "",
+  });
+});
+
+test("readToolsLsPayload: an object parses, a bare array is rejected", () => {
+  const ok = readToolsLsPayload({ node: [{ version: "22.0.0", installed: true, active: true }] });
+  assert.equal(ok.error, null);
+  assert.deepEqual(ok.data?.map((g) => g.tool), ["node"]);
+
+  assertParseFailed(readToolsLsPayload([{ version: "22.0.0" }]), /object keyed by tool/);
+  assertParseFailed(readToolsLsPayload("nope"), /object keyed by tool/);
+});
+
+test("readOutdatedPayload: an object parses, a bare array is rejected", () => {
+  const ok = readOutdatedPayload({ node: { name: "node", latest: "22.1.0" } });
+  assert.equal(ok.error, null);
+  assert.equal(ok.data?.[0].name, "node");
+
+  assertParseFailed(readOutdatedPayload([]), /object keyed by tool/);
+});
+
+test("readLsRemotePayload: an array parses, an object is rejected", () => {
+  const ok = readLsRemotePayload([{ version: "1.0.0" }]);
+  assert.equal(ok.error, null);
+  assert.equal(ok.data?.[0].version, "1.0.0");
+
+  assertParseFailed(readLsRemotePayload({ version: "1.0.0" }), /did not return an array/);
+});
+
+test("readEnvPayload: an object parses, an array is rejected", () => {
+  const ok = readEnvPayload({ FOO: "bar" });
+  assert.equal(ok.error, null);
+  assert.equal(ok.data?.[0].name, "FOO");
+
+  assertParseFailed(readEnvPayload(["FOO"]), /object keyed by variable/);
+});
+
+test("readEnvExtendedPayload: an object parses, an array is rejected", () => {
+  const ok = readEnvExtendedPayload({ FOO: { value: "bar" } });
+  assert.equal(ok.error, null);
+  assert.equal(ok.data?.[0].value, "bar");
+
+  assertParseFailed(readEnvExtendedPayload([{ name: "FOO" }]), /object keyed by variable/);
+});
+
+test("readTasksLsPayload: an array parses, an object is rejected", () => {
+  const ok = readTasksLsPayload([{ name: "build", run: ["echo"] }]);
+  assert.equal(ok.error, null);
+  assert.equal(ok.data?.[0].name, "build");
+
+  assertParseFailed(readTasksLsPayload({ tasks: [] }), /did not return an array/);
+});
+
+test("readSettingsPayload: an object parses, an array is rejected", () => {
+  const ok = readSettingsPayload({ experimental: { value: true } });
+  assert.equal(ok.error, null);
+  assert.equal(ok.data?.[0].key, "experimental");
+
+  assertParseFailed(readSettingsPayload([]), /object keyed by setting/);
+});
+
+test("readRegistryPayload: an array parses, an object is rejected", () => {
+  const ok = readRegistryPayload([{ short: "node" }]);
+  assert.equal(ok.error, null);
+  assert.equal(ok.data?.[0].short, "node");
+
+  assertParseFailed(readRegistryPayload({ node: {} }), /did not return an array/);
+});
+
+test("readPluginsLsPayload: an array parses, an object is rejected", () => {
+  const ok = readPluginsLsPayload([{ name: "direnv" }]);
+  assert.equal(ok.error, null);
+  assert.equal(ok.data?.[0].name, "direnv");
+
+  assertParseFailed(readPluginsLsPayload({ direnv: {} }), /did not return an array/);
+});
+
+test("isDoctorPayload: a version or the rawLines fallback is a report, anything else is not", () => {
+  assert.equal(isDoctorPayload({ version: "2026.10.15" }), true);
+  assert.equal(isDoctorPayload({ rawLines: [] }), true);
+  assert.equal(isDoctorPayload({ rawLines: [{ text: "ok", status: "ok" }] }), true);
+
+  assert.equal(isDoctorPayload({}), false);
+  assert.equal(isDoctorPayload({ unexpected: true }), false);
+  assert.equal(isDoctorPayload({ version: 1 }), false);
+  assert.equal(isDoctorPayload({ rawLines: "text" }), false);
+  assert.equal(isDoctorPayload([]), false);
+  assert.equal(isDoctorPayload(null), false);
+});
+
+test("readDoctorPayload: an unusable object never becomes a green report", () => {
+  const ok = readDoctorPayload({ version: "2026.10.15", warnings: [], errors: [] });
+  assert.equal(ok.error, null);
+  assert.equal(ok.data?.version, "2026.10.15");
+
+  assertParseFailed(readDoctorPayload({}), /unrecognized report object/);
+  assertParseFailed(readDoctorPayload({ unexpected: true }), /unrecognized report object/);
+  assertParseFailed(readDoctorPayload([]), /unrecognized report object/);
+});
+
+test("isConfigFilesResult: accepts the documented ok/err union only", () => {
+  const row = { path: "/p/mise.toml", tools: ["node"], override: false, content: "x" };
+  assert.equal(isConfigFilesResult({ kind: "ok", files: [row] }), true);
+  assert.equal(isConfigFilesResult({ kind: "ok", files: [] }), true);
+  assert.equal(
+    isConfigFilesResult({
+      kind: "err",
+      err: { code: "COMMAND_FAILED", message: "boom", stderr: "boom" },
+    }),
+    true,
+  );
+
+  assert.equal(isConfigFilesResult({ kind: "ok" }), false);
+  assert.equal(isConfigFilesResult({ kind: "ok", files: [{ path: "/p" }] }), false);
+  assert.equal(
+    isConfigFilesResult({ kind: "ok", files: [{ ...row, tools: "node" }] }),
+    false,
+  );
+  assert.equal(
+    isConfigFilesResult({ kind: "ok", files: [{ ...row, content: 1 }] }),
+    false,
+  );
+  assert.equal(isConfigFilesResult({ kind: "err", err: { code: "X" } }), false);
+  assert.equal(isConfigFilesResult({ kind: "other" }), false);
+  assert.equal(isConfigFilesResult(null), false);
+  assert.equal(isConfigFilesResult([]), false);
 });

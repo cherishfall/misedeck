@@ -30,7 +30,7 @@ import { useParsedDoctor } from "../../hooks/useIssue29";
 import { useActivation } from "../../state/activationContext";
 import { activationPresence } from "../../state/activationPresence";
 import type { DoctorLine, DoctorPayload } from "../../types/tauri";
-import { stderrBodyKey } from "../../utils/stderrBody";
+import { readErrorBody } from "../../utils/readErrorBody";
 
 import { composeDoctorReport, doctorReportBody } from "./doctorReport";
 import styles from "./DoctorPage.module.css";
@@ -136,12 +136,11 @@ export function DoctorPage() {
           <div className={styles.errorState} data-testid="doctor-read-error">
             <div className={styles.errorLabel}>{t(I18N_KEYS.doctor.error.title)}</div>
             <p className={styles.errorBody}>
-              {t(
-                stderrBodyKey(
-                  doctorError.stderr,
-                  I18N_KEYS.doctor.error.body,
-                  I18N_KEYS.doctor.error.bodyNoStderr,
-                ),
+              {readErrorBody(
+                doctorError,
+                t,
+                I18N_KEYS.doctor.error.body,
+                I18N_KEYS.doctor.error.bodyNoStderr,
               )}
             </p>
             {doctorError.stderr && (

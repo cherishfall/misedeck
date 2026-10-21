@@ -46,7 +46,7 @@ import { isEnvWriteScopeMismatch, type EnvSource } from "../../api/miseTools";
 
 import { ENV_VALUE_CELL_CHARS, shortenPathTail } from "../../utils/paths";
 import { envSourceVariant } from "../../utils/envSource";
-import { stderrBodyKey } from "../../utils/stderrBody";
+import { readErrorBody } from "../../utils/readErrorBody";
 import tableStyles from "../../components/Table/Table.module.css";
 import styles from "./EnvPage.module.css";
 
@@ -326,12 +326,11 @@ export function EnvPage() {
             <div className={styles.errorState}>
               <div className={styles.errorLabel}>{t(I18N_KEYS.env.error.title)}</div>
               <p className={styles.errorBody}>
-                {t(
-                  stderrBodyKey(
-                    envError.stderr,
-                    I18N_KEYS.env.error.body,
-                    I18N_KEYS.env.error.bodyNoStderr,
-                  ),
+                {readErrorBody(
+                  envError,
+                  t,
+                  I18N_KEYS.env.error.body,
+                  I18N_KEYS.env.error.bodyNoStderr,
                 )}
               </p>
               {envError.stderr && <pre className={styles.errorStderr}>{envError.stderr}</pre>}

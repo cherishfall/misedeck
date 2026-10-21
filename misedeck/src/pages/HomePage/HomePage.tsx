@@ -19,7 +19,7 @@ import { I18N_KEYS } from "../../i18n/keys";
 import type { AppError, AppErrorCode, DetectMiseOk } from "../../types/tauri";
 import { parseAppErrorMessage } from "../../utils/appError";
 import { formatErrorSummary } from "../../utils/errorSummary";
-import { stderrBodyKey } from "../../utils/stderrBody";
+import { readErrorBody } from "../../utils/readErrorBody";
 import { compareVersions } from "../../utils/versions";
 
 import {
@@ -397,12 +397,11 @@ export function HomePage() {
               </span>
             </div>
             <p className={styles.stateBody}>
-              {t(
-                stderrBodyKey(
-                  view.err.stderr,
-                  I18N_KEYS.states.commandFailed.body,
-                  I18N_KEYS.states.commandFailed.bodyNoStderr,
-                ),
+              {readErrorBody(
+                view.err,
+                t,
+                I18N_KEYS.states.commandFailed.body,
+                I18N_KEYS.states.commandFailed.bodyNoStderr,
               )}
             </p>
             {view.err.stderr && <pre className={styles.stderr}>{view.err.stderr}</pre>}
