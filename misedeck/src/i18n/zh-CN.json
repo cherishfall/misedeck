@@ -501,6 +501,9 @@
     "warnings": {
       "title": "警告"
     },
+    "errors": {
+      "title": "错误"
+    },
     "configFiles": {
       "title": "配置文件",
       "none": "没有配置文件。"

@@ -28,7 +28,7 @@ MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  TIMEOUT  TERMINAL_NO
 
 ## Invoking mise
 
-- 启动时定位一次二进制（`mise version --json`）；缓存路径 + 版本。最低支持的 mise 版本为 **2025.1.0**，在此强制执行（code 为 `MISE_TOO_OLD`）；当某个功能需要更新的 mise 时，要有意识地提高该下限。缺失为 `MISE_NOT_FOUND`，并路由到引导式安装流程（issue #2）。
+- 启动时定位一次二进制（`mise version --json`）；缓存路径 + 版本。最低支持的 mise 版本为 **2025.12.5**——首个包含应用所需的全部 flag 的版本（`ls-remote --json`，mise #7279）——在此强制执行（code 为 `MISE_TOO_OLD`）；当某个功能需要更新的 mise 时，要有意识地提高该下限。缺失为 `MISE_NOT_FOUND`，并路由到引导式安装流程（issue #2）。
 - 始终通过 `-C` 传递目录上下文；凡是支持 `--json` 的地方都请求它。
 - 为每条命令设置宽松但有限的超时；流式命令（安装、任务运行）把 stdout/stderr 行流式输出到执行面板，而不是缓冲。
 - 非零退出 → `COMMAND_FAILED`，stderr 逐字保留。解析失败 → `PARSE_FAILED`，并记录原始负载。

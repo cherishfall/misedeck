@@ -12,7 +12,7 @@ use std::path::PathBuf;
 
 use misedeck_lib::install::InstallOutcome;
 use misedeck_lib::mise::{
-    AppError, ConfigFile, DetectMiseOk, RunOutcome, TrustSource, TrustStatus,
+    AppError, ConfigFile, DetectMiseOk, MisePluginRow, RunOutcome, TrustSource, TrustStatus,
 };
 use misedeck_lib::shell::{ActivationStatus, ShellKind, TerminalOpenOutcome};
 use misedeck_lib::{
@@ -419,5 +419,47 @@ fn app_update_result_err() {
                 "stderr": "curl: (28) timed out",
             },
         })
+    );
+}
+
+// ---------- plugins ls row (issue #259) ----------
+
+#[test]
+fn plugin_row_serializes_four_columns() {
+    // `plugins_ls` ships `[MisePluginRow]` inside `JsonResult::Ok`, so
+    // every column the parser recovered must reach the TS side with
+    // exactly these names — the Plugins table reads `url`, `ref`, and
+    // `sha`, and an absent URL must arrive as an empty string (the TS
+    // parser turns that into `undefined`, i.e. a `—` cell) rather than
+    // dropping the key.
+    let v = serde_json::to_value(vec![
+        MisePluginRow {
+            name: "direnv".to_string(),
+            url: "https://github.com/asdf-community/asdf-direnv.git".to_string(),
+            r#ref: "HEAD".to_string(),
+            sha: "0c76b16".to_string(),
+        },
+        MisePluginRow {
+            name: "asdf-demo".to_string(),
+            ..MisePluginRow::default()
+        },
+    ])
+    .unwrap();
+    assert_eq!(
+        v,
+        json!([
+            {
+                "name": "direnv",
+                "url": "https://github.com/asdf-community/asdf-direnv.git",
+                "ref": "HEAD",
+                "sha": "0c76b16",
+            },
+            {
+                "name": "asdf-demo",
+                "url": "",
+                "ref": "",
+                "sha": "",
+            },
+        ])
     );
 }

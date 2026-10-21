@@ -648,6 +648,9 @@ export const I18N_KEYS = {
     warnings: {
       title: "doctor.warnings.title",
     },
+    errors: {
+      title: "doctor.errors.title",
+    },
     configFiles: {
       title: "doctor.configFiles.title",
       none: "doctor.configFiles.none",

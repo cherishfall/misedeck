@@ -12,7 +12,9 @@
 
 use std::path::{Path, PathBuf};
 
-use misedeck_lib::mise::{code, detect_mise, extract_date, locate_mise, meets_minimum};
+use misedeck_lib::mise::{
+    code, detect_mise, extract_date, locate_mise, meets_minimum, MIN_MISE_VERSION,
+};
 use serial_test::serial;
 
 fn fixture_script() -> PathBuf {
@@ -67,17 +69,19 @@ fn missing_binary_returns_mise_not_found() {
 #[test]
 #[serial]
 fn too_old_version_returns_mise_too_old() {
+    // 2025.6.1 is inside the old 2025.1.0 floor but predates
+    // `ls-remote --json` (2025.12.5) — the gate must reject it now.
     let script = fixture_script();
     with_slug("version---json-too-old", || {
-        let err = detect_mise(&script).expect_err("2024.12.31 < 2025.1.0 should fail");
+        let err = detect_mise(&script).expect_err("2025.6.1 < 2025.12.5 should fail");
         assert_eq!(err.code, code::MISE_TOO_OLD);
         assert!(
-            err.message.contains("2024.12.31"),
+            err.message.contains("2025.6.1"),
             "message should include the found version, got {:?}",
             err.message
         );
         assert!(
-            err.message.contains("2025.1.0"),
+            err.message.contains("2025.12.5"),
             "message should include the minimum version, got {:?}",
             err.message
         );
@@ -169,6 +173,20 @@ fn locate_mise_does_not_touch_fixture_script() {
         ),
         Err(e) => assert_eq!(e.code, code::MISE_NOT_FOUND),
     }
+}
+
+#[test]
+fn minimum_mise_version_covers_ls_remote_json() {
+    // Issue #259: the declared floor must be the first release that has
+    // every flag the app builds. `ls-remote --json` shipped in
+    // 2025.12.5 (mise #7279), so the previous 2025.1.0 floor let a mise
+    // that cannot run the version picker through the gate.
+    assert_eq!(MIN_MISE_VERSION, "2025.12.5");
+    assert!(
+        !meets_minimum("2025.12.4", MIN_MISE_VERSION),
+        "2025.12.4 predates ls-remote --json and must be rejected"
+    );
+    assert!(meets_minimum("2025.12.5", MIN_MISE_VERSION));
 }
 
 #[test]

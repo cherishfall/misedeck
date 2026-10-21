@@ -5,7 +5,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { parseLsRemotePayload, parseRunInput, isEnvWriteScopeMismatch } from "./miseTools";
+import {
+  isEnvWriteScopeMismatch,
+  parseDoctorPayload,
+  parseInstalledPlugin,
+  parseLsRemotePayload,
+  parseOutdatedItem,
+  parseRegistryItem,
+  parseRunInput,
+} from "./miseTools";
 
 // Wire-shape guard for `mise ls-remote --json <tool>` (issue #224):
 // rows lifted verbatim from the real `mise ls-remote --json node`
@@ -115,4 +123,74 @@ test("isEnvWriteScopeMismatch: global mode accepts only the global config", () =
   assert.equal(isEnvWriteScopeMismatch("/home/u/.config/mise/config.toml", null), false);
   assert.equal(isEnvWriteScopeMismatch(String.raw`C:\Users\u\.config\mise\config.toml`, null), false);
   assert.equal(isEnvWriteScopeMismatch("/repo/mise.toml", null), true);
+});
+
+// Wire-shape guard for `mise outdated --json` (issue #259). Without
+// `--bump`, mise reports only in-range targets; the retired `bump`
+// field is not part of the row any more. Captured from mise
+// 2026.10.15 on this repo (a pinned tool that only has an out-of-range
+// release does not appear at all).
+test("parseOutdatedItem: reads the in-range latest and drops bump", () => {
+  const row = parseOutdatedItem({
+    name: "rust",
+    requested: "latest",
+    current: "stable",
+    bump: null,
+    latest: "stable",
+  });
+  assert.deepEqual(row, {
+    name: "rust",
+    requested: "latest",
+    current: "stable",
+    latest: "stable",
+    source: undefined,
+  });
+  assert.ok(!("bump" in (row as object)), "bump must not survive parsing");
+});
+
+// `mise plugins ls --urls` is a four-column table; the app pipes it so
+// mise prints no header (verified against mise 2026.10.15). A plugin
+// with no remote prints its name alone — the Source cell must render
+// "—" and never borrow the ref (issue #259).
+test("parseInstalledPlugin: keeps url, ref, and sha", () => {
+  const row = parseInstalledPlugin({
+    name: "direnv",
+    url: "https://github.com/asdf-community/asdf-direnv.git",
+    ref: "HEAD",
+    sha: "0c76b16",
+  });
+  assert.deepEqual(row, {
+    name: "direnv",
+    url: "https://github.com/asdf-community/asdf-direnv.git",
+    ref: "HEAD",
+    sha: "0c76b16",
+    source: "https://github.com/asdf-community/asdf-direnv.git",
+  });
+});
+
+test("parseInstalledPlugin: an absent URL leaves source undefined", () => {
+  const row = parseInstalledPlugin({ name: "asdf-demo", url: "", ref: "", sha: "" });
+  assert.equal(row?.source, undefined);
+  assert.equal(row?.url, undefined);
+  assert.equal(row?.name, "asdf-demo");
+});
+
+test("parseDoctorPayload: maps the errors array", () => {
+  const payload = parseDoctorPayload({
+    warnings: ["a warning"],
+    errors: ["config file is not trusted: ~/project/mise.toml"],
+  });
+  assert.deepEqual(payload.errors, ["config file is not trusted: ~/project/mise.toml"]);
+  assert.deepEqual(payload.warnings, ["a warning"]);
+});
+
+test("parseRegistryItem: keeps bins for the lowest search tier", () => {
+  const row = parseRegistryItem({
+    short: "1password",
+    backends: ["aqua:1password/cli"],
+    bins: ["op"],
+    description: "Password manager",
+    aliases: ["1password-cli"],
+  });
+  assert.deepEqual(row?.bins, ["op"]);
 });

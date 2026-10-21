@@ -20,7 +20,13 @@ use serde::{Deserialize, Serialize};
 use crate::process_tree::{self, ChildGuard};
 
 /// Minimum supported mise version (see docs/agents/conventions.md).
-pub const MIN_MISE_VERSION: &str = "2025.1.0";
+///
+/// `2025.12.5` is the first release containing every flag the app
+/// builds: `ls-remote --json` shipped there (mise #7279, committed
+/// 2025-12-13). On an older mise the version picker fails with
+/// `unexpected argument '--json'` for every tool, so the floor is a
+/// measured requirement, not a guess.
+pub const MIN_MISE_VERSION: &str = "2025.12.5";
 
 /// Generous but finite timeout for the `mise version --json` probe.
 pub const DETECT_TIMEOUT: Duration = Duration::from_secs(10);
@@ -746,8 +752,6 @@ pub struct MiseOutdatedItem {
     #[serde(default)]
     pub current: Option<String>,
     #[serde(default)]
-    pub bump: Option<String>,
-    #[serde(default)]
     pub latest: Option<String>,
     #[serde(default)]
     pub source: Option<MiseSource>,
@@ -847,14 +851,16 @@ pub fn mise_ls_tool(
 
 /// `mise outdated --json` — the outdated-tools map. Returns the raw
 /// JSON object mise emits (`{tool: MiseOutdatedItem}` or `{}` when
-/// no tools are outdated). The `--bump` flag is added to the
-/// invocation so the JSON includes both `current` and `bump` even
-/// when the current version is already the latest.
+/// no tools are outdated). No `--bump`: without it `latest` is the
+/// newest version *inside the configured range*, i.e. exactly what
+/// `mise upgrade <tool>` reaches (ui-ux-rules, beta13 Q9). With
+/// `--bump` mise reports the newest published version regardless of
+/// the request, which the UI would advertise and then fail to install.
 pub fn mise_outdated(
     mise_path: &Path,
     cwd: Option<&Path>,
 ) -> Result<serde_json::Value, AppError> {
-    let args = vec!["outdated".to_string(), "--json".to_string(), "--bump".to_string()];
+    let args = vec!["outdated".to_string(), "--json".to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
@@ -1418,18 +1424,15 @@ fn classify_doctor_line(line: &str) -> DoctorLineStatus {
     }
 }
 
-fn doctor_text_fallback(
-    mise_path: &Path,
-    cwd: Option<&Path>,
+/// Turn raw `mise doctor` text into the fallback payload. Split out of
+/// `doctor_text_fallback` so a run that already produced text does
+/// not have to be repeated.
+fn doctor_text_payload(
+    stdout: &str,
+    stderr: String,
+    exit_code: i32,
 ) -> Result<serde_json::Value, AppError> {
-    let args = vec!["doctor".to_string()];
-    let req = match cwd {
-        Some(c) => RunRequest::with_cwd(args, c),
-        None => RunRequest::new(args),
-    };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
-    let lines: Vec<DoctorLine> = outcome
-        .stdout
+    let lines: Vec<DoctorLine> = stdout
         .lines()
         .map(|line| DoctorLine {
             text: line.to_string(),
@@ -1440,22 +1443,47 @@ fn doctor_text_fallback(
     // report: shipping Ok({rawLines: []}) would render "Status: OK"
     // from no data (issue #233). Non-zero exits WITH lines stay Ok —
     // those lines are the diagnostic output the fallback exists for.
-    if lines.is_empty() && outcome.exit_code != 0 {
+    if lines.is_empty() && exit_code != 0 {
         return Err(AppError::command_failed(
-            format!("mise doctor exited with status {}", outcome.exit_code),
-            outcome.stderr,
+            format!("mise doctor exited with status {exit_code}"),
+            stderr,
         ));
     }
     Ok(serde_json::json!({
         "rawLines": lines,
-        "rawText": outcome.stdout,
+        "rawText": stdout,
     }))
 }
 
-/// `mise doctor --json` for the active context. If the mise binary
-/// does not support `--json` (or the output is not valid JSON), the
-/// runner falls back to capturing the raw `mise doctor` text and
-/// returning it as a structured array of tinted lines.
+/// Re-run `mise doctor` without `--json`. This is the last resort for a
+/// mise that rejects the flag, so nothing has been printed yet.
+fn doctor_text_fallback(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+) -> Result<serde_json::Value, AppError> {
+    let args = vec!["doctor".to_string()];
+    let req = match cwd {
+        Some(c) => RunRequest::with_cwd(args, c),
+        None => RunRequest::new(args),
+    };
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
+    doctor_text_payload(&outcome.stdout, outcome.stderr, outcome.exit_code)
+}
+
+/// `mise doctor --json` for the active context.
+///
+/// The exit code is checked *after* parsing, not before: mise calls
+/// `exit(1)` when it collected `errors`, so a broken install — exactly
+/// when a user opens this page — still emits a complete JSON report.
+/// Checking the code first sent that payload into the text fallback,
+/// hiding `warnings`/`errors` from the structured view and running
+/// `mise doctor` a second time (issue #259).
+///
+/// Only a run that produced no parseable output falls back: to the
+/// text it already printed when there is any, otherwise to a second
+/// run without `--json` (a mise build that predates the flag). A
+/// timeout or a missing binary is never retried — that doubles the
+/// blocking wait (2×120s with no cancel path, issue #230).
 pub fn mise_doctor(
     mise_path: &Path,
     cwd: Option<&Path>,
@@ -1465,19 +1493,16 @@ pub fn mise_doctor(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    match run_mise_json(mise_path, &req) {
-        Ok(v) => Ok(v),
-        // Only a *shape* failure justifies re-running without `--json`:
-        // the text fallback exists for a mise build that predates the
-        // flag or emits unparseable output. A timeout or a missing
-        // binary must NOT be retried — that doubles the blocking wait
-        // (2×120s with no cancel path, issue #230) and repeats a
-        // failure the user already saw.
-        Err(e) if e.code == code::PARSE_FAILED || e.code == code::COMMAND_FAILED => {
-            doctor_text_fallback(mise_path, cwd)
-        }
-        Err(e) => Err(e),
+    // Same read-only contract as `run_mise_json` (MISE_SAFE), but the
+    // exit code cannot short-circuit the parse — see the doc comment.
+    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
+    if let Ok(value) = serde_json::from_str::<serde_json::Value>(outcome.stdout.trim()) {
+        return Ok(value);
     }
+    if !outcome.stdout.trim().is_empty() {
+        return doctor_text_payload(&outcome.stdout, outcome.stderr, outcome.exit_code);
+    }
+    doctor_text_fallback(mise_path, cwd)
 }
 
 fn registry_table_fallback(
@@ -1536,14 +1561,62 @@ pub fn mise_registry(
     }
 }
 
+/// One row of `mise plugins ls --urls`. mise prints a four-column
+/// table (`Plugin  Url  Ref  Sha`), so all four are modelled — the ref
+/// and commit identify a plugin pinned to a tag/branch, and an empty
+/// `url` must stay empty rather than absorb the ref (issue #259).
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct MisePluginRow {
+    /// Plugin name exactly as mise prints it (ui-ux-rules: data honesty).
+    pub name: String,
+    /// Git URL mise reports; empty when the plugin has no remote.
+    pub url: String,
+    /// Checked-out ref (`HEAD` when mise left the clone detached).
+    pub r#ref: String,
+    /// Short commit hash.
+    pub sha: String,
+}
+
+/// Parse one `mise plugins ls --urls` line. mise suppresses the header
+/// when stdout is not a tty (the app always pipes), and trims trailing
+/// empty cells, so a row is one of:
+///
+///   * `<name>` — no URL and no git info (a configured plugin)
+///   * `<name> <url>` — URL only
+///   * `<name> <ref> <sha>` — no URL (the last two tokens are the git
+///     pair, never a ref masquerading as a URL)
+///   * `<name> <url> <ref> <sha>`
+fn parse_plugin_row(line: &str) -> Option<MisePluginRow> {
+    let tokens: Vec<&str> = line.split_whitespace().collect();
+    let name = tokens.first()?.to_string();
+    let mut row = MisePluginRow {
+        name,
+        ..MisePluginRow::default()
+    };
+    match tokens.len() {
+        0 | 1 => {}
+        2 => row.url = tokens[1].to_string(),
+        3 => {
+            row.r#ref = tokens[1].to_string();
+            row.sha = tokens[2].to_string();
+        }
+        n => {
+            // Git URLs contain no whitespace, but joining the middle
+            // tokens keeps a defensive parser from dropping one.
+            row.url = tokens[1..n - 2].join(" ");
+            row.r#ref = tokens[n - 2].to_string();
+            row.sha = tokens[n - 1].to_string();
+        }
+    }
+    Some(row)
+}
+
 /// `mise plugins ls --urls` — the installed plugins list (issue #51).
 /// `mise plugins ls` has no `--json` flag (a known JSON gap, see
 /// docs/agents/architecture.md), so the runner parses the plain-text
-/// table behind the boundary: each non-empty line is
-/// `<name><padding><url>` — the name is the first
-/// whitespace-delimited token, the source URL the rest of the line
-/// (absent when a plugin reports no URL). Names and URLs are shipped
-/// verbatim; original case is preserved (ui-ux-rules: data honesty).
+/// table behind the boundary. Names, URLs, refs, and hashes are
+/// shipped verbatim; original case is preserved.
 pub fn mise_plugins_ls(
     mise_path: &Path,
     cwd: Option<&Path>,
@@ -1564,21 +1637,18 @@ pub fn mise_plugins_ls(
             outcome.stderr,
         ));
     }
-    let rows: Vec<serde_json::Value> = outcome
+    let rows: Vec<MisePluginRow> = outcome
         .stdout
         .lines()
         .filter(|line| !line.trim().is_empty())
-        .filter_map(|line| {
-            let mut parts = line.split_whitespace();
-            let name = parts.next().unwrap_or("").to_string();
-            if name.is_empty() {
-                return None;
-            }
-            let source = parts.next().unwrap_or("").to_string();
-            Some(serde_json::json!({ "name": name, "source": source }))
-        })
+        .filter_map(parse_plugin_row)
         .collect();
-    Ok(serde_json::Value::Array(rows))
+    serde_json::to_value(rows).map_err(|e| {
+        AppError::parse_failed(
+            format!("could not serialize mise plugins ls rows: {e}"),
+            String::new(),
+        )
+    })
 }
 
 // ---------- Global tool mutations (issue #22) ----------

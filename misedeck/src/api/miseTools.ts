@@ -105,7 +105,8 @@ export function parseLsPayload(
   return out;
 }
 
-/** Parse one row of `mise outdated --json --bump`. */
+/** Parse one row of `mise outdated --json` (no `--bump`: `latest` is
+ *  the in-range target `mise upgrade` reaches). */
 export function parseOutdatedItem(value: unknown): MiseOutdatedItem | null {
   if (value === null || typeof value !== "object") return null;
   const o = value as Record<string, unknown>;
@@ -115,13 +116,12 @@ export function parseOutdatedItem(value: unknown): MiseOutdatedItem | null {
     name,
     requested: asOptionalString(o.requested),
     current: asOptionalString(o.current),
-    bump: asOptionalString(o.bump),
     latest: asOptionalString(o.latest),
     source: asSource(o.source),
   };
 }
 
-/** Parse the `mise outdated --json --bump` payload (`{tool: row}` or `{}`). */
+/** Parse the `mise outdated --json` payload (`{tool: row}` or `{}`). */
 export function parseOutdatedPayload(
   value: unknown,
 ): MiseOutdatedItem[] {
@@ -612,6 +612,12 @@ export function parseDoctorPayload(value: unknown): DoctorPayload {
   if (Array.isArray(raw.warnings)) {
     out.warnings = raw.warnings.map((v) => String(v));
   }
+  // Failed checks. mise exits 1 when it collected errors but still
+  // prints a complete report, so these arrive through the normal path
+  // (issue #259).
+  if (Array.isArray(raw.errors)) {
+    out.errors = raw.errors.map((v) => String(v));
+  }
   if (raw.toolset !== null && typeof raw.toolset === "object" && !Array.isArray(raw.toolset)) {
     out.toolset = raw.toolset as Record<string, Array<{ version: string }>>;
   }
@@ -639,6 +645,7 @@ export function parseRegistryItem(value: unknown): RegistryItem | null {
   return {
     short,
     backends: asStringArray(o.backends),
+    bins: asStringArray(o.bins),
     description: asOptionalString(o.description),
     aliases: asStringArray(o.aliases),
   };
@@ -656,17 +663,25 @@ export function parseRegistryPayload(value: unknown): RegistryItem[] {
   return out;
 }
 
-/** Parse one `mise plugins ls --urls` row (issue #51). The runner
- *  ships `{name, source}` parsed from the plain-text table. */
+/** Parse one `mise plugins ls --urls` row (issue #51). The runner ships
+ *  `{name, url, ref, sha}` parsed from the four-column plain-text
+ *  table. `source` mirrors `url` for the Plugins table's Source column
+ *  and stays undefined when mise reports no URL — an empty URL must
+ *  render as `—`, never borrow the ref (issue #259). */
 export function parseInstalledPlugin(value: unknown): InstalledPlugin | null {
   if (value === null || typeof value !== "object") return null;
   const o = value as Record<string, unknown>;
   const name = asString(o.name);
   if (name === "") return null;
-  const source = asString(o.source);
+  const url = asString(o.url) || asString(o.source);
+  const ref = asString(o.ref);
+  const sha = asString(o.sha);
   return {
     name,
-    source: source === "" ? undefined : source,
+    url: url === "" ? undefined : url,
+    ref: ref === "" ? undefined : ref,
+    sha: sha === "" ? undefined : sha,
+    source: url === "" ? undefined : url,
   };
 }
 

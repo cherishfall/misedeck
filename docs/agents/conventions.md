@@ -33,7 +33,7 @@ tickets should reuse the existing six when possible.
 
 ## Invoking mise
 
-- Locate the binary once at startup (`mise version --json`); cache path + version. Minimum supported mise version is **2025.1.0**, enforced here (code `MISE_TOO_OLD`); raise the floor deliberately when a feature needs newer mise. Absence is `MISE_NOT_FOUND` and routes to the guided-install flow (issue #2).
+- Locate the binary once at startup (`mise version --json`); cache path + version. Minimum supported mise version is **2025.12.5** — the first release with every flag the app builds (`ls-remote --json`, mise #7279) — enforced here (code `MISE_TOO_OLD`); raise the floor deliberately when a feature needs newer mise. Absence is `MISE_NOT_FOUND` and routes to the guided-install flow (issue #2).
 - Always pass the directory context via `-C`; always request `--json` where it exists.
 - Set a generous but finite timeout per command; streaming commands (install, task run) stream stdout/stderr lines to the execution panel instead of buffering.
 - Non-zero exit → `COMMAND_FAILED` with stderr preserved verbatim. Parse failures → `PARSE_FAILED` with the raw payload logged.

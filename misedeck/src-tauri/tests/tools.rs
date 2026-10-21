@@ -3,7 +3,7 @@
 //
 //   * mise_ls        → mise ls --json
 //   * mise_ls_tool   → mise ls --json <tool>
-//   * mise_outdated  → mise outdated --json --bump
+//   * mise_outdated  → mise outdated --json
 //   * mise_ls_remote → mise ls-remote --json <tool>
 //
 // The fixture-mise script serves recorded JSON / stderr / exit code
@@ -120,14 +120,23 @@ fn tools_ls_tool_rejects_empty_tool() {
 
 #[test]
 #[serial]
-fn tools_outdated_returns_map_with_one_tool() {
+fn tools_outdated_reports_only_in_range_targets() {
+    // No `--bump` (issue #259): with it, mise also reported a pinned
+    // tool whose newer release sits outside the configured range
+    // (`go 1.27.1 → 1.27.3`), so the Tools page advertised an upgrade
+    // `mise upgrade go` cannot perform. Without it the payload lists
+    // only tools with an in-range target — here `rust`, whose
+    // `latest` equals `current`.
     let script = fixture_script();
-    with_slug("outdated---json---bump", || {
-        let v = mise_outdated(&script, None).expect("outdated --json --bump should yield Ok");
+    with_slug("outdated---json", || {
+        let v = mise_outdated(&script, None).expect("outdated --json should yield Ok");
         let obj = v.as_object().expect("outdated payload must be a JSON object");
-        assert!(obj.contains_key("go"), "expected `go` outdated, got {v:?}");
-        assert_eq!(obj["go"]["latest"], "1.27.0");
-        assert_eq!(obj["go"]["bump"], "1.27.0");
+        assert!(obj.contains_key("rust"), "expected `rust` in payload, got {v:?}");
+        assert_eq!(obj["rust"]["latest"], "stable");
+        assert!(
+            !obj.contains_key("go"),
+            "a tool whose newer version is out of range must not appear: {v:?}"
+        );
     });
 }
 
@@ -135,7 +144,7 @@ fn tools_outdated_returns_map_with_one_tool() {
 #[serial]
 fn tools_outdated_empty_returns_empty_object() {
     let script = fixture_script();
-    with_slug("outdated---json---bump-empty", || {
+    with_slug("outdated---json-empty", || {
         let v = mise_outdated(&script, None).expect("empty outdated should yield Ok");
         let obj = v.as_object().expect("outdated payload must be a JSON object");
         assert!(obj.is_empty(), "expected empty map, got {v:?}");
@@ -146,7 +155,7 @@ fn tools_outdated_empty_returns_empty_object() {
 #[serial]
 fn tools_outdated_command_failed_keeps_stderr() {
     let script = fixture_script();
-    with_slug("outdated---json---bump-command-failed", || {
+    with_slug("outdated---json-command-failed", || {
         let err = mise_outdated(&script, None).expect_err("non-zero exit should yield Err");
         assert_eq!(err.code, code::COMMAND_FAILED);
         assert!(err.stderr.contains("ERROR"));

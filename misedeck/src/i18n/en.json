@@ -501,6 +501,9 @@
     "warnings": {
       "title": "Warnings"
     },
+    "errors": {
+      "title": "Errors"
+    },
     "configFiles": {
       "title": "Config files",
       "none": "No config files."

@@ -1,0 +1,13 @@
+{
+  "rust": {
+    "name": "rust",
+    "requested": "latest",
+    "current": "stable",
+    "bump": null,
+    "latest": "stable",
+    "source": {
+      "type": "mise.toml",
+      "path": "/Users/example/mise.toml"
+    }
+  }
+}

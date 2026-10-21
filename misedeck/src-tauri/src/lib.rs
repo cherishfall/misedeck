@@ -498,9 +498,10 @@ where
     }
 }
 
-/// `mise outdated --json --bump` for the current directory context.
+/// `mise outdated --json` for the current directory context.
 /// Read-only; returns the raw JSON object mise emits (`{}` when no
-/// tools are outdated).
+/// tools are outdated). No `--bump`: `latest` is the newest version in
+/// the configured range, i.e. the one `mise upgrade <tool>` reaches.
 #[tauri::command]
 async fn tools_outdated(cwd: Option<String>) -> JsonResult {
     let cwd_owned = match validated_cwd(cwd) {
@@ -695,9 +696,11 @@ async fn tasks_ls(cwd: Option<String>) -> JsonResult {
 }
 
 /// `mise doctor --json` for the active directory context. Returns
-/// the raw JSON payload on success; if the mise binary does not
-/// support `--json`, the runner captures the raw doctor text and
-/// returns it as a structured array of tinted lines.
+/// the raw JSON payload on success — exit code 1 included, since mise
+/// reports collected errors that way while still printing a complete
+/// report; if the mise binary does not support `--json`, the runner
+/// captures the raw doctor text and returns it as a structured array
+/// of tinted lines.
 #[tauri::command]
 async fn doctor(cwd: Option<String>) -> JsonResult {
     let cwd_owned = match validated_cwd(cwd) {

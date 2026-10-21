@@ -23,6 +23,13 @@ set -u
 
 FIXTURE_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Optional invocation log: a test that must prove a single mise call
+# (issue #259, doctor's exit-1 path) points FIXTURE_MISE_CALL_LOG at a
+# file and counts its lines afterwards.
+if [[ -n "${FIXTURE_MISE_CALL_LOG:-}" ]]; then
+  echo "$*" >> "$FIXTURE_MISE_CALL_LOG"
+fi
+
 if [[ -n "${FIXTURE_MISE_SLUG:-}" ]]; then
   SLUG="$FIXTURE_MISE_SLUG"
 else

@@ -874,17 +874,21 @@ function RegistrySearch({ query, onQueryChange, registry, onPick }: RegistrySear
     // Tiered ranking (issue #149): an exact or prefix short-name match
     // always outranks a description hit, so typing "java" puts `java`
     // first instead of `ant` (alphabetically first via its "Java
-    // library" description). Ties keep the registry's own order.
+    // library" description). A binary-name hit (`op` → `1password`)
+    // ranks below every naming hit — it is the weakest signal, but it
+    // is the only way to reach a tool whose binary differs from its
+    // shorthand (issue #259). Ties keep the registry's own order.
     const tier = (r: RegistryItem): number => {
       const short = r.short.toLowerCase();
       if (short === q) return 0;
       if (short.startsWith(q)) return 1;
       if ((r.aliases ?? []).some((a) => a.toLowerCase().includes(q))) return 2;
+      if ((r.bins ?? []).some((b) => b.toLowerCase().includes(q))) return 4;
       return 3;
     };
     return registry
       .filter((r) =>
-        [r.short, r.description ?? "", ...(r.aliases ?? [])]
+        [r.short, r.description ?? "", ...(r.aliases ?? []), ...(r.bins ?? [])]
           .join("\n")
           .toLowerCase()
           .includes(q),

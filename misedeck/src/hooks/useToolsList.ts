@@ -1,7 +1,7 @@
 // Hooks for the global tools page (issue #21).
 //
 //   * useToolsList      → mise ls --json
-//   * useOutdatedTools  → mise outdated --json --bump
+//   * useOutdatedTools  → mise outdated --json
 //   * useLsRemote       → mise ls-remote --json <tool>
 //
 // Each hook is keyed by the directory context so switching Global ↔ a
@@ -110,7 +110,7 @@ export function useToolsList(): UseQueryResult<JsonResult> {
 }
 
 /**
- * Outdated tools map (`mise outdated --json --bump`). Cache key is
+ * Outdated tools map (`mise outdated --json`). Cache key is
  * `["tools", "outdated", cwd]`.
  *
  * staleTime is five minutes (issue #199): `mise outdated` hits the

@@ -168,6 +168,50 @@ fn doctor_returns_json_payload() {
 
 #[test]
 #[serial]
+fn doctor_parses_a_nonzero_exit_as_the_structured_report() {
+    // Issue #259: mise's doctor calls `exit(1)` as soon as it collected
+    // errors, but still prints the complete JSON report. The old
+    // exit-code-first read threw that payload away, fell back to raw
+    // text, and ran `mise doctor` a second time — on exactly the broken
+    // install the page exists for. Parse first, and prove one call.
+    let script = fixture_script();
+    let log = std::env::temp_dir().join(format!(
+        "misedeck-doctor-calls-{}.log",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_file(&log);
+    unsafe {
+        std::env::set_var("FIXTURE_MISE_SLUG", "doctor---json-errors");
+        std::env::set_var("FIXTURE_MISE_CALL_LOG", &log);
+    }
+    let result = mise_doctor(&script, None);
+    unsafe {
+        std::env::remove_var("FIXTURE_MISE_SLUG");
+        std::env::remove_var("FIXTURE_MISE_CALL_LOG");
+    }
+    let calls = std::fs::read_to_string(&log).unwrap_or_default();
+    let _ = std::fs::remove_file(&log);
+
+    let v = result.expect("exit 1 with a JSON report is still Ok");
+    assert_eq!(
+        v["errors"].as_array().map(|a| a.len()),
+        Some(1),
+        "errors must survive parsing: {v:?}"
+    );
+    assert!(
+        v["errors"][0].as_str().unwrap().contains("not trusted"),
+        "error text must be verbatim: {v:?}"
+    );
+    assert_eq!(v["warnings"].as_array().map(|a| a.len()), Some(1));
+    assert_eq!(
+        calls.lines().count(),
+        1,
+        "doctor must not run twice, calls: {calls:?}"
+    );
+}
+
+#[test]
+#[serial]
 fn doctor_falls_back_to_raw_text_lines() {
     let script = fixture_script();
     with_slug("doctor---json-parse-failed", || {
@@ -248,19 +292,37 @@ fn registry_falls_back_to_table_parsing() {
 
 #[test]
 #[serial]
-fn plugins_ls_parses_table_into_name_and_source() {
+fn plugins_ls_parses_all_four_columns() {
+    // Fixture is verbatim `mise plugins ls --urls` output from mise
+    // 2026.10.15 (no header: mise suppresses it when stdout is not a
+    // tty). Four columns are `Plugin Url Ref Sha`; a plugin with no
+    // remote prints its name alone, so the URL must stay empty rather
+    // than absorb a following column (issue #259).
     let script = fixture_script();
     with_slug("plugins---ls---urls", || {
         let v = mise_plugins_ls(&script, None).expect("plugins ls should yield Ok");
         let arr = v.as_array().expect("plugins payload must be an array");
         assert_eq!(arr.len(), 3);
-        assert_eq!(arr[0]["name"], "1password");
+
+        // No URL: every other column stays empty — the UI renders `—`
+        // instead of inventing a source.
+        assert_eq!(arr[0]["name"], "asdf-demo");
+        assert_eq!(arr[0]["url"], "");
+        assert_eq!(arr[0]["ref"], "");
+        assert_eq!(arr[0]["sha"], "");
+
+        assert_eq!(arr[1]["name"], "direnv");
         assert_eq!(
-            arr[0]["source"],
-            "https://github.com/mise-plugins/1password.git"
+            arr[1]["url"],
+            "https://github.com/asdf-community/asdf-direnv.git"
         );
-        // Original case is preserved verbatim (ui-ux-rules: data honesty).
-        assert_eq!(arr[2]["name"], "vfox-Zig");
+        assert_eq!(arr[1]["ref"], "HEAD");
+        assert_eq!(arr[1]["sha"], "0c76b16");
+
+        assert_eq!(arr[2]["name"], "zig-plugin");
+        assert_eq!(arr[2]["url"], "file:///private/tmp/mise-probe/plug-a");
+        assert_eq!(arr[2]["ref"], "HEAD");
+        assert_eq!(arr[2]["sha"], "a1b44bf");
     });
 }
 

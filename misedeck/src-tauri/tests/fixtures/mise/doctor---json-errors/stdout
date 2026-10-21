@@ -1,0 +1,34 @@
+{
+  "activated": true,
+  "config_files": [
+    "/Users/example/project/mise.toml"
+  ],
+  "dirs": {
+    "cache": "/Users/example/Library/Caches/mise",
+    "config": "/Users/example/.config/mise",
+    "data": "/Users/example/.local/share/mise"
+  },
+  "errors": [
+    "config file is not trusted: ~/project/mise.toml"
+  ],
+  "paths": [
+    "/Users/example/.local/share/mise/shims"
+  ],
+  "self_update_available": false,
+  "shell": {
+    "name": "/bin/zsh",
+    "version": "zsh 5.9 (arm64-apple-darwin24.0)"
+  },
+  "shims_on_path": true,
+  "toolset": {
+    "node": [
+      {
+        "version": "22.11.0"
+      }
+    ]
+  },
+  "version": "2026.10.15 macos-arm64 (2026-10-19)",
+  "warnings": [
+    "mise tool paths are not first in PATH. These paths take precedence:\n  ~/.local/share/mise/shims\nThis may cause system-installed tools to be used instead of mise-managed versions."
+  ]
+}

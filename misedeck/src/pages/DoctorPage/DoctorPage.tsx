@@ -171,6 +171,7 @@ function DoctorContent({
   }
 
   const warnings = data.warnings ?? [];
+  const errors = data.errors ?? [];
   // Pull the mise-self-update notice out of the raw warnings and re-render
   // it as a localized upgrade path. The remaining warnings (if any) keep
   // their own list below. This keeps English CLI prose out of a zh-CN UI.
@@ -250,6 +251,25 @@ function DoctorContent({
         <UpgradeNotice current={upgrade.current} latest={upgrade.latest} t={t} />
       )}
 
+      {/* Failed checks come first: an error is why the user is here.
+          mise exits 1 when it collected any, and the runner parses that
+          payload instead of falling back to raw text (issue #259). */}
+      {errors.length > 0 && (
+        <section className={styles.section} data-testid="doctor-errors">
+          <header className={styles.sectionHead}>
+            <h2 className={styles.sectionTitle}>{t(I18N_KEYS.doctor.errors.title)}</h2>
+          </header>
+          <ul className={styles.warningList}>
+            {errors.map((e, i) => (
+              <li key={i} className={styles.warningItem}>
+                <span className={styles.warningDot} aria-hidden="true" />
+                <span className={styles.warningText}>{e}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {otherWarnings.length > 0 && (
         <section className={styles.section}>
           <header className={styles.sectionHead}>
@@ -326,7 +346,8 @@ function doctorStatus(
   // view in DoctorContent above, so those lines never reach this
   // derivation — only the structured JSON payload does.
   const warnings = data.warnings ?? [];
-  if (warnings.length > 0 || rcActivated === false) {
+  const errors = data.errors ?? [];
+  if (errors.length > 0 || warnings.length > 0 || rcActivated === false) {
     return { variant: "warning", dotTone: "flare", labelKey: I18N_KEYS.doctor.status.warn };
   }
   return { variant: "success", dotTone: "beam", labelKey: I18N_KEYS.doctor.status.ok };

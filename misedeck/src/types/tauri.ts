@@ -77,12 +77,15 @@ export interface MiseLsItem {
   active: boolean;
 }
 
-/** One row of `mise outdated --json --bump`. */
+/**
+ * One row of `mise outdated --json`. `latest` is the newest version
+ * inside the configured range — the target `mise upgrade <tool>`
+ * actually reaches (no `--bump`, beta13 Q9).
+ */
 export interface MiseOutdatedItem {
   name: string;
   requested?: string;
   current?: string;
-  bump?: string;
   latest?: string;
   source?: MiseSource;
 }
@@ -302,6 +305,9 @@ export interface DoctorPayload {
   version?: string;
   selfUpdateAvailable?: boolean;
   warnings?: string[];
+  /** Failed checks. mise exits 1 when it collected any, but still
+   *  emits the complete JSON report (issue #259). */
+  errors?: string[];
   configFiles?: string[];
   toolset?: Record<string, Array<{ version: string }>>;
   shell?: { name?: string; version?: string };
@@ -316,17 +322,28 @@ export interface DoctorPayload {
 export interface RegistryItem {
   short: string;
   backends: string[];
+  /** Binary names the tool installs (`1password` → `op`). Used only as
+   *  the lowest-priority search tier (issue #259). */
+  bins?: string[];
   description?: string;
   aliases?: string[];
 }
 
 /**
  * One row of `mise plugins ls --urls` (issue #51). The runner parses
- * the plain-text table behind the boundary (the command has no
- * `--json`); `source` is the plugin's repository URL and is absent
- * when mise reports none. Names keep their original case.
+ * the plain-text four-column table behind the boundary (the command
+ * has no `--json`); every column is shipped verbatim.
  */
 export interface InstalledPlugin {
   name: string;
+  /** Repository URL; undefined when mise reports none. */
+  url?: string;
+  /** Checked-out ref (`HEAD` when mise left the clone detached). */
+  ref?: string;
+  /** Short commit hash. */
+  sha?: string;
+  /** Display alias for `url` — what the Plugins table's Source column
+   *  shows. Also absent when mise reports no URL, so the page renders
+   *  `—` instead of a fabricated value. */
   source?: string;
 }
