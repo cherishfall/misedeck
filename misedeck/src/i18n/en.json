@@ -575,6 +575,7 @@
     "columns": {
       "name": "Name",
       "source": "Source",
+      "refCommit": "Ref / Commit",
       "actions": "Actions"
     },
     "actions": {

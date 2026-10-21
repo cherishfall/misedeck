@@ -144,11 +144,26 @@
 
 /* ---------- Table cells ---------- */
 
+/* The installed table's floor (issue #275): fixed layout holds Name 150
+ * + Ref/Commit 180 + Actions 120 and hands the remainder to Source. At
+ * 900×600 the content column is ~652px with overlay scrollbars (622px
+ * with classic ones), so the 600px floor still fits without opening a
+ * horizontal scroller. The page-layout guard derives the 921px default
+ * budget from tokens. */
+.pluginsTable {
+  min-width: 600px;
+}
+
 .cellTool {
+  display: block;
+  max-width: 100%;
   font-family: var(--font-ui);
   font-weight: 600;
   font-size: var(--size-data);
   color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cellSource {
@@ -162,6 +177,34 @@
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: bottom;
+}
+
+/* Ref + short commit on one line (issue #275). The ref keeps its head
+ * and ellipsizes under the fixed column; the short commit never shrinks
+ * — it is the precise identity when branches move. */
+.refCommitCell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  max-width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.refCommitRef {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.refCommitSha {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--dim);
+  flex-shrink: 0;
 }
 
 .dim {

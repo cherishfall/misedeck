@@ -575,6 +575,7 @@
     "columns": {
       "name": "名称",
       "source": "来源",
+      "refCommit": "Ref / 提交",
       "actions": "操作"
     },
     "actions": {

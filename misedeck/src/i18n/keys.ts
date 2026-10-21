@@ -770,6 +770,7 @@ export const I18N_KEYS = {
     columns: {
       name: "plugins.columns.name",
       source: "plugins.columns.source",
+      refCommit: "plugins.columns.refCommit",
       actions: "plugins.columns.actions",
     },
     actions: {

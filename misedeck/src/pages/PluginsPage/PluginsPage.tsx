@@ -167,13 +167,25 @@ export function PluginsPage() {
     {
       key: "name",
       header: t(I18N_KEYS.plugins.columns.name),
+      // Widths (issue #275): the table is now fixed-layout, so every
+      // declared column holds its width and the Source column takes the
+      // remainder. The floor below 900×600 keeps the page free of a
+      // horizontal scroller.
+      width: "150px",
+      minWidth: "110px",
       sortValue: (p) => p.name,
-      cell: (p) => <span className={styles.cellTool}>{p.name}</span>,
+      cell: (p) => (
+        <Tooltip text={p.name}>
+          <span className={styles.cellTool}>{p.name}</span>
+        </Tooltip>
+      ),
     },
     {
       key: "source",
       header: t(I18N_KEYS.plugins.columns.source),
       sortValue: (p) => p.source ?? "",
+      // The flex column: no declared width, so it absorbs the leftover
+      // space and ellipsizes the URL head (tooltip carries the full URL).
       cell: (p) =>
         p.source !== undefined ? (
           <Tooltip text={p.source}><span className={styles.cellSource}>{p.source}</span></Tooltip>
@@ -182,8 +194,41 @@ export function PluginsPage() {
         ),
     },
     {
+      key: "refCommit",
+      header: t(I18N_KEYS.plugins.columns.refCommit),
+      // 180px (issue #275): the short sha is fixed-width, so the ref
+      // needs the rest to stay readable — a branch/tag longer than
+      // "HEAD" ellipsizes its tail behind the tooltip.
+      width: "180px",
+      minWidth: "140px",
+      sortValue: (p) => [p.ref, p.sha].filter(Boolean).join(" "),
+      // A plugin's checkout identity (issue #275): the ref mise tracked
+      // and the short commit it resolved to. Both come verbatim from
+      // `plugins ls --urls`; a plugin with no git data renders the
+      // standard dim dash instead of inventing HEAD or a hash.
+      cell: (p) => {
+        if (p.ref === undefined && p.sha === undefined) {
+          return <span className={styles.dim}>—</span>;
+        }
+        return (
+          <Tooltip text={[p.ref, p.sha].filter(Boolean).join(" ")}>
+            <span className={styles.refCommitCell}>
+              {p.ref !== undefined && (
+                <span className={styles.refCommitRef}>{p.ref}</span>
+              )}
+              {p.sha !== undefined && (
+                <span className={styles.refCommitSha}>{p.sha}</span>
+              )}
+            </span>
+          </Tooltip>
+        );
+      },
+    },
+    {
       key: "actions",
       header: t(I18N_KEYS.plugins.columns.actions),
+      width: "120px",
+      minWidth: "110px",
       cell: (p) => (
         <Button
           variant="danger"
@@ -251,6 +296,8 @@ export function PluginsPage() {
               columns={installedColumns}
               rows={plugins.data ?? []}
               rowKey={(p) => p.name}
+              fixed
+              className={styles.pluginsTable}
               empty={
                 <EmptyState
                   title={t(I18N_KEYS.plugins.installedEmpty.title)}
