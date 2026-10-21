@@ -585,6 +585,14 @@ function ConfigFileRow({ file, rank }: { file: ConfigFile; rank: number }) {
       <div className={styles.configFileHead}>
         <span className={styles.configRank}>{rank}</span>
         <Tooltip text={file.path}><span className={styles.configPath}>{file.path}</span></Tooltip>
+        {file.override && (
+          // A fact about the file, not a warning: mise ranks a global
+          // override file above every project config, so the list's
+          // first entry is not necessarily the nearest one (issue #259).
+          <Badge variant="info" size="inline" data-testid="preview-config-override">
+            {t(I18N_KEYS.preview.config.overrideBadge)}
+          </Badge>
+        )}
         {file.tools.length > 0 && (
           <span className={styles.configTools}>{file.tools.join(", ")}</span>
         )}

@@ -225,6 +225,7 @@ fn config_files_result_ok() {
         files: vec![ConfigFile {
             path: "/tmp/mise.toml".to_string(),
             tools: vec!["node".to_string()],
+            r#override: true,
             content: Some("[tools]".to_string()),
         }],
     })
@@ -233,7 +234,7 @@ fn config_files_result_ok() {
         v,
         json!({
             "kind": "ok",
-            "files": [{ "path": "/tmp/mise.toml", "tools": ["node"], "content": "[tools]" }],
+            "files": [{ "path": "/tmp/mise.toml", "tools": ["node"], "override": true, "content": "[tools]" }],
         })
     );
 }

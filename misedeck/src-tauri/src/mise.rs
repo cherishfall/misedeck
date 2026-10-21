@@ -961,6 +961,11 @@ pub struct ConfigFile {
     /// Tool names the file pins (the `tools` array of
     /// `mise config ls --json`). Empty when the file pins none.
     pub tools: Vec<String>,
+    /// True for a global override file (`config.override.toml`), which
+    /// mise ranks above every project config. Older mise builds do not
+    /// report the key; the parser then defaults to false (issue #259).
+    #[serde(default)]
+    pub r#override: bool,
     /// Raw file text for the read-only content view. `None` when the
     /// file could not be read (deleted between listing and reading,
     /// permission denied, …) — the UI renders a muted fallback.
@@ -1024,6 +1029,10 @@ pub fn mise_config_files(
         files.push(ConfigFile {
             path: path.to_string(),
             tools,
+            r#override: entry
+                .get("override")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false),
             content: read_config_file_content(path),
         });
     }

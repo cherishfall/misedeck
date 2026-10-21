@@ -4,12 +4,14 @@
     "tools": [
       "node",
       "python"
-    ]
+    ],
+    "override": true
   },
   {
     "path": "/nonexistent/misedeck-test/.config/mise/config.toml",
     "tools": [
       "go"
-    ]
+    ],
+    "override": false
   }
 ]

@@ -351,6 +351,7 @@ export const I18N_KEYS = {
       view: "preview.config.view",
       hide: "preview.config.hide",
       unreadable: "preview.config.unreadable",
+      overrideBadge: "preview.config.overrideBadge",
       errorTitle: "preview.config.errorTitle",
       errorBody: "preview.config.errorBody",
     },

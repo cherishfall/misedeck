@@ -236,6 +236,7 @@
       "view": "View content",
       "hide": "Hide content",
       "unreadable": "(could not read this file)",
+      "overrideBadge": "override",
       "errorTitle": "Failed to load config files",
       "errorBody": "mise config ls --json did not return. Stderr is shown below."
     },

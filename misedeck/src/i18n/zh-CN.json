@@ -236,6 +236,7 @@
       "view": "查看内容",
       "hide": "收起内容",
       "unreadable": "（无法读取此文件）",
+      "overrideBadge": "覆盖",
       "errorTitle": "加载配置文件失败",
       "errorBody": "mise config ls --json 未返回结果。stderr 如下所示。"
     },

@@ -144,6 +144,10 @@ export interface ConfigFile {
   path: string;
   /** Tool names the file pins. Empty when the file pins none. */
   tools: string[];
+  /** True for a global override file (`config.override.toml`), which
+   *  mise ranks above every project config. The Rust parser defaults
+   *  a missing key to false (issue #259). */
+  override: boolean;
   /** Raw file text for the read-only content view; `null` when the
    *  file could not be read. */
   content: string | null;
