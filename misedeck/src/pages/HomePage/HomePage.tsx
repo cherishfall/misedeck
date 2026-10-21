@@ -31,6 +31,7 @@ import {
   Panel,
   ProgressDot,
   SuccessBar,
+  UpgradeArrow,
   useRegisterPageRefresh,
 } from "../../components";
 import { commandEcho, useExecutionContext } from "../../components/ExecutionPanel";
@@ -219,9 +220,7 @@ export function HomePage() {
                     <span className={styles.latestValue}>
                       <span>
                         {view.ok.versionDate}{" "}
-                        <span className="upgrade-arrow" aria-hidden="true">
-                          →
-                        </span>{" "}
+                        <UpgradeArrow />{" "}
                         {latest}
                       </span>
                       <ExternalLink

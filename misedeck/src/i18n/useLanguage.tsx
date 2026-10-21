@@ -30,7 +30,7 @@ export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 /** localStorage key for the user's manual choice. */
 export const LANGUAGE_STORAGE_KEY = "misedeck.language";
 
-export function isSupportedLanguage(value: string | null | undefined): value is SupportedLanguage {
+function isSupportedLanguage(value: string | null | undefined): value is SupportedLanguage {
   return value === "en" || value === "zh-CN";
 }
 

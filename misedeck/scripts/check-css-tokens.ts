@@ -47,6 +47,18 @@ const DEF_RE = /(--[A-Za-z][A-Za-z0-9_-]*)\s*:/g;
 const REF_RE = /var\(\s*(--[A-Za-z][A-Za-z0-9_-]*)/g;
 
 /**
+ * Tokens consumed dynamically in a way the textual `var(--*)` scan cannot
+ * see (e.g. ``var(--${name})`` built at runtime). Keep this empty unless
+ * that is genuinely the case, and name the consumer in the reason — a
+ * statically referenced token never belongs here (issue #258).
+ *
+ * @type {ReadonlyMap<string, string>}
+ */
+const DYNAMIC_TOKEN_CONSUMERS = new Map([
+  // Example: ["--token", "src/components/Foo/Foo.tsx builds the name at runtime"],
+]);
+
+/**
  * Font-stack integrity (issue #246).
  *
  * `--font-mono`'s first entry is not cosmetic: `src/utils/paths.ts`
@@ -111,12 +123,19 @@ function checkFontStacks() {
 
 function main() {
   const defined = new Set();
+  /** @type {Map<string, Set<string>>} token → files that define it */
+  const definitionFiles = new Map();
   /** @type {Map<string, Set<string>>} token → files that reference it */
   const referenced = new Map();
 
   for (const file of listFiles(SRC_DIR, [".css"])) {
     const text = stripCssComments(readFileSync(file, "utf8"));
-    for (const m of text.matchAll(DEF_RE)) defined.add(m[1]);
+    for (const m of text.matchAll(DEF_RE)) {
+      defined.add(m[1]);
+      const files = definitionFiles.get(m[1]) ?? new Set();
+      files.add(file);
+      definitionFiles.set(m[1], files);
+    }
     for (const m of text.matchAll(REF_RE)) {
       const files = referenced.get(m[1]) ?? new Set();
       files.add(file);
@@ -135,6 +154,12 @@ function main() {
   }
 
   const dangling = [...referenced.keys()].filter((t) => !defined.has(t)).sort();
+  // Reverse direction (issue #258): a definition nothing references is
+  // dead weight — the token file prunes itself instead of accumulating
+  // roles the UI no longer has.
+  const unreferenced = [...defined]
+    .filter((t) => !referenced.has(t) && !DYNAMIC_TOKEN_CONSUMERS.has(t))
+    .sort();
   const fontFailures = checkFontStacks();
   if (fontFailures.length > 0) {
     console.error("css-tokens check FAILED — font stack integrity:");
@@ -145,23 +170,39 @@ function main() {
     console.error("  JetBrains Mono (utils/paths.ts hardcodes its 0.6em advance, issue #246).");
     process.exit(1);
   }
-  if (dangling.length === 0) {
+  if (dangling.length === 0 && unreferenced.length === 0) {
     console.log(
-      `css-tokens OK — ${referenced.size} referenced token(s), all defined (${defined.size} definition(s) found).`,
+      `css-tokens OK — ${referenced.size} referenced token(s), all defined; ${defined.size} definition(s), all referenced.`,
     );
     process.exit(0);
   }
 
-  console.error("css-tokens check FAILED — these var(--*) references resolve to nothing:");
-  for (const token of dangling) {
-    console.error(`\n  ${token}`);
-    for (const file of [...referenced.get(token)].sort()) {
-      console.error(`    referenced in ${relative(REPO_ROOT, file)}`);
+  if (dangling.length > 0) {
+    console.error("css-tokens check FAILED — these var(--*) references resolve to nothing:");
+    for (const token of dangling) {
+      console.error(`\n  ${token}`);
+      for (const file of [...referenced.get(token)].sort()) {
+        console.error(`    referenced in ${relative(REPO_ROOT, file)}`);
+      }
     }
+    console.error(
+      "\n  Map the reference to an existing token in src/tokens.css, or add the token there.",
+    );
   }
-  console.error(
-    "\n  Map the reference to an existing token in src/tokens.css, or add the token there.",
-  );
+
+  if (unreferenced.length > 0) {
+    console.error("css-tokens check FAILED — these tokens are defined but never referenced:");
+    for (const token of unreferenced) {
+      console.error(`\n  ${token}`);
+      for (const file of [...definitionFiles.get(token)].sort()) {
+        console.error(`    defined in ${relative(REPO_ROOT, file)}`);
+      }
+    }
+    console.error(
+      "\n  Delete the dead token, or — only if it is consumed dynamically — add it to",
+    );
+    console.error("  DYNAMIC_TOKEN_CONSUMERS in scripts/check-css-tokens.ts with its consumer.");
+  }
   process.exit(1);
 }
 

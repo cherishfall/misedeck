@@ -281,6 +281,9 @@ export const I18N_KEYS = {
       activeBadge: "tools.addTool.activeBadge",
       created: "tools.addTool.created",
       filterPlaceholder: "tools.addTool.filterPlaceholder",
+      /** The `latest` alias row's tooltip: mise's alias resolved to the
+          concrete version it selects (item 3 of #258). */
+      latestAlias: "tools.addTool.latestAlias",
       /** Why the in-use row's Uninstall is disabled: the requested
           version has no files on disk yet (beta13). */
       notInstalledUninstallTooltip: "tools.addTool.notInstalledUninstallTooltip",

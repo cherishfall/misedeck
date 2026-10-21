@@ -80,7 +80,7 @@ Base states: the resting button is `--hull` at 80% on a `--line` border with `--
 - The serif display face is the editorial signature of mise.jdx.dev — it is spent on titles and the wordmark only, never on data or controls.
 - zh-CN: display text falls back to `Songti SC` / `SimSun` (Chinese serifs), UI text to `PingFang SC` / `system-ui`; Latin data keeps JetBrains Mono.
 - Base size 14px (`--size-base`), data exactly 12px (`--size-data` — a single value, not a range), eyebrows 10px (`--size-label`) as standalone decoration, display 26px (`--size-display`). No fluid type; desktop-app density.
-- Tracking comes from the `--tracking-*` tokens: `--tracking-display` (0), `--tracking-wordmark` (.01em), `--tracking-title` (.02em, dialog titles), `--tracking-button` (.04em, buttons), `--tracking-label` (.18em, Latin eyebrows only). Hardcoded `letter-spacing` literals are rejected by `npm run lint:css-tracking`; resets (`normal` / `0` / `inherit`) stay allowed (issue #127).
+- Tracking comes from the `--tracking-*` tokens: `--tracking-display` (0), `--tracking-title` (.02em, dialog titles), `--tracking-button` (.04em, buttons), `--tracking-label` (.18em, Latin eyebrows only). Hardcoded `letter-spacing` literals are rejected by `npm run lint:css-tracking`; resets (`normal` / `0` / `inherit`) stay allowed (issue #127).
 - Page-header eyebrows (`MISE / X` above the display title) are retired (beta9): the sidebar already marks the current page and the display title names it, so the row was pure duplication — mise.jdx.dev's eyebrow names a section inside one long page, a role MiseDeck's per-page titles already fill. The eyebrow survives as the toolbar's mode label (`当前目录 / Global mode`) and as standalone decoration (empty states); because the toolbar label shares a baseline with 12px controls it renders at `--size-data` — eyebrow-styled (mono, `--ice`, Latin uppercase + tracking) but never below the shared-line floor (`ui-ux-rules.md` visual balance). zh-CN eyebrows render with `letter-spacing: normal` — CJK has no uppercase and wide tracking scatters Han glyphs; the mono face and `--ice` carry the role there.
 - A section label names a section once: never repeat a label inside that page's cards, never stack identical labels down one page.
 
@@ -110,7 +110,7 @@ Everything else is a ≤120ms ease-out state change (hover, focus, panel slide).
 - Borders are solid — no dashed or dotted borders anywhere.
 - No cool blue-gray palettes; surfaces are warm (parchment / charcoal) in both themes.
 - No sci-fi or display gimmick fonts; character comes from the serif display face + mono data.
-- No decorative numbering (01/02/03) in product UI, no emoji icons; the only decorative glyph is → (used in upgrade paths). Text glyphs inside labeled buttons/links (`›` next-page, `←` back-to-Home) are not decoration — they are grandfathered in `ui-ux-rules.md` → Glyphs & icons, inheriting size and color.
+- No decorative numbering (01/02/03) in product UI, no emoji icons; the only decorative glyph is → (used in upgrade paths, drawn by the shared `UpgradeArrow` inline SVG so it never depends on font coverage). Text glyphs inside labeled buttons/links (`›` next-page, `←` back-to-Home) are not decoration — they are grandfathered in `ui-ux-rules.md` → Glyphs & icons, inheriting size and color.
 - Light theme is parchment, not a white corporate reskin: warm surfaces, wine accent, taupe secondary text.
 
 ### Chrome surface hierarchy (issue #78)

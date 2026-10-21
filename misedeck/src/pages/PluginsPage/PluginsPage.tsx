@@ -73,12 +73,17 @@ export function PluginsPage() {
   // the directory trust guard does not apply, unlike the tasks /
   // settings pages that write the cwd's config file (same reasoning as
   // the uninstall below).
-  const install = useOwnRun();
+  //
+  // Both hooks are destructured into their stable pieces (#258): the
+  // `isRunning` boolean and the stable `run` callback can be named in a
+  // dependency list (exhaustive-deps), unlike the fresh object the hook
+  // returns each render.
+  const { run: runInstall, isRunning: installBusy } = useOwnRun();
 
   // Plugin uninstall (issue #112): a destructive mutation, so it
   // confirms first (the dialog teaches the exact command) and then
   // runs through the execution panel.
-  const uninstall = useOwnRun();
+  const { run: runUninstall, isRunning: uninstallBusy } = useOwnRun();
   const [pendingUninstall, setPendingUninstall] = useState<string | null>(null);
 
   // In-page success confirmation (issue #145): a successful install /
@@ -89,8 +94,8 @@ export function PluginsPage() {
 
   const installPlugin = useCallback(
     async (name: string, gitUrl: string): Promise<"ok" | "err"> => {
-      if (install.isRunning) return "err";
-      const res = await install.run({ cwd, args: misePluginsInstallArgs(name, gitUrl) });
+      if (installBusy) return "err";
+      const res = await runInstall({ cwd, args: misePluginsInstallArgs(name, gitUrl) });
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["plugins", "ls", cwd] });
         setSuccessMessage(t(I18N_KEYS.plugins.success.installed, { name }));
@@ -99,7 +104,7 @@ export function PluginsPage() {
       }
       return "err";
     },
-    [install.isRunning, install.run, cwd, queryClient, t],
+    [installBusy, runInstall, cwd, queryClient, t],
   );
 
   // Per-action run-lock (issue #138): each hook's in-flight flag is true
@@ -108,15 +113,15 @@ export function PluginsPage() {
   // refreshes on each run's own success.
   const uninstallPlugin = useCallback(
     async (name: string) => {
-      if (uninstall.isRunning) return;
-      const res = await uninstall.run({ cwd, args: misePluginsUninstallArgs(name) });
+      if (uninstallBusy) return;
+      const res = await runUninstall({ cwd, args: misePluginsUninstallArgs(name) });
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["plugins", "ls", cwd] });
         setSuccessMessage(t(I18N_KEYS.plugins.success.uninstalled, { name }));
         setSuccessTick((n) => n + 1);
       }
     },
-    [uninstall.isRunning, uninstall.run, cwd, queryClient, t],
+    [uninstallBusy, runUninstall, cwd, queryClient, t],
   );
 
   // Top-toolbar refresh (issue #98): one callback refreshes the
@@ -211,7 +216,7 @@ export function PluginsPage() {
             page's way forward alongside the Tools search. */}
         <InstallPluginForm
           onInstall={installPlugin}
-          disabled={install.isRunning}
+          disabled={installBusy}
           cwd={cwd}
         />
 
@@ -255,7 +260,7 @@ export function PluginsPage() {
 
         <ConfirmDialog
           open={pendingUninstall !== null}
-          confirmBusy={uninstall.isRunning}
+          confirmBusy={uninstallBusy}
           cwd={cwd}
           title={
             pendingUninstall

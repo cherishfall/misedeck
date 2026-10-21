@@ -179,10 +179,6 @@
   letter-spacing: normal;
 }
 
-.arrow {
-  color: var(--flare);
-}
-
 .actions {
   display: flex;
   flex-direction: column;

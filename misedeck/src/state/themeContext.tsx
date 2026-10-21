@@ -25,13 +25,13 @@ import { setWindowTheme } from "../api/window";
 import { loadPersistent, savePersistent } from "../hooks/usePersistentState";
 
 /** The two choices the pill offers. Default is `light`. */
-export const THEME_SETTINGS = ["light", "dark"] as const;
+const THEME_SETTINGS = ["light", "dark"] as const;
 export type ThemeSetting = (typeof THEME_SETTINGS)[number];
 
 /** localStorage key for the user's choice. */
-export const THEME_STORAGE_KEY = "misedeck.theme";
+const THEME_STORAGE_KEY = "misedeck.theme";
 
-export function isThemeSetting(value: string | null | undefined): value is ThemeSetting {
+function isThemeSetting(value: string | null | undefined): value is ThemeSetting {
   return value === "light" || value === "dark";
 }
 

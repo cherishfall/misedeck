@@ -84,6 +84,7 @@ export function Tooltip({ text, children, focusable = false }: TooltipProps) {
   // No dependency list on purpose: the wrapped content swaps freely (a
   // disabled Button that later enables, a badge that replaces a text
   // cell), and the answer has to track it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- runs after every render on purpose; `[]` would freeze the focusable probe
   useLayoutEffect(() => {
     const el = triggerRef.current;
     if (!el) return;

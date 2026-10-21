@@ -22,6 +22,7 @@ import {
   Table,
   type TableColumn,
   Tooltip,
+  UpgradeArrow,
   useRegisterPageRefresh,
 } from "../../components";
 import { useParsedDoctor } from "../../hooks/useIssue29";
@@ -415,7 +416,7 @@ function UpgradeNotice({
       <p className={styles.upgradeFraming}>{t(I18N_KEYS.doctor.updateNotice.framing)}</p>
       <div className={styles.upgradePath}>
         <Tooltip text={current}><span className={styles.upgradeCurrent}>{current}</span></Tooltip>
-        <span className="upgrade-arrow" aria-hidden="true">→</span>
+        <UpgradeArrow />
         <Tooltip text={latest}><span className={styles.upgradeLatest}>{latest}</span></Tooltip>
       </div>
       <CopyButton text="mise self-update" className={styles.upgradeCopy} />

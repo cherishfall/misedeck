@@ -48,7 +48,7 @@ function settingsLsArgs(all: boolean, local: boolean): string[] {
  *  it must not replace the transcript the user is reading (a write's
  *  log, typically, since a successful write invalidates this very
  *  query — ADR-0005). */
-export function useSettingsList(all: boolean): UseQueryResult<JsonResult> {
+function useSettingsList(all: boolean): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
   const { run } = useExecutionContext();
   const read = useCallback(
@@ -81,7 +81,7 @@ export function useParsedSettingsList(all: boolean): {
 
 /** Read-only mise doctor check (`mise doctor --json`). Cache key is
  *  `["doctor", cwd]`. */
-export function useDoctor(): UseQueryResult<JsonResult> {
+function useDoctor(): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
   return useQuery({
     queryKey: ["doctor", cwd],
@@ -108,7 +108,7 @@ export function useParsedDoctor(): {
 
 /** Read-only mise registry list (`mise registry --json`). Cache key is
  *  `["registry", cwd]`. */
-export function useRegistry(): UseQueryResult<JsonResult> {
+function useRegistry(): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
   return useQuery({
     queryKey: ["registry", cwd],
@@ -135,7 +135,7 @@ export function useParsedRegistry(): {
 
 /** Read-only installed plugins list (`mise plugins ls --urls`,
  *  issue #51). Cache key is `["plugins", "ls", cwd]`. */
-export function usePluginsList(): UseQueryResult<JsonResult> {
+function usePluginsList(): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
   return useQuery({
     queryKey: ["plugins", "ls", cwd],

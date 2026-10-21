@@ -135,6 +135,52 @@ test("shortenPathTail: values with no separator are not treated as paths", () =>
   assert.equal(shortenPathTail(token, 10), token);
 });
 
+// ---------- Wide-character budgets (issue #258) ----------
+
+test("shortenPathTail: CJK counts as two columns, not UTF-16 units", () => {
+  const path = "/Users/dev/一个很长的项目名称/mise.toml";
+  // 30 UTF-16 units but 39 mono columns: the old length guard returned
+  // this untouched, so the CSS end-ellipsis cut the head off a line that
+  // already overflowed. The wide segment alone consumes 18 columns.
+  assert.equal(path.length, 30);
+  assert.equal(shortenPathTail(path, 30), "…/一个很长的项目名称/mise.toml");
+});
+
+test("shortenPathTail: mixed ASCII + CJK drops the segment that no longer fits", () => {
+  // Old code kept `app/` (13 UTF-16 units ≤ 14) although the rendered
+  // line was 17 columns wide; the wide basename must own the budget.
+  assert.equal(shortenPathTail("/Users/dev/app/说明文档.md", 14), "…/说明文档.md");
+});
+
+test("shortenPathTail: a CJK path exactly at the column budget is not elided", () => {
+  const exact = "/项目/我的应用/mise.toml";
+  assert.equal(exact.length, 18); // 24 display columns
+  assert.equal(shortenPathTail(exact, 24), exact);
+  // One column over the budget does elide, keeping the tail.
+  assert.equal(shortenPathTail(exact, 23), "…/我的应用/mise.toml");
+});
+
+test("shortenPathTail: a CJK basename longer than the budget still survives", () => {
+  assert.equal(
+    shortenPathTail("/a/b/我的项目文件名称.toml", 10),
+    "…/我的项目文件名称.toml",
+  );
+});
+
+test("shortenPathTail: Windows separators with CJK segments stay backslashes", () => {
+  assert.equal(
+    shortenPathTail("C:\\Users\\dev\\项目\\mise.toml", 16),
+    "…\\项目\\mise.toml",
+  );
+});
+
+test("shortenPathTail: ASCII budgeting is unchanged", () => {
+  assert.equal(
+    shortenPathTail("/Users/dev/AiCodingProjects/mise-ui/mise.toml", 30),
+    "…/mise-ui/mise.toml",
+  );
+});
+
 // ---------- Measured column budgets (issue #225) ----------
 
 test("columnCharBudget: the 216px Source column measures 26 characters", () => {

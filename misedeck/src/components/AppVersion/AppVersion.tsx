@@ -25,6 +25,7 @@ import { Button } from "../Button/Button";
 import { ExternalLink } from "../ExternalLink/ExternalLink";
 import { FloatingMenu } from "../FloatingMenu";
 import { ProgressDot } from "../ProgressDot/ProgressDot";
+import { UpgradeArrow } from "../UpgradeArrow/UpgradeArrow";
 
 import { summarizeCheck, type UpdateCheckState } from "./appVersionCopy";
 import styles from "./AppVersion.module.css";
@@ -134,9 +135,7 @@ export function AppVersion({ collapsed = false }: AppVersionProps) {
             {check.kind === "available" && (
               <span className={styles.versionPair}>
                 {shown}
-                <span className={styles.arrow} aria-hidden="true">
-                  →
-                </span>
+                <UpgradeArrow />
                 {check.version}
               </span>
             )}

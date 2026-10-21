@@ -106,6 +106,10 @@ export function ConfirmDialog({
     const target = initialDialogFocusTarget({ danger, confirmBusy });
     (target === "cancel" ? cancelRef.current : confirmRef.current)?.focus();
     return () => opener?.focus();
+    // Scope: this one effect. `danger` / `confirmBusy` are read only to
+    // pick the initial target; re-running when they change would steal
+    // focus back after a command finishes (see comment above).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- focus once per opening; danger/confirmBusy changes must not re-take focus
   }, [open]);
 
   useEffect(() => {

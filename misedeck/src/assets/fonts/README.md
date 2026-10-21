@@ -31,10 +31,19 @@ published axis range.
 ## Licence
 
 All three families are licensed under the **SIL Open Font License 1.1**,
-which permits bundling and redistribution with software. The full licence
-text lives with each upstream project (linked above); the OFL requires the
-copyright notice and licence to travel with the font files, so this file is
-part of that notice.
+which permits bundling and redistribution with software. The OFL requires
+the copyright notice and licence to travel with the font files, so the full
+licence text for each family ships in the app bundle under `public/fonts/`
+(copied to `dist/fonts/` by Vite; served at `/fonts/…`):
+
+| Font | Licence file | Required copyright line |
+| --- | --- | --- |
+| Cormorant Garamond | [`OFL-CormorantGaramond.txt`](../../../public/fonts/OFL-CormorantGaramond.txt) | Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant) |
+| Space Grotesk | [`OFL-SpaceGrotesk.txt`](../../../public/fonts/OFL-SpaceGrotesk.txt) | Copyright 2020 The Space Grotesk Project Authors (https://github.com/floriankarsten/space-grotesk) |
+| JetBrains Mono | [`OFL-JetBrainsMono.txt`](../../../public/fonts/OFL-JetBrainsMono.txt) | Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono) |
+
+The copyright lines above are the ones embedded in the fonts' `name` tables,
+so they match the files that are actually bundled.
 
 They are *not* covered by MiseDeck's own licence (see the repository
 `LICENSE`), and they may not be sold on their own.

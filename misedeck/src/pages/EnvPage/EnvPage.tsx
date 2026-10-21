@@ -99,7 +99,11 @@ export function EnvPage() {
   });
 
   const env = useParsedEnvList();
-  const envWrite = useOwnRun();
+  // Destructured into its two stable pieces (#258): `isRunning` is a
+  // boolean and `run` a stable callback, so `runWrite` can name them in
+  // its dependency list (exhaustive-deps) instead of the fresh object
+  // `useOwnRun` returns each render.
+  const { run: runEnvWrite, isRunning: envWriteBusy } = useOwnRun();
 
   // In-page success confirmation (issue #145): a successful write
   // closes the loop here with a short-lived bar; failures are
@@ -138,8 +142,8 @@ export function EnvPage() {
         focusTrustBanner();
         return "err";
       }
-      if (envWrite.isRunning) return "err";
-      const res = await envWrite.run({ cwd, args: builder(cwd) });
+      if (envWriteBusy) return "err";
+      const res = await runEnvWrite({ cwd, args: builder(cwd) });
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["env", "ls", cwd] });
         void queryClient.invalidateQueries({ queryKey: ["env", "ls", null] });
@@ -155,7 +159,7 @@ export function EnvPage() {
       }
       return "err";
     },
-    [guard.allowed, focusTrustBanner, envWrite.isRunning, envWrite.run, cwd, queryClient],
+    [guard.allowed, focusTrustBanner, envWriteBusy, runEnvWrite, cwd, queryClient],
   );
 
   const envRows: EnvRow[] = useMemo(() => {
@@ -269,7 +273,7 @@ export function EnvPage() {
           row={r}
           cwd={cwd}
           onWrite={runWrite}
-          disabled={envWrite.isRunning}
+          disabled={envWriteBusy}
           existingNames={existingNames}
         />
       ),
@@ -355,7 +359,7 @@ export function EnvPage() {
 
           <AddEnvForm
             onWrite={runWrite}
-            disabled={envWrite.isRunning}
+            disabled={envWriteBusy}
             cwd={cwd}
             existingNames={existingNames}
           />

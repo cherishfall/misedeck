@@ -96,6 +96,11 @@ function isAbsolutePathLike(value: string): boolean {
  * `text-overflow: ellipsis` re-truncate the tail — hiding the file
  * name, the exact bug head-elision exists to fix.
  *
+ * The unit is a mono advance. `shortenPathTail` compares display width in
+ * these columns, counting an East Asian Wide/Fullwidth character as two
+ * (#258): CJK sub-path segments occupy two advances each, so measuring
+ * them with `String.length` understated the budget they consume.
+ *
  * Why a constant and not a runtime `measureText`: since #241 JetBrains
  * Mono is **bundled** (`src/fonts.css`), so the 0.6em advance is the
  * same on macOS, Windows and Linux — before that, every platform fell
@@ -132,19 +137,61 @@ export const SOURCE_CELL_CHARS = columnCharBudget(216);
 export const ENV_VALUE_CELL_CHARS = columnCharBudget(320);
 
 /**
+ * Display columns a string occupies in a fixed-width data cell. The
+ * budget (`columnCharBudget`) is expressed in mono advances, and an East
+ * Asian Wide/Fullwidth character occupies two of them (#258) — a CJK
+ * path measured with `String.length` looked half as wide as it renders,
+ * so the head-elision kept segments that pushed the tail past the cell
+ * and let the CSS end-ellipsis cut the file name the function exists to
+ * preserve.
+ */
+function displayWidth(value: string): number {
+  let width = 0;
+  for (const char of value) {
+    width += isWideCodePoint(char.codePointAt(0) ?? 0) ? 2 : 1;
+  }
+  return width;
+}
+
+/** East Asian Wide / Fullwidth code points (Unicode EastAsianWidth W/F),
+ *  the ranges a path realistically carries: CJK, Hangul, fullwidth
+ *  forms. */
+function isWideCodePoint(cp: number): boolean {
+  return (
+    (cp >= 0x1100 && cp <= 0x115f) ||
+    cp === 0x2329 ||
+    cp === 0x232a ||
+    (cp >= 0x2e80 && cp <= 0x303e) ||
+    (cp >= 0x3041 && cp <= 0x33ff) ||
+    (cp >= 0x3400 && cp <= 0x4dbf) ||
+    (cp >= 0x4e00 && cp <= 0x9fff) ||
+    (cp >= 0xa000 && cp <= 0xa4cf) ||
+    (cp >= 0xa960 && cp <= 0xa97f) ||
+    (cp >= 0xac00 && cp <= 0xd7a3) ||
+    (cp >= 0xf900 && cp <= 0xfaff) ||
+    (cp >= 0xfe10 && cp <= 0xfe19) ||
+    (cp >= 0xfe30 && cp <= 0xfe6f) ||
+    (cp >= 0xff00 && cp <= 0xff60) ||
+    (cp >= 0xffe0 && cp <= 0xffe6) ||
+    (cp >= 0x20000 && cp <= 0x3fffd)
+  );
+}
+
+/**
  * Display-only shortening for source paths. The tail is what identifies a
  * config source (`mise.toml` vs `config.toml`), so elide the *head*:
  * `/Users/dev/proj/mise.toml` becomes `…/proj/mise.toml` instead of losing
  * its file name to a trailing ellipsis.
  *
- * Never mutates the value sent to mise — callers pass the full string to the
- * tooltip and store this result in render output only. Values that are not
- * absolute paths, and paths already within `maxLength`, come back unchanged.
- * A basename longer than the budget is returned whole: the whole point is to
- * keep it visible.
+ * `maxLength` is measured in display columns, not UTF-16 units: a wide
+ * (CJK / fullwidth) character counts as two (#258). Never mutates the value
+ * sent to mise — callers pass the full string to the tooltip and store this
+ * result in render output only. Values that are not absolute paths, and
+ * paths already within `maxLength`, come back unchanged. A basename longer
+ * than the budget is returned whole: the whole point is to keep it visible.
  */
 export function shortenPathTail(path: string, maxLength = 40): string {
-  if (path === "" || path.length <= maxLength || !isAbsolutePathLike(path)) {
+  if (path === "" || displayWidth(path) <= maxLength || !isAbsolutePathLike(path)) {
     return path;
   }
   const winSeparator = path.includes("\\") && !path.includes("/");
@@ -155,7 +202,7 @@ export function shortenPathTail(path: string, maxLength = 40): string {
   let tail = segments[segments.length - 1];
   for (let i = segments.length - 2; i >= 0; i -= 1) {
     const candidate = `${segments[i]}${separator}${tail}`;
-    if (`…${separator}${candidate}`.length > maxLength) break;
+    if (displayWidth(`…${separator}${candidate}`) > maxLength) break;
     tail = candidate;
   }
   return `…${separator}${tail}`;

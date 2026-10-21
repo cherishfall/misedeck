@@ -217,15 +217,20 @@ export function TasksPage() {
   // its own hook, so a control freezes only while *its* command is in
   // flight. Browsing and drafting never lock (issue #135).
   //
-  // Deliberate exception — every row's Run button shares `taskRun`
-  // (issue #213): `mise run` tasks may depend on one another, and two
-  // concurrent runs would interleave into the one transcript the panel
-  // shows. Task runs therefore serialize by design; Save and Open in
-  // editor keep their own locks.
-  const taskRun = useOwnRun();
-  const saveRun = useOwnRun();
-  const editorRun = useOwnRun();
-  const configRun = useOwnRun();
+  // Deliberate exception — every row's Run button shares the task-run
+  // hook (issue #213): `mise run` tasks may depend on one another, and
+  // two concurrent runs would interleave into the one transcript the
+  // panel shows. Task runs therefore serialize by design; Save and Open
+  // in editor keep their own locks.
+  //
+  // Each hook is destructured into its stable pieces (#258): the
+  // `isRunning` boolean and the stable `run` callback can be named in a
+  // dependency list (exhaustive-deps), unlike the fresh object the hook
+  // returns each render.
+  const { run: runTaskCommand, isRunning: taskRunBusy } = useOwnRun();
+  const { run: runSaveCommand, isRunning: saveRunBusy } = useOwnRun();
+  const { run: runEditorCommand, isRunning: editorRunBusy } = useOwnRun();
+  const { run: runConfigCommand, isRunning: configRunBusy } = useOwnRun();
 
   // Run a task via the panel. The trust guard is checked first
   // (running a task in an untrusted directory would also fail
@@ -237,10 +242,10 @@ export function TasksPage() {
         focusTrustBanner();
         return;
       }
-      if (taskRun.isRunning) return;
+      if (taskRunBusy) return;
       clearFailedBadge();
       setFailedTask(null);
-      const res = await taskRun.run({ cwd, args: miseRunTaskArgs(name) });
+      const res = await runTaskCommand({ cwd, args: miseRunTaskArgs(name) });
       if (res.kind === "err") {
         markTaskFailed(name);
       }
@@ -248,8 +253,8 @@ export function TasksPage() {
     [
       guard.allowed,
       focusTrustBanner,
-      taskRun.isRunning,
-      taskRun.run,
+      taskRunBusy,
+      runTaskCommand,
       cwd,
       clearFailedBadge,
       markTaskFailed,
@@ -273,18 +278,18 @@ export function TasksPage() {
         focusTrustBanner();
         return false;
       }
-      if (saveRun.isRunning) return false;
+      if (saveRunBusy) return false;
       if (runWords.length === 0) {
         // mise's `tasks add -- <empty>` is rejected. Refuse here
         // so the panel doesn't fill with a wasted failed run.
         return false;
       }
-      const res = await saveRun.run({ cwd, args: miseTasksAddArgs(name, description, depends, runWords) });
+      const res = await runSaveCommand({ cwd, args: miseTasksAddArgs(name, description, depends, runWords) });
       if (res.kind !== "ok") return false;
       void queryClient.invalidateQueries({ queryKey: ["tasks", "ls", cwd] });
       return true;
     },
-    [guard.allowed, focusTrustBanner, saveRun.isRunning, saveRun.run, cwd, queryClient],
+    [guard.allowed, focusTrustBanner, saveRunBusy, runSaveCommand, cwd, queryClient],
   );
 
   // Open the file that defines the task in the OS default editor.
@@ -300,8 +305,8 @@ export function TasksPage() {
         focusTrustBanner();
         return;
       }
-      if (editorRun.isRunning) return;
-      const res = await editorRun.run({ cwd, args: miseTasksEditPathArgs(name) });
+      if (editorRunBusy) return;
+      const res = await runEditorCommand({ cwd, args: miseTasksEditPathArgs(name) });
       if (res.kind === "err") {
         // The failed run auto-opens the panel with stderr; the
         // page-level message explains what the attempt was for.
@@ -320,7 +325,7 @@ export function TasksPage() {
         setEditorError(t(I18N_KEYS.tasks.openEditorError.body));
       }
     },
-    [guard.allowed, focusTrustBanner, editorRun.isRunning, editorRun.run, cwd, t],
+    [guard.allowed, focusTrustBanner, editorRunBusy, runEditorCommand, cwd, t],
   );
 
   // Track the open-in-editor error so the user can see why
@@ -341,8 +346,8 @@ export function TasksPage() {
         focusTrustBanner();
         return;
       }
-      if (configRun.isRunning) return;
-      const res = await configRun.run({ cwd, args: miseConfigLsArgs() });
+      if (configRunBusy) return;
+      const res = await runConfigCommand({ cwd, args: miseConfigLsArgs() });
       if (res.kind === "err") {
         setEditorError(t(I18N_KEYS.tasks.openConfigError.body));
         return;
@@ -370,7 +375,7 @@ export function TasksPage() {
         setEditorError(t(I18N_KEYS.tasks.openConfigError.body));
       }
     },
-    [guard.allowed, focusTrustBanner, configRun.isRunning, configRun.run, cwd, t],
+    [guard.allowed, focusTrustBanner, configRunBusy, runConfigCommand, cwd, t],
   );
 
   // The task form is per-row when editing (`editingName === row.name`
@@ -559,7 +564,7 @@ export function TasksPage() {
             size="sm"
             className={tableStyles.cellButton}
             onClick={() => void runTask(r.name)}
-            disabled={taskRun.isRunning}
+            disabled={taskRunBusy}
             data-testid={`tasks-run-${r.name}`}
           >
             {t(I18N_KEYS.tasks.runButton)}
@@ -576,7 +581,7 @@ export function TasksPage() {
             variant="ghost"
             size="sm"
             onClick={() => void openInEditor(r.name)}
-            disabled={editorRun.isRunning}
+            disabled={editorRunBusy}
             data-testid={`tasks-open-${r.name}`}
           >
             {t(I18N_KEYS.tasks.openInEditorButton)}
@@ -700,7 +705,7 @@ export function TasksPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => void openConfigInEditor()}
-                          disabled={configRun.isRunning}
+                          disabled={configRunBusy}
                           data-testid="tasks-open-config"
                         >
                           {t(I18N_KEYS.tasks.empty.openConfig)}
@@ -738,7 +743,7 @@ export function TasksPage() {
                   cancelForm();
                 }}
                 onCancel={cancelForm}
-                disabled={saveRun.isRunning}
+                disabled={saveRunBusy}
               />
             )}
 
@@ -847,6 +852,8 @@ function TaskForm({
     setRun(task ? task.run.join("\n") : "");
     setDescription(task?.description ?? "");
     setDependsText(task?.depends.join(", ") ?? "");
+    // Scope: only the identity dep is intended (see comment above).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset on task identity only; field changes on refetch must not clear a draft
   }, [task?.name]);
 
   const runWords = useMemo(() => parseRunInput(run), [run]);

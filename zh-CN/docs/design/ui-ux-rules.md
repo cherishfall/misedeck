@@ -128,7 +128,7 @@ MiseDeck 每个页面、组件、样式和文案都必须遵守的交互与呈�
 ## 字形与图标
 
 - 图标与字形必须大小匹配、风格匹配、颜色匹配。
-- 同一个字形在任何地方渲染一致——同一个 span class、同一个 token 颜色；升级路径箭头永远是 `--flare`。
+- 同一个字形在任何地方渲染一致——同一个 span class、同一个 token 颜色；升级路径箭头始终由共享的 `UpgradeArrow` 组件绘制，颜色永远是 `--flare`。
 - 菜单/弹层触发器不携带 caret 字形——可展开性由交互表达，而不是靠 `▾` 或 chevron。
 - 保留豁免：`›`（分页「Next ›」）和 `←`（返回首页链接）——带标签按钮/链接内的文字字形，继承字号与颜色，允许使用。
 - 取代说明：beta4 曾决定语言切换器的 chevron 必须保留作为展开 affordance，该决定已被 beta8 的 caret 移除所取代——不要援引 beta4 恢复 caret。
@@ -140,7 +140,7 @@ MiseDeck 每个页面、组件、样式和文案都必须遵守的交互与呈�
 - 通过 `createPortal` 渲染到 `document.body`——绝不用独立 overlay 窗口（见上文「文案」）。自定义属性声明在 `:root`，所以 body 层级仍能继承主题 token。正是 portal 化，让折叠后的 55px 栏不再裁掉 120px 的语言菜单。
 - 位置靠手写：从触发器的 `getBoundingClientRect` 计算；接受 `placement`（`up`/`down`）和对齐参数。不引入定位库——本项目零 UI 库、零定位库。不做超出所请求方向的自动翻转。
 - 点击外部以**触发器 ref 与 portal 容器 ref 联合判断**。portal 化后菜单渲染到旧 root 之外；只测旧 root 会把菜单内部的点击误判为「点在外面」而立即关闭。
-- z-index 取自 `var(--z-popover)`（60）——高于 `--z-deck`（40），低于 `--z-modal`（100）。绝不在弹层上硬编码 `z-index`；token 是唯一真相来源。
+- z-index 取自 `var(--z-popover)`（60），低于 `--z-modal`（100）——执行面板处于正常文档流，不需要层级。绝不在弹层上硬编码 `z-index`；token 是唯一真相来源。
 - 遵循 WAI-ARIA 菜单按钮模式：方向键上下在选项间移动，Home/End 跳到首项/末项，Enter/Space 选择（原生按钮激活），Esc 关闭，Tab 关闭并移出焦点。打开时焦点进入首项，关闭时焦点回到触发器（Tab 关闭时除外）。用 `aria-controls` 把触发器和菜单关联；保留 `role="menu"`/`role="menuitem"`、`aria-haspopup="menu"`、`aria-expanded`，并在当前项上保留 `aria-current`。
 - 无入场动画。`visual-language.md` 只允许两种环境动效；弹层淡入或滑入是 bug。
 - `Tooltip` 用同一个浮层回应两条通道：hover 在 ~250ms 意图延迟后展开，聚焦立即展开（焦点已落到位，就没有意图可测量），blur / mouse-leave 走同一个宽限计时器收起——浮层自身也能接住焦点，因此焦点移入其中的复制按钮时浮层不会从用户脚下被抽走。浮层在聚焦路径上同样是打开的，`aria-describedby` 因此也挂在键盘路径上，而「为什么这一项被禁用 / 为什么这行只读」这类解释正活在这条路径上（beta16，issue #227）。

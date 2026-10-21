@@ -67,6 +67,7 @@ import {
   Table,
   TableFilter,
   Tooltip,
+  UpgradeArrow,
   type TableColumn,
 } from "../../components";
 import { shortenPathTail } from "../../utils/paths";
@@ -540,10 +541,12 @@ export function AddToolSection({
           // The `latest` alias (mise's own vocabulary — it never
           // appears in ls-remote output) annotated with the concrete
           // version the comparator resolves it to.
-          <Tooltip text={`latest → ${r.version}`}>
+          <Tooltip
+            text={t(I18N_KEYS.tools.addTool.latestAlias, { version: r.version })}
+          >
             <span className={styles.versionCell}>
               <span className={styles.latestAlias}>latest</span>
-              <span className="upgrade-arrow" aria-hidden="true">→</span>
+              <UpgradeArrow />
               <span className={styles.latestValue}>{r.version}</span>
             </span>
           </Tooltip>

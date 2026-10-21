@@ -26,7 +26,7 @@ interface PageRefreshContextValue {
   setRefresh: (cb: PageRefreshCallback | null) => void;
 }
 
-export const PageRefreshContext = createContext<PageRefreshContextValue | null>(null);
+const PageRefreshContext = createContext<PageRefreshContextValue | null>(null);
 
 /** Owns the page-refresh state; mount once in the app root, inside the
  *  router and above every page (issue #130). */

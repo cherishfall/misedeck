@@ -54,7 +54,7 @@ function asSource(v: unknown): MiseSource | undefined {
 /** Parse one row of `mise ls --json`. mise emits snake_case keys
  *  (`requested_version`, `install_path`, `symlinked_to`); reading them
  *  as camelCase silently dropped the real requested versions (issue #50). */
-export function parseLsItem(value: unknown): MiseLsItem | null {
+function parseLsItem(value: unknown): MiseLsItem | null {
   if (value === null || typeof value !== "object") return null;
   const o = value as Record<string, unknown>;
   const version = asString(o.version);
@@ -416,7 +416,7 @@ export function reconcileEnvSources(
  *  `name` is dropped (the name is the only stable key the table
  *  needs). The `run` field is preserved as an array — the page
  *  joins it for display. */
-export function parseTask(value: unknown): MiseTask | null {
+function parseTask(value: unknown): MiseTask | null {
   if (value === null || typeof value !== "object") return null;
   const o = value as Record<string, unknown>;
   const name = asString(o.name);

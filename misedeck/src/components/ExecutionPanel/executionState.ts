@@ -62,7 +62,7 @@ export interface ExecState {
  *  pruned and never count toward the cap. */
 export const MAX_FINISHED_RUNS = 3;
 
-export function pruneRuns(runs: RunEntry[], maxFinished: number): RunEntry[] {
+function pruneRuns(runs: RunEntry[], maxFinished: number): RunEntry[] {
   const finished = runs.filter((r) => r.status !== "running");
   if (finished.length <= maxFinished) return runs;
   const drop = new Set(

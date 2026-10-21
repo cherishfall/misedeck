@@ -34,3 +34,4 @@ export { Table, sortRows, type SortState, type TableColumn } from "./Table/Table
 export { TableFilter } from "./TableFilter/TableFilter";
 export { Tooltip } from "./Tooltip/Tooltip";
 export { TrustBanner, useTrustBannerFocus } from "./TrustBanner/TrustBanner";
+export { UpgradeArrow } from "./UpgradeArrow/UpgradeArrow";

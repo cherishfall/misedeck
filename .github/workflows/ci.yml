@@ -52,6 +52,10 @@ jobs:
         working-directory: misedeck
         run: npx tsc --noEmit
 
+      - name: React Hooks lint (zero warnings)
+        working-directory: misedeck
+        run: npm run lint:eslint
+
       - name: Frontend tests
         working-directory: misedeck
         run: npm run test

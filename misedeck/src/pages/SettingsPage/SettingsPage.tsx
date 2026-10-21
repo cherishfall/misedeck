@@ -114,7 +114,11 @@ export function SettingsPage() {
   const allSettings = useParsedSettingsList(true);
   const settings = showAll ? allSettings : explicitSettings;
 
-  const writeRun = useOwnRun();
+  // Destructured into its two stable pieces (#258): `isRunning` is a
+  // boolean and `run` a stable callback, so `runWrite` can name them in
+  // its dependency list (exhaustive-deps) instead of the fresh object
+  // `useOwnRun` returns each render.
+  const { run: runSettingsWrite, isRunning: writeBusy } = useOwnRun();
 
   // In-page success confirmation (issue #145): a successful write
   // closes the loop here with a short-lived bar; failures are
@@ -148,8 +152,8 @@ export function SettingsPage() {
         focusTrustBanner();
         return "err";
       }
-      if (writeRun.isRunning) return "err";
-      const res = await writeRun.run({ cwd, args: builder(cwd) });
+      if (writeBusy) return "err";
+      const res = await runSettingsWrite({ cwd, args: builder(cwd) });
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["settings", "ls", cwd] });
         if (successMessage !== undefined) {
@@ -160,7 +164,7 @@ export function SettingsPage() {
       }
       return "err";
     },
-    [guard.allowed, focusTrustBanner, writeRun.isRunning, writeRun.run, cwd, queryClient],
+    [guard.allowed, focusTrustBanner, writeBusy, runSettingsWrite, cwd, queryClient],
   );
 
   // Text filter over the full row set (issue #106), shared with the
@@ -268,7 +272,7 @@ export function SettingsPage() {
           cwd={cwd}
           allView={showAll}
           onWrite={runWrite}
-          disabled={writeRun.isRunning}
+          disabled={writeBusy}
         />
       ),
     },
@@ -385,7 +389,7 @@ export function SettingsPage() {
             <AddSettingForm
               inputRef={addKeyRef}
               onWrite={runWrite}
-              disabled={writeRun.isRunning}
+              disabled={writeBusy}
               cwd={cwd}
               existingKeys={explicitSettings.data?.map((r) => r.key) ?? []}
               keySuggestions={allSettings.data?.map((r) => r.key) ?? []}

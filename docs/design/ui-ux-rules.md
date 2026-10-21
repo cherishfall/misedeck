@@ -128,7 +128,7 @@ One vocabulary, four variants (color/type semantics owned by `visual-language.md
 ## Glyphs & icons
 
 - Icons and glyphs must match in size, style, and color.
-- The same glyph renders the same everywhere — one span class, one token color; the upgrade-path arrow is always `--flare`.
+- The same glyph renders the same everywhere — one span class, one token color; the upgrade-path arrow goes through the shared `UpgradeArrow` component and is always `--flare`.
 - Menu/popover triggers carry no caret glyph — expandability is shown by interaction, not by a `▾` or chevron.
 - Grandfathered: `›` (Pagination "Next ›") and `←` (back-to-Home link) — text glyphs inside labeled buttons/links, inheriting size and color, are allowed.
 - Supersession note: the beta4 decision that the language-switcher chevron must stay as an expand affordance is superseded by beta8's caret removal — do not restore carets citing beta4.
@@ -153,8 +153,9 @@ floating layer is a bug.
   ref together**. Once portaled, the menu renders outside its old root;
   testing only the old root misreads an in-menu click as "outside" and closes
   it instantly.
-- z-index comes from `var(--z-popover)` (60) — above `--z-deck` (40), below
-  `--z-modal` (100). Never hardcode a `z-index` on a popover; the token is the
+- z-index comes from `var(--z-popover)` (60), below `--z-modal` (100) — the
+  execution deck sits in normal flow and needs no layer. Never hardcode a
+  `z-index` on a popover; the token is the
   single source of truth.
 - Follow the WAI-ARIA Menu Button Pattern: Arrow Up/Down move between items,
   Home/End jump to first/last, Enter/Space select (native button activation),

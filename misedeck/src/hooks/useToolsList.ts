@@ -120,7 +120,7 @@ export function useToolsList(): UseQueryResult<JsonResult> {
  * Mutations and the toolbar refresh still invalidate the query
  * explicitly, so freshness on this page is unaffected.
  */
-export function useOutdatedTools(): UseQueryResult<JsonResult> {
+function useOutdatedTools(): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
   return useQuery({
     queryKey: ["tools", "outdated", cwd],
@@ -142,7 +142,7 @@ export function useOutdatedTools(): UseQueryResult<JsonResult> {
  * the query reports `isPending`, which is what drives the not-installed
  * section's loading row.
  */
-export function useLsRemote(
+function useLsRemote(
   tool: string,
 ): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
@@ -235,7 +235,7 @@ export function useParsedLsRemote(
  * editing, and the preview page (#48) renders the globally resolved
  * env in the Global context.
  */
-export function useEnv(): UseQueryResult<JsonResult> {
+function useEnv(): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
   return useQuery({
     queryKey: ["tools", "env", cwd],
@@ -267,7 +267,7 @@ export function useParsedEnv(): {
 /** Same for the global context, used to cross-check the project
  *  context and badge project-only env vars correctly. Disabled when
  *  the active context is already global. */
-export function useGlobalEnv(): UseQueryResult<JsonResult> {
+function useGlobalEnv(): UseQueryResult<JsonResult> {
   const { cwd } = useDirectory();
   return useQuery({
     queryKey: ["tools", "env", null],

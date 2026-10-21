@@ -40,7 +40,7 @@ import {
  */
 export type DirContext = { kind: "global" } | { kind: "dir"; path: string };
 
-export function isDirContext(value: unknown): value is DirContext {
+function isDirContext(value: unknown): value is DirContext {
   if (value === null || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
   if (v.kind === "global") return true;
@@ -48,7 +48,7 @@ export function isDirContext(value: unknown): value is DirContext {
   return false;
 }
 
-export function dirContextToCwd(ctx: DirContext): string | null {
+function dirContextToCwd(ctx: DirContext): string | null {
   return ctx.kind === "dir" ? ctx.path : null;
 }
 
