@@ -1,0 +1,67 @@
+{
+  "comment": "Shared argv contract for the tools page (issue #255). Executed by scripts/check-argv-parity.ts (npm run lint:argv-parity) against src/pages/ToolsPage/toolActionArgs.ts, and by src-tauri/tests/argv_parity.rs against the builders in src-tauri/src/mise.rs. Changing a builder on one side without the other, or changing the table without both, fails the guard on the side that no longer matches.",
+  "cases": [
+    {
+      "builder": "install",
+      "tool": "node",
+      "version": "22.11.0",
+      "argv": ["install", "node@22.11.0"]
+    },
+    {
+      "builder": "install",
+      "tool": "node",
+      "version": "",
+      "argv": ["install", "node@latest"]
+    },
+    {
+      "builder": "install",
+      "tool": "cargo:ripgrep",
+      "version": "14",
+      "argv": ["install", "cargo:ripgrep@14"]
+    },
+    {
+      "builder": "uninstall",
+      "tool": "node",
+      "version": "22.11.0",
+      "argv": ["uninstall", "node@22.11.0"]
+    },
+    {
+      "builder": "use",
+      "tool": "node",
+      "version": "22.11.0",
+      "global": false,
+      "argv": ["use", "node@22.11.0"]
+    },
+    {
+      "builder": "use",
+      "tool": "node",
+      "version": "22.11.0",
+      "global": true,
+      "argv": ["use", "-g", "node@22.11.0"]
+    },
+    {
+      "builder": "unuse",
+      "tool": "node",
+      "global": false,
+      "argv": ["unuse", "node"]
+    },
+    {
+      "builder": "unuse",
+      "tool": "node",
+      "global": true,
+      "argv": ["unuse", "-g", "node"]
+    },
+    {
+      "builder": "link",
+      "tool": "node",
+      "version": "22.11.0",
+      "path": "/opt/node/22.11.0",
+      "argv": ["link", "node@22.11.0", "/opt/node/22.11.0"]
+    },
+    {
+      "builder": "upgrade",
+      "tool": "go",
+      "argv": ["upgrade", "go"]
+    }
+  ]
+}

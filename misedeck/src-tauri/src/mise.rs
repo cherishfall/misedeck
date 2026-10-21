@@ -1681,9 +1681,14 @@ pub fn mise_plugins_ls(
 // The beta13 batch-operation ban: `mise uninstall --all` has no GUI
 // path — an orphan tool's versions are removed one by one (#189).
 //
-// The JS side prepends `-g` to `use`/`unuse` when the active context
-// is global, so the helpers here emit the pure argv and leave the
-// global flag to the caller.
+// `global` mirrors the page's context: true means Global mode, where
+// `use`/`unuse` carry an explicit `-g` so the echoed line is
+// dispatchable on its own. The tools-page builders in
+// `src/pages/ToolsPage/toolActionArgs.ts` are the argv the app actually
+// dispatches; these helpers and that module are pinned against the same
+// case table (`tests/fixtures/argv-parity.json`) by
+// `scripts/check-argv-parity.ts` and `tests/argv_parity.rs`
+// (issue #255).
 
 /// Build the argv for `mise install <tool>@<version>`. An empty version
 /// means latest (issue #111), and `latest` is named explicitly: per
@@ -1703,14 +1708,31 @@ pub fn mise_uninstall_argv(tool: &str, version: &str) -> Vec<String> {
     vec!["uninstall".to_string(), format!("{tool}@{version}")]
 }
 
-/// Build the argv for `mise unuse <tool>` (ADR-0008, issue #131): the
-/// real tool-level removal — drops the tool from the Config file and
-/// prunes installations no longer referenced. Reachable only from the
-/// version-management section's in-use rows, where a config request
+/// Build the argv for `mise use [-g] <tool>@<version>`. `global` is
+/// true in Global mode; Directory mode leaves the flag off and the
+/// runner anchors with `-C <dir>` (issue #179).
+pub fn mise_use_argv(tool: &str, version: &str, global: bool) -> Vec<String> {
+    let mut argv = vec!["use".to_string()];
+    if global {
+        argv.push("-g".to_string());
+    }
+    argv.push(format!("{tool}@{version}"));
+    argv
+}
+
+/// Build the argv for `mise unuse [-g] <tool>` (ADR-0008, issue #131):
+/// the real tool-level removal — drops the tool from the Config file
+/// and prunes installations no longer referenced. Reachable only from
+/// the version-management section's in-use rows, where a config request
 /// always exists (issue #189 removed the orphan branch and with it the
 /// `mise uninstall --all` path — the GUI never batch-deletes).
-pub fn mise_unuse_argv(tool: &str) -> Vec<String> {
-    vec!["unuse".to_string(), tool.to_string()]
+pub fn mise_unuse_argv(tool: &str, global: bool) -> Vec<String> {
+    let mut argv = vec!["unuse".to_string()];
+    if global {
+        argv.push("-g".to_string());
+    }
+    argv.push(tool.to_string());
+    argv
 }
 
 /// Build the argv for `mise link <tool>@<version> <path>` (issue #71).

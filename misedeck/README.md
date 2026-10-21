@@ -32,10 +32,11 @@ npm run ci             # the full frontend gate: typecheck, tests, every lint gu
 10. `npm run lint:i18n-ellipsis` — no button label ends in `…` (placeholders and in-progress copy excepted).
 11. `npm run lint:command-hint` — command hints show only commands a user can type, through the shared component.
 12. `npm run lint:install-echo-parity` — the guided-install line the UI shows is the line the Rust executor spawns, per platform.
-13. `npm run lint:modal-focus` — no `autoFocus` anywhere (initial focus lives in the shared dialog's `focusTarget.ts`); only one modal implementation.
-14. `npm run lint:nested-interactive` — no interactive control nested inside another.
-15. `npm run lint:page-layout` — page padding, width and centring stay in `PageShell`.
-16. `npm run build` — `tsc --noEmit && vite build`.
+13. `npm run lint:argv-parity` — the tools-page argv builders in TS and `src-tauri/src/mise.rs` agree, per the shared case table.
+14. `npm run lint:modal-focus` — no `autoFocus` anywhere (initial focus lives in the shared dialog's `focusTarget.ts`); only one modal implementation.
+15. `npm run lint:nested-interactive` — no interactive control nested inside another.
+16. `npm run lint:page-layout` — page padding, width and centring stay in `PageShell`.
+17. `npm run build` — `tsc --noEmit && vite build`.
 
 This is the frontend half only. The Rust checks (`cargo check`, `cargo test`) run in `ci.yml`; see [docs/agents/ci.md](../docs/agents/ci.md) for the full gate.
 

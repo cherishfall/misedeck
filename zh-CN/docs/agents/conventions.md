@@ -41,6 +41,8 @@ MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  TIMEOUT  TERMINAL_NO
 ## Testing
 
 - 唯一的测试接缝是 mise CLI 边界：测试用一个 **fixture mise** 替换它 —— 一个小脚本，按 argv 提供录制的 JSON/stderr/退出码。fixture 布局：`tests/fixtures/mise/<slug>/`，其中 `<slug>` 是 argv 用 `-` 连接而成（例如 `ls---json/`），目录内含 `stdout`、`stderr` 和 `exit_code` 三个文件。runner 针对 fixture 做单元测试；runner 之上的一切在 Tauri 命令契约处 mock runner 来测试。
+- 不调用 mise 的面在自身边界注入，而不是访问网络或宿主 OS：更新检查把获取与判定拆开（`check` → `check_with`），引导安装循环接受它要流式执行的命令（`run_install_command`），shell 探测接受 `$SHELL` 与 passwd 条目给出的值（`detect_user_shell_from`）。生产入口传入真实实现——这是测试缝，不是第二套行为（issue #255）。
+- 工具页的 argv 存在于两处：TS 构建真正下发的命令，Rust 固定仅测试用的 builder。两半都对同一张表 `tests/fixtures/argv-parity.json` 断言——`npm run lint:argv-parity`（已接入 `npm run ci`）执行 TS builder，`tests/argv_parity.rs` 执行 Rust builder。单侧改动会让该侧的闸门失败（issue #255）。
 - 只测试外部行为：给定这个 fixture 响应，命令返回这个形状 / 面板显示这个状态。不测试内部辅助函数。
 - 前端：用 node:test 对纯函数写单元测试 —— `npm run test`（`tsx --test "src/**/*.test.ts"`），已接入 `npm run ci`。现有测试：`src/utils/paths.test.ts`、`src/api/miseTools.test.ts`。组件测试设施不存在，UI 行为不做单元测试；新增纯逻辑须附带同目录的 `*.test.ts`。
 

@@ -123,7 +123,7 @@ npm run tauri build
 
 产物在 `src-tauri/target/release/bundle/`——macOS 是 `dmg/` 与 `macos/`，Windows 是 `nsis/`，Linux 是 `deb/`、`rpm/`、`appimage/`。macOS 构建和正式发布的一样，都是未签名的。
 
-`npm run ci` 是完整的前端闸门——CI 的 Windows 任务原样运行它。共 16 步，按顺序为：`typecheck`、`lint:eslint`（React Hooks 规则）、`test`、12 个 lint 守卫（i18n 键一致性与拼接、CSS token/字号/间距/字距、省略号、命令提示、安装回显一致性、模态焦点、嵌套交互、页面布局）和 `build`。Rust 检查是另一套——Linux 上跑 `cargo check --all-targets` 与 `cargo test --all-targets`，Windows 上跑 `cargo test --lib` 与 `cargo build` 编译冒烟。
+`npm run ci` 是完整的前端闸门——CI 的 Windows 任务原样运行它。共 17 步，按顺序为：`typecheck`、`lint:eslint`（React Hooks 规则）、`test`、13 个 lint 守卫（i18n 键一致性与拼接、CSS token/字号/间距/字距、省略号、命令提示、安装回显一致性、工具参数一致性、模态焦点、嵌套交互、页面布局）和 `build`。Rust 检查是另一套——Linux 上跑 `cargo check --all-targets` 与 `cargo test --all-targets`，Windows 上跑 `cargo test --lib` 与 `cargo build` 编译冒烟。
 
 ## 已知限制
 

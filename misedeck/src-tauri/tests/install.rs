@@ -8,10 +8,12 @@
 // under the default `version---json` slug, so that fixture exists too.
 
 use std::path::PathBuf;
+use std::process::Command;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
-use misedeck_lib::install::{mise_self_update_argv, run_self_update};
-use misedeck_lib::mise::RunEvent;
+use misedeck_lib::install::{mise_self_update_argv, run_install_command, run_self_update};
+use misedeck_lib::mise::{code, RunEvent};
 
 fn fixture_script() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/mise/fixture-mise")
@@ -76,4 +78,126 @@ fn run_self_update_streams_to_exit_and_probes_version() {
         update_call.ends_with("MISE_SAFE=<unset>"),
         "a mutation must not run under MISE_SAFE: {update_call:?}"
     );
+}
+
+// ---------- The install streaming loop (issue #255) ----------
+//
+// `run_install` spawns the network install script, so the loop itself is
+// driven through `run_install_command` with a local `sh` stand-in: the
+// audit found the path a user without mise hits on day one had no test
+// at all (R-17). Unix-only because the stand-in is `sh` (same gate as the
+// unit test in `src/install.rs`).
+
+#[cfg(not(target_os = "windows"))]
+fn sh(script: &str) -> Command {
+    let mut cmd = Command::new("sh");
+    cmd.args(["-c", script]);
+    cmd
+}
+
+#[cfg(not(target_os = "windows"))]
+#[test]
+fn run_install_command_streams_and_aggregates_a_clean_exit() {
+    let events: Arc<Mutex<Vec<RunEvent>>> = Arc::new(Mutex::new(Vec::new()));
+    let events_for_cb = events.clone();
+    let outcome = run_install_command(
+        sh("printf 'downloading\\ninstalled mise\\n'"),
+        Duration::from_secs(5),
+        None,
+        move |e| events_for_cb.lock().unwrap().push(e),
+    )
+    .expect("exit 0 is a successful install");
+
+    assert_eq!(outcome.exit_code, 0);
+    assert!(!outcome.timed_out);
+    assert_eq!(outcome.stdout, "downloading\ninstalled mise\n");
+    assert!(outcome.stderr.is_empty());
+    assert!(outcome.duration_ms < 5_000, "duration = {}", outcome.duration_ms);
+
+    let events = events.lock().unwrap();
+    let lines: Vec<&str> = events
+        .iter()
+        .filter_map(|e| match e {
+            RunEvent::Stdout { line } => Some(line.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(lines, vec!["downloading", "installed mise"]);
+    assert!(matches!(
+        events.last(),
+        Some(RunEvent::Exit {
+            exit_code: 0,
+            timed_out: false,
+            ..
+        })
+    ));
+}
+
+#[cfg(not(target_os = "windows"))]
+#[test]
+fn run_install_command_nonzero_exit_keeps_stderr_and_fails() {
+    let events: Arc<Mutex<Vec<RunEvent>>> = Arc::new(Mutex::new(Vec::new()));
+    let events_for_cb = events.clone();
+    let err = run_install_command(
+        sh("printf 'partial\\n'; printf 'installer: download failed\\n' >&2; exit 7"),
+        Duration::from_secs(5),
+        None,
+        move |e| events_for_cb.lock().unwrap().push(e),
+    )
+    .expect_err("a non-zero installer exit must fail the command");
+
+    assert_eq!(err.code, code::COMMAND_FAILED);
+    assert!(
+        err.stderr.contains("installer: download failed"),
+        "stderr must be preserved verbatim, got {:?}",
+        err.stderr
+    );
+    let events = events.lock().unwrap();
+    assert!(
+        events
+            .iter()
+            .any(|e| matches!(e, RunEvent::Stdout { line } if line == "partial")),
+        "the streamed transcript must survive the failure: {events:?}"
+    );
+    // The exit event carries the real code before the Err is built, so
+    // the execution panel does not report a successful run.
+    assert!(matches!(
+        events.last(),
+        Some(RunEvent::Exit {
+            exit_code: 7,
+            timed_out: false,
+            ..
+        })
+    ));
+}
+
+#[cfg(not(target_os = "windows"))]
+#[test]
+fn run_install_command_times_out_and_reports_the_ceiling() {
+    let events: Arc<Mutex<Vec<RunEvent>>> = Arc::new(Mutex::new(Vec::new()));
+    let events_for_cb = events.clone();
+    let err = run_install_command(
+        sh("printf 'started\\n'; sleep 5"),
+        Duration::from_millis(150),
+        None,
+        move |e| events_for_cb.lock().unwrap().push(e),
+    )
+    .expect_err("a command past the deadline must be killed");
+
+    assert_eq!(err.code, code::TIMEOUT);
+    let events = events.lock().unwrap();
+    assert!(
+        events
+            .iter()
+            .any(|e| matches!(e, RunEvent::Stdout { line } if line == "started")),
+        "the lines delivered before the deadline must survive: {events:?}"
+    );
+    assert!(matches!(
+        events.last(),
+        Some(RunEvent::Exit {
+            exit_code: -1,
+            timed_out: true,
+            ..
+        })
+    ));
 }

@@ -16,7 +16,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use misedeck_lib::mise::{
-    code, require_success, run_mise, run_mise_tracked, run_mise_with_timeout, RunEvent, RunRequest,
+    code, require_success, run_mise, run_mise_json, run_mise_tracked, run_mise_with_timeout,
+    RunEvent, RunRequest,
 };
 use serial_test::serial;
 
@@ -273,6 +274,60 @@ fn invalid_utf8_output_does_not_truncate_the_transcript() {
             Some(RunEvent::Exit { exit_code: 0, .. })
         ));
     });
+}
+
+// ---------- MISE_SAFE routing (issue #230, coverage #255) ----------
+//
+// The trust guarantee lives in one `if` in `run_mise_timed`. The fixture
+// logs the MISE_SAFE value it received, so these assertions pin the
+// contract from the outside: every read (`run_mise_json`) is safe;
+// streaming mutations (`run_mise` / `run_mise_tracked`) deliberately are
+// not. A refactor that drops `cmd.env` fails here.
+
+#[test]
+#[serial]
+fn read_json_sets_mise_safe_and_streaming_does_not() {
+    let script = fixture_script();
+    let env_log = std::env::temp_dir().join(format!(
+        "misedeck-mise-safe-{}.log",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_file(&env_log);
+    unsafe {
+        std::env::set_var("FIXTURE_MISE_ENV_LOG", &env_log);
+    }
+
+    with_slug("ls---json", || {
+        let req = RunRequest::new(vec!["ls".to_string(), "--json".to_string()]);
+        run_mise_json(&script, &req).expect("the recorded ls payload parses");
+    });
+    with_slug("upgrade", || {
+        let req = RunRequest::new(vec!["upgrade".to_string()]);
+        run_mise(&script, &req, |_| {}).expect("the recorded upgrade fixture exits cleanly");
+    });
+
+    unsafe {
+        std::env::remove_var("FIXTURE_MISE_ENV_LOG");
+    }
+    let calls = std::fs::read_to_string(&env_log).unwrap_or_default();
+    let _ = std::fs::remove_file(&env_log);
+
+    let read_call = calls
+        .lines()
+        .find(|line| line.contains("ls --json"))
+        .expect("the read must have invoked the fixture");
+    assert!(
+        read_call.ends_with("MISE_SAFE=1"),
+        "a read must run with MISE_SAFE=1: {read_call:?}"
+    );
+    let stream_call = calls
+        .lines()
+        .find(|line| line.contains("upgrade"))
+        .expect("the mutation must have invoked the fixture");
+    assert!(
+        stream_call.ends_with("MISE_SAFE=<unset>"),
+        "a streaming mutation must not run under MISE_SAFE: {stream_call:?}"
+    );
 }
 
 // ---------- process tree (issue #223) ----------

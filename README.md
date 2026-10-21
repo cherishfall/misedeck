@@ -123,7 +123,7 @@ npm run tauri build
 
 Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on macOS, `nsis/` on Windows, `deb/`, `rpm/`, `appimage/` on Linux. macOS builds come out unsigned, exactly like the released ones.
 
-`npm run ci` is the full frontend gate — CI's Windows job runs it verbatim. Its 16 steps, in order: `typecheck`, `lint:eslint` (React Hooks rules), `test`, twelve lint guards (i18n parity and concatenation, CSS tokens/type/spacing/tracking, ellipsis, command hints, install-echo parity, modal focus, nested interactives, page layout), and `build`. The Rust checks are separate — `cargo check --all-targets` and `cargo test --all-targets` on Linux, plus a `cargo test --lib` + `cargo build` compile smoke on Windows.
+`npm run ci` is the full frontend gate — CI's Windows job runs it verbatim. Its 17 steps, in order: `typecheck`, `lint:eslint` (React Hooks rules), `test`, thirteen lint guards (i18n parity and concatenation, CSS tokens/type/spacing/tracking, ellipsis, command hints, install-echo parity, tool-argv parity, modal focus, nested interactives, page layout), and `build`. The Rust checks are separate — `cargo check --all-targets` and `cargo test --all-targets` on Linux, plus a `cargo test --lib` + `cargo build` compile smoke on Windows.
 
 ## Known limitations
 

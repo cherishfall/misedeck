@@ -32,10 +32,11 @@ npm run ci             # 完整的前端闸门：类型检查、测试、全部 
 10. `npm run lint:i18n-ellipsis` —— 按钮文案不以 `…` 结尾（输入占位符与进行中文案除外）。
 11. `npm run lint:command-hint` —— 命令提示只展示用户真能输入的命令，且走共享组件。
 12. `npm run lint:install-echo-parity` —— UI 展示的引导安装命令与 Rust 执行器实际 spawn 的命令，按平台一致。
-13. `npm run lint:modal-focus` —— 任何地方都不得出现 `autoFocus`（初始焦点由共享对话框的 `focusTarget.ts` 决定）；只有一套 modal 实现。
-14. `npm run lint:nested-interactive` —— 交互控件不得嵌套在另一个交互控件内。
-15. `npm run lint:page-layout` —— 页面的 padding、宽度与居中留在 `PageShell`。
-16. `npm run build` —— `tsc --noEmit && vite build`。
+13. `npm run lint:argv-parity` —— 工具页的 TS argv 构造器与 `src-tauri/src/mise.rs` 按共享用例表逐项一致。
+14. `npm run lint:modal-focus` —— 任何地方都不得出现 `autoFocus`（初始焦点由共享对话框的 `focusTarget.ts` 决定）；只有一套 modal 实现。
+15. `npm run lint:nested-interactive` —— 交互控件不得嵌套在另一个交互控件内。
+16. `npm run lint:page-layout` —— 页面的 padding、宽度与居中留在 `PageShell`。
+17. `npm run build` —— `tsc --noEmit && vite build`。
 
 这里只覆盖前端。Rust 检查（`cargo check`、`cargo test`）在 `ci.yml` 中运行；完整闸门见 [docs/agents/ci.md](../../docs/agents/ci.md)。
 

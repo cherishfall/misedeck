@@ -87,7 +87,19 @@ const CHECK_FAILED_CODE: &str = crate::mise::code::COMMAND_FAILED;
 
 /// Fetch the feed and decide. Blocking — call through `spawn_run`.
 pub fn check(current_version: &str) -> Result<Option<ReleaseTag>, AppError> {
-    let feed = fetch_feed(current_version)?;
+    check_with(current_version, fetch_feed)
+}
+
+/// The fetch/decide split `check` delegates to. `fetch` is the test seam
+/// (issue #255): production passes `fetch_feed` (curl), tests pass a
+/// recorded body so the whole check — fetch result, feed-shape gate and
+/// version comparison — runs without the network. The signature carries
+/// the current version because the real fetch sends it as the User-Agent.
+pub fn check_with<F>(current_version: &str, fetch: F) -> Result<Option<ReleaseTag>, AppError>
+where
+    F: FnOnce(&str) -> Result<String, AppError>,
+{
+    let feed = fetch(current_version)?;
     check_from_body(current_version, &feed)
 }
 

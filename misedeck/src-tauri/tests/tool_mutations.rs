@@ -6,7 +6,8 @@
 //
 //   * `mise_install_argv(tool, version)`  → argv for `mise install <tool>@<version>`
 //   * `mise_uninstall_argv(tool, version)` → argv for `mise uninstall <tool>@<version>`
-//   * `mise_unuse_argv(tool)`              → argv for `mise unuse <tool>`
+//   * `mise_use_argv(tool, version, global)` → argv for `mise use [-g] <tool>@<version>`
+//   * `mise_unuse_argv(tool, global)`      → argv for `mise unuse [-g] <tool>`
 //   * `mise_upgrade_argv(tool)`            → argv for `mise upgrade [<tool>]`
 //
 // These helpers exist so the JS side has a typed builder for the
@@ -16,9 +17,17 @@
 //
 //   `mise install <tool>@<version>`      → ["install", "<tool>@<version>"]
 //   `mise uninstall <tool>@<version>`     → ["uninstall", "<tool>@<version>"]
+//   `mise use <tool>@<version>`           → ["use", "<tool>@<version>"]
+//   `mise use -g <tool>@<version>`        → ["use", "-g", "<tool>@<version>"]
 //   `mise unuse <tool>`                   → ["unuse", "<tool>"]
+//   `mise unuse -g <tool>`                → ["unuse", "-g", "<tool>"]
 //   `mise upgrade`                        → ["upgrade"]
 //   `mise upgrade <tool>`                 → ["upgrade", "<tool>"]
+//
+// The full TS↔Rust parity contract (including the global flag) is the
+// shared table `tests/fixtures/argv-parity.json`, exercised here by
+// `tests/argv_parity.rs` and on the TS side by
+// `scripts/check-argv-parity.ts` (issue #255).
 //
 // The fixture-mise script serves the same recorded stdout/stderr
 // for every argv, so the streaming-surface tests are the same
@@ -28,8 +37,8 @@
 use std::path::PathBuf;
 
 use misedeck_lib::mise::{
-    mise_install_argv, mise_link_argv, mise_uninstall_argv,
-    mise_unuse_argv, mise_upgrade_argv, run_mise, RunEvent, RunRequest,
+    mise_install_argv, mise_link_argv, mise_uninstall_argv, mise_unuse_argv, mise_upgrade_argv,
+    mise_use_argv, run_mise, RunEvent, RunRequest,
 };
 use serial_test::serial;
 
@@ -94,8 +103,40 @@ fn mise_uninstall_argv_builds_uninstall_command() {
 #[test]
 fn mise_unuse_argv_builds_unuse_command() {
     // Tool-level removal (ADR-0008): drop the config request and prune.
-    let argv = mise_unuse_argv("node");
+    let argv = mise_unuse_argv("node", false);
     assert_eq!(argv, vec!["unuse".to_string(), "node".to_string()]);
+}
+
+#[test]
+fn mise_unuse_argv_carries_the_global_flag() {
+    // Global mode echoes a dispatchable command: `mise unuse -g node`.
+    let argv = mise_unuse_argv("node", true);
+    assert_eq!(
+        argv,
+        vec!["unuse".to_string(), "-g".to_string(), "node".to_string()]
+    );
+}
+
+#[test]
+fn mise_use_argv_builds_use_command() {
+    let argv = mise_use_argv("node", "22.11.0", false);
+    assert_eq!(
+        argv,
+        vec!["use".to_string(), "node@22.11.0".to_string()]
+    );
+}
+
+#[test]
+fn mise_use_argv_carries_the_global_flag() {
+    let argv = mise_use_argv("node", "22.11.0", true);
+    assert_eq!(
+        argv,
+        vec![
+            "use".to_string(),
+            "-g".to_string(),
+            "node@22.11.0".to_string(),
+        ]
+    );
 }
 
 #[test]
@@ -201,7 +242,7 @@ fn run_mise_with_unuse_argv_streams_to_exit() {
         let events: std::sync::Arc<std::sync::Mutex<Vec<RunEvent>>> =
             std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
         let events2 = std::sync::Arc::clone(&events);
-        let req = RunRequest::new(mise_unuse_argv("node"));
+        let req = RunRequest::new(mise_unuse_argv("node", false));
         let outcome = run_mise(&script, &req, move |e| {
             events2.lock().unwrap().push(e);
         })

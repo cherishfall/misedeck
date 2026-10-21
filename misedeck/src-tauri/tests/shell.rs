@@ -27,8 +27,11 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 use misedeck_lib::shell::{
-    check_shell_activation_for, classify_shell, rc_path_for, ActivationStatus, ShellKind,
+    check_shell_activation_for, classify_shell, detect_user_shell_from, rc_path_for,
+    ActivationStatus, ShellKind,
 };
+#[cfg(unix)]
+use misedeck_lib::shell::detect_user_shell;
 
 // `std::env::set_var` is not thread-safe; the few tests in this
 // file that touch `$HOME` run through this mutex so the
@@ -74,6 +77,90 @@ fn classify_shell_unknown_preserves_name() {
         ShellKind::Unknown { name } => assert_eq!(name, "/usr/local/bin/nu"),
         other => panic!("expected Unknown, got {other:?}"),
     }
+}
+
+// ---------- detect_user_shell (issue #255) ----------
+//
+// The audit found the shell probe had no test: `classify_shell` was the
+// only covered function, so the env → passwd wiring (the R-1 fix) could
+// regress silently. `detect_user_shell_from` is the pure decision half;
+// the one test that touches the real environment reads `$SHELL` and is
+// `#[serial]` because the env is process-wide.
+
+#[test]
+fn detect_user_shell_prefers_the_shell_env_over_the_passwd_entry() {
+    // A terminal launch: `$SHELL` is the login shell login(1) exported.
+    assert_eq!(
+        detect_user_shell_from(Some("/usr/bin/fish"), Some("/bin/zsh")),
+        ShellKind::Fish
+    );
+    assert_eq!(
+        detect_user_shell_from(Some("/bin/bash"), None),
+        ShellKind::Bash
+    );
+}
+
+#[test]
+fn detect_user_shell_falls_back_to_the_passwd_entry() {
+    // Finder/Dock: launchd's session environment has no `SHELL`, so the
+    // passwd entry (`getpwuid_r` → `pw_shell`) must take over (R-1).
+    assert_eq!(
+        detect_user_shell_from(None, Some("/bin/zsh")),
+        ShellKind::Zsh
+    );
+    // A blank export is as absent as a missing one.
+    assert_eq!(
+        detect_user_shell_from(Some(""), Some("/usr/local/bin/fish")),
+        ShellKind::Fish
+    );
+    assert_eq!(
+        detect_user_shell_from(Some("   "), Some("/bin/bash")),
+        ShellKind::Bash
+    );
+}
+
+#[test]
+fn detect_user_shell_is_unknown_when_both_sources_are_absent() {
+    assert_eq!(
+        detect_user_shell_from(None, None),
+        ShellKind::Unknown {
+            name: "unknown".to_string()
+        }
+    );
+    assert_eq!(
+        detect_user_shell_from(Some(""), Some("")),
+        ShellKind::Unknown {
+            name: "unknown".to_string()
+        }
+    );
+}
+
+#[test]
+fn detect_user_shell_preserves_an_unrecognised_login_shell() {
+    // An exotic login shell still flows through as Unknown with its raw
+    // path so the banner can name it back to the user.
+    match detect_user_shell_from(None, Some("/usr/local/bin/nu")) {
+        ShellKind::Unknown { name } => assert_eq!(name, "/usr/local/bin/nu"),
+        other => panic!("expected Unknown, got {other:?}"),
+    }
+}
+
+#[cfg(unix)]
+#[test]
+#[serial_test::serial]
+fn detect_user_shell_reads_the_real_shell_env() {
+    // The one test that drives the public probe against the process
+    // environment. Unix-only: on Windows `detect_user_shell` checks for
+    // pwsh on PATH before `$SHELL`.
+    let _guard = HOME_LOCK.lock().unwrap();
+    let prev = std::env::var_os("SHELL");
+    let _restore = ShellGuard::new(prev);
+    // SAFETY: the lock serializes all process-env writes in this test
+    // binary (the $HOME tests use the same lock).
+    unsafe {
+        std::env::set_var("SHELL", "/usr/bin/fish");
+    }
+    assert_eq!(detect_user_shell(), ShellKind::Fish);
 }
 
 #[test]
@@ -345,6 +432,27 @@ impl Drop for HomeGuard {
         match self.prev.take() {
             Some(v) => unsafe { std::env::set_var("HOME", v) },
             None => unsafe { std::env::remove_var("HOME") },
+        }
+    }
+}
+
+/// Restore `$SHELL` on drop, for the one test that drives the real
+/// `detect_user_shell` probe through the environment.
+struct ShellGuard {
+    prev: Option<std::ffi::OsString>,
+}
+
+impl ShellGuard {
+    fn new(prev: Option<std::ffi::OsString>) -> Self {
+        Self { prev }
+    }
+}
+
+impl Drop for ShellGuard {
+    fn drop(&mut self) {
+        match self.prev.take() {
+            Some(v) => unsafe { std::env::set_var("SHELL", v) },
+            None => unsafe { std::env::remove_var("SHELL") },
         }
     }
 }

@@ -169,17 +169,31 @@ pub fn detect_user_shell() -> ShellKind {
     }
 
     #[cfg(unix)]
-    let raw = {
+    {
         let env_shell = std::env::var_os("SHELL").map(|s| s.to_string_lossy().into_owned());
         let passwd_shell = passwd_login_shell();
-        resolve_login_shell(env_shell.as_deref(), passwd_shell.as_deref())
-    };
+        detect_user_shell_from(env_shell.as_deref(), passwd_shell.as_deref())
+    }
     #[cfg(not(unix))]
-    let raw = std::env::var_os("SHELL").map(|s| s.to_string_lossy().into_owned());
+    {
+        let raw = std::env::var_os("SHELL").map(|s| s.to_string_lossy().into_owned());
+        detect_user_shell_from(raw.as_deref(), None)
+    }
+}
 
-    match raw {
+/// Classify what the login-shell sources say.
+///
+/// This is the decision half of `detect_user_shell`, split out so the
+/// env → passwd fallback is testable without mutating the process
+/// environment or the OS (the test seam is "what the two sources say",
+/// issue #255). A missing or blank value from both sources is `Unknown`,
+/// never a guess.
+pub fn detect_user_shell_from(env_shell: Option<&str>, passwd_shell: Option<&str>) -> ShellKind {
+    match resolve_login_shell(env_shell, passwd_shell) {
         Some(raw) => classify_shell_path(&raw),
-        None => ShellKind::Unknown { name: "unknown".to_string() },
+        None => ShellKind::Unknown {
+            name: "unknown".to_string(),
+        },
     }
 }
 

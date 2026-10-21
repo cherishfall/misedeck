@@ -127,11 +127,28 @@ fn install_command_args() -> Vec<String> {
 /// the process group, not just `sh` — otherwise `curl` and the
 /// installer keep writing shims after the panel said "cancelled"
 /// (issue #223).
-pub fn run_install<F>(run_id: Option<&str>, mut on_event: F) -> Result<InstallOutcome, AppError>
+pub fn run_install<F>(run_id: Option<&str>, on_event: F) -> Result<InstallOutcome, AppError>
 where
     F: FnMut(RunEvent) + Send + 'static,
 {
-    let mut cmd = build_install_command();
+    run_install_command(build_install_command(), INSTALL_TIMEOUT, run_id, on_event)
+}
+
+/// Stream one install-shaped command to completion under `timeout`.
+/// This is the body of `run_install`; it is public and takes the
+/// command so tests can drive the real loop with a local process and a
+/// short deadline instead of the network install script (issue #255).
+/// Runtime callers use `run_install`, which pins the platform command
+/// and `INSTALL_TIMEOUT`.
+pub fn run_install_command<F>(
+    mut cmd: Command,
+    timeout: Duration,
+    run_id: Option<&str>,
+    mut on_event: F,
+) -> Result<InstallOutcome, AppError>
+where
+    F: FnMut(RunEvent) + Send + 'static,
+{
     cmd.stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -156,7 +173,7 @@ where
     let err_thread = spawn_line_reader(stderr, err_tx);
 
     let started = Instant::now();
-    let deadline = INSTALL_TIMEOUT;
+    let deadline = timeout;
     let mut stdout_buf = String::new();
     let mut stderr_buf = String::new();
 
@@ -336,7 +353,6 @@ where
 mod tests {
     use super::*;
     use std::sync::{Arc, Mutex};
-    use std::thread;
 
     #[test]
     fn install_outcome_default_is_zero() {
@@ -391,64 +407,19 @@ mod tests {
         let events: Arc<Mutex<Vec<RunEvent>>> = Arc::new(Mutex::new(Vec::new()));
         let events_for_cb = events.clone();
         let mut cmd = Command::new("sh");
-        cmd.args(["-c", "printf 'line-1\\nline-2\\n'; exit 0"])
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-        let mut child = cmd.spawn().expect("spawn");
-        let out = child.stdout.take().unwrap();
-        let err = child.stderr.take().unwrap();
-        let (otx, orx) = channel::<String>();
-        let (etx, erx) = channel::<String>();
-        // Same readers the production runner uses — the test exercises the
-        // shared line splitter, not a copy of it (issue #222).
-        let ot = spawn_line_reader(out, otx);
-        let et = spawn_line_reader(err, etx);
-        let started = Instant::now();
-        loop {
-            match child.try_wait().unwrap() {
-                Some(status) => {
-                    // Join readers BEFORE draining (mirrors the production
-                    // runner): draining first races with the reader threads and
-                    // can drop their last lines. Bounded for the same reason as
-                    // production — a grandchild may hold the pipe.
-                    join_readers_bounded(vec![ot, et], READER_SHUTDOWN_BOUND);
-                    while let Ok(line) = orx.try_recv() {
-                        events_for_cb
-                            .lock()
-                            .unwrap()
-                            .push(RunEvent::Stdout { line });
-                    }
-                    while let Ok(line) = erx.try_recv() {
-                        events_for_cb
-                            .lock()
-                            .unwrap()
-                            .push(RunEvent::Stderr { line });
-                    }
-                    events_for_cb.lock().unwrap().push(RunEvent::Exit {
-                        exit_code: status.code().unwrap_or(-1),
-                        duration_ms: started.elapsed().as_millis() as u64,
-                        timed_out: false,
-                    });
-                    break;
-                }
-                None => {
-                    while let Ok(line) = orx.try_recv() {
-                        events_for_cb
-                            .lock()
-                            .unwrap()
-                            .push(RunEvent::Stdout { line });
-                    }
-                    while let Ok(line) = erx.try_recv() {
-                        events_for_cb
-                            .lock()
-                            .unwrap()
-                            .push(RunEvent::Stderr { line });
-                    }
-                    thread::sleep(Duration::from_millis(5));
-                }
-            }
-        }
+        cmd.args(["-c", "printf 'line-1\\nline-2\\n'; exit 0"]);
+        // The production loop, not a copy of it (issue #255): the old
+        // body re-implemented the reader/exit plumbing here, so a
+        // regression in `run_install` itself would not have failed.
+        let outcome = run_install_command(cmd, Duration::from_secs(5), None, move |e| {
+            events_for_cb.lock().unwrap().push(e);
+        })
+        .expect("a clean install-shaped command should yield Ok");
+        assert_eq!(outcome.exit_code, 0);
+        assert!(!outcome.timed_out);
+        assert_eq!(outcome.stdout, "line-1\nline-2\n");
+        assert!(outcome.stderr.is_empty());
+
         let captured = events.lock().unwrap();
         let stdout_lines = captured
             .iter()

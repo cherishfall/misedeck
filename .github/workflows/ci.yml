@@ -98,6 +98,13 @@ jobs:
         working-directory: misedeck
         run: npm run lint:install-echo-parity
 
+      # The tools-page argv is dispatched from TS and mirrored by the
+      # Rust builders; both halves are pinned to one case table, with
+      # the Rust half in `cargo test` (issue #255).
+      - name: Tools-page argv parity guard
+        working-directory: misedeck
+        run: npm run lint:argv-parity
+
       - name: Frontend production build
         working-directory: misedeck
         run: npm run build

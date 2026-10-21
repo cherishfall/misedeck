@@ -91,6 +91,14 @@ import {
   versionTooltipKey,
   versionTooltipKind,
 } from "./toolCopy";
+import {
+  miseInstallArgs,
+  miseLinkArgs,
+  miseUninstallArgs,
+  miseUnuseArgs,
+  miseUpgradeArgs,
+  miseUseArgs,
+} from "./toolActionArgs";
 
 import styles from "./ToolsPage.module.css";
 
@@ -135,72 +143,11 @@ type PendingAction =
   | { kind: "install"; tool: string; version: string }
   | { kind: "upgrade"; tool: string };
 
-// ---------- Args builders (mirror the Rust helpers) ----------
+// ---------- Args builders ----------
 //
-// The Rust side defines `mise_install_argv`, `mise_uninstall_argv`,
-// `mise_unuse_argv`, `mise_uninstall_all_argv`, `mise_upgrade_argv`,
-// and the existing `mise_use_argv` in pure form.
-// The JS side duplicates the shape so the page is self-contained — the
-// only Rust call is `useExecutionContext().run({cwd, args})`. Keep the
-// two in lockstep with the Rust `tests/tool_mutations.rs` assertions.
-//
-// Only `mise use` and `mise unuse` accept a `-g` flag; `install`,
-// `uninstall`, and `upgrade` operate on the active directory context.
-// The runner adds `-C <dir>` in Directory mode and `-C $HOME` in Global
-// mode (issue #179), so the global context naturally targets the global
-// config without extra flags for those three commands.
-
-function miseInstallArgs(tool: string, version: string): string[] {
-  // An empty version means latest (issue #111), and `latest` is named
-  // explicitly: per `mise install --help`, a bare `<tool>` installs the
-  // version the config requests for it, which is not latest when the
-  // config pins one (issue #254).
-  return ["install", `${tool}@${version.length > 0 ? version : "latest"}`];
-}
-
-function miseUninstallArgs(tool: string, version: string): string[] {
-  // Target the exact row's version (issue #56): the confirmation teaches
-  // the command `mise uninstall <tool>@<version>`, so the dispatched
-  // command must match what is shown.
-  return ["uninstall", `${tool}@${version}`];
-}
-
-// Tool-level removal (ADR-0008, issue #131): `mise unuse <tool>` drops
-// the tool from the Config file and prunes its installations. Only the
-// version-management section's in-use rows reach this — a row there
-// always carries a config request, so no orphan branch exists (#189:
-// `mise uninstall --all` does not enter the GUI, the beta13
-// batch-operation ban). In Global mode the command carries `-g`
-// explicitly (beta13): the echo must read as a dispatchable command,
-// not rely on the runner's hidden `-C $HOME` anchoring.
-function miseUnuseArgs(tool: string, cwd: string | null): string[] {
-  return cwd === null ? ["unuse", "-g", tool] : ["unuse", tool];
-}
-
-/**
- * Build the argv for `mise link <tool>@<version> <path>` (issue #71).
- * Mirrors `mise_link_argv` on the Rust side; the two must stay in
- * lockstep with the `tests/tool_mutations.rs` assertions. The argument
- * order is `<tool>@<version>` first, then the local `<path>` — not
- * path-first. `--force` is never sent; on a conflict the panel's stderr
- * drives a friendly hint instead of force-overwriting.
- */
-function miseLinkArgs(tool: string, version: string, path: string): string[] {
-  return ["link", `${tool}@${version}`, path];
-}
-
-function miseUseArgs(tool: string, version: string, cwd: string | null): string[] {
-  return cwd === null
-    ? ["use", "-g", `${tool}@${version}`]
-    : ["use", `${tool}@${version}`];
-}
-
-function miseUpgradeArgs(tool: string): string[] {
-  // No `--bump` (beta13 Q9): the default upgrades within the range the
-  // config file writes (node@20 → newest 20.x) without rewriting the
-  // config — matching the `latest` field of `mise outdated`.
-  return ["upgrade", tool];
-}
+// The builders live in `./toolActionArgs` so `scripts/check-argv-parity.ts`
+// can execute them against the shared case table without loading this
+// component (issue #255).
 
 /**
  * Derive the backend badge from the tool's full `backend:name` form

@@ -196,6 +196,45 @@ fn read_mise_lockfile_ignores_unrelated_files() {
     assert!(result.is_none(), "expected None for sibling file, got {result:?}");
 }
 
+#[test]
+fn read_mise_lockfile_walks_up_to_the_project_root() {
+    // Issue #230: mise governs a directory through its config file, and
+    // the lockfile sits beside that config — so a subdirectory of a
+    // project must see the project's `mise.lock`, not "none" (#255).
+    let root = TempDir::new().expect("tempdir");
+    let nested = root.path().join("packages").join("app");
+    std::fs::create_dir_all(&nested).expect("create nested dir");
+    let body = "# @generated - project lockfile\nversion = \"1\"\n";
+    std::fs::write(root.path().join("mise.lock"), body).expect("write root lockfile");
+
+    let result = read_mise_lockfile(Some(&nested)).expect("ancestor lockfile should yield Ok");
+    assert_eq!(
+        result.as_deref(),
+        Some(body),
+        "the nearest ancestor lockfile must be read"
+    );
+}
+
+#[test]
+fn read_mise_lockfile_takes_the_nearest_ancestor() {
+    // The walk must stop at the first `mise.lock`, matching mise's own
+    // config search: a nested project's lockfile wins over the monorepo
+    // root's.
+    let root = TempDir::new().expect("tempdir");
+    let project = root.path().join("packages").join("app");
+    let nested = project.join("src");
+    std::fs::create_dir_all(&nested).expect("create nested dir");
+    std::fs::write(root.path().join("mise.lock"), "root\n").expect("write root lockfile");
+    std::fs::write(project.join("mise.lock"), "project\n").expect("write project lockfile");
+
+    let result = read_mise_lockfile(Some(&nested)).expect("ancestor lockfile should yield Ok");
+    assert_eq!(
+        result.as_deref(),
+        Some("project\n"),
+        "the nearest lockfile wins, not the outermost"
+    );
+}
+
 // ---------- AppError shape ----------
 
 #[test]
