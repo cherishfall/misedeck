@@ -45,7 +45,7 @@ interface TrustBannerProps {
 export const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(
   function TrustBanner({ body }, ref) {
     const { t } = useTranslation();
-    const { state: trust } = useTrust();
+    const { state: trust, recheck } = useTrust();
     const { running, lastResult, lastError, run } = useTrustAction();
     // The success bar must survive the banner itself: on Ok the trust
     // query re-probes and `trust.kind` flips away from `untrusted`
@@ -63,8 +63,22 @@ export const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(
     return (
       <div ref={ref} data-testid="trust-banner">
         {trust.kind === "error" && (
-          <Banner tone="info" label={t(I18N_KEYS.trust.banner.errorLabel)}>
+          <Banner
+            tone="info"
+            label={t(I18N_KEYS.trust.banner.errorLabel)}
+            action={
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={recheck}
+                data-testid="trust-retry"
+              >
+                {t(I18N_KEYS.common.retry)}
+              </Button>
+            }
+          >
             {t(I18N_KEYS.trust.banner.errorBody)}
+            {trust.message && <div className={styles.trustNote}>{trust.message}</div>}
           </Banner>
         )}
         {trust.kind === "untrusted" && (

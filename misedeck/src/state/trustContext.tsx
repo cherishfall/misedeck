@@ -64,6 +64,10 @@ export type TrustState =
 
 interface TrustContextValue {
   state: TrustState;
+  /** Re-run the probe for the current directory (issue #262). A failed
+   *  probe used to leave writes blocked with no route back; the banner's
+   *  retry invalidates the query so the gate re-evaluates. */
+  recheck: () => void;
 }
 
 const TrustContext = createContext<TrustContextValue | null>(null);
@@ -103,6 +107,7 @@ function toErr(error: unknown): { kind: "err"; err: { message: string } } {
 export function TrustProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
+  const queryClient = useQueryClient();
   // The trust query is keyed by cwd so switching the directory
   // refetches automatically. The query is disabled when there is
   // no cwd (the global context has no config to trust).
@@ -135,7 +140,12 @@ export function TrustProvider({ children }: { children: ReactNode }) {
     return raw;
   }, [q.isPending, q.error, q.data, t]);
 
-  const value = useMemo<TrustContextValue>(() => ({ state }), [state]);
+  const value = useMemo<TrustContextValue>(() => {
+    const recheck = () => {
+      void queryClient.invalidateQueries({ queryKey: ["mise", "trust", cwd] });
+    };
+    return { state, recheck };
+  }, [state, queryClient, cwd]);
   return <TrustContext.Provider value={value}>{children}</TrustContext.Provider>;
 }
 

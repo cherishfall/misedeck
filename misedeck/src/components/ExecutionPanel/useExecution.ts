@@ -70,6 +70,9 @@ export interface ExecutionState {
   exitCode: number | null;
   durationMs: number;
   error: AppError | null;
+  /** Why a cancel request failed, while the run is still going (issue
+   *  #262). Cleared when a retry succeeds or the run ends. */
+  cancelError: AppError | null;
   /** Post-update version string when `kind === "selfUpdate"`. */
   newVersion: string | null;
   /** Panel visibility. Hidden by default and stays closed when a command
@@ -89,6 +92,7 @@ const idleState: ExecutionState = {
   exitCode: null,
   durationMs: 0,
   error: null,
+  cancelError: null,
   newVersion: null,
   isOpen: false,
 };
@@ -229,20 +233,30 @@ export function useExecution() {
       let cancelled = false;
       if (!background) {
         cancelRefs.current.set(id, () => {
-          cancelled = true;
-          // The panel flips to "cancelled" immediately — it never waits
-          // for the process (soft cancel). `cancel_run` then asks Rust to
-          // tear down the run's whole process group, so `curl | sh` and
-          // `mise run` task shells stop instead of finishing in the
-          // background (issue #223). The request is fire-and-forget: the
-          // teardown may land after this handle is released, and its
-          // late events are ignored because cancelled is terminal.
-          dispatch({ type: "cancel", id });
-          cancelRefs.current.delete(id);
-          void invoke("cancel_run", { runId: id }).catch(() => {
-            // A cancel that races the run's own exit is a no-op; never
-            // surface it as a failure of the run.
-          });
+          // Only report "cancelled" once Rust acknowledged the cancel
+          // (issue #262). The status then flips immediately — the panel
+          // still never waits for the process to die — but a failed IPC
+          // call leaves the run visibly running instead of claiming a
+          // stop that did not happen. The same Cancel button retries.
+          void invoke("cancel_run", { runId: id })
+            .then(() => {
+              cancelled = true;
+              dispatch({ type: "cancel", id });
+              cancelRefs.current.delete(id);
+            })
+            .catch((e) => {
+              dispatch({
+                type: "cancelFailed",
+                id,
+                error: isAppError(e)
+                  ? e
+                  : {
+                      code: "COMMAND_FAILED",
+                      message: e instanceof Error ? e.message : String(e),
+                      stderr: "",
+                    },
+              });
+            });
         });
       }
       /** Report a failure: the panel only hears about foreground runs it
@@ -398,6 +412,7 @@ export function useExecution() {
         exitCode: activeRun.exitCode,
         durationMs: activeRun.durationMs,
         error: activeRun.error,
+        cancelError: activeRun.cancelError,
         newVersion: activeRun.newVersion,
         isOpen: state.isOpen,
       }

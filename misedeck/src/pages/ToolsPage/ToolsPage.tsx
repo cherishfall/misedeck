@@ -84,6 +84,7 @@ import { FloatingMenu } from "../../components/FloatingMenu";
 import tableStyles from "../../components/Table/Table.module.css";
 import { SOURCE_CELL_CHARS, shortenPathTail } from "../../utils/paths";
 import { hasUpgradeTarget } from "../../utils/versions";
+import { stderrBodyKey } from "../../utils/stderrBody";
 import {
   confirmUseBodyKey,
   uninstallConfirmBodyKey,
@@ -318,6 +319,9 @@ export function ToolsPage() {
   const onRefresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
+    // A failed trust probe leaves every mutation gated; the toolbar
+    // refresh re-probes it too (issue #262).
+    void queryClient.invalidateQueries({ queryKey: ["mise", "trust", cwd] });
     // The registry query backs the version-management search
     // suggestions (AddToolSection, `["registry", cwd]` in useIssue29); invalidate it
     // too so the toolbar refresh covers every query this page fetches
@@ -427,7 +431,12 @@ export function ToolsPage() {
   // load or a directory switch — the shared ListLoading renders
   // instead of the table's "no data" empty state.
   if (detect.isPending || tools.isPending) {
-    return <ListLoading />;
+    return (
+      <ListLoading
+        title={t(I18N_KEYS.tools.title)}
+        commandHint={t(I18N_KEYS.tools.commandHint)}
+      />
+    );
   }
   const detectValue = detect.data;
   if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
@@ -649,7 +658,15 @@ export function ToolsPage() {
         {toolsError && (
           <div className={styles.errorState}>
             <div className={styles.errorLabel}>{t(I18N_KEYS.tools.error.title)}</div>
-            <p className={styles.errorBody}>{t(I18N_KEYS.tools.error.body)}</p>
+            <p className={styles.errorBody}>
+              {t(
+                stderrBodyKey(
+                  toolsError.stderr,
+                  I18N_KEYS.tools.error.body,
+                  I18N_KEYS.tools.error.bodyNoStderr,
+                ),
+              )}
+            </p>
             {toolsError.stderr && (
               <pre className={styles.errorStderr}>{toolsError.stderr}</pre>
             )}

@@ -118,6 +118,30 @@
   font-size: var(--size-data);
 }
 
+/* A cancel request that failed: the run is still going, so this reads as
+ * a compact danger notice inside the panel rather than a change of the
+ * run's status (issue #262). */
+.cancelFailure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--tint-danger);
+  border-radius: var(--radius-control);
+  background: var(--tint-danger-bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  line-height: 1.5;
+}
+
+.cancelFailureDetail {
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--dim);
+  overflow-wrap: break-word;
+}
+
 .statusLabel {
   color: var(--text);
 }

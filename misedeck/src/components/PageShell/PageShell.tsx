@@ -12,9 +12,12 @@ import { Link, useLocation } from "react-router";
 import { I18N_KEYS } from "../../i18n/keys";
 import { usePersistentState } from "../../hooks/usePersistentState";
 import { useDirectory } from "../../state/directoryContext";
+import { useTheme } from "../../state/themeContext";
 
 import { ActivationBanner } from "../ActivationBanner/ActivationBanner";
 import { AppVersion } from "../AppVersion/AppVersion";
+import { Banner } from "../Banner/Banner";
+import { Button } from "../Button/Button";
 import { DirectoryIndicator } from "../DirectoryIndicator/DirectoryIndicator";
 import { DirectoryUnavailableBanner } from "../DirectoryUnavailableBanner/DirectoryUnavailableBanner";
 import { ExecutionPanel, ExecutionPanelAffordance, useExecutionContext } from "../ExecutionPanel";
@@ -130,10 +133,41 @@ export function PageShell({ children }: PageShellProps) {
         <DirectoryIndicator mode={context.kind === "dir" ? "directory" : "global"} />
         <DirectoryUnavailableBanner />
         <ActivationBanner />
+        <ThemeChromeNotice />
         <main className={styles.main}>{children}</main>
         <ExecutionPanelAffordance />
         <ExecutionPanel />
       </div>
+    </div>
+  );
+}
+
+/** The native title bar failed to follow a theme change (issue #262).
+ *  The page theme has already changed — this notice only says the window
+ *  chrome may diverge until the next successful call. Dismissible so it
+ *  never becomes permanent chrome, and it re-arms on the next failure. */
+function ThemeChromeNotice() {
+  const { t } = useTranslation();
+  const { chromeFailed, dismissChromeFailure } = useTheme();
+  if (!chromeFailed) return null;
+  return (
+    <div className={styles.noticeWrap}>
+      <Banner
+        tone="info"
+        label={t(I18N_KEYS.theme.chromeFailedLabel)}
+        action={
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={dismissChromeFailure}
+            data-testid="theme-chrome-dismiss"
+          >
+            {t(I18N_KEYS.theme.chromeFailedDismiss)}
+          </Button>
+        }
+      >
+        {t(I18N_KEYS.theme.chromeFailedBody)}
+      </Banner>
     </div>
   );
 }

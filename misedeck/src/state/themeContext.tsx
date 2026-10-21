@@ -40,6 +40,13 @@ interface ThemeContextValue {
   theme: ThemeSetting;
   /** Persist the choice and apply it. */
   setTheme: (next: ThemeSetting) => void;
+  /** True when the page theme applied but the native window chrome did
+   *  not follow (issue #262). The page change is never blocked; this
+   *  only makes the divergence visible. */
+  chromeFailed: boolean;
+  /** Acknowledge the current chrome failure; the next failure re-arms
+   *  the notice. */
+  dismissChromeFailure: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -68,20 +75,26 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   // Apply the theme to the document whenever it changes, and follow
   // through to the native window chrome (issue #47) so the title bar
-  // tracks the theme without restart. Best-effort: a webview without
-  // the Tauri bridge (plain-browser dev) rejects the invoke; the DOM
-  // theme stays the source of truth either way.
+  // tracks the theme without restart. The DOM theme is applied first
+  // and unconditionally; a failed native call only raises a notice —
+  // it never blocks or rolls back the page theme (issue #262).
+  const [chromeFailed, setChromeFailed] = useState(false);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    void setWindowTheme(theme).catch(() => {});
+    void setWindowTheme(theme).catch(() => setChromeFailed(true));
   }, [theme]);
+
+  const dismissChromeFailure = useCallback(() => setChromeFailed(false), []);
 
   const setTheme = useCallback((next: ThemeSetting) => {
     savePersistent(THEME_STORAGE_KEY, next, (value) => value);
     setThemeState(next);
   }, []);
 
-  const value = useMemo<ThemeContextValue>(() => ({ theme, setTheme }), [theme, setTheme]);
+  const value = useMemo<ThemeContextValue>(
+    () => ({ theme, setTheme, chromeFailed, dismissChromeFailure }),
+    [theme, setTheme, chromeFailed, dismissChromeFailure],
+  );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

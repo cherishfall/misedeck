@@ -28,6 +28,7 @@ import { Tooltip } from "../Tooltip";
 import { IconButton } from "../IconButton/IconButton";
 import { Button } from "../Button/Button";
 import { writeClipboard } from "../../utils/clipboard";
+import { resolveAppErrorMessage } from "../../utils/appError";
 import { useExecutionContext } from "./ExecutionContext";
 import { commandEcho } from "./commandEcho";
 import type { ExecutionStatus } from "./useExecution";
@@ -339,6 +340,23 @@ export function ExecutionPanel() {
             </button>
           </div>
         </div>
+        {/* A failed cancel keeps the run going, so the panel must not
+            look like it stopped (issue #262). The same Cancel button is
+            the retry; the row disappears when the run actually ends. */}
+        {state.status === "running" && state.cancelError && (
+          <div
+            className={styles.cancelFailure}
+            role="alert"
+            data-testid="execution-cancel-failed"
+          >
+            <span>{t(I18N_KEYS.execution.cancelFailed)}</span>
+            {state.cancelError.message && (
+              <span className={styles.cancelFailureDetail}>
+                {resolveAppErrorMessage(state.cancelError.message, t)}
+              </span>
+            )}
+          </div>
+        )}
         {echo && state.kind === "mise" && state.request?.cwd === null && (
           <div className={styles.workingDir}>
             {t(I18N_KEYS.execution.workingDirHome)}

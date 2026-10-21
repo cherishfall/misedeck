@@ -55,6 +55,10 @@ export const I18N_KEYS = {
         referenced by the button's aria-describedby, so the disabled
         state always carries its reason. */
     confirmBusy: "common.confirmBusy",
+    /** Open-in-browser failure (issue #262): the OS opener rejected, so
+        the link did nothing. The failure renders with the URL still
+        copyable instead of leaving the click silent. */
+    externalLinkFailed: "common.externalLinkFailed",
     filter: {
       noMatchTitle: "common.filter.noMatchTitle",
       noMatchBody: "common.filter.noMatchBody",
@@ -106,6 +110,9 @@ export const I18N_KEYS = {
     copy: "execution.copy",
     copyHint: "execution.copyHint",
     cancel: "execution.cancel",
+    /** `cancel_run` itself failed, so the run is still going (issue
+        #262) — the panel never claims "cancelled" on a failed request. */
+    cancelFailed: "execution.cancelFailed",
     dismiss: "execution.dismiss",
     emptyHint: "execution.emptyHint",
     reopen: "execution.reopen",
@@ -133,6 +140,15 @@ export const I18N_KEYS = {
     bannerLabel: "activation.bannerLabel",
     bannerBody: "activation.bannerBody",
     bannerBodyUnknownShell: "activation.bannerBodyUnknownShell",
+    /** `activated: null` gets its own banner (issue #262): the probe
+        could not decide, which is not the same claim as "not
+        activated". */
+    bannerLabelUnverified: "activation.bannerLabelUnverified",
+    bannerBodyUnverified: "activation.bannerBodyUnverified",
+    /** Probe error banner (issue #262): the check itself failed; the
+        action retries it instead of silently claiming a state. */
+    errorLabel: "activation.errorLabel",
+    errorBody: "activation.errorBody",
     copyLineButton: "activation.copyLineButton",
     dismissButton: "activation.dismissButton",
   },
@@ -166,7 +182,8 @@ export const I18N_KEYS = {
       action: "trust.banner.action",
       /** The muted error-state banner (issue #202): the trust probe
           itself failed, so writes are disabled without a Trust
-          action — distinct wording from the `untrusted` banner. */
+          action — distinct wording from the `untrusted` banner. The
+          banner retries the probe in place (issue #262). */
       errorLabel: "trust.banner.errorLabel",
       errorBody: "trust.banner.errorBody",
     },
@@ -213,6 +230,9 @@ export const I18N_KEYS = {
     error: {
       title: "tools.error.title",
       body: "tools.error.body",
+      /** Body used when mise wrote no stderr, so the card does not
+          promise a block below (V-7, issue #262). */
+      bodyNoStderr: "tools.error.bodyNoStderr",
     },
     filterPlaceholder: "tools.filterPlaceholder",
     actions: {
@@ -360,6 +380,8 @@ export const I18N_KEYS = {
       overrideBadge: "preview.config.overrideBadge",
       errorTitle: "preview.config.errorTitle",
       errorBody: "preview.config.errorBody",
+      /** No-stderr variant (V-7, issue #262). */
+      errorBodyNoStderr: "preview.config.errorBodyNoStderr",
     },
     columns: {
       tool: "preview.columns.tool",
@@ -384,10 +406,14 @@ export const I18N_KEYS = {
       emptyBody: "preview.env.emptyBody",
       errorTitle: "preview.env.errorTitle",
       errorBody: "preview.env.errorBody",
+      /** No-stderr variant (V-7, issue #262). */
+      errorBodyNoStderr: "preview.env.errorBodyNoStderr",
     },
     toolsError: {
       title: "preview.toolsError.title",
       body: "preview.toolsError.body",
+      /** No-stderr variant (V-7, issue #262). */
+      bodyNoStderr: "preview.toolsError.bodyNoStderr",
     },
     lockfile: {
       title: "preview.lockfile.title",
@@ -427,6 +453,8 @@ export const I18N_KEYS = {
     error: {
       title: "env.error.title",
       body: "env.error.body",
+      /** No-stderr variant (V-7, issue #262). */
+      bodyNoStderr: "env.error.bodyNoStderr",
     },
     addLabel: "env.addLabel",
     addButton: "env.addButton",
@@ -554,6 +582,8 @@ export const I18N_KEYS = {
     readError: {
       title: "tasks.readError.title",
       body: "tasks.readError.body",
+      /** No-stderr variant (V-7, issue #262). */
+      bodyNoStderr: "tasks.readError.bodyNoStderr",
     },
     success: {
       saved: "tasks.success.saved",
@@ -590,6 +620,8 @@ export const I18N_KEYS = {
     error: {
       title: "settings.error.title",
       body: "settings.error.body",
+      /** No-stderr variant (V-7, issue #262). */
+      bodyNoStderr: "settings.error.bodyNoStderr",
     },
     saveButton: "settings.saveButton",
     unsetButton: "settings.unsetButton",
@@ -651,6 +683,11 @@ export const I18N_KEYS = {
       activated: "doctor.summary.activated",
       activatedValue: "doctor.summary.activatedValue",
       notActivated: "doctor.summary.notActivated",
+      /** `activated: null` from the probe — its own claim (issue #262),
+          never rendered as "not activated". */
+      activationUnknown: "doctor.summary.activationUnknown",
+      /** The probe itself failed; the row offers a retry (issue #262). */
+      activationFailed: "doctor.summary.activationFailed",
       /** Label-colon format, locale-owned (issue #171) — zh uses the
           fullwidth colon, mirroring `theme.switcherCurrent`. */
       labelWithColon: "doctor.summary.labelWithColon",
@@ -682,6 +719,8 @@ export const I18N_KEYS = {
     error: {
       title: "doctor.error.title",
       body: "doctor.error.body",
+      /** No-stderr variant (V-7, issue #262). */
+      bodyNoStderr: "doctor.error.bodyNoStderr",
     },
     columns: {
       tool: "doctor.columns.tool",
@@ -724,6 +763,8 @@ export const I18N_KEYS = {
     installedError: {
       title: "plugins.installedError.title",
       body: "plugins.installedError.body",
+      /** No-stderr variant (V-7, issue #262). */
+      bodyNoStderr: "plugins.installedError.bodyNoStderr",
     },
     success: {
       uninstalled: "plugins.success.uninstalled",
@@ -749,6 +790,15 @@ export const I18N_KEYS = {
     commandFailed: {
       title: "states.commandFailed.title",
       body: "states.commandFailed.body",
+      /** No-stderr variant (V-7, issue #262). */
+      bodyNoStderr: "states.commandFailed.bodyNoStderr",
+    },
+    /** The detection query was rejected at the IPC layer — there is no
+        AppError union to classify, so the page renders its own failure
+        card with a retry instead of spinning forever (issue #262). */
+    probeFailed: {
+      title: "states.probeFailed.title",
+      body: "states.probeFailed.body",
     },
     parseFailed: {
       title: "states.parseFailed.title",
@@ -784,6 +834,12 @@ export const I18N_KEYS = {
     switcherCurrent: "theme.switcherCurrent",
     light: "theme.light",
     dark: "theme.dark",
+    /** The native title bar could not follow the page theme (issue
+        #262). The page theme still changes; this only says the window
+        chrome may diverge. */
+    chromeFailedLabel: "theme.chromeFailedLabel",
+    chromeFailedBody: "theme.chromeFailedBody",
+    chromeFailedDismiss: "theme.chromeFailedDismiss",
   },
   /** The app's own identity (#234/#235). Every string names MiseDeck as
       the subject on purpose: `update`, `upgrade`, `release` and

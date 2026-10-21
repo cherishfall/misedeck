@@ -175,6 +175,16 @@
   overflow-x: hidden;
 }
 
+/* Banners that sit above the page box: directory, activation, and the
+ * window-chrome notice share one inset so they line up with each other. */
+.noticeWrap {
+  width: 100%;
+  padding: var(--space-3) var(--space-5) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 /* The one page content box (issue #226): every page's title and content
  * start at this left edge and share this width, so switching pages never
  * shifts anything sideways. This is the only place the page box is

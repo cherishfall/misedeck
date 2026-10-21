@@ -18,6 +18,8 @@ import { detectMise } from "../../api/mise";
 import { I18N_KEYS } from "../../i18n/keys";
 import type { AppError, AppErrorCode, DetectMiseOk } from "../../types/tauri";
 import { parseAppErrorMessage } from "../../utils/appError";
+import { formatErrorSummary } from "../../utils/errorSummary";
+import { stderrBodyKey } from "../../utils/stderrBody";
 import { compareVersions } from "../../utils/versions";
 
 import {
@@ -46,7 +48,8 @@ interface ViewState {
     | "tooOld"
     | "commandFailed"
     | "parseFailed"
-    | "timeout";
+    | "timeout"
+    | "probeFailed";
   ok?: DetectMiseOk;
   err?: AppError;
 }
@@ -108,7 +111,13 @@ export function HomePage() {
     retry: false,
   });
 
-  const view = toViewState(query.data);
+  const view: ViewState = query.isError
+    ? { status: "probeFailed" }
+    : toViewState(query.data);
+  // A rejected detection query has no AppError union to classify — the
+  // page still owes the user the failure text, so the IPC rejection
+  // summary takes the same diagnostic block as stderr (issue #262).
+  const detectErrorSummary = query.isError ? formatErrorSummary(query.error) : "";
 
   // After a successful self-update the cached version is stale; refetch
   // so the next render reflects the new version (or a too-old gate
@@ -384,8 +393,42 @@ export function HomePage() {
                 {t(I18N_KEYS.states.commandFailed.title)}
               </span>
             </div>
-            <p className={styles.stateBody}>{t(I18N_KEYS.states.commandFailed.body)}</p>
+            <p className={styles.stateBody}>
+              {t(
+                stderrBodyKey(
+                  view.err.stderr,
+                  I18N_KEYS.states.commandFailed.body,
+                  I18N_KEYS.states.commandFailed.bodyNoStderr,
+                ),
+              )}
+            </p>
             {view.err.stderr && <pre className={styles.stderr}>{view.err.stderr}</pre>}
+          </Panel>
+        )}
+
+        {view.status === "probeFailed" && (
+          <Panel tone="danger" className={styles.state}>
+            <div className={styles.stateIndicator}>
+              <ProgressDot tone="breach" />
+              <span className={styles.stateLabel}>
+                {t(I18N_KEYS.states.probeFailed.title)}
+              </span>
+            </div>
+            <p className={styles.stateBody}>{t(I18N_KEYS.states.probeFailed.body)}</p>
+            {detectErrorSummary && (
+              <pre className={styles.stderr}>{detectErrorSummary}</pre>
+            )}
+            <div className={styles.stateActions}>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={query.isFetching}
+                onClick={() => void query.refetch()}
+                data-testid="home-detect-retry"
+              >
+                {t(I18N_KEYS.common.retry)}
+              </Button>
+            </div>
           </Panel>
         )}
 

@@ -51,6 +51,7 @@ import {
 import { isPathUnder } from "../../utils/paths";
 import { resolveAppErrorMessage } from "../../utils/appError";
 import { envSourceVariant } from "../../utils/envSource";
+import { stderrBodyKey } from "../../utils/stderrBody";
 import {
   Badge,
   Button,
@@ -167,6 +168,9 @@ export function DirectoryPreview() {
     void queryClient.invalidateQueries({ queryKey: ["tools", "lockfile", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "config", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "env", null] });
+    // The preview mounts the trust banner too; refresh re-probes trust
+    // so a failed check recovers from here as well (issue #262).
+    void queryClient.invalidateQueries({ queryKey: ["mise", "trust", cwd] });
   }, [queryClient, cwd]);
   useRegisterPageRefresh(onRefresh);
 
@@ -246,7 +250,16 @@ export function DirectoryPreview() {
   // states. (The config-files section keeps its own inline loading
   // line, which never renders an empty state.)
   if (detect.isPending || tools.isPending || env.isPending) {
-    return <ListLoading />;
+    return (
+      <ListLoading
+        title={t(
+          cwd === null
+            ? I18N_KEYS.preview.titleGlobal
+            : I18N_KEYS.preview.titleDirectory,
+        )}
+        commandHint={t(I18N_KEYS.preview.commandHint)}
+      />
+    );
   }
   const detectValue = detect.data;
   if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
@@ -420,7 +433,15 @@ export function DirectoryPreview() {
           {cwd !== null && toolsError && (
             <div className={styles.errorState}>
               <div className={styles.errorLabel}>{t(I18N_KEYS.preview.toolsError.title)}</div>
-              <p className={styles.errorBody}>{t(I18N_KEYS.preview.toolsError.body)}</p>
+              <p className={styles.errorBody}>
+                {t(
+                  stderrBodyKey(
+                    toolsError.stderr,
+                    I18N_KEYS.preview.toolsError.body,
+                    I18N_KEYS.preview.toolsError.bodyNoStderr,
+                  ),
+                )}
+              </p>
               {toolsError.stderr && (
                 <pre className={styles.errorStderr}>{toolsError.stderr}</pre>
               )}
@@ -452,7 +473,15 @@ export function DirectoryPreview() {
           {envError && (
             <div className={styles.errorState}>
               <div className={styles.errorLabel}>{t(I18N_KEYS.preview.env.errorTitle)}</div>
-              <p className={styles.errorBody}>{t(I18N_KEYS.preview.env.errorBody)}</p>
+              <p className={styles.errorBody}>
+                {t(
+                  stderrBodyKey(
+                    envError.stderr,
+                    I18N_KEYS.preview.env.errorBody,
+                    I18N_KEYS.preview.env.errorBodyNoStderr,
+                  ),
+                )}
+              </p>
               {envError.stderr && (
                 <pre className={styles.errorStderr}>{envError.stderr}</pre>
               )}
@@ -544,7 +573,15 @@ function ConfigFilesSection() {
       {configError && (
         <div className={styles.errorState}>
           <div className={styles.errorLabel}>{t(I18N_KEYS.preview.config.errorTitle)}</div>
-          <p className={styles.errorBody}>{t(I18N_KEYS.preview.config.errorBody)}</p>
+          <p className={styles.errorBody}>
+            {t(
+              stderrBodyKey(
+                configError.stderr,
+                I18N_KEYS.preview.config.errorBody,
+                I18N_KEYS.preview.config.errorBodyNoStderr,
+              ),
+            )}
+          </p>
           {configError.stderr && (
             <pre className={styles.errorStderr}>{configError.stderr}</pre>
           )}

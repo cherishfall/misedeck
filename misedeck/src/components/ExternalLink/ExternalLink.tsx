@@ -12,10 +12,19 @@
 // activation inside the app shell is rerouted, to the one destination
 // that actually exists — the OS browser. `src/api/externalLink.ts` holds
 // the call, and `src-tauri/src/external_link.rs` holds the scheme check.
+//
+// When the OS opener rejects, the click must not stay silent (issue
+// #262): the component keeps the `window.open` fallback, then renders an
+// inline failure that names what happened and keeps the URL copyable.
 
-import type { AnchorHTMLAttributes, MouseEvent } from "react";
+import { useState, type AnchorHTMLAttributes, type MouseEvent } from "react";
+import { useTranslation } from "react-i18next";
 
+import { I18N_KEYS } from "../../i18n/keys";
 import { inAppShell, openExternalUrl } from "../../api/externalLink";
+import { CopyButton } from "../CopyButton/CopyButton";
+
+import styles from "./ExternalLink.module.css";
 
 export type ExternalLinkProps = Omit<
   AnchorHTMLAttributes<HTMLAnchorElement>,
@@ -32,6 +41,11 @@ export function ExternalLink({
   children,
   ...rest
 }: ExternalLinkProps) {
+  const { t } = useTranslation();
+  // Storing the failed href (not a boolean) means a changed link starts
+  // clean without an effect that would clear state after render.
+  const [failedHref, setFailedHref] = useState<string | null>(null);
+
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     onClick?.(event);
     if (event.defaultPrevented) return;
@@ -41,19 +55,37 @@ export function ExternalLink({
     // dead path this component exists to avoid, and on a platform that
     // honours it the app would end up loading someone else's page.
     event.preventDefault();
+    setFailedHref(null);
     void openExternalUrl(href).catch(() => {
-      // Nothing left to try inside the webview — `window.open` is the one
-      // call a desktop webview may still honour, and on a plain browser
-      // tab it is the correct path anyway. A machine with no default
-      // browser stays silent; a global failure notice is the missing
-      // piece, tracked in #249.
-      window.open(href, "_blank", "noopener,noreferrer");
+      // `window.open` is the one call a desktop webview may still honour
+      // (#248); keep it as the last automatic attempt. Whatever it does,
+      // the visible failure below is the recoverable path: the URL can
+      // still be copied and opened by hand.
+      try {
+        window.open(href, "_blank", "noopener,noreferrer");
+      } finally {
+        setFailedHref(href);
+      }
     });
   };
 
+  const failed = failedHref === href;
+
   return (
-    <a href={href} target="_blank" rel="noreferrer" onClick={handleClick} {...rest}>
-      {children}
-    </a>
+    <>
+      <a href={href} target="_blank" rel="noreferrer" onClick={handleClick} {...rest}>
+        {children}
+      </a>
+      {failed && (
+        <span
+          className={styles.failure}
+          role="alert"
+          data-testid="external-link-failure"
+        >
+          <span>{t(I18N_KEYS.common.externalLinkFailed)}</span>
+          <CopyButton text={href} />
+        </span>
+      )}
+    </>
   );
 }

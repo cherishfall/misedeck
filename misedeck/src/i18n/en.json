@@ -16,6 +16,7 @@
     "loadFailed": "Could not load this data",
     "retry": "Retry",
     "confirmBusy": "This command is already running — wait for it to finish.",
+    "externalLinkFailed": "Could not open the link in your browser. Copy the URL and open it manually.",
     "filter": {
       "noMatchTitle": "No matching rows",
       "noMatchBody": "No rows match the current filter. Edit or clear it to bring the full list back."
@@ -118,7 +119,8 @@
     },
     "error": {
       "title": "Failed to load tools",
-      "body": "mise ls --json did not return. Stderr is shown below."
+      "body": "mise ls --json did not return. Stderr is shown below.",
+      "bodyNoStderr": "mise ls --json did not return and wrote no stderr. Refresh to try again; if it keeps happening, run the command in a terminal."
     },
     "filterPlaceholder": "Filter tools…",
     "actions": {
@@ -239,7 +241,8 @@
       "unreadable": "(could not read this file)",
       "overrideBadge": "override",
       "errorTitle": "Failed to load config files",
-      "errorBody": "mise config ls --json did not return. Stderr is shown below."
+      "errorBody": "mise config ls --json did not return. Stderr is shown below.",
+      "errorBodyNoStderr": "mise config ls --json did not return and wrote no stderr. Refresh to try again."
     },
     "columns": {
       "tool": "Tool",
@@ -263,11 +266,13 @@
       "emptyTitle": "No env vars",
       "emptyBody": "mise env --json returned an empty map. Add an [env] table to a mise config file to surface values here.",
       "errorTitle": "Failed to load env",
-      "errorBody": "mise env --json did not return. Stderr is shown below."
+      "errorBody": "mise env --json did not return. Stderr is shown below.",
+      "errorBodyNoStderr": "mise env --json did not return and wrote no stderr. Refresh to try again."
     },
     "toolsError": {
       "title": "Failed to load resolved tools",
-      "body": "mise -C <dir> ls --json did not return. Stderr is shown below."
+      "body": "mise -C <dir> ls --json did not return. Stderr is shown below.",
+      "bodyNoStderr": "mise -C <dir> ls --json did not return and wrote no stderr. Refresh to try again."
     },
     "lockfile": {
       "title": "mise.lock",
@@ -302,7 +307,8 @@
     },
     "error": {
       "title": "Failed to load env vars",
-      "body": "mise env did not return. Stderr is shown below."
+      "body": "mise env did not return. Stderr is shown below.",
+      "bodyNoStderr": "mise env did not return and wrote no stderr. Refresh to try again; if it keeps happening, run the command in a terminal."
     },
     "addLabel": "Add an env var",
     "addButton": "Add",
@@ -417,7 +423,8 @@
     },
     "readError": {
       "title": "Failed to load tasks",
-      "body": "mise tasks ls --json did not return. Stderr is shown below."
+      "body": "mise tasks ls --json did not return. Stderr is shown below.",
+      "bodyNoStderr": "mise tasks ls --json did not return and wrote no stderr. Refresh to try again; if it keeps happening, run the command in a terminal."
     },
     "success": {
       "saved": "Task {{name}} saved",
@@ -446,7 +453,8 @@
     },
     "error": {
       "title": "Failed to load settings",
-      "body": "mise settings ls did not return. Stderr is shown below."
+      "body": "mise settings ls did not return. Stderr is shown below.",
+      "bodyNoStderr": "mise settings ls did not return and wrote no stderr. Refresh to try again; if it keeps happening, run the command in a terminal."
     },
     "saveButton": "Save",
     "unsetButton": "Unset",
@@ -504,6 +512,8 @@
       "activated": "Shell activation",
       "activatedValue": "Activated",
       "notActivated": "Not activated",
+      "activationUnknown": "Unknown",
+      "activationFailed": "Check failed",
       "labelWithColon": "{{label}}:"
     },
     "warnings": {
@@ -525,7 +535,8 @@
     "rawTitle": "Raw doctor output",
     "error": {
       "title": "Failed to load doctor",
-      "body": "mise doctor --json did not return. Stderr is shown below."
+      "body": "mise doctor --json did not return. Stderr is shown below.",
+      "bodyNoStderr": "mise doctor --json did not return and wrote no stderr. Refresh to try again; if it keeps happening, run the command in a terminal."
     },
     "columns": {
       "tool": "Tool",
@@ -572,7 +583,8 @@
     },
     "installedError": {
       "title": "Failed to load plugins",
-      "body": "mise plugins ls did not return. Stderr is shown below."
+      "body": "mise plugins ls did not return. Stderr is shown below.",
+      "bodyNoStderr": "mise plugins ls did not return and wrote no stderr. Refresh to try again; if it keeps happening, run the command in a terminal."
     },
     "success": {
       "uninstalled": "Plugin {{name}} uninstalled",
@@ -594,7 +606,12 @@
     },
     "commandFailed": {
       "title": "mise failed",
-      "body": "mise version --json exited with a non-zero status. Stderr is shown below."
+      "body": "mise version --json exited with a non-zero status. Stderr is shown below.",
+      "bodyNoStderr": "mise version --json exited with a non-zero status but wrote no stderr. Retry the probe; if it keeps happening, run the command in a terminal."
+    },
+    "probeFailed": {
+      "title": "Could not check mise",
+      "body": "The mise version probe did not complete. The error is shown below; retry the probe."
     },
     "parseFailed": {
       "title": "Unrecognized mise response",
@@ -629,7 +646,10 @@
     "switcherLabel": "Theme",
     "switcherCurrent": "{{label}}: {{value}}",
     "light": "Light",
-    "dark": "Dark"
+    "dark": "Dark",
+    "chromeFailedLabel": "Window chrome not updated",
+    "chromeFailedBody": "The page theme changed, but the native title bar could not follow. The page and the window chrome may look different until the app restarts.",
+    "chromeFailedDismiss": "Dismiss"
   },
   "execution": {
     "title": "Execution",
@@ -641,6 +661,7 @@
     "copy": "Copy command",
     "copyHint": "Copy the exact command to your clipboard",
     "cancel": "Cancel",
+    "cancelFailed": "Could not cancel the command — it is still running. Try again.",
     "dismiss": "Dismiss",
     "emptyHint": "No command has been run yet.",
     "reopen": "Execution",
@@ -661,6 +682,10 @@
     "bannerLabel": "Shell activation missing",
     "bannerBody": "Your {{shell}} config at {{rcPath}} does not have the mise activate line. Add the line below to use mise in interactive sessions.",
     "bannerBodyUnknownShell": "MiseDeck does not know how to activate {{name}}. Add the appropriate mise activate line to its rc file to use mise in interactive sessions.",
+    "bannerLabelUnverified": "Shell activation unverified",
+    "bannerBodyUnverified": "MiseDeck could not determine whether mise is activated for this shell. Compare the line below with your rc file, and add it if it is missing.",
+    "errorLabel": "Shell activation check failed",
+    "errorBody": "MiseDeck could not determine whether mise is activated in your shell. Retry the check.",
     "copyLineButton": "Copy the line",
     "dismissButton": "Dismiss"
   },

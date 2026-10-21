@@ -58,6 +58,7 @@ import type { SettingsItem } from "../../types/tauri";
 
 import { settingsEmptyCopy } from "./settingsEmptyCopy";
 import { settingsUnsetInScope } from "./settingsUnsetScope";
+import { stderrBodyKey } from "../../utils/stderrBody";
 import tableStyles from "../../components/Table/Table.module.css";
 import styles from "./SettingsPage.module.css";
 
@@ -130,6 +131,9 @@ export function SettingsPage() {
   // explicit and the `--all` settings queries.
   const onRefresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["settings", "ls", cwd] });
+    // Re-probe trust so a failed check no longer blocks writes until a
+    // relaunch (issue #262).
+    void queryClient.invalidateQueries({ queryKey: ["mise", "trust", cwd] });
   }, [queryClient, cwd]);
   useRegisterPageRefresh(onRefresh);
 
@@ -194,7 +198,12 @@ export function SettingsPage() {
   // first load or a directory switch — the shared ListLoading renders
   // instead of the table's "no data" empty state.
   if (detect.isPending || settings.isPending) {
-    return <ListLoading />;
+    return (
+      <ListLoading
+        title={t(I18N_KEYS.settings.title)}
+        commandHint={t(I18N_KEYS.settings.commandHint)}
+      />
+    );
   }
   const detectValue = detect.data;
   if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
@@ -340,7 +349,15 @@ export function SettingsPage() {
         {settingsError && (
           <div className={styles.errorState} data-testid="settings-read-error">
             <div className={styles.errorLabel}>{t(I18N_KEYS.settings.error.title)}</div>
-            <p className={styles.errorBody}>{t(I18N_KEYS.settings.error.body)}</p>
+            <p className={styles.errorBody}>
+              {t(
+                stderrBodyKey(
+                  settingsError.stderr,
+                  I18N_KEYS.settings.error.body,
+                  I18N_KEYS.settings.error.bodyNoStderr,
+                ),
+              )}
+            </p>
             {settingsError.stderr && (
               <pre className={styles.errorStderr}>{settingsError.stderr}</pre>
             )}

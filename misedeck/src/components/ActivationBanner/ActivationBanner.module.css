@@ -23,3 +23,13 @@
   overflow-wrap: break-word;
   user-select: all;
 }
+
+/* Probe failure detail (issue #262): the resolved IPC error stays
+ * visible under the retry copy. Quiet, not a second alarm. */
+.errorDetail {
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--dim);
+  overflow-wrap: break-word;
+}

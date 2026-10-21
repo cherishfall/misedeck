@@ -45,6 +45,9 @@ export interface RunEntry {
   exitCode: number | null;
   durationMs: number;
   error: AppError | null;
+  /** Set when the cancel request itself failed (issue #262). The run is
+   *  still running — a failed cancel must never claim it stopped. */
+  cancelError: AppError | null;
   /** Post-update version string when `kind === "selfUpdate"`. */
   newVersion: string | null;
   /** Epoch ms when the run started, for history ordering. */
@@ -86,6 +89,7 @@ export type Action =
   | { type: "complete"; id: string; newVersion: string | null }
   | { type: "fail"; id: string; error: AppError }
   | { type: "cancel"; id: string }
+  | { type: "cancelFailed"; id: string; error: AppError }
   | { type: "select"; id: string }
   | { type: "removeRun"; id: string }
   | { type: "clearRuns" }
@@ -109,6 +113,7 @@ export function executionReducer(state: ExecState, action: Action): ExecState {
               exitCode: null,
               durationMs: 0,
               error: null,
+              cancelError: null,
               newVersion: null,
               startedAt: Date.now(),
             },
@@ -190,11 +195,31 @@ export function executionReducer(state: ExecState, action: Action): ExecState {
         // action, so it can never fight the user with a loop.
         isOpen: true,
       };
-    case "cancel":
+    case "cancel": {
+      // Only a running run can be marked cancelled, and only once the
+      // cancel request resolved (issue #262). A late `cancel` for a run
+      // that already exited naturally must not rewrite its outcome.
+      const target = state.runs.find((r) => r.id === action.id);
+      if (!target || target.status !== "running") return state;
       return {
         ...state,
         runs: state.runs.map((r) =>
-          r.id === action.id ? { ...r, status: "cancelled" } : r,
+          r.id === action.id
+            ? { ...r, status: "cancelled", cancelError: null }
+            : r,
+        ),
+      };
+    }
+    case "cancelFailed":
+      // The request failed, so the process is still running: keep the
+      // status and the log live, and record why the cancel did not take.
+      // The same Cancel button retries; exit still finishes the run.
+      return {
+        ...state,
+        runs: state.runs.map((r) =>
+          r.id === action.id && r.status === "running"
+            ? { ...r, cancelError: action.error }
+            : r,
         ),
       };
     case "select":

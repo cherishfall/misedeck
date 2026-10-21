@@ -46,6 +46,7 @@ import { isEnvWriteScopeMismatch, type EnvSource } from "../../api/miseTools";
 
 import { ENV_VALUE_CELL_CHARS, shortenPathTail } from "../../utils/paths";
 import { envSourceVariant } from "../../utils/envSource";
+import { stderrBodyKey } from "../../utils/stderrBody";
 import tableStyles from "../../components/Table/Table.module.css";
 import styles from "./EnvPage.module.css";
 
@@ -118,6 +119,9 @@ export function EnvPage() {
     void queryClient.invalidateQueries({ queryKey: ["env", "ls", null] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "env", cwd] });
     void queryClient.invalidateQueries({ queryKey: ["tools", "env", null] });
+    // Re-probe trust so a failed check can recover without a relaunch
+    // (issue #262).
+    void queryClient.invalidateQueries({ queryKey: ["mise", "trust", cwd] });
   }, [queryClient, cwd]);
   useRegisterPageRefresh(onRefresh);
 
@@ -202,7 +206,12 @@ export function EnvPage() {
   // load or a directory switch — the shared ListLoading renders
   // instead of the table's "no data" empty state.
   if (detect.isPending || env.isPending) {
-    return <ListLoading />;
+    return (
+      <ListLoading
+        title={t(I18N_KEYS.env.title)}
+        commandHint={t(I18N_KEYS.env.commandHint)}
+      />
+    );
   }
   const detectValue = detect.data;
   if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
@@ -316,7 +325,15 @@ export function EnvPage() {
           {envError && (
             <div className={styles.errorState}>
               <div className={styles.errorLabel}>{t(I18N_KEYS.env.error.title)}</div>
-              <p className={styles.errorBody}>{t(I18N_KEYS.env.error.body)}</p>
+              <p className={styles.errorBody}>
+                {t(
+                  stderrBodyKey(
+                    envError.stderr,
+                    I18N_KEYS.env.error.body,
+                    I18N_KEYS.env.error.bodyNoStderr,
+                  ),
+                )}
+              </p>
               {envError.stderr && <pre className={styles.errorStderr}>{envError.stderr}</pre>}
             </div>
           )}

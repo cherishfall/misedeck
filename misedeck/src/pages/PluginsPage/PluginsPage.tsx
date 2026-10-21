@@ -38,6 +38,7 @@ import {
 } from "../../components";
 import { useParsedPluginsList } from "../../hooks/useIssue29";
 import type { InstalledPlugin } from "../../types/tauri";
+import { stderrBodyKey } from "../../utils/stderrBody";
 
 import tableStyles from "../../components/Table/Table.module.css";
 import styles from "./PluginsPage.module.css";
@@ -136,7 +137,12 @@ export function PluginsPage() {
   // the `plugins ls` read — the hand-rolled page copy with its own dot
   // was beta11 4.5-m2 residue (issue #164).
   if (detect.isPending || plugins.isPending) {
-    return <ListLoading />;
+    return (
+      <ListLoading
+        title={t(I18N_KEYS.plugins.title)}
+        commandHint={t(I18N_KEYS.plugins.commandHint)}
+      />
+    );
   }
   const detectValue = detect.data;
   if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
@@ -227,7 +233,15 @@ export function PluginsPage() {
           {pluginsError && (
             <div className={styles.errorState} data-testid="plugins-installed-error">
               <div className={styles.errorLabel}>{t(I18N_KEYS.plugins.installedError.title)}</div>
-              <p className={styles.errorBody}>{t(I18N_KEYS.plugins.installedError.body)}</p>
+              <p className={styles.errorBody}>
+                {t(
+                  stderrBodyKey(
+                    pluginsError.stderr,
+                    I18N_KEYS.plugins.installedError.body,
+                    I18N_KEYS.plugins.installedError.bodyNoStderr,
+                  ),
+                )}
+              </p>
               {pluginsError.stderr && (
                 <pre className={styles.errorStderr}>{pluginsError.stderr}</pre>
               )}

@@ -26,6 +26,7 @@ import {
   shellDisplayName,
   useActivation,
 } from "../../state/activationContext";
+import { activationPresence } from "../../state/activationPresence";
 
 import { Banner } from "../Banner/Banner";
 import { Button } from "../Button/Button";
@@ -42,6 +43,7 @@ export function ActivationBanner() {
     state,
     dismissed,
     dismissBanner,
+    recheck,
     activationLine,
   } = useActivation();
   // The transient "copied" / "copy failed" hints that flash after the
@@ -75,15 +77,85 @@ export function ActivationBanner() {
     }, COPIED_MS);
   };
 
-  // Only render when the probe has resolved. While loading or
-  // on error we stay quiet — the page is otherwise usable,
-  // and a banner that re-appears on every page refresh
-  // becomes noise.
+  // A failed probe is a state of its own (issue #262): saying nothing
+  // would let the rest of the app imply the shell is configured. The
+  // banner names the failure and retries it in place; the page stays
+  // usable meanwhile.
+  if (state.kind === "error") {
+    return (
+      <div className={styles.wrap}>
+        <Banner
+          tone="warning"
+          label={t(I18N_KEYS.activation.errorLabel)}
+          action={
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => void recheck()}
+              data-testid="activation-banner-retry"
+            >
+              {t(I18N_KEYS.common.retry)}
+            </Button>
+          }
+        >
+          {t(I18N_KEYS.activation.errorBody)}
+          {state.message && <div className={styles.errorDetail}>{state.message}</div>}
+        </Banner>
+      </div>
+    );
+  }
+
+  // Only render when the probe has resolved. While loading we stay
+  // quiet — the page is otherwise usable.
   if (state.kind !== "ok") return null;
   const status = state.status;
+  const presence = activationPresence(status.activated);
 
   // Already activated — the banner stays hidden forever.
-  if (status.activated) return null;
+  if (presence === "activated") return null;
+
+  // The probe could not decide (issue #262): this is neither
+  // "activated" nor "not activated", so it gets its own copy instead of
+  // inheriting the missing-line claim.
+  if (presence === "unknown") {
+    if (dismissed) return null;
+    const line = activationLine(status);
+    return (
+      <div className={styles.wrap}>
+        <Banner
+          tone="info"
+          label={t(I18N_KEYS.activation.bannerLabelUnverified)}
+          action={
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void copyLine(line)}
+                data-testid="activation-banner-copy-line"
+              >
+                {copyFailed
+                  ? t(I18N_KEYS.common.copyFailed)
+                  : copied
+                    ? t(I18N_KEYS.common.copied)
+                    : t(I18N_KEYS.activation.copyLineButton)}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={dismissBanner}
+                data-testid="activation-banner-dismiss"
+              >
+                {t(I18N_KEYS.activation.dismissButton)}
+              </Button>
+            </>
+          }
+        >
+          {t(I18N_KEYS.activation.bannerBodyUnverified)}
+          <div className={styles.linePreview}>{line}</div>
+        </Banner>
+      </div>
+    );
+  }
 
   // Unknown shell — show a softer message that doesn't name
   // a specific rc file. We still surface the line; the

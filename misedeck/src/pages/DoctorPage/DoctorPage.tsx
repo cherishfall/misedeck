@@ -27,7 +27,9 @@ import {
 } from "../../components";
 import { useParsedDoctor } from "../../hooks/useIssue29";
 import { useActivation } from "../../state/activationContext";
+import { activationPresence } from "../../state/activationPresence";
 import type { DoctorLine, DoctorPayload } from "../../types/tauri";
+import { stderrBodyKey } from "../../utils/stderrBody";
 
 import styles from "./DoctorPage.module.css";
 
@@ -105,7 +107,15 @@ export function DoctorPage() {
         {doctorError && (
           <div className={styles.errorState} data-testid="doctor-read-error">
             <div className={styles.errorLabel}>{t(I18N_KEYS.doctor.error.title)}</div>
-            <p className={styles.errorBody}>{t(I18N_KEYS.doctor.error.body)}</p>
+            <p className={styles.errorBody}>
+              {t(
+                stderrBodyKey(
+                  doctorError.stderr,
+                  I18N_KEYS.doctor.error.body,
+                  I18N_KEYS.doctor.error.bodyNoStderr,
+                ),
+              )}
+            </p>
             {doctorError.stderr && (
               <pre className={styles.errorStderr}>{doctorError.stderr}</pre>
             )}
@@ -128,17 +138,21 @@ function DoctorContent({
   t: (key: string, options?: Record<string, unknown>) => string;
 }) {
   const { cwd } = useDirectory();
-  // The activation row answers "did I activate mise in my shell?" — that
-  // is the rc-file probe (`shell_activation_check`, issue #28), not
-  // `mise doctor`'s own `activated` field, which describes the GUI
-  // subprocess environment and is necessarily false here (issue #92).
-  // The probe is tri-state (issue #166): `null` means it could not
-  // run (unknown shell family) — rendered as "—" below and excluded
+  // The probe is tri-state (issue #166): `null` means it could not run
+  // (unknown shell family) — rendered as "Unknown" below and excluded
   // from the page-level Warn derivation, never reported as a false
-  // "not activated".
+  // "not activated" (issue #262).
   const activation = useActivation();
+  const activationState = activation.state;
   const rcActivated: boolean | null =
-    activation.state.kind === "ok" ? activation.state.status.activated : null;
+    activationState.kind === "ok" ? activationState.status.activated : null;
+  // `null` presence covers the loading phase too; only a resolved probe
+  // can claim "unknown", so the two never conflate.
+  const presence =
+    activationState.kind === "ok"
+      ? activationPresence(activationState.status.activated)
+      : null;
+  const activationFailed = activationState.kind === "error";
 
   // Hooks stay unconditional (rules of hooks): this memo must run before
   // the raw-text early return below, not after it.
@@ -193,7 +207,7 @@ function DoctorContent({
     updateWarningIndex !== -1
       ? warnings.filter((_, i) => i !== updateWarningIndex)
       : warnings;
-  const status = doctorStatus(data, rcActivated);
+  const status = doctorStatus(data, rcActivated, activationFailed);
 
   const toolsetColumns: TableColumn<ToolsetRow>[] = [
     {
@@ -238,12 +252,36 @@ function DoctorContent({
           </StatusRow>
         )}
         <StatusRow label={t(I18N_KEYS.doctor.summary.activated)} t={t}>
-          {rcActivated === null ? (
-            <span className={styles.muted}>—</span>
-          ) : (
-            <Badge variant={rcActivated ? "success" : "warning"} size="inline">
-              {rcActivated ? t(I18N_KEYS.doctor.summary.activatedValue) : t(I18N_KEYS.doctor.summary.notActivated)}
+          {activationFailed ? (
+            <>
+              <Tooltip text={activationState.kind === "error" ? activationState.message : ""}>
+                <Badge variant="warning" size="inline">
+                  {t(I18N_KEYS.doctor.summary.activationFailed)}
+                </Badge>
+              </Tooltip>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void activation.recheck()}
+                data-testid="doctor-activation-retry"
+              >
+                {t(I18N_KEYS.common.retry)}
+              </Button>
+            </>
+          ) : presence === "activated" ? (
+            <Badge variant="success" size="inline">
+              {t(I18N_KEYS.doctor.summary.activatedValue)}
             </Badge>
+          ) : presence === "notActivated" ? (
+            <Badge variant="warning" size="inline">
+              {t(I18N_KEYS.doctor.summary.notActivated)}
+            </Badge>
+          ) : presence === "unknown" ? (
+            <Badge variant="default" size="inline">
+              {t(I18N_KEYS.doctor.summary.activationUnknown)}
+            </Badge>
+          ) : (
+            <span className={styles.muted}>—</span>
           )}
         </StatusRow>
       </section>
@@ -338,6 +376,7 @@ function DoctorRawLine({ line }: { line: DoctorLine }) {
 function doctorStatus(
   data: DoctorPayload,
   rcActivated: boolean | null,
+  activationFailed: boolean,
 ): {
   variant: "success" | "warning";
   dotTone: "beam" | "flare";
@@ -348,7 +387,14 @@ function doctorStatus(
   // derivation — only the structured JSON payload does.
   const warnings = data.warnings ?? [];
   const errors = data.errors ?? [];
-  if (errors.length > 0 || warnings.length > 0 || rcActivated === false) {
+  // A failed activation probe is an unresolved check, so the summary
+  // must not read OK while the row below says "Check failed" (#262).
+  if (
+    errors.length > 0 ||
+    warnings.length > 0 ||
+    rcActivated === false ||
+    activationFailed
+  ) {
     return { variant: "warning", dotTone: "flare", labelKey: I18N_KEYS.doctor.status.warn };
   }
   return { variant: "success", dotTone: "beam", labelKey: I18N_KEYS.doctor.status.ok };

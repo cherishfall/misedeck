@@ -79,6 +79,7 @@ import { useParsedTasksList } from "../../hooks/useTasksList";
 import { useTableFilter } from "../../hooks/useTableFilter";
 
 import type { ConfigFile, MiseTask } from "../../types/tauri";
+import { stderrBodyKey } from "../../utils/stderrBody";
 import tableStyles from "../../components/Table/Table.module.css";
 
 import styles from "./TasksPage.module.css";
@@ -216,6 +217,9 @@ export function TasksPage() {
   // Top-toolbar refresh (issue #98).
   const onRefresh = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["tasks", "ls", cwd] });
+    // A failed trust probe blocks every task write; refresh re-probes it
+    // (issue #262).
+    void queryClient.invalidateQueries({ queryKey: ["mise", "trust", cwd] });
   }, [queryClient, cwd]);
   useRegisterPageRefresh(onRefresh);
 
@@ -481,7 +485,12 @@ export function TasksPage() {
   // instead of the "no tasks" empty state (which the toolbar's
   // "Loading…" count would otherwise contradict).
   if (detect.isPending || tasks.isPending) {
-    return <ListLoading />;
+    return (
+      <ListLoading
+        title={t(I18N_KEYS.tasks.title)}
+        commandHint={t(I18N_KEYS.tasks.commandHint)}
+      />
+    );
   }
   const detectValue = detect.data;
   if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
@@ -706,7 +715,15 @@ export function TasksPage() {
             <div className={styles.errorLabel}>
               {t(I18N_KEYS.tasks.readError.title)}
             </div>
-            <p className={styles.errorBody}>{t(I18N_KEYS.tasks.readError.body)}</p>
+            <p className={styles.errorBody}>
+              {t(
+                stderrBodyKey(
+                  tasksError.stderr,
+                  I18N_KEYS.tasks.readError.body,
+                  I18N_KEYS.tasks.readError.bodyNoStderr,
+                ),
+              )}
+            </p>
             {tasksError.stderr && (
               <pre className={styles.errorStderr}>{tasksError.stderr}</pre>
             )}

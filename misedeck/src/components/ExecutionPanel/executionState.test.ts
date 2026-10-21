@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import type { AppError } from "../../types/tauri";
 import {
   executionReducer,
   MAX_FINISHED_RUNS,
@@ -164,10 +165,65 @@ test("cancelled runs are finished and closable like any finished run", () => {
 });
 
 // Issue #203 (beta15 audit A2), sharpened by #223: cancel is a terminal
-// status the panel reports immediately, while Rust tears the process
-// group down. The kill's own exit/line events still arrive on the
-// channel afterwards, so the reducer ignores late events instead of
-// rewriting the outcome.
+// status the panel reports as soon as Rust acknowledges the request,
+// while Rust tears the process group down. The kill's own exit/line
+// events still arrive on the channel afterwards, so the reducer ignores
+// late events instead of rewriting the outcome.
+
+test("cancel: a run that already finished keeps its outcome", () => {
+  let state = startRun(emptyState(), "a");
+  state = finishRun(state, "a", 0);
+  const next = executionReducer(state, { type: "cancel", id: "a" });
+  assert.equal(next, state);
+  const entry = next.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "ok");
+});
+
+test("cancel: an unknown id leaves state untouched", () => {
+  const state = startRun(emptyState(), "a");
+  const next = executionReducer(state, { type: "cancel", id: "nope" });
+  assert.equal(next, state);
+});
+
+const cancelError: AppError = {
+  code: "COMMAND_FAILED",
+  message: "ipc closed",
+  stderr: "",
+};
+
+test("cancelFailed: the run stays running and records the failure (issue #262)", () => {
+  let state = startRun(emptyState(), "a");
+  state = executionReducer(state, { type: "cancelFailed", id: "a", error: cancelError });
+  const entry = state.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "running");
+  assert.deepEqual(entry.cancelError, cancelError);
+});
+
+test("cancelFailed: the run still finishes normally afterwards", () => {
+  let state = startRun(emptyState(), "a");
+  state = executionReducer(state, { type: "cancelFailed", id: "a", error: cancelError });
+  const next = finishRun(state, "a", 0);
+  const entry = next.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "ok");
+});
+
+test("cancelFailed: retrying a cancel succeeds and clears the failure", () => {
+  let state = startRun(emptyState(), "a");
+  state = executionReducer(state, { type: "cancelFailed", id: "a", error: cancelError });
+  state = executionReducer(state, { type: "cancel", id: "a" });
+  const entry = state.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "cancelled");
+  assert.equal(entry.cancelError, null);
+});
+
+test("cancelFailed: a finished run is never marked with a cancel failure", () => {
+  let state = startRun(emptyState(), "a");
+  state = finishRun(state, "a", 0);
+  const next = executionReducer(state, { type: "cancelFailed", id: "a", error: cancelError });
+  const entry = next.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "ok");
+  assert.equal(entry.cancelError, null);
+});
 
 test("exit after cancel: a late success exit keeps the cancelled status", () => {
   let state = startRun(emptyState(), "a");

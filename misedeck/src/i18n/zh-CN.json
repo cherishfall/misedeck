@@ -16,6 +16,7 @@
     "loadFailed": "无法加载数据",
     "retry": "重试",
     "confirmBusy": "该命令正在运行中，请等待其结束。",
+    "externalLinkFailed": "无法在浏览器中打开该链接。请复制 URL 后手动打开。",
     "filter": {
       "noMatchTitle": "无匹配行",
       "noMatchBody": "当前过滤条件没有匹配任何行。修改或清除它即可恢复完整列表。"
@@ -118,7 +119,8 @@
     },
     "error": {
       "title": "加载工具列表失败",
-      "body": "mise ls --json 未返回结果。stderr 如下所示。"
+      "body": "mise ls --json 未返回结果。stderr 如下所示。",
+      "bodyNoStderr": "mise ls --json 未返回结果，也没有输出 stderr。请刷新重试；若反复出现，请在终端中运行该命令。"
     },
     "filterPlaceholder": "过滤工具…",
     "actions": {
@@ -239,7 +241,8 @@
       "unreadable": "（无法读取此文件）",
       "overrideBadge": "覆盖",
       "errorTitle": "加载配置文件失败",
-      "errorBody": "mise config ls --json 未返回结果。stderr 如下所示。"
+      "errorBody": "mise config ls --json 未返回结果。stderr 如下所示。",
+      "errorBodyNoStderr": "mise config ls --json 未返回结果，也没有输出 stderr。请刷新重试。"
     },
     "columns": {
       "tool": "工具",
@@ -263,11 +266,13 @@
       "emptyTitle": "没有环境变量",
       "emptyBody": "mise env --json 返回了空映射。在 mise 配置文件中添加 [env] 表可在此处显示变量。",
       "errorTitle": "加载环境变量失败",
-      "errorBody": "mise env --json 未返回结果。stderr 如下所示。"
+      "errorBody": "mise env --json 未返回结果。stderr 如下所示。",
+      "errorBodyNoStderr": "mise env --json 未返回结果，也没有输出 stderr。请刷新重试。"
     },
     "toolsError": {
       "title": "加载已解析工具失败",
-      "body": "mise -C <dir> ls --json 未返回结果。stderr 如下所示。"
+      "body": "mise -C <dir> ls --json 未返回结果。stderr 如下所示。",
+      "bodyNoStderr": "mise -C <dir> ls --json 未返回结果，也没有输出 stderr。请刷新重试。"
     },
     "lockfile": {
       "title": "mise.lock",
@@ -302,7 +307,8 @@
     },
     "error": {
       "title": "加载环境变量失败",
-      "body": "mise env 未返回结果。stderr 如下所示。"
+      "body": "mise env 未返回结果。stderr 如下所示。",
+      "bodyNoStderr": "mise env 未返回结果，也没有输出 stderr。请刷新重试；若反复出现，请在终端中运行该命令。"
     },
     "addLabel": "添加环境变量",
     "addButton": "添加",
@@ -417,7 +423,8 @@
     },
     "readError": {
       "title": "加载任务失败",
-      "body": "mise tasks ls --json 未返回结果。stderr 如下所示。"
+      "body": "mise tasks ls --json 未返回结果。stderr 如下所示。",
+      "bodyNoStderr": "mise tasks ls --json 未返回结果，也没有输出 stderr。请刷新重试；若反复出现，请在终端中运行该命令。"
     },
     "success": {
       "saved": "任务 {{name}} 已保存",
@@ -446,7 +453,8 @@
     },
     "error": {
       "title": "加载设置失败",
-      "body": "mise settings ls 未返回结果。stderr 如下所示。"
+      "body": "mise settings ls 未返回结果。stderr 如下所示。",
+      "bodyNoStderr": "mise settings ls 未返回结果，也没有输出 stderr。请刷新重试；若反复出现，请在终端中运行该命令。"
     },
     "saveButton": "保存",
     "unsetButton": "移除",
@@ -504,6 +512,8 @@
       "activated": "Shell 激活",
       "activatedValue": "已激活",
       "notActivated": "未激活",
+      "activationUnknown": "无法判定",
+      "activationFailed": "检查失败",
       "labelWithColon": "{{label}}："
     },
     "warnings": {
@@ -525,7 +535,8 @@
     "rawTitle": "原始 doctor 输出",
     "error": {
       "title": "加载诊断失败",
-      "body": "mise doctor --json 未返回结果。stderr 如下所示。"
+      "body": "mise doctor --json 未返回结果。stderr 如下所示。",
+      "bodyNoStderr": "mise doctor --json 未返回结果，也没有输出 stderr。请刷新重试；若反复出现，请在终端中运行该命令。"
     },
     "columns": {
       "tool": "工具",
@@ -572,7 +583,8 @@
     },
     "installedError": {
       "title": "加载插件失败",
-      "body": "mise plugins ls 未返回结果。stderr 如下所示。"
+      "body": "mise plugins ls 未返回结果。stderr 如下所示。",
+      "bodyNoStderr": "mise plugins ls 未返回结果，也没有输出 stderr。请刷新重试；若反复出现，请在终端中运行该命令。"
     },
     "success": {
       "uninstalled": "插件 {{name}} 已卸载",
@@ -594,7 +606,12 @@
     },
     "commandFailed": {
       "title": "mise 执行失败",
-      "body": "mise version --json 返回了非零状态码。stderr 如下所示。"
+      "body": "mise version --json 返回了非零状态码。stderr 如下所示。",
+      "bodyNoStderr": "mise version --json 返回了非零状态码，但没有输出 stderr。请重试探测；若反复出现，请在终端中运行该命令。"
+    },
+    "probeFailed": {
+      "title": "无法检测 mise",
+      "body": "mise 版本探测未能完成。下方是错误信息，请重试。"
     },
     "parseFailed": {
       "title": "无法解析 mise 响应",
@@ -629,7 +646,10 @@
     "switcherLabel": "主题",
     "switcherCurrent": "{{label}}：{{value}}",
     "light": "浅色",
-    "dark": "深色"
+    "dark": "深色",
+    "chromeFailedLabel": "窗口外观未更新",
+    "chromeFailedBody": "页面主题已切换，但原生标题栏未能同步。应用重启前，页面与窗口外观可能不一致。",
+    "chromeFailedDismiss": "关闭"
   },
   "execution": {
     "title": "执行面板",
@@ -641,6 +661,7 @@
     "copy": "复制命令",
     "copyHint": "复制确切命令到剪贴板",
     "cancel": "取消",
+    "cancelFailed": "无法取消该命令——它仍在运行，请重试。",
     "dismiss": "关闭",
     "emptyHint": "尚未执行任何命令。",
     "reopen": "执行面板",
@@ -661,6 +682,10 @@
     "bannerLabel": "Shell 激活缺失",
     "bannerBody": "你的 {{shell}} 配置文件 {{rcPath}} 中没有 mise activate。请在下方添加该行，以便在交互式 shell 中使用 mise。",
     "bannerBodyUnknownShell": "MiseDeck 不知道如何激活 {{name}}。请在其 rc 文件中添加相应的 mise activate 行，以便在交互式 shell 中使用 mise。",
+    "bannerLabelUnverified": "Shell 激活状态未知",
+    "bannerBodyUnverified": "MiseDeck 无法判断此 shell 是否已激活 mise。请将下方这一行与你的 rc 文件对照，如缺失请添加。",
+    "errorLabel": "Shell 激活检查失败",
+    "errorBody": "MiseDeck 无法判断你的 shell 中是否已激活 mise。请重试检查。",
     "copyLineButton": "复制该行",
     "dismissButton": "关闭"
   },
