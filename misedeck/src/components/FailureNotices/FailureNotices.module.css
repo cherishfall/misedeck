@@ -1,0 +1,29 @@
+/* FailureNotices — the global notice stack. It sits in the same
+ * above-the-page region as the directory, activation and chrome
+ * notices, so it shares their inset and gap (PageShell.module.css
+ * `.noticeWrap`). Banner owns the notice surface and tones. */
+
+.stack {
+  width: 100%;
+  padding: var(--space-3) var(--space-5) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Raw bridge detail for a non-AppError rejection: diagnostic text, so
+ * mono at data size under the sentence. Tokens only. */
+.detail {
+  display: block;
+  margin-top: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--ice);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

@@ -36,7 +36,8 @@ npm run ci             # 完整的前端闸门：类型检查、测试、全部 
 14. `npm run lint:modal-focus` —— 任何地方都不得出现 `autoFocus`（初始焦点由共享对话框的 `focusTarget.ts` 决定）；只有一套 modal 实现。
 15. `npm run lint:nested-interactive` —— 交互控件不得嵌套在另一个交互控件内。
 16. `npm run lint:page-layout` —— 页面的 padding、宽度与居中留在 `PageShell`。
-17. `npm run build` —— `tsc --noEmit && vite build`。
+17. `npm run lint:invoke-wrapper` —— 所有 Tauri `invoke` 都经由 `src/api/invoke.ts`，命令被拒绝时默认会进入全局失败提示。
+18. `npm run build` —— `tsc --noEmit && vite build`。
 
 这里只覆盖前端。Rust 检查（`cargo check`、`cargo test`）在 `ci.yml` 中运行；完整闸门见 [docs/agents/ci.md](../../docs/agents/ci.md)。
 

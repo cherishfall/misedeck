@@ -21,6 +21,7 @@ import { Button } from "../Button/Button";
 import { DirectoryIndicator } from "../DirectoryIndicator/DirectoryIndicator";
 import { DirectoryUnavailableBanner } from "../DirectoryUnavailableBanner/DirectoryUnavailableBanner";
 import { ExecutionPanel, ExecutionPanelAffordance, useExecutionContext } from "../ExecutionPanel";
+import { FailureNotices } from "../FailureNotices/FailureNotices";
 import { LanguageSwitcher } from "../LanguageSwitcher/LanguageSwitcher";
 import { ThemeSwitcher } from "../ThemeSwitcher/ThemeSwitcher";
 
@@ -134,6 +135,7 @@ export function PageShell({ children }: PageShellProps) {
         <DirectoryUnavailableBanner />
         <ActivationBanner />
         <ThemeChromeNotice />
+        <FailureNotices />
         <main className={styles.main}>{children}</main>
         <ExecutionPanelAffordance />
         <ExecutionPanel />

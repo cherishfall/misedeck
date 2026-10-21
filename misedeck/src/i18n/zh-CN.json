@@ -676,6 +676,11 @@
     "resizeHandle": "调整执行面板高度",
     "workingDirHome": "运行目录：~（主目录）"
   },
+  "failureNotice": {
+    "label": "操作失败",
+    "body": "MiseDeck 无法完成该操作。",
+    "dismiss": "关闭"
+  },
   "tooltip": {
     "copy": "复制"
   },

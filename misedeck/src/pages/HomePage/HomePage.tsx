@@ -106,7 +106,10 @@ export function HomePage() {
 
   const query = useQuery({
     queryKey: ["mise", "detect"],
-    queryFn: detectMise,
+    // HomePage owns a rejected probe: the `probeFailed` card below
+    // renders the summary with a retry (issue #262), so the global
+    // failure notice stays out of it (issue #249).
+    queryFn: () => detectMise({ reportFailure: false }),
     refetchOnWindowFocus: false,
     retry: false,
   });

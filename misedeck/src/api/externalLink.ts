@@ -7,7 +7,9 @@
 // before handing the URL to the opener plugin — see
 // `src-tauri/src/external_link.rs` for why that check cannot live here.
 
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { isTauri } from "@tauri-apps/api/core";
+
+import { invoke } from "./invoke";
 
 /** Is this running inside the app, or in a plain browser tab?
  *
@@ -24,5 +26,7 @@ export function inAppShell(): boolean {
  *  Callers in a plain browser tab must not call this — use
  *  `inAppShell()` first. */
 export async function openExternalUrl(url: string): Promise<void> {
-  await invoke("open_external", { url });
+  // ExternalLink renders the rejection inline with the URL still
+  // copyable (issue #262), so the global notice would say it twice.
+  await invoke("open_external", { url }, { reportFailure: false });
 }

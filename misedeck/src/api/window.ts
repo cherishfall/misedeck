@@ -2,9 +2,10 @@
 // Kept apart from `api/mise.ts`: this call touches the native window
 // chrome and never spawns mise.
 
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { isTauri } from "@tauri-apps/api/core";
 
 import type { ThemeSetting } from "../state/themeContext";
+import { invoke } from "./invoke";
 
 /** Calls the `set_window_theme` Tauri command, applying the app theme
  *  to the native window chrome (title bar appearance + background).
@@ -13,5 +14,7 @@ import type { ThemeSetting } from "../state/themeContext";
  *  instead of a guaranteed rejection (issue #262). */
 export async function setWindowTheme(theme: ThemeSetting): Promise<void> {
   if (!isTauri()) return;
-  await invoke("set_window_theme", { theme });
+  // ThemeProvider raises the theme-chrome notice on rejection (issue
+  // #262); the global notice would repeat it.
+  await invoke("set_window_theme", { theme }, { reportFailure: false });
 }

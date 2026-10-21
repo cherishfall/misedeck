@@ -27,9 +27,9 @@ portability.
 `ci.yml` also runs a `windows` job for the Windows beta target, which has
 no real machine in the review loop (issue #208) — it is the only place
 the Windows code paths actually execute. It runs the full frontend check
-(`npm run ci`, the whole 17-step script — see `misedeck/README.md`, which
-adds the `modal-focus`, `nested-interactive` and `page-layout` guards the
-`frontend` job does not run step-by-step), the Rust unit tests
+(`npm run ci`, the whole 18-step script — see `misedeck/README.md`, which
+adds the `modal-focus`, `nested-interactive`, `page-layout` and
+`invoke-wrapper` guards the `frontend` job does not run step-by-step), the Rust unit tests
 (`cargo test --lib`), and a `cargo build` compile smoke (`dist/` comes
 from `npm run ci`, so the order matters). Two things are deliberately
 left out:

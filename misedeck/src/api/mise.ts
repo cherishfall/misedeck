@@ -7,10 +7,7 @@
 // `kind` tag is the only stable discriminator the UI pattern-matches on
 // (see docs/agents/conventions.md).
 
-import { invoke } from "@tauri-apps/api/core";
-
 import type {
-  AppError,
   ConfigFilesResult,
   DetectMiseResult,
   JsonResult,
@@ -19,26 +16,40 @@ import type {
   TerminalOpenResult,
   TrustResult,
 } from "../types/tauri";
+import { isAppError } from "../utils/isAppError";
+import { invoke, type InvokeOptions } from "./invoke";
 
-/** Type-guard for the structured AppError shape. Exported so the
- *  execution panel's reducer can pattern-match the IPC response. */
-export function isAppError(value: unknown): value is AppError {
-  if (value === null || typeof value !== "object") return false;
-  const v = value as Record<string, unknown>;
-  return (
-    typeof v.code === "string" &&
-    typeof v.message === "string" &&
-    typeof v.stderr === "string"
-  );
-}
+/** Type-guard for the structured AppError shape. Re-exported here (its
+ *  original home) so the execution panel and page imports keep working;
+ *  the implementation lives in `utils/isAppError.ts` to keep the
+ *  failure-notice store free of the i18n import graph. */
+export { isAppError } from "../utils/isAppError";
+
+// Failure ownership (issue #249): the Rust commands below serialize
+// their own failures as `{kind:"err"}` unions, so an `invoke` rejection
+// is an IPC-level failure (bridge closed, webview torn down). Each
+// caller already renders that rejection — a page error card, the trust
+// or activation banner, the Preview section. They pass
+// `reportFailure: false` so the global notice does not repeat a failure
+// the user can already see. `config_files` and `registry` stay
+// default-on: both commands also return a union, and their consumers
+// ignore a rejected query, making the bridge failure the one case only
+// the global notice can surface.
 
 /** Calls the `detect_mise` Tauri command and returns the typed union. */
-export async function detectMise(): Promise<DetectMiseResult> {
+export async function detectMise(
+  options?: InvokeOptions,
+): Promise<DetectMiseResult> {
   // The Rust command never returns `Result::Err` (it serializes the error
-  // as a `{kind: "err", err: ...}` variant instead), so `invoke` should
-  // not throw on the happy path. We still wrap in try/catch as a defensive
-  // net for IPC-level errors (channel closed, webview torn down, etc.).
-  return (await invoke("detect_mise")) as DetectMiseResult;
+  // as a `{kind: "err", err: ...}` variant instead). A rejection is an
+  // IPC-level failure; most pages do not render it, so the wrapper keeps
+  // the default report. HomePage renders `states.probeFailed` itself and
+  // opts out.
+  return (await invoke(
+    "detect_mise",
+    undefined,
+    options,
+  )) as DetectMiseResult;
 }
 
 // The `ls` family (`tools_ls`, `tools_ls_tool`, `tools_ls_remote`) has no
@@ -49,13 +60,13 @@ export async function detectMise(): Promise<DetectMiseResult> {
 
 /** Calls the `tools_outdated` Tauri command and returns the typed union. */
 export async function toolsOutdated(cwd: string | null): Promise<JsonResult> {
-  return (await invoke("tools_outdated", { cwd })) as JsonResult;
+  return (await invoke("tools_outdated", { cwd }, { reportFailure: false })) as JsonResult;
 }
 
 /** Calls the `tools_env` Tauri command (`mise env --json`). The
  *  payload is the flat `Map<String, String>` mise emits. */
 export async function toolsEnv(cwd: string | null): Promise<JsonResult> {
-  return (await invoke("tools_env", { cwd })) as JsonResult;
+  return (await invoke("tools_env", { cwd }, { reportFailure: false })) as JsonResult;
 }
 
 /** Calls the `env_ls` Tauri command (`mise env --json-extended`).
@@ -63,7 +74,7 @@ export async function toolsEnv(cwd: string | null): Promise<JsonResult> {
  *  (`{VAR: {value, source?, tool?}, ...}`). Used by the Env page
  *  (#41) so each row can show where the var came from. */
 export async function envLs(cwd: string | null): Promise<JsonResult> {
-  return (await invoke("env_ls", { cwd })) as JsonResult;
+  return (await invoke("env_ls", { cwd }, { reportFailure: false })) as JsonResult;
 }
 
 /** Calls the `read_lockfile` Tauri command and normalizes the wire
@@ -76,7 +87,11 @@ export async function readMiseLockfile(
   cwd: string | null,
 ): Promise<LockfileResult> {
   try {
-    const content = (await invoke("read_lockfile", { cwd })) as string | null;
+    const content = (await invoke(
+      "read_lockfile",
+      { cwd },
+      { reportFailure: false },
+    )) as string | null;
     return { kind: "ok", content };
   } catch (e) {
     return {
@@ -103,7 +118,7 @@ export async function configFiles(
  *  config trust state. The UI uses this to decide whether to
  *  render the trust banner. */
 export async function trustCheck(cwd: string | null): Promise<TrustResult> {
-  return (await invoke("trust_check", { cwd })) as TrustResult;
+  return (await invoke("trust_check", { cwd }, { reportFailure: false })) as TrustResult;
 }
 
 /** Calls the `tasks_ls` Tauri command (`mise tasks ls --json`).
@@ -111,7 +126,7 @@ export async function trustCheck(cwd: string | null): Promise<TrustResult> {
  *  JS side parses it via `parseTasksLsPayload` in
  *  `api/miseTools.ts`. Used by the tasks page (issue #27). */
 export async function tasksLs(cwd: string | null): Promise<JsonResult> {
-  return (await invoke("tasks_ls", { cwd })) as JsonResult;
+  return (await invoke("tasks_ls", { cwd }, { reportFailure: false })) as JsonResult;
 }
 
 /** Calls the `shell_activation_check` Tauri command
@@ -121,7 +136,11 @@ export async function tasksLs(cwd: string | null): Promise<JsonResult> {
  *  also cached in the `ActivationProvider` so the panel does not
  *  re-probe on every page render. */
 export async function shellActivationCheck(): Promise<ShellActivationResult> {
-  return (await invoke("shell_activation_check")) as ShellActivationResult;
+  return (await invoke(
+    "shell_activation_check",
+    undefined,
+    { reportFailure: false },
+  )) as ShellActivationResult;
 }
 
 /** Calls the `open_in_terminal` Tauri command (issue #28).
@@ -135,7 +154,11 @@ export async function shellActivationCheck(): Promise<ShellActivationResult> {
 export async function openInTerminal(
   path: string | null,
 ): Promise<TerminalOpenResult> {
-  return (await invoke("open_in_terminal", { path })) as TerminalOpenResult;
+  return (await invoke(
+    "open_in_terminal",
+    { path },
+    { reportFailure: false },
+  )) as TerminalOpenResult;
 }
 
 // The `settings ls` read has no wrapper here on purpose: like the tools
@@ -149,7 +172,7 @@ export async function openInTerminal(
  *  `rawLines` when the mise binary does not support `--json` (issue
  *  #29). */
 export async function doctor(cwd: string | null): Promise<JsonResult> {
-  return (await invoke("doctor", { cwd })) as JsonResult;
+  return (await invoke("doctor", { cwd }, { reportFailure: false })) as JsonResult;
 }
 
 /** Calls the `registry` Tauri command (`mise registry --json`). Returns
@@ -164,5 +187,5 @@ export async function registry(cwd: string | null): Promise<JsonResult> {
  *  plain-text table behind the boundary and returns a JSON array of
  *  `{name, source}` rows (issue #51). */
 export async function pluginsLs(cwd: string | null): Promise<JsonResult> {
-  return (await invoke("plugins_ls", { cwd })) as JsonResult;
+  return (await invoke("plugins_ls", { cwd }, { reportFailure: false })) as JsonResult;
 }

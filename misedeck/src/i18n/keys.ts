@@ -130,6 +130,14 @@ export const I18N_KEYS = {
      */
     workingDirHome: "execution.workingDirHome",
   },
+  /** The global failure surface (issue #249). The body is the generic
+      sentence used when a rejected command carries no displayable
+      detail; an AppError's resolved message takes its place. */
+  failureNotice: {
+    label: "failureNotice.label",
+    body: "failureNotice.body",
+    dismiss: "failureNotice.dismiss",
+  },
   tooltip: {
     copy: "tooltip.copy",
   },

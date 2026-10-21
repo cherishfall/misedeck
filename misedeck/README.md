@@ -36,7 +36,8 @@ npm run ci             # the full frontend gate: typecheck, tests, every lint gu
 14. `npm run lint:modal-focus` — no `autoFocus` anywhere (initial focus lives in the shared dialog's `focusTarget.ts`); only one modal implementation.
 15. `npm run lint:nested-interactive` — no interactive control nested inside another.
 16. `npm run lint:page-layout` — page padding, width and centring stay in `PageShell`.
-17. `npm run build` — `tsc --noEmit && vite build`.
+17. `npm run lint:invoke-wrapper` — every Tauri `invoke` goes through `src/api/invoke.ts`, so a rejected command reaches the global failure notice by default.
+18. `npm run build` — `tsc --noEmit && vite build`.
 
 This is the frontend half only. The Rust checks (`cargo check`, `cargo test`) run in `ci.yml`; see [docs/agents/ci.md](../docs/agents/ci.md) for the full gate.
 

@@ -19,7 +19,9 @@
 // transcript, no auto-open, and no switcher entry.
 
 import { useCallback, useEffect, useReducer, useRef } from "react";
-import { Channel, invoke } from "@tauri-apps/api/core";
+import { Channel } from "@tauri-apps/api/core";
+
+import { invoke } from "../../api/invoke";
 
 import type { AppError, JsonResult } from "../../types/tauri";
 import { isAppError } from "../../api/mise";
@@ -238,7 +240,11 @@ export function useExecution() {
           // still never waits for the process to die — but a failed IPC
           // call leaves the run visibly running instead of claiming a
           // stop that did not happen. The same Cancel button retries.
-          void invoke("cancel_run", { runId: id })
+          void invoke(
+            "cancel_run",
+            { runId: id },
+            { reportFailure: false },
+          )
             .then(() => {
               cancelled = true;
               dispatch({ type: "cancel", id });
@@ -266,13 +272,21 @@ export function useExecution() {
         return { kind: "err", err };
       };
       try {
-        const result = (await invoke(ipcCommand, {
-          ...payload,
-          // The run id doubles as the cancel handle on the Rust side:
-          // `cancel_run` finds this run's process group by it (#223).
-          runId: id,
-          onEvent: channel,
-        })) as unknown;
+        const result = (await invoke(
+          ipcCommand,
+          {
+            ...payload,
+            // The run id doubles as the cancel handle on the Rust side:
+            // `cancel_run` finds this run's process group by it (#223).
+            runId: id,
+            onEvent: channel,
+          },
+          // The panel is the owned surface for every run failure
+          // (ADR-0005): it renders the structured error, opens itself
+          // when closed, and streams the transcript. A global notice
+          // would double-report the same mise failure (issue #249).
+          { reportFailure: false },
+        )) as unknown;
         if (!isRunCommandResult(result)) {
           return fail(unexpectedIpcResponse());
         }

@@ -676,6 +676,11 @@
     "resizeHandle": "Resize execution panel",
     "workingDirHome": "Working directory: ~ (home)"
   },
+  "failureNotice": {
+    "label": "Action failed",
+    "body": "MiseDeck could not complete the action.",
+    "dismiss": "Dismiss"
+  },
   "tooltip": {
     "copy": "Copy"
   },

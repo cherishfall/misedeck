@@ -24,9 +24,9 @@ Ubuntu 22.04 / Debian 12 上无法启动。`ci.yml` 保持 `ubuntu-latest` —�
 
 `ci.yml` 还跑一个 `windows` job 覆盖 Windows beta 目标——评审循环里没有
 Windows 真机（issue #208），这是 Windows 代码路径唯一真正执行的地方。
-它跑完整的前端检查（`npm run ci`，即完整的 17 步脚本 —— 见
+它跑完整的前端检查（`npm run ci`，即完整的 18 步脚本 —— 见
 `misedeck/README.md`，其中包含 `frontend` job 没有逐步执行的
-`modal-focus`、`nested-interactive`、`page-layout` 三个守门）、
+`modal-focus`、`nested-interactive`、`page-layout`、`invoke-wrapper` 四个守门）、
 Rust 单元测试（`cargo test --lib`），以及 `cargo build` 编译冒烟
 （`dist/` 由 `npm run ci` 产出，所以顺序有讲究）。有两件事是刻意不做的：
 

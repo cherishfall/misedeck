@@ -17,6 +17,7 @@ React UI (src/)
 - **Directory context**（见 CONTEXT.md）：一个应用级状态，默认为 Global。每次 runner 调用都接收它并为其传递 `-C`：目录模式传 `-C <dir>`；Global 模式传 `-C $HOME`，使 mise 从用户主目录解析——绝不使用进程 cwd（issue #179）。任何页面都不硬编码目录。
 - **命令层是可分离的**（ADR-0003，issue #11）：Tauri 命令很薄 —— 校验输入、调用 runner、整形结果。任何无需 UI 即可复用的东西都属于 runner，这样未来的公开 CLI 可以建立在同一层之上。
 - **执行面板**（issue #15，ADR-0005）是**每一次** mise 调用的唯一路径，读查询同样不例外：它展示正在执行的确切命令并流式输出日志，且 `run()` 返回结果，让读查询能直接喂给查询缓存，无需再调用 mise 一次。应用替自己发起的读（表格首次加载、变更后的刷新）以后台方式运行 —— 同一个 runner，但绝不替换用户正在阅读的执行记录。
+- **失败提示**（issue #249）：`src/api/invoke.ts` 是应用唯一的 `invoke` 入口。命令被拒绝时，它在重新抛出前把失败送入模块级失败提示 store（`src/state/failureNotices.ts`，由 `PageShell` 的 `FailureNotices` 渲染），因此无需每个调用点自建 UI，拒绝默认可见。只有 wrapper 自己负责的界面已经渲染该失败时（执行面板里的 mise 运行、行内链接提示、页面错误卡片），才传 `{ reportFailure: false }`。该策略位于 wrapper，绝不写成命令名清单；`npm run lint:invoke-wrapper` 阻止其他文件直接导入。
 - **Trust**（issue #6）：对不受信任目录的只读视图以 `MISE_SAFE=1` 运行；变更或求值环境变量的操作先检查信任状态，并把用户引导到信任横幅。落地在 runner：所有读都汇聚到 `run_mise_json`，由它设置 `MISE_SAFE=1`；流式面（变更、`mise run`、安装、trust）刻意不设（issue #230）。
 - **目录上下文只校验一次**（issue #230）：每个接收 `cwd` 的命令在派生前都经过同一个 helper，于是目录已删除或卷已卸载时，失败以该页自己的错误形态呈现，而不是把 mise 原始的 `cd` 报错漏出去；空字符串也永远不会被拼成 `-C ""`。
 - **lockfile 解析**（issue #230）：mise 通过*配置文件*管一个目录，并把 lockfile 放在配置旁边，因此概览页向上逐级查找最近的 `mise.lock`——只读 `<cwd>/mise.lock` 会让项目子目录误报「没有 lockfile」。

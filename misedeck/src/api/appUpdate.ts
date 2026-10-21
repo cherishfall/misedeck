@@ -9,7 +9,7 @@
 // the user asks; the sidebar's silent launch check (#238) runs it at
 // most once per throttle window, fire-and-forget.
 
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "./invoke";
 
 /** A newer build exists — its Release page, not a binary URL. */
 export interface AppUpdateAvailable {
@@ -40,5 +40,11 @@ export type AppUpdateResult =
 /** Ask GitHub whether a newer MiseDeck build exists. Bounded at eight
  *  seconds on the Rust side. */
 export async function checkAppUpdate(): Promise<AppUpdateResult> {
-  return invoke<AppUpdateResult>("check_app_update");
+  // The manual panel renders a rejected check in its own error state,
+  // while the launch check (#238) deliberately swallows every failure so
+  // a background check nobody asked for cannot raise UI. Reporting by
+  // default would break that silent path (ADR-0009 revision).
+  return invoke<AppUpdateResult>("check_app_update", undefined, {
+    reportFailure: false,
+  });
 }

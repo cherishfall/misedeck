@@ -19,6 +19,10 @@ interface BannerProps {
   /** Optional call-to-action on the right side of the top row. */
   action?: ReactNode;
   className?: string;
+  /** Live-region role. Informational banners are polite (`status`);
+   *  a failure the user did not ask for must interrupt (`alert`) —
+   *  the global failure notices opt in (issue #249). */
+  role?: "status" | "alert";
 }
 
 export function Banner({
@@ -27,12 +31,13 @@ export function Banner({
   children,
   action,
   className,
+  role = "status",
 }: BannerProps) {
   const classes = [styles.banner, styles[`tone-${tone}`], className ?? ""]
     .filter(Boolean)
     .join(" ");
   return (
-    <div className={classes} role="status">
+    <div className={classes} role={role}>
       <div className={styles.row}>
         <span className={styles.dot} aria-hidden="true" />
         <span className={styles.label}>{label}</span>

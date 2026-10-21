@@ -212,7 +212,7 @@ export function ToolsPage() {
   // state and don't even try the tools queries.
   const detect = useQuery({
     queryKey: ["mise", "detect"],
-    queryFn: detectMise,
+    queryFn: () => detectMise(),
     refetchOnWindowFocus: false,
     retry: false,
   });

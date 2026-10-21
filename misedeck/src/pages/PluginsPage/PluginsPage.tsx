@@ -61,7 +61,7 @@ export function PluginsPage() {
 
   const detect = useQuery({
     queryKey: ["mise", "detect"],
-    queryFn: detectMise,
+    queryFn: () => detectMise(),
     refetchOnWindowFocus: false,
     retry: false,
   });
