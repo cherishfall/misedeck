@@ -13,7 +13,7 @@ v1 只在 GitHub Releases 上分发未签名二进制：每个 tag 对应一个 
 - **自托管 Homebrew tap（`cherishfall/homebrew-tap`）发布 cask。** 推迟到 **post-1.0**，不是否决。它需要 tap 仓库、每次发版都更新的 cask，以及一个对第二个仓库有写权限的 CI 步骤 —— 那是一块需要维护的分发面，而 v1 的任务是把应用本身做扎实。等发版节奏稳定后再议。
 - **把 cask 提交到官方 `homebrew-cask` 仓库。** 同样推迟到 post-1.0：它受该仓库的知名度门槛（约 50 stars）限制，所以无论其他条件如何，首个版本都够不到。
 
-## Consequences
+## 后果
 
 - 首次启动需要右键 → 打开（macOS Gatekeeper 隔离机制）；这必须写进 README。
 - 被列入 mise 官方文档（community projects）以及双语 README 关键词是主要的发现渠道；产品命名为 **MiseDeck**（GitHub 仓库已更名为 `cherishfall/misedeck`；GitHub 会保留从旧名 `cherishfall/mise-ui` 的重定向）。SEO 说明：名称匹配只是次要因素 —— 文档收录、GitHub topics 和双语 README 关键词才是大头。
