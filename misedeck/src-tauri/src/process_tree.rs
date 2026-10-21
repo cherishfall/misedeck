@@ -409,9 +409,23 @@ mod tests {
         // `creation_flags` assigns rather than ORs; two separate calls
         // would leave only the last flag. Prove the single call still
         // launches (the flag word is accepted by CreateProcess).
+        //
+        // Polled, not a single `try_wait`: `cmd /c exit 0` is fast but not
+        // synchronous, and asserting on the first poll would be a
+        // coin-flip on a loaded runner.
         let mut cmd = Command::new("cmd.exe");
         cmd.args(["/c", "exit", "0"]);
         let mut guard = ChildGuard::spawn(&mut cmd, None).expect("spawn");
-        assert!(matches!(guard.try_wait(), Ok(Some(_))));
+        let deadline = std::time::Instant::now() + Duration::from_secs(10);
+        loop {
+            match guard.try_wait() {
+                Ok(Some(_)) => break,
+                Ok(None) if std::time::Instant::now() < deadline => {
+                    std::thread::sleep(Duration::from_millis(20));
+                }
+                Ok(None) => panic!("hidden child did not exit within 10s"),
+                Err(e) => panic!("try_wait failed: {e}"),
+            }
+        }
     }
 }
