@@ -109,6 +109,12 @@ jobs:
         working-directory: misedeck
         run: npm run build
 
+      # Release-note resolution is shell logic that runs only on a tag
+      # push; exercise it here so a regression fails on master (#266).
+      - name: Release-notes resolution check
+        if: runner.os == 'Linux'
+        run: bash scripts/test-release-notes.sh
+
   rust:
     name: rust (ubuntu-latest)
     runs-on: ubuntu-latest

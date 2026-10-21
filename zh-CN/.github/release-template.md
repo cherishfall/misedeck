@@ -1,5 +1,7 @@
 # MiseDeck v<version>
 
+> [English](https://github.com/cherishfall/misedeck/blob/master/README.md) · [简体中文](https://github.com/cherishfall/misedeck/blob/master/zh-CN/README.md)
+
 MiseDeck 的首个稳定版本——[mise](https://mise.jdx.dev) 的忠实桌面 GUI。跨平台（macOS 优先打磨，Windows / Linux 为 beta）。
 
 ## 本期要点
@@ -17,17 +19,15 @@ MiseDeck 的首个稳定版本——[mise](https://mise.jdx.dev) 的忠实桌面
 
 页面之外：执行面板（精确命令、实时日志、退出码、复制命令、取消）、未信任目录只读展示并支持一键 `mise trust`、终端与激活辅助、明暗主题，以及英文 / 简体中文界面。
 
-> [English](../../README.md) · [简体中文](../README.md)
-
 ## 安装
 
-GitHub Releases 是唯一的分发渠道 —— v1 不提供 Homebrew formula 或 cask（参见 [ADR-0002](../../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)）。
+GitHub Releases 是唯一的分发渠道 —— v1 不提供 Homebrew formula 或 cask（参见 [ADR-0002](https://github.com/cherishfall/misedeck/blob/master/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)）。
 
 ### macOS
 
 从下方 assets 下载 `.dmg`，打开后把 MiseDeck 拖入 Applications。
 
-> **首次启动（未签名）**：二进制**未做 Apple 公证**（参见 [ADR-0002](../../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)）。macOS Gatekeeper 会拦截首次打开，并可能提示应用已损坏。把 `MiseDeck.app` 拖入 `/Applications` 后，在终端移除 quarantine 标记：
+> **首次启动（未签名）**：二进制**未做 Apple 公证**（参见 [ADR-0002](https://github.com/cherishfall/misedeck/blob/master/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)）。macOS Gatekeeper 会拦截首次打开，并可能提示应用已损坏。把 `MiseDeck.app` 拖入 `/Applications` 后，在终端移除 quarantine 标记：
 >
 > ```bash
 > xattr -dr com.apple.quarantine /Applications/MiseDeck.app

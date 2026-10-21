@@ -1,4 +1,6 @@
-# MiseDeck <version>
+# MiseDeck v<version>
+
+> [English](https://github.com/cherishfall/misedeck/blob/master/README.md) · [简体中文](https://github.com/cherishfall/misedeck/blob/master/zh-CN/README.md)
 
 First stable release of MiseDeck, a faithful desktop GUI for [mise](https://mise.jdx.dev). Cross-platform (macOS polished, Windows / Linux beta).
 
@@ -17,17 +19,15 @@ Eight pages, each one a part of the mise CLI:
 
 Beyond the pages: the execution panel (exact command, live logs, exit code, copy-command, cancel), read-only untrusted directories with one-click `mise trust`, terminal and activation helpers, light/dark themes, and an English / Simplified Chinese UI.
 
-> [English](../README.md) · [简体中文](../zh-CN/README.md)
-
 ## Install
 
-GitHub Releases is the only distribution channel — v1 ships no Homebrew formula or cask (per [ADR-0002](../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)).
+GitHub Releases is the only distribution channel — v1 ships no Homebrew formula or cask (per [ADR-0002](https://github.com/cherishfall/misedeck/blob/master/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)).
 
 ### macOS
 
 Download the `.dmg` from the assets below, open it, and drag MiseDeck to Applications.
 
-> **First launch (unsigned)**: the binary is **not notarized** (per [ADR-0002](../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)). macOS Gatekeeper will block the first open and may report that the app is damaged. After dragging `MiseDeck.app` to `/Applications`, remove the quarantine flag from Terminal:
+> **First launch (unsigned)**: the binary is **not notarized** (per [ADR-0002](https://github.com/cherishfall/misedeck/blob/master/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)). macOS Gatekeeper will block the first open and may report that the app is damaged. After dragging `MiseDeck.app` to `/Applications`, remove the quarantine flag from Terminal:
 >
 > ```bash
 > xattr -dr com.apple.quarantine /Applications/MiseDeck.app

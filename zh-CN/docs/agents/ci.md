@@ -56,7 +56,7 @@ Windows job 绿 = 编译级与单元级正确；它**不能**替代在真实 Win
    状态行与版本号、页面/命令对照表、安装步骤（文件名、签名注意事项）、
    平台支持、已知限制，以及 `docs/screenshots/` —— 界面、文案或数据结构
    有变化的页面要重拍。README 还停留在旧版本属于发版阻塞项，不是收尾工作。
-4. 发版说明来自 tag 附注消息；轻量 tag 则回退到
+4. 发版说明来自附注 tag 的消息；轻量 tag 则回退到
    `.github/release-template.md`（见下文「附注 tag vs 轻量 tag」）。
 5. 给该 commit 打 `vMAJOR.MINOR.PATCH` tag 并推送：
    ```sh
@@ -72,8 +72,15 @@ Windows job 绿 = 编译级与单元级正确；它**不能**替代在真实 Win
 
 如果用 `git tag -a v0.2.0 -m "..."` 推送 tag，附注消息会成为 Release 的正文。
 如果只用 `git tag v0.2.0` 打 tag、再用 `git push origin v0.2.0` 推送轻量 tag，workflow 会
-回退到 `.github/release-template.md`，把 `<version>` 替换为 tag 名。
+回退到 `.github/release-template.md`，把 `<version>` 替换为裸版本号
+（`0.2.0`，不带前缀 `v`）。
 常规发版推荐走模板路径；紧急修复的消息则适合用附注。
+
+解析逻辑在 `scripts/resolve-release-notes.sh`：只有
+`git cat-file -t "$TAG"` 返回 `tag` 时才读取 `%(contents)`，因为轻量
+tag 会返回 commit 消息。CI 会运行 `scripts/test-release-notes.sh`，
+覆盖两种 tag 形态，并检查渲染结果里没有仓库相对链接（它们在
+`/releases/tag/` 下会 404）。
 
 ## 不切 tag 也能测试矩阵
 

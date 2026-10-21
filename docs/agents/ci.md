@@ -67,7 +67,7 @@ To cut a release:
    platform support, known limitations, and `docs/screenshots/` — re-capture
    any page whose UI, copy, or data shape changed. A README that still
    describes an older release blocks the release; it is not a follow-up.
-4. Release notes come from the tag annotation message, or fall back to
+4. Release notes come from an annotated tag's message, or fall back to
    `.github/release-template.md` for lightweight tags (see "Annotated vs
    lightweight tags" below).
 5. Tag the commit with a `vMAJOR.MINOR.PATCH` tag and push it:
@@ -89,8 +89,16 @@ If you push the tag with `git tag -a v0.2.0 -m "..."`, the annotation
 message becomes the Release body. If you push a lightweight tag with
 just `git tag v0.2.0` and `git push origin v0.2.0`, the workflow falls
 back to `.github/release-template.md` and substitutes `<version>` with
-the tag name. The template is the recommended path for routine
-releases; the annotation is the path for one-off hotfix messages.
+the bare version (`0.2.0`, no leading `v`). The template is the
+recommended path for routine releases; the annotation is the path for
+one-off hotfix messages.
+
+The resolver is `scripts/resolve-release-notes.sh`; it only reads
+`%(contents)` when `git cat-file -t "$TAG"` reports `tag`, because a
+lightweight tag returns its commit message otherwise. CI runs
+`scripts/test-release-notes.sh`, which covers both tag shapes and checks
+that the rendered body has no repo-relative links (they 404 on
+`/releases/tag/`).
 
 ## Testing the matrix without cutting a tag
 

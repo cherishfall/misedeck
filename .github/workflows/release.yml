@@ -164,29 +164,13 @@ jobs:
           test -s SHA256SUMS
           cat SHA256SUMS
 
+      # Resolution rules live in the script so CI can test them against
+      # real lightweight and annotated tags (issue #266).
       - name: Resolve release notes
         id: notes
         env:
           TAG: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          # 1. Tag annotation wins if the tagger wrote one.
-          ANNOTATION="$(git tag -l --format='%(contents)' "$TAG" || true)"
-          if [ -n "$ANNOTATION" ]; then
-            printf '%s\n' "$ANNOTATION" > release-body.md
-            echo "source=annotation" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # 2. Curated template with <version> substituted.
-          if [ -f .github/release-template.md ]; then
-            sed -e "s|<version>|$TAG|g" -e "s|{{version}}|$TAG|g" \
-              .github/release-template.md > release-body.md
-            echo "source=template" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # 3. No annotation, no template — let softprops auto-generate.
-          : > release-body.md
-          echo "source=auto" >> "$GITHUB_OUTPUT"
+        run: bash scripts/resolve-release-notes.sh
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
