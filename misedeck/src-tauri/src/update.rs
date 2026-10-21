@@ -25,7 +25,7 @@
 //! rather than a new XML crate; the fixtures in `tests` pin every
 //! assumption it makes.
 
-use std::process::Command;
+use std::process::{Command, ExitStatus};
 
 use semver::Version;
 use serde::Serialize;
@@ -41,6 +41,13 @@ pub const RELEASES_FEED_URL: &str =
 /// a throttled connection.
 const MAX_TIME_S: &str = "8";
 const CONNECT_TIMEOUT_S: &str = "5";
+
+/// Hard ceiling on the response body. `--max-time` bounds time, not
+/// bytes: a hostile or broken proxy on a fast link could otherwise push
+/// hundreds of megabytes into `Command::output`'s buffer. The feed is a
+/// few KB for ten releases, so one MiB leaves two orders of magnitude of
+/// headroom without accepting an unbounded download (issue #254).
+const MAX_FEED_BYTES: usize = 1024 * 1024;
 
 /// The outcome the panel renders. Tagged so the frontend branches on the
 /// variant instead of on a boolean plus optional fields.
@@ -73,11 +80,10 @@ pub struct ReleaseTag {
     pub published_at: Option<String>,
 }
 
-/// Feed fetch and parse outcomes share this code. `COMMAND_FAILED` would
-/// be the conventional one; the wire test pins this value today and the
-/// error-code set is a separate decision (#252 → #254), so the ticket
-/// that changes it changes both sides at once.
-const CHECK_FAILED_CODE: &str = "app_update_check_failed";
+/// Feed fetch and parse outcomes share the conventional error code.
+/// The code set is fixed (see `docs/agents/conventions.md`); a check
+/// that cannot answer is a failed command, not a new failure kind.
+const CHECK_FAILED_CODE: &str = crate::mise::code::COMMAND_FAILED;
 
 /// Fetch the feed and decide. Blocking — call through `spawn_run`.
 pub fn check(current_version: &str) -> Result<Option<ReleaseTag>, AppError> {
@@ -119,10 +125,11 @@ fn feed_shape_error(detail: &str) -> AppError {
     )
 }
 
-/// `curl -fsSL --max-time 8 --connect-timeout 5 -A misedeck/<version>`.
-/// One code path on every platform: Windows 10 1803+ ships `curl.exe`,
-/// and a Windows-specific PowerShell branch would be a second thing to
-/// keep honest with no real machine in the loop (issue #208).
+/// `curl -fsSL --max-time 8 --connect-timeout 5 --max-filesize 1048576
+/// -A misedeck/<version>`. One code path on every platform: Windows 10
+/// 1803+ ships `curl.exe`, and a Windows-specific PowerShell branch would
+/// be a second thing to keep honest with no real machine in the loop
+/// (issue #208).
 ///
 /// On Windows `curl.exe` is the System32 copy, not a `PATH` lookup: the
 /// `CreateProcess` search order starts with the current directory, so a
@@ -135,36 +142,65 @@ fn fetch_feed(current_version: &str) -> Result<String, AppError> {
     let program = "curl".to_string();
 
     let mut cmd = Command::new(program);
-    cmd.arg("-fsSL")
-        .arg("--max-time")
-        .arg(MAX_TIME_S)
-        .arg("--connect-timeout")
-        .arg(CONNECT_TIMEOUT_S)
-        .arg("-A")
-        .arg(format!("misedeck/{current_version}"))
-        .arg(RELEASES_FEED_URL);
+    cmd.args(curl_args(current_version));
     // Windows: `curl.exe` is a console program and this is a GUI
     // process — without the flag a console window flashes on every
     // update check (issue #240).
     crate::process_tree::hide_console_window(&mut cmd);
-    let output = cmd
-        .output()
-        .map_err(|err| {
-            AppError::new(
-                CHECK_FAILED_CODE,
-                format!("could not run curl: {err}"),
-                String::new(),
-            )
-        })?;
+    let output = cmd.output().map_err(|err| {
+        AppError::new(
+            CHECK_FAILED_CODE,
+            format!("could not run curl: {err}"),
+            String::new(),
+        )
+    })?;
 
     if !output.status.success() {
-        return Err(AppError::new(
-            CHECK_FAILED_CODE,
-            "the release feed request did not succeed",
+        return Err(feed_failure(
+            output.status,
             String::from_utf8_lossy(&output.stderr).into_owned(),
         ));
     }
+    // Belt and braces for curl builds where `--max-filesize` cannot
+    // abort an unknown-length transfer: never parse a body past the cap.
+    if output.stdout.len() > MAX_FEED_BYTES {
+        return Err(AppError::new(
+            CHECK_FAILED_CODE,
+            format!("the release feed exceeded the {MAX_FEED_BYTES} byte limit"),
+            String::new(),
+        ));
+    }
     Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+}
+
+/// The curl argv that bounds both time and bytes. Split out so the cap
+/// is pinned by a unit test (the fetch itself needs the network).
+fn curl_args(current_version: &str) -> Vec<String> {
+    vec![
+        "-fsSL".to_string(),
+        "--max-time".to_string(),
+        MAX_TIME_S.to_string(),
+        "--connect-timeout".to_string(),
+        CONNECT_TIMEOUT_S.to_string(),
+        "--max-filesize".to_string(),
+        MAX_FEED_BYTES.to_string(),
+        "-A".to_string(),
+        format!("misedeck/{current_version}"),
+        RELEASES_FEED_URL.to_string(),
+    ]
+}
+
+/// Map a non-zero curl exit to the one failure the update panel renders.
+/// Exit 63 is `--max-filesize` refusing the response: naming the cap is
+/// the honest explanation, and curl's own stderr is kept verbatim either
+/// way.
+fn feed_failure(status: ExitStatus, stderr: String) -> AppError {
+    let message = if status.code() == Some(63) {
+        format!("the release feed exceeded the {MAX_FEED_BYTES} byte limit")
+    } else {
+        "the release feed request did not succeed".to_string()
+    };
+    AppError::new(CHECK_FAILED_CODE, message, stderr)
 }
 
 /// Pull one `ReleaseTag` out of every `<entry>` in the feed.
@@ -376,7 +412,41 @@ mod tests {
         let err = check_from_body("1.0.0-beta.17", "")
             .expect_err("an empty body must fail the check");
         assert_eq!(err.code, CHECK_FAILED_CODE);
+        // The fixed six-code set (conventions.md): a failed update check
+        // is a failed command, never a seventh code (#254).
+        assert_eq!(err.code, crate::mise::code::COMMAND_FAILED);
         assert!(!err.message.is_empty());
+    }
+
+    /// Issue #254: the request itself is bounded in bytes, not just in
+    /// time. `--max-filesize` is the only guard curl offers before the
+    /// body is buffered.
+    #[test]
+    fn the_feed_request_is_bounded_in_bytes() {
+        let args = curl_args("1.0.0-beta.17");
+        let at = args
+            .iter()
+            .position(|arg| arg == "--max-filesize")
+            .expect("the fetch must cap the response size");
+        assert_eq!(args[at + 1], MAX_FEED_BYTES.to_string());
+        assert_eq!(MAX_FEED_BYTES, 1024 * 1024);
+        assert!(args.contains(&RELEASES_FEED_URL.to_string()));
+    }
+
+    /// curl exit 63 is "maximum file size exceeded". The panel must see
+    /// the cap, not a bare curl status, while stderr stays verbatim.
+    #[cfg(unix)]
+    #[test]
+    fn a_size_capped_response_names_the_cap() {
+        use std::os::unix::process::ExitStatusExt;
+
+        let err = feed_failure(
+            ExitStatus::from_raw(63 << 8),
+            "curl: (63) Maximum file size exceeded".to_string(),
+        );
+        assert_eq!(err.code, crate::mise::code::COMMAND_FAILED);
+        assert!(err.message.contains("byte limit"), "got {:?}", err.message);
+        assert_eq!(err.stderr, "curl: (63) Maximum file size exceeded");
     }
 
     /// The captive-portal / proxy-block-page case from the audit (R-3): a

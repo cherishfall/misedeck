@@ -30,6 +30,13 @@ if [[ -n "${FIXTURE_MISE_CALL_LOG:-}" ]]; then
   echo "$*" >> "$FIXTURE_MISE_CALL_LOG"
 fi
 
+# Optional env log: records one line per call with the MISE_SAFE value
+# the runner set, so tests can prove a read took the safe path without
+# reading process internals (issue #254, the post-self-update probe).
+if [[ -n "${FIXTURE_MISE_ENV_LOG:-}" ]]; then
+  echo "$* MISE_SAFE=${MISE_SAFE:-<unset>}" >> "$FIXTURE_MISE_ENV_LOG"
+fi
+
 if [[ -n "${FIXTURE_MISE_SLUG:-}" ]]; then
   SLUG="$FIXTURE_MISE_SLUG"
 else

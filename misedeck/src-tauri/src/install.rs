@@ -22,8 +22,9 @@ use std::time::{Duration, Instant};
 use serde::Serialize;
 
 use crate::mise::{
-    drain_streams, extract_date, join_readers_bounded, meets_minimum, run_mise, run_mise_tracked,
-    spawn_line_reader, AppError, RunEvent, RunRequest, MIN_MISE_VERSION, READER_SHUTDOWN_BOUND,
+    drain_streams, extract_date, join_readers_bounded, meets_minimum, mise_version,
+    run_mise_tracked, spawn_line_reader, AppError, RunEvent, RunRequest, MIN_MISE_VERSION,
+    READER_SHUTDOWN_BOUND,
 };
 use crate::process_tree::{self, ChildGuard};
 
@@ -279,8 +280,9 @@ pub fn mise_self_update_argv() -> Vec<String> {
 }
 
 /// Run `mise self-update` via the existing runner, streaming the same
-/// `RunEvent` line the panel already knows. On success, re-runs
-/// `mise version --json` to capture the post-update version string.
+/// `RunEvent` line the panel already knows. On success, re-reads
+/// `mise version --json` on the read path (`MISE_SAFE=1`, 10 s ceiling)
+/// to capture the post-update version string.
 ///
 /// `run_id` makes the update cancellable and part of the app-exit
 /// cleanup (issue #223); the post-update probe is short and runs
@@ -305,19 +307,10 @@ where
 
     // Best-effort post-update probe. Failure here is non-fatal — the
     // self-update succeeded, we just couldn't read the new version.
-    let probe_req = RunRequest::new(vec!["version".to_string(), "--json".to_string()]);
-    let new_version = match run_mise(mise_path, &probe_req, |_| {}) {
-        Ok(out) if out.exit_code == 0 => {
-            serde_json::from_slice::<serde_json::Value>(out.stdout.as_bytes())
-                .ok()
-                .and_then(|v| {
-                    v.get("version")
-                        .and_then(|x| x.as_str())
-                        .map(|s| s.to_string())
-                })
-        }
-        _ => None,
-    };
+    // A version read follows the read contract (10 s + MISE_SAFE), not
+    // the streaming one: a hung probe must not extend a successful
+    // self-update by 30 minutes (issue #254).
+    let new_version = mise_version(mise_path).ok().map(|(_, version)| version);
 
     // If we got a date back, check it still meets the floor. The
     // outcome is the same either way; this is a soft assertion the

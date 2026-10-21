@@ -250,11 +250,12 @@ fn config_files_result_err() {
 
 #[test]
 fn shell_activation_result_ok() {
+    // The rc file text must not cross IPC: the UI only renders
+    // `rcPath`, and the contents can hold tokens (issue #254).
     let v = serde_json::to_value(ShellActivationResult::Ok {
         ok: ActivationStatus {
             shell: ShellKind::Zsh,
             rc_path: "/home/u/.zshrc".to_string(),
-            rc_contents: "eval \"$(mise activate zsh)\"".to_string(),
             activated: Some(true),
         },
     })
@@ -266,7 +267,6 @@ fn shell_activation_result_ok() {
             "ok": {
                 "shell": { "kind": "zsh" },
                 "rcPath": "/home/u/.zshrc",
-                "rcContents": "eval \"$(mise activate zsh)\"",
                 "activated": true,
             },
         })
@@ -285,7 +285,6 @@ fn shell_activation_result_unknown_shell_serializes_null_activated() {
                 name: "unknown".to_string(),
             },
             rc_path: String::new(),
-            rc_contents: String::new(),
             activated: None,
         },
     })
@@ -297,7 +296,6 @@ fn shell_activation_result_unknown_shell_serializes_null_activated() {
             "ok": {
                 "shell": { "kind": "unknown", "name": "unknown" },
                 "rcPath": "",
-                "rcContents": "",
                 "activated": null,
             },
         })
@@ -402,9 +400,11 @@ fn app_update_result_current() {
 
 #[test]
 fn app_update_result_err() {
+    // The check's failures use the fixed `COMMAND_FAILED` code; the
+    // update panel offers stderr through the execution panel like every
+    // other command failure (issue #254).
     let v = serde_json::to_value(misedeck_lib::update::AppUpdateResult::Err {
-        err: AppError::new(
-            "app_update_check_failed",
+        err: AppError::command_failed(
             "the release feed request did not succeed",
             "curl: (28) timed out",
         ),
@@ -415,7 +415,7 @@ fn app_update_result_err() {
         json!({
             "status": "err",
             "err": {
-                "code": "app_update_check_failed",
+                "code": "COMMAND_FAILED",
                 "message": "the release feed request did not succeed",
                 "stderr": "curl: (28) timed out",
             },

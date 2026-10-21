@@ -241,8 +241,9 @@ async fn run_mise_command(
     }
 
     // The IPC-supplied directory is a boundary value: reject an empty or
-    // stale path before it becomes `-C <dir>` (issue #210).
-    let cwd = match validate_cwd(cwd.as_deref()) {
+    // stale path before it becomes `-C <dir>` (issue #210). The check
+    // runs on the blocking pool (issue #254).
+    let cwd = match validated_cwd(cwd).await {
         Ok(cwd) => cwd,
         Err(err) => return RunCommandResult::Err { err },
     };
@@ -444,15 +445,30 @@ fn path_is_directory(path: &str) -> bool {
 /// `-C <dir>`, so an empty or stale path is a caller-side bug that would
 /// otherwise surface as mise's own error text. Reuses `COMMAND_FAILED`
 /// (no new error code).
-/// Validate a caller-supplied directory context and hand back the
-/// canonical `PathBuf` (issue #230).
 ///
 /// Every command that takes a `cwd` goes through this one helper:
 /// before #230 only `run_mise_command` did, so a deleted or unmounted
 /// directory leaked mise's raw `cd` error onto five pages, and an
 /// empty string was forwarded as `-C ""`. `None` means Global mode
 /// (no `-C`), which is valid and must stay valid.
-fn validated_cwd(cwd: Option<String>) -> Result<Option<PathBuf>, AppError> {
+///
+/// The `is_dir()` check hits the filesystem and can block for seconds
+/// on a stale network mount, so it runs on the blocking pool instead of
+/// the async executor (issue #254).
+async fn validated_cwd(cwd: Option<String>) -> Result<Option<PathBuf>, AppError> {
+    match tauri::async_runtime::spawn_blocking(move || validate_cwd(cwd.as_deref())).await {
+        Ok(result) => result,
+        Err(_) => Err(AppError::command_failed(
+            "cwd validation task failed",
+            String::new(),
+        )),
+    }
+}
+
+/// The synchronous `cwd` checker: the pure boundary rule, driven
+/// directly by the unit tests and called on the blocking pool by
+/// `validated_cwd`.
+fn validate_cwd(cwd: Option<&str>) -> Result<Option<PathBuf>, AppError> {
     match cwd {
         None => Ok(None),
         Some(raw) if raw.trim().is_empty() => Err(AppError::command_failed(
@@ -460,7 +476,7 @@ fn validated_cwd(cwd: Option<String>) -> Result<Option<PathBuf>, AppError> {
             String::new(),
         )),
         Some(raw) => {
-            let path = PathBuf::from(&raw);
+            let path = PathBuf::from(raw);
             if !path.is_dir() {
                 return Err(AppError::command_failed(
                     format!("cwd is not a directory: {raw}"),
@@ -470,12 +486,6 @@ fn validated_cwd(cwd: Option<String>) -> Result<Option<PathBuf>, AppError> {
             Ok(Some(path))
         }
     }
-}
-
-/// The `Option<&str>` form, kept for the streaming command and the
-/// unit tests that drive it. Same contract as `validated_cwd`.
-fn validate_cwd(cwd: Option<&str>) -> Result<Option<PathBuf>, AppError> {
-    validated_cwd(cwd.map(|s| s.to_string()))
 }
 
 /// Run a blocking mise call on Tauri's blocking thread pool so the UI
@@ -504,7 +514,7 @@ where
 /// the configured range, i.e. the one `mise upgrade <tool>` reaches.
 #[tauri::command]
 async fn tools_outdated(cwd: Option<String>) -> JsonResult {
-    let cwd_owned = match validated_cwd(cwd) {
+    let cwd_owned = match validated_cwd(cwd).await {
         Ok(v) => v,
         // A missing or unmounted directory must fail here, with
         // this page's own error shape, instead of leaking mise's raw
@@ -527,7 +537,7 @@ async fn tools_outdated(cwd: Option<String>) -> JsonResult {
 /// tools.
 #[tauri::command]
 async fn tools_env(cwd: Option<String>) -> JsonResult {
-    let cwd_owned = match validated_cwd(cwd) {
+    let cwd_owned = match validated_cwd(cwd).await {
         Ok(v) => v,
         // A missing or unmounted directory must fail here, with
         // this page's own error shape, instead of leaking mise's raw
@@ -549,7 +559,7 @@ async fn tools_env(cwd: Option<String>) -> JsonResult {
 /// Used by the first-class Env page (#41).
 #[tauri::command]
 async fn env_ls(cwd: Option<String>) -> JsonResult {
-    let cwd_owned = match validated_cwd(cwd) {
+    let cwd_owned = match validated_cwd(cwd).await {
         Ok(v) => v,
         // A missing or unmounted directory must fail here, with
         // this page's own error shape, instead of leaking mise's raw
@@ -577,7 +587,7 @@ async fn read_lockfile(cwd: Option<String>) -> Result<Option<String>, AppError> 
     // `std::fs::read_to_string` is a blocking read: on a slow or
     // unmounted volume it used to freeze the window. Same treatment
     // as `directory_exists` (#214) — run it off the main thread.
-    let cwd_path = match validated_cwd(cwd) {
+    let cwd_path = match validated_cwd(cwd).await {
         Ok(v) => v,
         Err(err) => return Err(err),
     };
@@ -591,7 +601,7 @@ async fn read_lockfile(cwd: Option<String>) -> Result<Option<String>, AppError> 
 /// both Global and directory contexts.
 #[tauri::command]
 async fn config_files(cwd: Option<String>) -> ConfigFilesResult {
-    let cwd_owned = match validated_cwd(cwd) {
+    let cwd_owned = match validated_cwd(cwd).await {
         Ok(v) => v,
         // A missing or unmounted directory must fail here, with
         // this page's own error shape, instead of leaking mise's raw
@@ -614,7 +624,7 @@ async fn config_files(cwd: Option<String>) -> ConfigFilesResult {
 /// actions will call before running.
 #[tauri::command]
 async fn trust_check(cwd: Option<String>) -> TrustResult {
-    let cwd_owned = match validated_cwd(cwd) {
+    let cwd_owned = match validated_cwd(cwd).await {
         Ok(v) => v,
         // A missing or unmounted directory must fail here, with
         // this page's own error shape, instead of leaking mise's raw
@@ -642,7 +652,7 @@ async fn mise_trust(
     run_id: Option<String>,
     on_event: tauri::ipc::Channel<RunEvent>,
 ) -> RunCommandResult {
-    let cwd_owned = match validated_cwd(cwd) {
+    let cwd_owned = match validated_cwd(cwd).await {
         Ok(v) => v,
         // A missing or unmounted directory must fail here, with
         // this page's own error shape, instead of leaking mise's raw
@@ -679,7 +689,7 @@ async fn mise_trust(
 /// surface `mise tasks ls --json` exposes from any directory).
 #[tauri::command]
 async fn tasks_ls(cwd: Option<String>) -> JsonResult {
-    let cwd_owned = match validated_cwd(cwd) {
+    let cwd_owned = match validated_cwd(cwd).await {
         Ok(v) => v,
         // A missing or unmounted directory must fail here, with
         // this page's own error shape, instead of leaking mise's raw
@@ -703,7 +713,7 @@ async fn tasks_ls(cwd: Option<String>) -> JsonResult {
 /// of tinted lines.
 #[tauri::command]
 async fn doctor(cwd: Option<String>) -> JsonResult {
-    let cwd_owned = match validated_cwd(cwd) {
+    let cwd_owned = match validated_cwd(cwd).await {
         Ok(v) => v,
         // A missing or unmounted directory must fail here, with
         // this page's own error shape, instead of leaking mise's raw
@@ -725,7 +735,7 @@ async fn doctor(cwd: Option<String>) -> JsonResult {
 /// table into a JSON array behind the boundary.
 #[tauri::command]
 async fn registry(cwd: Option<String>) -> JsonResult {
-    let cwd_owned = match validated_cwd(cwd) {
+    let cwd_owned = match validated_cwd(cwd).await {
         Ok(v) => v,
         // A missing or unmounted directory must fail here, with
         // this page's own error shape, instead of leaking mise's raw
@@ -748,7 +758,7 @@ async fn registry(cwd: Option<String>) -> JsonResult {
 /// installed-plugins section.
 #[tauri::command]
 async fn plugins_ls(cwd: Option<String>) -> JsonResult {
-    let cwd_owned = match validated_cwd(cwd) {
+    let cwd_owned = match validated_cwd(cwd).await {
         Ok(v) => v,
         // A missing or unmounted directory must fail here, with
         // this page's own error shape, instead of leaking mise's raw

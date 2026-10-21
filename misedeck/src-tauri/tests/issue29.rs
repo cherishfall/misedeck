@@ -233,12 +233,39 @@ fn doctor_fallback_with_no_output_fails_instead_of_faking_health() {
     // `warnings ?? []` is empty and the status renders "OK" — a healthy
     // conclusion from no data. A zero-line report on a non-zero exit is
     // a broken mise, not a passing check.
+    //
+    // Issue #254: the empty output must not trigger a second text-only
+    // `mise doctor`. Prove the one `--json` call is the only call.
     let script = fixture_script();
-    with_slug("doctor-fail", || {
-        let err = mise_doctor(&script, None).expect_err("no output must fail");
-        assert_eq!(err.code, code::COMMAND_FAILED);
-        assert!(err.stderr.contains("ERROR"), "stderr = {:?}", err.stderr);
-    });
+    let log = std::env::temp_dir().join(format!(
+        "misedeck-doctor-fail-calls-{}.log",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_file(&log);
+    unsafe {
+        std::env::set_var("FIXTURE_MISE_SLUG", "doctor-fail");
+        std::env::set_var("FIXTURE_MISE_CALL_LOG", &log);
+    }
+    let result = mise_doctor(&script, None);
+    unsafe {
+        std::env::remove_var("FIXTURE_MISE_SLUG");
+        std::env::remove_var("FIXTURE_MISE_CALL_LOG");
+    }
+    let calls = std::fs::read_to_string(&log).unwrap_or_default();
+    let _ = std::fs::remove_file(&log);
+
+    let err = result.expect_err("no output must fail");
+    assert_eq!(err.code, code::COMMAND_FAILED);
+    assert!(err.stderr.contains("ERROR"), "stderr = {:?}", err.stderr);
+    assert_eq!(
+        calls.lines().count(),
+        1,
+        "doctor must not rerun without --json, calls: {calls:?}"
+    );
+    assert!(
+        calls.contains("--json"),
+        "the single call must be the --json attempt, calls: {calls:?}"
+    );
 }
 
 #[test]

@@ -213,23 +213,21 @@ export type ShellKind =
  * `shell_activation_check` Tauri command surfaces one of these
  * as the `ok` payload. `activated` is true when the rc file
  * already contains a `mise activate` line; the banner stays
- * hidden in that case. The `rcContents` field is for debugging
- * — the UI never displays the full text.
+ * hidden in that case. Only the decision and the path cross the
+ * IPC boundary — never the rc file text (issue #254).
  */
 export interface ActivationStatus {
   shell: ShellKind;
   /** Absolute path of the rc file the probe decided on. Empty
    *  when the shell family is unknown. */
   rcPath: string;
-  /** Raw rc file contents (UTF-8, lossy). Empty when the file
-   *  does not exist. Debug-only — do not render in the UI. */
-  rcContents: string;
   /** Tri-state: `true` when the rc file already contains a
    *  `mise activate` line; `false` when the probe ran and found
-   *  none; `null` when the probe could not run (unknown shell
-   *  family). The UI renders `null` as "—" and excludes it from
-   *  page-level status derivation — an undetectable state is not a
-   *  negative fact (issue #166). */
+   *  none; `null` when the probe could not decide (unknown shell
+   *  family, or an rc file that cannot be decoded). The UI renders
+   *  `null` as "—" and excludes it from page-level status
+   *  derivation — an undetectable state is not a negative fact
+   *  (issues #166, #254). */
   activated: boolean | null;
 }
 

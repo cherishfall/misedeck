@@ -28,7 +28,7 @@
 // signals while holding the registry lock so no owner can reap between
 // the lookup and the kill.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::io;
 use std::path::Path;
 #[cfg(windows)]
@@ -55,6 +55,18 @@ const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
+/// How many late cancel requests the registry remembers.
+///
+/// A cancel that loses the race with a normal exit has no owner left to
+/// consume it, so the set would otherwise grow by one entry per such
+/// click for the life of the process (issue #254). The runner polls
+/// every ~50 ms, so a genuinely pending cancel is consumed almost
+/// immediately; only these unclaimed requests accumulate. Keeping the
+/// newest few hundred is far more than enough to cover a burst of
+/// clicks, and anything evicted is older than the run it could have
+/// belonged to.
+const MAX_CANCELLED_RUNS: usize = 256;
+
 struct Registry {
     /// pid → process group of every child this process spawned and has
     /// not reaped. The group id equals the child's pid on both
@@ -63,6 +75,9 @@ struct Registry {
     children: HashMap<u32, u32>,
     /// Run ids whose cancel arrived before their runner observed it.
     cancelled: HashSet<String>,
+    /// The same ids in insertion order, so eviction drops the oldest
+    /// unclaimed request first.
+    cancelled_order: VecDeque<String>,
 }
 
 impl Default for Registry {
@@ -70,7 +85,39 @@ impl Default for Registry {
         Self {
             children: HashMap::new(),
             cancelled: HashSet::new(),
+            cancelled_order: VecDeque::new(),
         }
+    }
+}
+
+impl Registry {
+    /// Remember one pending cancel, keeping the set bounded.
+    fn remember_cancel(&mut self, run_id: &str) {
+        if !self.cancelled.insert(run_id.to_string()) {
+            return;
+        }
+        // A superseded stale entry would otherwise evict this live one
+        // when it ages out.
+        self.cancelled_order.retain(|id| id != run_id);
+        self.cancelled_order.push_back(run_id.to_string());
+        while self.cancelled_order.len() > MAX_CANCELLED_RUNS {
+            if let Some(oldest) = self.cancelled_order.pop_front() {
+                self.cancelled.remove(&oldest);
+            }
+        }
+    }
+
+    fn take_cancel(&mut self, run_id: &str) -> bool {
+        let taken = self.cancelled.remove(run_id);
+        if taken {
+            self.cancelled_order.retain(|id| id != run_id);
+        }
+        taken
+    }
+
+    fn forget_cancel(&mut self, run_id: &str) {
+        self.cancelled.remove(run_id);
+        self.cancelled_order.retain(|id| id != run_id);
     }
 }
 
@@ -249,12 +296,12 @@ pub fn request_cancel(run_id: &str) {
         // A blank id belongs to no run; remembering it would only leak.
         return;
     }
-    registry().cancelled.insert(run_id.to_string());
+    registry().remember_cancel(run_id);
 }
 
 /// Consume a pending cancel request for `run_id`.
 pub(crate) fn take_cancel(run_id: &str) -> bool {
-    registry().cancelled.remove(run_id)
+    registry().take_cancel(run_id)
 }
 
 /// Kill every live process tree this app started. Called from Tauri's
@@ -369,7 +416,7 @@ impl ChildGuard {
         // A cancel that arrived after the run finished must not linger
         // and hit a future run that reused the id.
         if let Some(run_id) = self.run_id.take() {
-            state.cancelled.remove(&run_id);
+            state.forget_cancel(&run_id);
         }
     }
 }
@@ -445,6 +492,50 @@ mod tests {
             status,
             "the direct child was not reaped after terminate_all"
         );
+    }
+
+    /// Issue #254: a cancel that loses the race with a normal exit has
+    /// no runner left to consume it. The registry must keep those from
+    /// growing without bound, and must evict the oldest first so a live
+    /// request is never dropped in favour of a stale one.
+    ///
+    /// Driven through a local `Registry` so the assertions describe the
+    /// set itself rather than whatever other tests did to the global one.
+    #[test]
+    fn late_cancels_are_bounded_and_the_newest_survive() {
+        const PREFIX: &str = "bounded-cancel-test";
+        let mut state = Registry::default();
+        for i in 0..(MAX_CANCELLED_RUNS + 10) {
+            state.remember_cancel(&format!("{PREFIX}-{i}"));
+        }
+        assert_eq!(
+            state.cancelled.len(),
+            MAX_CANCELLED_RUNS,
+            "the pending set must stay capped"
+        );
+        assert_eq!(state.cancelled_order.len(), MAX_CANCELLED_RUNS);
+        // The ten oldest requests were evicted; every newer one is still
+        // consumable by its runner.
+        for i in 0..10 {
+            assert!(
+                !state.take_cancel(&format!("{PREFIX}-{i}")),
+                "the oldest request should have been evicted"
+            );
+        }
+        for i in 10..(MAX_CANCELLED_RUNS + 10) {
+            assert!(
+                state.take_cancel(&format!("{PREFIX}-{i}")),
+                "recent request {i} must survive"
+            );
+        }
+        assert!(state.cancelled.is_empty());
+        assert!(state.cancelled_order.is_empty());
+
+        // Re-requesting an id already pending must not add a duplicate
+        // order entry that would later evict a live request.
+        state.remember_cancel("same-run");
+        state.remember_cancel("same-run");
+        assert_eq!(state.cancelled_order.len(), 1);
     }
 
     #[cfg(unix)]

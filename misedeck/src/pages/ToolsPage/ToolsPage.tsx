@@ -151,10 +151,11 @@ type PendingAction =
 // config without extra flags for those three commands.
 
 function miseInstallArgs(tool: string, version: string): string[] {
-  // An empty version means latest (issue #111): `mise install <tool>`.
-  return version.length > 0
-    ? ["install", `${tool}@${version}`]
-    : ["install", tool];
+  // An empty version means latest (issue #111), and `latest` is named
+  // explicitly: per `mise install --help`, a bare `<tool>` installs the
+  // version the config requests for it, which is not latest when the
+  // config pins one (issue #254).
+  return ["install", `${tool}@${version.length > 0 ? version : "latest"}`];
 }
 
 function miseUninstallArgs(tool: string, version: string): string[] {

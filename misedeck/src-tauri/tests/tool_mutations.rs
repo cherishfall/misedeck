@@ -72,8 +72,14 @@ fn mise_install_argv_preserves_backend_prefix() {
 
 #[test]
 fn mise_install_argv_empty_version_means_latest() {
+    // Per `mise install --help`, a bare tool name installs the version
+    // the config requests — not necessarily latest. An empty version in
+    // the app means latest, so the argv names it explicitly (#254).
     let argv = mise_install_argv("node", "");
-    assert_eq!(argv, vec!["install".to_string(), "node".to_string()]);
+    assert_eq!(
+        argv,
+        vec!["install".to_string(), "node@latest".to_string()]
+    );
 }
 
 #[test]

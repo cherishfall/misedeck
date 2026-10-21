@@ -82,6 +82,39 @@ fn check_trust_reports_no_config_when_mise_says_so() {
 
 #[test]
 #[serial]
+fn check_trust_reports_no_config_on_empty_output() {
+    // The other side of the fail-closed rule: *no* output at all is the
+    // documented "nothing in scope" state, and stays `NoConfig`.
+    let script = fixture_script();
+    with_slug("trust---show-empty", || {
+        let status = check_trust(&script, Some(std::path::Path::new("/tmp/empty-dir")))
+            .expect("empty output should yield NoConfig");
+        assert_eq!(status.source, TrustSource::NoConfig);
+    });
+}
+
+#[test]
+#[serial]
+fn check_trust_fails_closed_on_unrecognized_output() {
+    // Issue #254: output that parses to no trust state must not degrade
+    // to `NoConfig` — that would silently remove the trust gate and the
+    // banner. A mise that adds a header or renames the status word is a
+    // parse failure, not "nothing to trust".
+    let script = fixture_script();
+    with_slug("trust---show-unrecognized", || {
+        let err = check_trust(&script, Some(std::path::Path::new("/tmp/mise-trust-test")))
+            .expect_err("unrecognized output must not read as NoConfig");
+        assert_eq!(err.code, code::COMMAND_FAILED);
+        assert!(
+            err.stderr.contains("Config files in scope"),
+            "the raw payload must be preserved, got {:?}",
+            err.stderr
+        );
+    });
+}
+
+#[test]
+#[serial]
 fn check_trust_propagates_command_failed() {
     // A non-zero exit on `trust --show` (e.g. mise missing) maps to
     // COMMAND_FAILED, not to a TrustSource.

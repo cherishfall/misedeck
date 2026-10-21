@@ -28,10 +28,27 @@ fn mise_self_update_argv_includes_yes() {
 #[test]
 fn run_self_update_streams_to_exit_and_probes_version() {
     let script = fixture_script();
+    // Record what each mise call saw, to prove the post-update probe
+    // took the read path while the mutation stayed on the streaming one
+    // (issue #254).
+    let env_log = std::env::temp_dir().join(format!(
+        "misedeck-self-update-env-{}.log",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_file(&env_log);
+    unsafe {
+        std::env::set_var("FIXTURE_MISE_ENV_LOG", &env_log);
+    }
     let events: Arc<Mutex<Vec<RunEvent>>> = Arc::new(Mutex::new(Vec::new()));
     let events_for_cb = events.clone();
     let outcome = run_self_update(&script, None, move |e| events_for_cb.lock().unwrap().push(e))
         .expect("self-update fixture should yield Ok");
+    unsafe {
+        std::env::remove_var("FIXTURE_MISE_ENV_LOG");
+    }
+    let calls = std::fs::read_to_string(&env_log).unwrap_or_default();
+    let _ = std::fs::remove_file(&env_log);
+
     let events = events.lock().unwrap();
     assert_eq!(outcome.outcome.exit_code, 0);
     assert!(outcome.outcome.stdout.contains("self-update"));
@@ -42,4 +59,21 @@ fn run_self_update_streams_to_exit_and_probes_version() {
         Some("2026.8.14 macos-arm64 (2026-08-26)")
     );
     assert!(matches!(events.last(), Some(RunEvent::Exit { .. })));
+
+    let version_call = calls
+        .lines()
+        .find(|line| line.contains("version --json"))
+        .expect("the probe must run mise version --json");
+    assert!(
+        version_call.ends_with("MISE_SAFE=1"),
+        "the post-update version read must take the safe read path: {version_call:?}"
+    );
+    let update_call = calls
+        .lines()
+        .find(|line| line.contains("self-update --yes"))
+        .expect("the mutation must run mise self-update");
+    assert!(
+        update_call.ends_with("MISE_SAFE=<unset>"),
+        "a mutation must not run under MISE_SAFE: {update_call:?}"
+    );
 }

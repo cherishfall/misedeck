@@ -110,6 +110,11 @@ impl ShellKind {
 /// Result of a single shell-activation probe. The JS side consumes
 /// `ShellActivationResult` (the Tauri command wrapper) which carries
 /// one of these plus a `kind` discriminator.
+///
+/// Deliberately carries only the decision, never the rc file text: the
+/// contents can hold tokens and PATs, the UI only renders `rcPath`, and
+/// shipping the whole file across IPC on every launch was an
+/// unnecessary exposure (issue #254).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivationStatus {
@@ -118,17 +123,21 @@ pub struct ActivationStatus {
     /// when we could not determine one (e.g. no home directory
     /// resolvable in a sandboxed test).
     pub rc_path: String,
-    /// The actual text the probe inspected, for the UI's
-    /// debug-only path. Empty when the file does not exist.
-    pub rc_contents: String,
-    /// Tri-state: `Some(true)` when the rc file contains a
-    /// `mise activate` line (or `mise activate <shell>`) that
-    /// satisfies the matcher below; `Some(false)` when the probe ran
-    /// and found no such line; `None` when the probe could not run at
-    /// all (unknown shell family — there is no rc file to inspect).
-    /// The UI must render `None` as "—" and exclude it from status
-    /// derivation — an undetectable state is not a negative fact
-    /// (issue #166).
+    /// Tri-state, and the three states are not two:
+    ///
+    ///   * `Some(true)` — the rc file contains a `mise activate` line
+    ///     (or `mise activate <shell>`) that satisfies the matcher below.
+    ///   * `Some(false)` — the probe ran and found no such line.
+    ///   * `None` — the probe could not decide: the shell family is
+    ///     unknown (no rc file to inspect), or the rc file exists but
+    ///     could not be decoded (`RcFile::Undecodable`).
+    ///
+    /// `None` serializes as JSON `null` and must stay `null` on the
+    /// wire. It is "cannot tell", not a negative fact: the UI renders
+    /// "—" and excludes it from status derivation (issue #166). A
+    /// frontend that reads it as `false` would resurrect the exact false
+    /// "activation missing" warning this tri-state exists to prevent
+    /// (issue #254).
     pub activated: Option<bool>,
 }
 
@@ -514,6 +523,12 @@ pub fn check_shell_activation() -> Result<ActivationStatus, std::io::Error> {
 /// Same as `check_shell_activation` but for a caller-provided shell
 /// (used by the tests and by the future "force re-check" affordance
 /// if one is ever added).
+///
+/// `activated` is tri-state: `Some(true)` when an activation line was
+/// found, `Some(false)` when a readable rc file exists without one (or
+/// none exists), and `None` when the answer cannot be known — an
+/// unknown shell with no rc path, or an rc file that exists but cannot
+/// be decoded. `None` is "cannot tell", never "not activated".
 pub fn check_shell_activation_for(shell: &ShellKind) -> Result<ActivationStatus, std::io::Error> {
     let primary = rc_path_for(shell);
     let siblings = rc_sibling_paths(shell);
@@ -527,7 +542,6 @@ pub fn check_shell_activation_for(shell: &ShellKind) -> Result<ActivationStatus,
         return Ok(ActivationStatus {
             shell: shell.clone(),
             rc_path: String::new(),
-            rc_contents: String::new(),
             activated: None,
         });
     }
@@ -537,7 +551,7 @@ pub fn check_shell_activation_for(shell: &ShellKind) -> Result<ActivationStatus,
     // in any of them wins; the first readable file that lacks it is the
     // one the banner names. A file that exists but cannot be decoded is
     // "cannot tell", never "not activated" (issues #166, #244).
-    let mut first_text: Option<(String, String)> = None;
+    let mut first_unactivated: Option<String> = None;
     let mut undecodable: Option<String> = None;
     for candidate in std::iter::once(&primary).chain(siblings.iter()) {
         match read_rc_file(candidate)? {
@@ -547,12 +561,11 @@ pub fn check_shell_activation_for(shell: &ShellKind) -> Result<ActivationStatus,
                     return Ok(ActivationStatus {
                         shell: shell.clone(),
                         rc_path: candidate.clone(),
-                        rc_contents: text,
                         activated: Some(true),
                     });
                 }
-                if first_text.is_none() {
-                    first_text = Some((candidate.clone(), text));
+                if first_unactivated.is_none() {
+                    first_unactivated = Some(candidate.clone());
                 }
             }
             RcFile::Undecodable => {
@@ -563,11 +576,10 @@ pub fn check_shell_activation_for(shell: &ShellKind) -> Result<ActivationStatus,
         }
     }
 
-    if let Some((rc_path, rc_contents)) = first_text {
+    if let Some(rc_path) = first_unactivated {
         return Ok(ActivationStatus {
             shell: shell.clone(),
             rc_path,
-            rc_contents,
             activated: Some(false),
         });
     }
@@ -576,7 +588,6 @@ pub fn check_shell_activation_for(shell: &ShellKind) -> Result<ActivationStatus,
         return Ok(ActivationStatus {
             shell: shell.clone(),
             rc_path,
-            rc_contents: String::new(),
             activated: None,
         });
     }
@@ -586,7 +597,6 @@ pub fn check_shell_activation_for(shell: &ShellKind) -> Result<ActivationStatus,
     Ok(ActivationStatus {
         shell: shell.clone(),
         rc_path: primary,
-        rc_contents: String::new(),
         activated: Some(false),
     })
 }

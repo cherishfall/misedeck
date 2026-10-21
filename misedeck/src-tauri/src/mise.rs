@@ -1237,6 +1237,15 @@ pub struct TrustStatus {
 /// `No trusted config files found.` (exit code 0). The first
 /// status-bearing line wins — `trust --show` lists the nearest
 /// config first, and that is the one governing the cwd.
+///
+/// **Fail closed** (issue #254): a line this parser does not recognise
+/// is not evidence that there is nothing to trust. If stdout carries
+/// content but no line yields a status, the probe returns
+/// `COMMAND_FAILED` with the raw output instead of `NoConfig`, so a
+/// mise release that changes the separator, adds a header, or localises
+/// the words surfaces an error rather than silently removing the trust
+/// gate. Only an empty stdout or the documented "no trusted config"
+/// sentence means `NoConfig`.
 pub fn check_trust(mise_path: &Path, cwd: Option<&Path>) -> Result<TrustStatus, AppError> {
     let args = vec!["trust".to_string(), "--show".to_string()];
     let req = match cwd {
@@ -1253,6 +1262,7 @@ pub fn check_trust(mise_path: &Path, cwd: Option<&Path>) -> Result<TrustStatus, 
     let cwd_fallback = cwd
         .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_default();
+    let mut unparsed = false;
     for line in outcome.stdout.lines() {
         let line = line.trim();
         if line.is_empty() {
@@ -1282,6 +1292,15 @@ pub fn check_trust(mise_path: &Path, cwd: Option<&Path>) -> Result<TrustStatus, 
                 });
             }
         }
+        unparsed = true;
+    }
+    if unparsed {
+        // The raw payload *is* the detail here: mise exited 0, so there
+        // is no stderr to surface. The panel shows it verbatim.
+        return Err(AppError::command_failed(
+            "mise trust --show printed output the app could not parse",
+            outcome.stdout,
+        ));
     }
     Ok(TrustStatus {
         source: TrustSource::NoConfig,
@@ -1433,9 +1452,10 @@ fn classify_doctor_line(line: &str) -> DoctorLineStatus {
     }
 }
 
-/// Turn raw `mise doctor` text into the fallback payload. Split out of
-/// `doctor_text_fallback` so a run that already produced text does
-/// not have to be repeated.
+/// Turn raw `mise doctor` output into the fallback payload. This is
+/// the only fallback: the text the `--json` attempt printed is re-used,
+/// never re-fetched. A second `mise doctor` would double the blocking
+/// wait and could disagree with the first run (issue #254).
 fn doctor_text_payload(
     stdout: &str,
     stderr: String,
@@ -1464,21 +1484,6 @@ fn doctor_text_payload(
     }))
 }
 
-/// Re-run `mise doctor` without `--json`. This is the last resort for a
-/// mise that rejects the flag, so nothing has been printed yet.
-fn doctor_text_fallback(
-    mise_path: &Path,
-    cwd: Option<&Path>,
-) -> Result<serde_json::Value, AppError> {
-    let args = vec!["doctor".to_string()];
-    let req = match cwd {
-        Some(c) => RunRequest::with_cwd(args, c),
-        None => RunRequest::new(args),
-    };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
-    doctor_text_payload(&outcome.stdout, outcome.stderr, outcome.exit_code)
-}
-
 /// `mise doctor --json` for the active context.
 ///
 /// The exit code is checked *after* parsing, not before: mise calls
@@ -1488,11 +1493,11 @@ fn doctor_text_fallback(
 /// hiding `warnings`/`errors` from the structured view and running
 /// `mise doctor` a second time (issue #259).
 ///
-/// Only a run that produced no parseable output falls back: to the
-/// text it already printed when there is any, otherwise to a second
-/// run without `--json` (a mise build that predates the flag). A
-/// timeout or a missing binary is never retried — that doubles the
-/// blocking wait (2×120s with no cancel path, issue #230).
+/// There is no second run: whatever the one `--json` attempt printed
+/// is parsed as JSON, or shown as raw text. Empty output with a
+/// non-zero exit is a `COMMAND_FAILED` (issue #233), not a reason to
+/// try again (issues #230, #254). A timeout or a missing binary is
+/// propagated as-is, never retried.
 pub fn mise_doctor(
     mise_path: &Path,
     cwd: Option<&Path>,
@@ -1508,10 +1513,7 @@ pub fn mise_doctor(
     if let Ok(value) = serde_json::from_str::<serde_json::Value>(outcome.stdout.trim()) {
         return Ok(value);
     }
-    if !outcome.stdout.trim().is_empty() {
-        return doctor_text_payload(&outcome.stdout, outcome.stderr, outcome.exit_code);
-    }
-    doctor_text_fallback(mise_path, cwd)
+    doctor_text_payload(&outcome.stdout, outcome.stderr, outcome.exit_code)
 }
 
 fn registry_table_fallback(
@@ -1684,16 +1686,13 @@ pub fn mise_plugins_ls(
 // global flag to the caller.
 
 /// Build the argv for `mise install <tool>@<version>`. An empty version
-/// means latest (issue #111): `mise install <tool>`.
+/// means latest (issue #111), and `latest` is named explicitly: per
+/// `mise install --help`, a bare `<tool>` installs the version the
+/// config requests for it, which is *not* latest when the config pins
+/// one (issue #254).
 pub fn mise_install_argv(tool: &str, version: &str) -> Vec<String> {
-    if version.is_empty() {
-        vec!["install".to_string(), tool.to_string()]
-    } else {
-        vec![
-            "install".to_string(),
-            format!("{tool}@{version}"),
-        ]
-    }
+    let version = if version.is_empty() { "latest" } else { version };
+    vec!["install".to_string(), format!("{tool}@{version}")]
 }
 
 /// Build the argv for `mise uninstall <tool>@<version>`. Targeting the
@@ -1851,9 +1850,13 @@ pub fn mise_tasks_add_argv(
     argv
 }
 
-/// Run `mise version --json` and return the parsed result. Thin wrapper
-/// around the generalized runner for the probe path.
-pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
+/// Read `mise version --json` over the read path: `DETECT_TIMEOUT`
+/// (10 s, not the 30-minute streaming ceiling) and `MISE_SAFE=1`, like
+/// every other read (issue #254). Returns the raw payload and the
+/// `version` string it carries. Used by the startup probe and by the
+/// post-self-update version read in `install.rs`, so the two can never
+/// disagree on which contract a version read follows.
+pub fn mise_version(mise_path: &Path) -> Result<(serde_json::Value, String), AppError> {
     let req = RunRequest::new(vec!["version".to_string(), "--json".to_string()]);
     let outcome = run_mise_timed(mise_path, &req, |_| {}, DETECT_TIMEOUT, None, true)?;
     if outcome.exit_code != 0 {
@@ -1863,15 +1866,13 @@ pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
         ));
     }
 
-    let raw_value: serde_json::Value = serde_json::from_slice(outcome.stdout.as_bytes())
-        .map_err(|e| {
-            AppError::parse_failed(
-                format!("invalid mise version --json output: {e}"),
-                outcome.stderr.clone(),
-            )
-        })?;
-
-    let version = raw_value
+    let raw: serde_json::Value = serde_json::from_slice(outcome.stdout.as_bytes()).map_err(|e| {
+        AppError::parse_failed(
+            format!("invalid mise version --json output: {e}"),
+            outcome.stderr.clone(),
+        )
+    })?;
+    let version = raw
         .get("version")
         .and_then(|v| v.as_str())
         .ok_or_else(|| {
@@ -1881,6 +1882,13 @@ pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
             )
         })?
         .to_string();
+    Ok((raw, version))
+}
+
+/// Run `mise version --json` and return the parsed result. Thin wrapper
+/// around the generalized runner for the probe path.
+pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
+    let (raw_value, version) = mise_version(mise_path)?;
 
     let version_date = extract_date(&version)
         .map(|(d, _)| d)

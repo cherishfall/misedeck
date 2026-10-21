@@ -13,9 +13,9 @@
 //      `mise activate <shell>`, the status reports
 //      `activated = Some(true)`; when it does not, the status reports
 //      `activated = Some(false)`; when the shell family is unknown
-//      and there is no rc to probe, the status reports
-//      `activated = None` (issue #166 — "we cannot tell", never a
-//      false negative).
+//      and there is no rc to probe, or the rc file cannot be decoded,
+//      the status reports `activated = None` (issues #166 and #254 —
+//      "we cannot tell", never a false negative).
 //
 // We avoid touching the user's real `$HOME`; the env var is
 // temporarily set to a tempdir for the duration of each test.
@@ -220,7 +220,31 @@ fn activation_missing_rc_reports_unactivated() {
     // No .zshrc written — file does not exist.
     let status = check_shell_activation_for(&ShellKind::Zsh).expect("probe");
     assert_eq!(status.activated, Some(false));
-    assert!(status.rc_contents.is_empty());
+}
+
+#[test]
+#[serial_test::serial]
+fn activation_undecodable_rc_reports_unknown() {
+    // A file that exists but is not valid UTF-8 (or UTF-16) is
+    // "cannot tell", not "not activated": the tri-state must stay
+    // `None` so the UI never renders a false "activation missing"
+    // warning (issues #166, #244, #254).
+    let _guard = HOME_LOCK.lock().unwrap();
+    let tmp = tempdir();
+    let prev = std::env::var_os("HOME");
+    unsafe {
+        std::env::set_var("HOME", &tmp);
+    }
+    let _restore = HomeGuard::new(prev);
+    std::fs::write(tmp.join(".zshrc"), [0x80, 0x81, 0x82]).unwrap();
+
+    let status = check_shell_activation_for(&ShellKind::Zsh).expect("probe");
+    assert_eq!(status.activated, None);
+    assert!(
+        status.rc_path.ends_with(".zshrc"),
+        "the undecodable file is the one named, got {:?}",
+        status.rc_path
+    );
 }
 
 #[test]
@@ -256,13 +280,15 @@ fn activation_status_serializes_with_camel_case_keys() {
     let status = ActivationStatus {
         shell: ShellKind::Zsh,
         rc_path: "/home/x/.zshrc".to_string(),
-        rc_contents: String::new(),
         activated: Some(false),
     };
     let v = serde_json::to_value(&status).unwrap();
     assert!(v.get("shell").is_some(), "must have `shell`, got {v:?}");
     assert!(v.get("rcPath").is_some(), "must have `rcPath` (camelCase), got {v:?}");
-    assert!(v.get("rcContents").is_some(), "must have `rcContents`, got {v:?}");
+    assert!(
+        v.get("rcContents").is_none(),
+        "rc file text must not cross IPC (issue #254), got {v:?}"
+    );
     assert_eq!(v["activated"], false, "`Some(false)` serializes as `false`");
 }
 
@@ -276,7 +302,6 @@ fn activation_status_unknown_serializes_null_activated() {
             name: "nushell".to_string(),
         },
         rc_path: String::new(),
-        rc_contents: String::new(),
         activated: None,
     };
     let v = serde_json::to_value(&status).unwrap();
