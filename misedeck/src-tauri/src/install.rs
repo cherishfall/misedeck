@@ -61,22 +61,50 @@ pub const INSTALL_SCRIPT_LINE: &str = "curl -fsSL https://mise.jdx.dev/install.s
 /// echoes is the same line the executor runs.
 fn build_install_command() -> Command {
     #[cfg(target_os = "windows")]
+    let program = "powershell";
+    #[cfg(not(target_os = "windows"))]
+    let program = "sh";
+
+    let mut cmd = Command::new(program);
+    cmd.args(install_command_args());
+    cmd
+}
+
+/// The argv the install command runs with — separated from
+/// `build_install_command` so the encoding prefix can be asserted in a
+/// test (a built `Command` cannot be read back).
+fn install_command_args() -> Vec<String> {
+    #[cfg(target_os = "windows")]
     {
-        let mut cmd = Command::new("powershell");
-        cmd.args([
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command",
-            INSTALL_SCRIPT_LINE,
-        ]);
-        cmd
+        // Encoding, not decoration (issue #243). `powershell` is Windows
+        // PowerShell 5.1, and it writes a *redirected* stdout/stderr in
+        // the console output code page — cp936 on a Simplified-Chinese
+        // Windows, cp437 on English — while the runner decodes UTF-8
+        // (`from_utf8_lossy`). The install script itself is pure ASCII
+        // today, but every message PowerShell generates on its own
+        // (a failed `irm`, a policy rejection, a missing command) is
+        // localized, and those are exactly the lines a user needs to
+        // read. Pinning the encoding on the executed command fixes the
+        // class; the echoed line stays `INSTALL_SCRIPT_LINE` because
+        // that is what the user can paste into their own shell.
+        //
+        // `UTF8Encoding($false)`: no BOM, so the first log line does not
+        // begin with a zero-width character. The `try/catch` is
+        // defensive — where the setter is unavailable the install still
+        // runs (degraded to the old behaviour, never worse).
+        vec![
+            "-NoProfile".to_string(),
+            "-ExecutionPolicy".to_string(),
+            "Bypass".to_string(),
+            "-Command".to_string(),
+            format!(
+                "try {{ [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) }} catch {{ }}; {INSTALL_SCRIPT_LINE}"
+            ),
+        ]
     }
     #[cfg(not(target_os = "windows"))]
     {
-        let mut cmd = Command::new("sh");
-        cmd.args(["-c", INSTALL_SCRIPT_LINE]);
-        cmd
+        vec!["-c".to_string(), INSTALL_SCRIPT_LINE.to_string()]
     }
 }
 
@@ -320,6 +348,40 @@ mod tests {
         assert!(!o.timed_out);
         assert!(o.stdout.is_empty());
         assert!(o.stderr.is_empty());
+    }
+
+    /// Issue #243: the executed command carries the UTF-8 encoding pin
+    /// **and** the echoed one-liner, so the user can still reproduce the
+    /// command by hand.
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn install_command_pins_utf8_output_without_touching_the_echo() {
+        let args = install_command_args();
+        let script = args.last().expect("script arg");
+        assert!(
+            script.contains("[Console]::OutputEncoding"),
+            "windows install must pin the console output encoding: {script}"
+        );
+        assert!(
+            script.contains("UTF8Encoding]::new($false)"),
+            "must use a BOM-less UTF8 encoder: {script}"
+        );
+        assert!(
+            script.contains(INSTALL_SCRIPT_LINE),
+            "the executed script must still be the echoed one-liner: {script}"
+        );
+        assert!(args[0] == "-NoProfile");
+    }
+
+    /// Issue #243 counterpart: on unix the install line is the whole
+    /// argv, unchanged — no encoding theatre where none is needed.
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn install_command_is_the_echoed_line_verbatim() {
+        assert_eq!(
+            install_command_args(),
+            vec!["-c".to_string(), INSTALL_SCRIPT_LINE.to_string()]
+        );
     }
 
     /// Smoke-test the streaming loop body against `printf` so we
