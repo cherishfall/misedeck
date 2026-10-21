@@ -12,10 +12,13 @@
 //     wrapper that skipped itself there would leave the reason mouse-only.
 
 export const FOCUSABLE_SELECTOR = [
-  "a[href]",
-  "button:not([disabled])",
-  "input:not([disabled]):not([type='hidden'])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
+  'a[href]:not([tabindex="-1"])',
+  // `tabindex="-1"` is script-focus only even on a button: KeyForm's
+  // hidden submit button carries it so a form embedded in a dialog
+  // never adds a dead stop to the Tab cycle (issue #260).
+  'button:not([disabled]):not([tabindex="-1"])',
+  'input:not([disabled]):not([type="hidden"]):not([tabindex="-1"])',
+  'select:not([disabled]):not([tabindex="-1"])',
+  'textarea:not([disabled]):not([tabindex="-1"])',
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");

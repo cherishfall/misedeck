@@ -4,8 +4,11 @@
 //
 //   * `mise tasks ls --json`   → table rows (name, run, description,
 //                                depends, actions)
-//   * `mise run <name>`        → Run button; output streams to the
-//                                existing execution panel
+//   * `mise run <name> [-- <args>…]` → Run button; an optional
+//                                arguments field feeds the words after
+//                                `--` verbatim, and the confirmation
+//                                shows the exact argv. Output streams to
+//                                the existing execution panel.
 //   * `mise tasks add <name> … -- <run words>`   → the shared task
 //                                form's save (row edit and the empty
 //                                state's create entry, issue #161);
@@ -45,9 +48,11 @@ import { useTrustGuard } from "../../state/trustContext";
 import { detectMise, isAppError } from "../../api/mise";
 import { useOwnRun } from "../../components/ExecutionPanel";
 import {
+  miseRunTaskArgs,
   taskRunDisplay,
   parseDependsInput,
   parseRunInput,
+  splitShellWords,
 } from "../../api/miseTools";
 import {
   Badge,
@@ -101,12 +106,17 @@ interface TaskRow {
 
 // ---------- Args builders (mirror the Rust helpers) ----------
 //
-// The Rust side defines `mise_run_task_argv` and
-// `mise_tasks_add_argv` in pure form. The JS side duplicates the
-// shape so the page is self-contained — the only Rust call is
+// The Rust side defines `mise_tasks_add_argv` and the other builders
+// in pure form. The JS side duplicates the shape so the page is
+// self-contained — the only Rust call is
 // `useExecutionContext().run({cwd, args})`, which accepts the
 // prebuilt argv verbatim. Keep the two in lockstep — the Rust
 // `tests/tasks.rs` asserts the exact strings.
+//
+// `mise run` moved to `api/miseTools.ts` (issue #260) because its
+// optional `-- <args>` tail is pure argv construction shared with
+// the tests; the Rust `mise_run_task_argv` covers only the
+// no-argument base shape.
 //
 // The Rust builder for `tasks add` takes the run as a slice of
 // shell words; the JS form passes the user's run draft split the
@@ -120,10 +130,6 @@ interface TaskRow {
 // it quoted and the task would not run.) The runner's value-token
 // check (issue #160) lets these words through regardless, so the
 // split is about argv fidelity, not about the guardrail.
-
-function miseRunTaskArgs(name: string): string[] {
-  return ["run", name];
-}
 
 function miseTasksEditPathArgs(name: string): string[] {
   return ["tasks", "edit", "--path", name];
@@ -232,12 +238,37 @@ export function TasksPage() {
   const { run: runEditorCommand, isRunning: editorRunBusy } = useOwnRun();
   const { run: runConfigCommand, isRunning: configRunBusy } = useOwnRun();
 
+  // The Run button opens a non-destructive confirmation with an
+  // optional arguments field (issue #260). The draft lives here and
+  // starts empty on every open, so arguments typed for one task can
+  // never leak into another. Single instance, like the task forms.
+  const [runTarget, setRunTarget] = useState<{
+    name: string;
+    argsText: string;
+  } | null>(null);
+  const beginRun = useCallback(
+    (name: string) => {
+      if (!guard.allowed) {
+        focusTrustBanner();
+        return;
+      }
+      // Runs serialize through one task-run hook (issue #213), so a
+      // second run started while one is in flight would only queue up
+      // behind it. The buttons stay disabled until the panel is free,
+      // and this guard keeps a stale click from opening a no-op dialog.
+      if (taskRunBusy) return;
+      setRunTarget({ name, argsText: "" });
+    },
+    [guard.allowed, focusTrustBanner, taskRunBusy],
+  );
+
   // Run a task via the panel. The trust guard is checked first
   // (running a task in an untrusted directory would also fail
   // — the runner would set MISE_SAFE=1 — so we surface the
-  // banner up front).
+  // banner up front). Arguments arrive already split into words
+  // and become the verbatim `-- <args>` tail (issue #260).
   const runTask = useCallback(
-    async (name: string) => {
+    async (name: string, args: string[]) => {
       if (!guard.allowed) {
         focusTrustBanner();
         return;
@@ -245,7 +276,7 @@ export function TasksPage() {
       if (taskRunBusy) return;
       clearFailedBadge();
       setFailedTask(null);
-      const res = await runTaskCommand({ cwd, args: miseRunTaskArgs(name) });
+      const res = await runTaskCommand({ cwd, args: miseRunTaskArgs(name, args) });
       if (res.kind === "err") {
         markTaskFailed(name);
       }
@@ -260,6 +291,16 @@ export function TasksPage() {
       markTaskFailed,
     ],
   );
+
+  // Confirm the run dialog: close it first (the draft must not
+  // survive into another task), then dispatch the argv shown in the
+  // dialog. `splitShellWords` only tokenizes — no shell runs.
+  const confirmRun = useCallback(() => {
+    if (runTarget === null) return;
+    const args = splitShellWords(runTarget.argsText);
+    setRunTarget(null);
+    void runTask(runTarget.name, args);
+  }, [runTarget, runTask]);
 
   // Save a task create/edit via the panel. Same trust-guard
   // pattern. On this run's own success, refresh the task list so
@@ -563,7 +604,7 @@ export function TasksPage() {
             variant="primary"
             size="sm"
             className={tableStyles.cellButton}
-            onClick={() => void runTask(r.name)}
+            onClick={() => beginRun(r.name)}
             disabled={taskRunBusy}
             data-testid={`tasks-run-${r.name}`}
           >
@@ -759,6 +800,73 @@ export function TasksPage() {
             />
           </>
         )}
+
+        {/* Run confirmation with an optional arguments field (issue
+            #260). Non-destructive: the task runs, nothing is rewritten,
+            so it opens on Confirm (danger={false}). The command line is
+            rebuilt live from `splitShellWords`, so the dialog echoes
+            exactly the argv the panel will receive: one element per
+            word after `--`, no shell concatenation. The draft is
+            discarded on close — arguments never leak into the next
+            task's run. */}
+        <ConfirmDialog
+          open={runTarget !== null}
+          danger={false}
+          confirmBusy={taskRunBusy}
+          cwd={cwd}
+          title={
+            runTarget
+              ? t(I18N_KEYS.tasks.confirm.run.title, { name: runTarget.name })
+              : ""
+          }
+          body={t(I18N_KEYS.tasks.confirm.run.body)}
+          command={
+            runTarget
+              ? commandEcho(
+                  "mise",
+                  cwd,
+                  miseRunTaskArgs(
+                    runTarget.name,
+                    splitShellWords(runTarget.argsText),
+                  ),
+                )
+              : ""
+          }
+          confirmLabel={t(I18N_KEYS.tasks.runButton)}
+          cancelLabel={t(I18N_KEYS.common.cancel)}
+          onConfirm={confirmRun}
+          onCancel={() => setRunTarget(null)}
+        >
+          {runTarget && (
+            <KeyForm
+              onSubmit={confirmRun}
+              onRevert={() => setRunTarget(null)}
+              submitDisabled={taskRunBusy}
+            >
+              <div className={styles.editFormField}>
+                <label className={styles.editFormLabel} htmlFor="tasks-run-args">
+                  {t(I18N_KEYS.tasks.confirm.run.argsLabel)}
+                </label>
+                <input
+                  id="tasks-run-args"
+                  name="arguments"
+                  type="text"
+                  className={styles.editFormInput}
+                  value={runTarget.argsText}
+                  onChange={(e) =>
+                    setRunTarget({
+                      name: runTarget.name,
+                      argsText: e.target.value,
+                    })
+                  }
+                  placeholder={t(I18N_KEYS.tasks.confirm.run.argsPlaceholder)}
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+              </div>
+            </KeyForm>
+          )}
+        </ConfirmDialog>
       </div>
     </PageShell>
   );

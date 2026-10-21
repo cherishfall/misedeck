@@ -1,14 +1,14 @@
-// HomePage — the mise status page (issue #44). Reached by clicking the
-// brand lockup in the sidebar; it is deliberately not a nav item
-// (docs/design/product-logic.md). The page's jobs are guided install and
-// self-update: it probes `mise version --json` at startup and renders one
-// panel per detection state (missing / too old / ready / error). A
-// successful self-update closes the loop in-page with a short-lived
-// confirmation bar (issue #145); failures still auto-open the panel. The
-// guided-install button is run-locked (issue #166) and a successful
-// install invalidates the detect probe, so the page resolves itself
-// instead of asking for a relaunch; the ready state's RAW payload sits
-// behind a collapsed-by-default disclosure (beta11, Q3).
+// HomePage — the mise status page (issue #44). The sidebar's first
+// navigation entry and the app's landing page (issue #62); it heads
+// the main group in docs/design/product-logic.md. The page's jobs are
+// guided install and self-update: it probes `mise version --json` at
+// startup and renders one panel per detection state (missing / too old /
+// ready / error). A successful self-update closes the loop in-page with
+// a short-lived confirmation bar (issue #145); failures still auto-open
+// the panel. The guided-install button is run-locked (issue #166) and a
+// successful install invalidates the detect probe, so the page resolves
+// itself instead of asking for a relaunch; the ready state's RAW payload
+// sits behind a collapsed-by-default disclosure (beta11, Q3).
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";

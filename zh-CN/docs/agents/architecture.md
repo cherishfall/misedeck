@@ -19,7 +19,7 @@ React UI (src/)
 - **执行面板**（issue #15，ADR-0005）是**每一次** mise 调用的唯一路径，读查询同样不例外：它展示正在执行的确切命令并流式输出日志，且 `run()` 返回结果，让读查询能直接喂给查询缓存，无需再调用 mise 一次。应用替自己发起的读（表格首次加载、变更后的刷新）以后台方式运行 —— 同一个 runner，但绝不替换用户正在阅读的执行记录。
 - **Trust**（issue #6）：对不受信任目录的只读视图以 `MISE_SAFE=1` 运行；变更或求值环境变量的操作先检查信任状态，并把用户引导到信任横幅。落地在 runner：所有读都汇聚到 `run_mise_json`，由它设置 `MISE_SAFE=1`；流式面（变更、`mise run`、安装、trust）刻意不设（issue #230）。
 - **目录上下文只校验一次**（issue #230）：每个接收 `cwd` 的命令在派生前都经过同一个 helper，于是目录已删除或卷已卸载时，失败以该页自己的错误形态呈现，而不是把 mise 原始的 `cd` 报错漏出去；空字符串也永远不会被拼成 `-C ""`。
-- **lockfile 解析**（issue #230）：mise 通过*配置文件*管一个目录，并把 lockfile 放在配置旁边，因此预览页向上逐级查找最近的 `mise.lock`——只读 `<cwd>/mise.lock` 会让项目子目录误报「没有 lockfile」。
+- **lockfile 解析**（issue #230）：mise 通过*配置文件*管一个目录，并把 lockfile 放在配置旁边，因此概览页向上逐级查找最近的 `mise.lock`——只读 `<cwd>/mise.lock` 会让项目子目录误报「没有 lockfile」。
 - **能力清单**（issue #230）：主窗口只保留实际用到的权限 —— `clipboard-manager:allow-write-text`、`dialog:allow-open`、`opener:allow-open-path`。默认集里打开 URL 的 `opener:default` 被移除：应用内没有任何地方打开 URL。路径打开器不做路径限定，因为目录上下文是用户自选的目录；唯一消费者打开的是 mise 自己报出的路径（`mise tasks edit --path` / `mise config ls`）。
 - **i18n**：UI 文案存放在 en + zh-CN 资源文件中，按字符串 ID 索引；组件消费这些键。
 - **前端状态**：服务端状态（mise 数据）按目录上下文获取，并按 (context, query) 缓存；UI 状态（选中的标签页、面板开合）保持本地。除最近目录列表和用户偏好外不做持久化。

@@ -458,6 +458,21 @@ export function taskRunDisplay(run: string[]): string {
   return run.join(" ");
 }
 
+/** Build the argv for running a task, optionally with arguments
+ *  (issue #260). Every argument is one argv element after `--`,
+ *  passed verbatim: no shell is involved in building or dispatching
+ *  the command, so a quoted phrase stays one element and a `$(…)`
+ *  fragment is never expanded by the GUI. (How mise hands the tail to
+ *  the task is mise's contract — a file task receives each word as one
+ *  positional argument.) The confirm dialog and the execution panel
+ *  both echo this exact argv. Without arguments the command stays the
+ *  plain `mise run <name>`; the Rust helper (`mise_run_task_argv`)
+ *  covers that base shape only, because the runner accepts a prebuilt
+ *  argv either way. */
+export function miseRunTaskArgs(name: string, args: string[] = []): string[] {
+  return args.length > 0 ? ["run", name, "--", ...args] : ["run", name];
+}
+
 /** Split a comma-separated depends string into a trimmed,
  *  empty-dropped array. The text input on the edit form
  *  produces this shape; the argv builder consumes it. */
@@ -489,12 +504,14 @@ export function parseRunInput(text: string): string[] {
   return words;
 }
 
-/** Split one line of a run draft into shell words. See
- *  `parseRunInput` for the contract; this is the per-line state
- *  machine so quote state never leaks across lines. An unbalanced
- *  quote forfeits the split: the whole trimmed line comes back as
- *  one literal word so no character the user typed is lost. */
-function splitShellWords(line: string): string[] {
+/** Split one line of a run draft or a run-argument draft into shell
+ *  words. See `parseRunInput` for the contract; this is the per-line
+ *  state machine so quote state never leaks across lines. An
+ *  unbalanced quote forfeits the split: the whole trimmed line comes
+ *  back as one literal word so no character the user typed is lost.
+ *  The words are argv elements, not a shell command line — callers
+ *  pass them to mise as-is (issue #260). */
+export function splitShellWords(line: string): string[] {
   const words: string[] = [];
   let current = "";
   let hasWord = false;

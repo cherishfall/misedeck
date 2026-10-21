@@ -1,18 +1,20 @@
 // Tests for the run-draft splitter that backs the task form's
-// save (issue #161). Run via `npm run test` (node:test through
-// tsx — no extra framework).
+// save (issue #161) and the task run arguments (issue #260). Run
+// via `npm run test` (node:test through tsx — no extra framework).
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
   isEnvWriteScopeMismatch,
+  miseRunTaskArgs,
   parseDoctorPayload,
   parseInstalledPlugin,
   parseLsRemotePayload,
   parseOutdatedItem,
   parseRegistryItem,
   parseRunInput,
+  splitShellWords,
 } from "./miseTools";
 
 // Wire-shape guard for `mise ls-remote --json <tool>` (issue #224):
@@ -104,6 +106,58 @@ test("parseRunInput: apostrophe inside double quotes is ordinary text", () => {
 test("parseRunInput: unbalanced quote keeps the whole line as one literal word", () => {
   assert.deepEqual(parseRunInput("echo 'unclosed"), ["echo 'unclosed"]);
   assert.deepEqual(parseRunInput("echo it's fine"), ["echo it's fine"]);
+});
+
+// `splitShellWords` also backs the optional arguments field on the
+// task run dialog (issue #260). These pin the argv shapes the builder
+// receives — the words are passed to mise after `--`, never joined
+// into a shell command line.
+test("splitShellWords: empty and whitespace-only input yields no words", () => {
+  assert.deepEqual(splitShellWords(""), []);
+  assert.deepEqual(splitShellWords("   \t\r"), []);
+});
+
+test("splitShellWords: flags, quoted phrases, and spaces stay distinct words", () => {
+  assert.deepEqual(
+    splitShellWords('--release "hello world" --flag=value two words'),
+    ["--release", "hello world", "--flag=value", "two", "words"],
+  );
+});
+
+test("splitShellWords: an empty quoted argument survives", () => {
+  assert.deepEqual(splitShellWords('--name ""'), ["--name", ""]);
+});
+
+test("splitShellWords: an escaped space joins one word", () => {
+  assert.deepEqual(splitShellWords("hello\\ world"), ["hello world"]);
+});
+
+test("miseRunTaskArgs: no arguments keeps the plain run argv", () => {
+  assert.deepEqual(miseRunTaskArgs("build"), ["run", "build"]);
+});
+
+test("miseRunTaskArgs: an empty argument list adds no --", () => {
+  assert.deepEqual(miseRunTaskArgs("build", splitShellWords("   ")), [
+    "run",
+    "build",
+  ]);
+});
+
+test("miseRunTaskArgs: split words stay verbatim argv elements after --", () => {
+  const argv = miseRunTaskArgs(
+    "deploy",
+    splitShellWords('staging "hello world" --flag=value'),
+  );
+  assert.deepEqual(argv, [
+    "run",
+    "deploy",
+    "--",
+    "staging",
+    "hello world",
+    "--flag=value",
+  ]);
+  // The quoted phrase is one element, not two rejoined words.
+  assert.equal(argv.length, 6);
 });
 
 // Write-scope check for env rows (issue #182): the write target is

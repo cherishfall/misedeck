@@ -89,7 +89,7 @@
   "tools": {
     "title": "Tools",
     "hint": "Tools installed and active for the current directory — add one with the search below; Use installs and activates in one step.",
-    "commandHint": "mise registry · mise use · mise ls · mise outdated · mise upgrade · mise unuse · mise ls-remote · mise install · mise uninstall · mise link",
+    "commandHint": "mise outdated · mise ls · mise registry · mise upgrade · mise unuse · mise uninstall · mise use · mise ls-remote · mise install · mise link",
     "columns": {
       "tool": "Tool",
       "version": "Version",
@@ -397,6 +397,12 @@
       "flattenRun": {
         "title": "Rewrite the multi-line run?",
         "body": "This task's run has multiple lines. Saving writes it back as the single line below, which changes what the task does. To keep the run as multiple lines, cancel and edit the config file instead (Open in editor)."
+      },
+      "run": {
+        "title": "Run {{name}}?",
+        "body": "Runs the task through mise run. Arguments are split into words and passed after -- verbatim — mise receives the argv directly, with no shell in between.",
+        "argsLabel": "Arguments (optional)",
+        "argsPlaceholder": "e.g. --release \"hello world\""
       }
     },
     "guard": {
@@ -533,7 +539,7 @@
   },
   "plugins": {
     "title": "Plugins",
-    "hint": "Installed plugins — the asdf-style or vfox-style extensions that teach mise how to install tools.",
+    "hint": "Installed plugins — the asdf-style or vfox-style plugins that teach mise how to install tools.",
     "commandHint": "mise plugins install · mise plugins ls · mise plugins uninstall",
     "sections": {
       "installed": "Installed plugins"

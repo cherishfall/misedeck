@@ -532,6 +532,14 @@ export const I18N_KEYS = {
         title: "tasks.confirm.flattenRun.title",
         body: "tasks.confirm.flattenRun.body",
       },
+      /** The run affordance's optional arguments field (issue #260):
+          words are split client-side and passed after `--` verbatim. */
+      run: {
+        title: "tasks.confirm.run.title",
+        body: "tasks.confirm.run.body",
+        argsLabel: "tasks.confirm.run.argsLabel",
+        argsPlaceholder: "tasks.confirm.run.argsPlaceholder",
+      },
     },
     guard: {
       untrustedBody: "tasks.guard.untrustedBody",

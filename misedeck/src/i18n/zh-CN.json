@@ -89,7 +89,7 @@
   "tools": {
     "title": "工具",
     "hint": "当前目录中已安装并正在使用的工具——在下方搜索添加，「使用」一步完成安装并启用。",
-    "commandHint": "mise registry · mise use · mise ls · mise outdated · mise upgrade · mise unuse · mise ls-remote · mise install · mise uninstall · mise link",
+    "commandHint": "mise outdated · mise ls · mise registry · mise upgrade · mise unuse · mise uninstall · mise use · mise ls-remote · mise install · mise link",
     "columns": {
       "tool": "工具",
       "version": "版本",
@@ -397,6 +397,12 @@
       "flattenRun": {
         "title": "重写多行 run？",
         "body": "该任务的 run 有多行。保存会将其写回为下方显示的单行内容，从而改变任务的实际行为。若要保留多行 run，请取消并改为在配置文件中编辑（在编辑器中打开）。"
+      },
+      "run": {
+        "title": "运行 {{name}}？",
+        "body": "通过 mise run 运行该任务。参数会拆分为单词并原样传给 -- 之后——mise 直接收到 argv，中间不经过 shell。",
+        "argsLabel": "参数（可选）",
+        "argsPlaceholder": "例如 --release \"hello world\""
       }
     },
     "guard": {
@@ -533,7 +539,7 @@
   },
   "plugins": {
     "title": "插件",
-    "hint": "已安装插件——教 mise 如何安装工具的 asdf 风格或 vfox 风格扩展。",
+    "hint": "已安装插件——教 mise 如何安装工具的 asdf 风格或 vfox 风格插件。",
     "commandHint": "mise plugins install · mise plugins ls · mise plugins uninstall",
     "sections": {
       "installed": "已安装插件"
