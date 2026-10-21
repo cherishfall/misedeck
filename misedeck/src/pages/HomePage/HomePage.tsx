@@ -26,6 +26,7 @@ import {
   ConfirmDialog,
   CopyButton,
   DataRow,
+  ExternalLink,
   PageShell,
   Panel,
   ProgressDot,
@@ -221,14 +222,12 @@ export function HomePage() {
                         </span>{" "}
                         {latest}
                       </span>
-                      <a
+                      <ExternalLink
                         className={styles.fallback}
                         href="https://github.com/jdx/mise/releases"
-                        target="_blank"
-                        rel="noreferrer"
                       >
                         {t(I18N_KEYS.miseManagement.releaseNotesLink)}
-                      </a>
+                      </ExternalLink>
                     </span>
                   }
                   tone="flare"
@@ -309,14 +308,12 @@ export function HomePage() {
                   ? t(I18N_KEYS.miseManagement.guidedInstallInstalling)
                   : t(I18N_KEYS.miseManagement.guidedInstallButton)}
               </Button>
-              <a
+              <ExternalLink
                 className={styles.fallback}
                 href="https://mise.jdx.dev/installing.html"
-                target="_blank"
-                rel="noreferrer"
               >
                 {t(I18N_KEYS.states.notInstalled.installHint)}
-              </a>
+              </ExternalLink>
             </div>
           </Panel>
         )}
@@ -362,22 +359,18 @@ export function HomePage() {
                   ? t(I18N_KEYS.miseManagement.guidedInstallInstalling)
                   : t(I18N_KEYS.miseManagement.guidedInstallButton)}
               </Button>
-              <a
+              <ExternalLink
                 className={styles.fallback}
                 href="https://mise.jdx.dev/installing.html"
-                target="_blank"
-                rel="noreferrer"
               >
                 {t(I18N_KEYS.states.notInstalled.installHint)}
-              </a>
-              <a
+              </ExternalLink>
+              <ExternalLink
                 className={styles.fallback}
                 href="https://github.com/jdx/mise/releases"
-                target="_blank"
-                rel="noreferrer"
               >
                 {t(I18N_KEYS.miseManagement.releaseNotesLink)}
-              </a>
+              </ExternalLink>
             </div>
           </Panel>
         )}

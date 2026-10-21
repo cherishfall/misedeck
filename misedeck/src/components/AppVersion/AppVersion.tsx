@@ -22,6 +22,7 @@ import { RELEASES_URL, getAppVersion } from "../../api/app";
 import { checkAppUpdate } from "../../api/appUpdate";
 import { I18N_KEYS } from "../../i18n/keys";
 import { Button } from "../Button/Button";
+import { ExternalLink } from "../ExternalLink/ExternalLink";
 import { FloatingMenu } from "../FloatingMenu";
 import { ProgressDot } from "../ProgressDot/ProgressDot";
 
@@ -143,14 +144,9 @@ export function AppVersion({ collapsed = false }: AppVersionProps) {
 
           <div className={styles.actions}>
             {summary.action === "download" && check.kind === "available" ? (
-              <a
-                className={styles.download}
-                href={check.url}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <ExternalLink className={styles.download} href={check.url}>
                 {t(I18N_KEYS.about.download, { version: check.version })}
-              </a>
+              </ExternalLink>
             ) : (
               <span>
                 <Button
@@ -167,14 +163,9 @@ export function AppVersion({ collapsed = false }: AppVersionProps) {
                 </Button>
               </span>
             )}
-            <a
-              className={styles.link}
-              href={RELEASES_URL}
-              target="_blank"
-              rel="noreferrer"
-            >
+            <ExternalLink className={styles.link} href={RELEASES_URL}>
               {t(I18N_KEYS.about.releasePage)}
-            </a>
+            </ExternalLink>
           </div>
         </div>
       </FloatingMenu>

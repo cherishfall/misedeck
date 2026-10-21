@@ -13,6 +13,7 @@ use once_cell::sync::Lazy;
 use serde::Serialize;
 use tauri::Manager;
 
+pub mod external_link;
 pub mod install;
 pub mod mise;
 pub mod process_tree;
@@ -878,6 +879,18 @@ async fn check_app_update(app: tauri::AppHandle) -> AppUpdateResult {
     }
 }
 
+/// Open a web link in the user's browser (#249).
+///
+/// Every external link in the UI goes through here: a `<a target="_blank">`
+/// inside the webview is silently dropped by the platform, so the click had
+/// to be rerouted. The scheme check and the platform launch live in
+/// `external_link`; this command only moves the work off the UI thread,
+/// like every other spawn.
+#[tauri::command]
+async fn open_external(app: tauri::AppHandle, url: String) -> Result<(), AppError> {
+    spawn_run(move || external_link::open(&app, &url)).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -905,7 +918,8 @@ pub fn run() {
             shell_activation_check,
             open_in_terminal,
             set_window_theme,
-            check_app_update
+            check_app_update,
+            open_external
         ])
         .setup(|_app| {
             let mut guard = MISE_BINARY.lock().expect("mise path mutex poisoned");

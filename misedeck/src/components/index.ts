@@ -16,6 +16,7 @@ export { DirectoryUnavailableBanner } from "./DirectoryUnavailableBanner/Directo
 export { EmptyState } from "./EmptyState/EmptyState";
 export { ErrorBoundary } from "./ErrorBoundary/ErrorBoundary";
 export { ExecutionPanel, commandEcho, useExecution } from "./ExecutionPanel";
+export { ExternalLink } from "./ExternalLink/ExternalLink";
 export { IconButton } from "./IconButton/IconButton";
 export { KeyForm, Suggestions } from "./KeyForm/KeyForm";
 export { LanguageSwitcher } from "./LanguageSwitcher/LanguageSwitcher";
