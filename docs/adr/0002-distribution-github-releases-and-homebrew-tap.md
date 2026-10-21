@@ -1,10 +1,17 @@
-# Distribution via GitHub Releases and own Homebrew tap, unsigned
+# Distribution via GitHub Releases only, unsigned
 
 > [简体中文](../../zh-CN/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)
 
-> **Status (2026-09):** accepted. GitHub Releases distribution is implemented (`release.yml`); the self-hosted Homebrew tap is **not yet implemented** — no tap publishing exists in CI.
+> **Status (2026-10):** accepted. GitHub Releases is implemented (`release.yml`) and is the **only** distribution channel. v1 ships **no Homebrew tap** — no tap repository, no cask, no tap publishing step in CI. A tap is a post-1.0 option (issue #263).
 
-v1 ships as unsigned binaries on GitHub Releases plus a self-hosted Homebrew tap (`cherishfall/homebrew-tap`). No Apple notarization ($99/yr), no Windows code signing. Submitting to the official `homebrew-cask` repo is deferred until the project meets its notability bar (~50 stars); the tap requires no approval of any kind.
+v1 ships as unsigned binaries on GitHub Releases only: one release per tag, carrying the macOS `.dmg`, the Windows NSIS installer, the Linux `.deb` / `.rpm` / `.AppImage`, and a single release-wide `SHA256SUMS`. No Apple notarization ($99/yr), no Windows code signing, no package manager in between. Users download a file and clear Gatekeeper or SmartScreen themselves (README → Install).
+
+**Why no tap in v1.** A tap is a second repository plus a per-release push: every tag needs a cask version bump, a checksum, and a CI job holding a token that can write to that repository. None of that is hard, but all of it can fail independently of the release users actually download — and the half-state already did damage: the release template shipped `brew install --cask cherishfall/tap/misedeck` for a tap that did not exist, so every macOS user who followed it got a 404. One channel that works beats two where one is a promise.
+
+## Considered Options
+
+- **Self-hosted Homebrew tap (`cherishfall/homebrew-tap`) publishing a cask.** Deferred to **post-1.0**, not rejected. It needs the tap repository, a cask updated per release, and a CI step with write access to a second repository — a distribution surface to maintain, where v1's job is proving the app itself. Revisit once the release cadence settles.
+- **A cask in the official `homebrew-cask` repository.** Deferred to post-1.0 as well: it is gated on the project meeting that repository's notability bar (~50 stars), so it is out of reach for the first release regardless of what else changes.
 
 ## Consequences
 

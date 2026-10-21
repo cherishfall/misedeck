@@ -4,27 +4,28 @@ First stable release of MiseDeck, a faithful desktop GUI for [mise](https://mise
 
 ## What's in v1
 
-- **Global tool management**: install, uninstall, switch, upgrade, and see outdated badges in one table.
-- **Directory context**: resolved tools, env vars, and lockfile previews with config-source badges.
-- **Config editor**: form-based `[tools]` and `[env]` editing for global and per-directory `mise.toml`.
-- **Tasks**: list, run with live output, and simple edits.
-- **Trust UX**: read-only untrusted directories with one-click trust.
-- **Settings, doctor, and plugin/backend browsing**.
-- **mise self-management**: guided install when mise is missing and one-click self-update.
-- **Activation helpers**: open the current directory in a terminal, copy the activation command, and check shell setup.
-- **English and Simplified Chinese UI**.
+Eight pages, each one a part of the mise CLI:
+
+- **Home**: version gate, guided install when mise is missing, one-click self-update.
+- **Tools**: install, uninstall, switch, upgrade, and outdated badges in one table.
+- **Overview**: resolved tools, env vars, config files in precedence order, and `mise.lock` — each row labeled with its source.
+- **Env**: add, edit, rename, and unset environment variables, with source badges.
+- **Tasks**: list, run with live output, create and edit.
+- **Settings**: view, filter, edit, and unset settings, including `--all`.
+- **Doctor**: status, shell activation, warnings, config files, and resolved toolset.
+- **Plugins**: installed plugins, install from a git URL, uninstall.
+
+Beyond the pages: the execution panel (exact command, live logs, exit code, copy-command, cancel), read-only untrusted directories with one-click `mise trust`, terminal and activation helpers, light/dark themes, and an English / Simplified Chinese UI.
 
 > [English](../README.md) · [简体中文](../zh-CN/README.md)
 
 ## Install
 
+GitHub Releases is the only distribution channel — v1 ships no Homebrew formula or cask (per [ADR-0002](../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)).
+
 ### macOS
 
-```bash
-brew install --cask cherishfall/tap/misedeck
-```
-
-Or download the `.dmg` from the assets below, open it, and drag MiseDeck to Applications.
+Download the `.dmg` from the assets below, open it, and drag MiseDeck to Applications.
 
 > **First launch (unsigned)**: the binary is **not notarized** (per [ADR-0002](../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)). macOS Gatekeeper will block the first open and may report that the app is damaged. After dragging `MiseDeck.app` to `/Applications`, remove the quarantine flag from Terminal:
 >

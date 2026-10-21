@@ -4,27 +4,28 @@ MiseDeck 的首个稳定版本——[mise](https://mise.jdx.dev) 的忠实桌面
 
 ## 本期要点
 
-- **全局工具管理**：在一个表格里安装、卸载、切换、升级，并查看过期徽标。
-- **目录上下文**：解析后的工具、环境变量、lockfile 预览，附配置文件来源徽标。
-- **配置编辑器**：以表单方式编辑全局与按目录的 `mise.toml` 的 `[tools]` 与 `[env]`。
-- **任务**：列出、带实时输出地运行、简单编辑。
-- **信任交互**：未信任目录只读展示，一键信任。
-- **设置、诊断与插件/backend 浏览**。
-- **mise 自我管理**：mise 缺失时引导安装，一键自我更新。
-- **激活辅助**：在当前目录打开终端、复制激活命令、检查 shell 配置。
-- **英文与简体中文界面**。
+八个页面，各自对应 mise CLI 的一部分：
+
+- **首页**：版本检查；mise 缺失时引导安装；一键自我更新。
+- **工具**：在一个表格里安装、卸载、切换、升级，并查看过期徽标。
+- **概览**：解析出的工具与环境变量、按优先级排列的配置文件、`mise.lock`——每行标注来源。
+- **环境变量**：新增、编辑、重命名、取消设置；带来源标记。
+- **任务**：列出、带实时输出地运行、新建与编辑。
+- **设置**：查看、过滤、编辑、取消设置，含 `--all`。
+- **诊断**：状态、shell 激活、警告、配置文件、解析出的工具集。
+- **插件**：已安装插件；按 git URL 安装；卸载。
+
+页面之外：执行面板（精确命令、实时日志、退出码、复制命令、取消）、未信任目录只读展示并支持一键 `mise trust`、终端与激活辅助、明暗主题，以及英文 / 简体中文界面。
 
 > [English](../../README.md) · [简体中文](../README.md)
 
 ## 安装
 
+GitHub Releases 是唯一的分发渠道 —— v1 不提供 Homebrew formula 或 cask（参见 [ADR-0002](../../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)）。
+
 ### macOS
 
-```bash
-brew install --cask cherishfall/tap/misedeck
-```
-
-或者从下方 assets 下载 `.dmg`，打开后把 MiseDeck 拖入 Applications。
+从下方 assets 下载 `.dmg`，打开后把 MiseDeck 拖入 Applications。
 
 > **首次启动（未签名）**：二进制**未做 Apple 公证**（参见 [ADR-0002](../../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)）。macOS Gatekeeper 会拦截首次打开，并可能提示应用已损坏。把 `MiseDeck.app` 拖入 `/Applications` 后，在终端移除 quarantine 标记：
 >

@@ -10,20 +10,29 @@ maintainer cuts a release.
 
 | Workflow    | Trigger                                  | What it does                                                                                                                                       | Wall-clock budget |
 | ----------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run build` · `cargo check` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu; a separate Windows job runs `npm run ci` + `cargo test --lib` + `cargo build` (see below). | < 5 min            |
-| `release.yml` | push of a `v*.*.*` tag, or `workflow_dispatch` | Builds Tauri bundles for `macos-latest`, `windows-latest`, `ubuntu-latest` in parallel; uploads per-platform artifacts; on a real tag push, publishes a GitHub Release. | matrix-driven     |
+| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run lint:install-echo-parity` · `npm run build` · `cargo check` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu; a separate Windows job runs `npm run ci` + `cargo test --lib` + `cargo build` (see below). | < 5 min            |
+| `release.yml` | push of a `v*.*.*` tag, or `workflow_dispatch` | Builds Tauri bundles for `macos-latest`, `windows-latest`, `ubuntu-22.04` in parallel; uploads per-platform artifacts; on a real tag push, computes one release-wide `SHA256SUMS` and publishes a GitHub Release. | matrix-driven     |
 
 The `ci.yml` workflow is the gate that keeps `master` green. The
 `release.yml` workflow is the one that ships artifacts.
+
+`release.yml` builds Linux on `ubuntu-22.04`, not `ubuntu-latest`
+(issue #247): the binary links the build host's glibc, and 24.04 builds
+refuse to start on Ubuntu 22.04 / Debian 12. `ci.yml` keeps
+`ubuntu-latest` — that job checks against current dependencies, not
+portability.
 
 ### The Windows job
 
 `ci.yml` also runs a `windows` job for the Windows beta target, which has
 no real machine in the review loop (issue #208) — it is the only place
 the Windows code paths actually execute. It runs the full frontend check
-(`npm run ci`), the Rust unit tests (`cargo test --lib`), and a
-`cargo build` compile smoke (`dist/` comes from `npm run ci`, so the
-order matters). Two things are deliberately left out:
+(`npm run ci`, the whole 15-step script — see `misedeck/README.md`, which
+adds the `modal-focus`, `nested-interactive` and `page-layout` guards the
+`frontend` job does not run step-by-step), the Rust unit tests
+(`cargo test --lib`), and a `cargo build` compile smoke (`dist/` comes
+from `npm run ci`, so the order matters). Two things are deliberately
+left out:
 
 - The integration suite — it drives the
   `tests/fixtures/mise/fixture-mise` bash script through `Command::new`,
@@ -99,21 +108,44 @@ so a manual test never publishes a Release by accident.
 
 ## What lives in each artifact
 
-`release.yml` uploads one artifact per matrix leg, named after the OS:
+`release.yml` uploads one artifact per matrix leg, named after the
+matrix `os` value:
 
-- `misedeck-macos-latest` — `*.app` bundle directory, `*.dmg`
-- `misedeck-windows-latest` — `*.exe` (NSIS installer)
-- `misedeck-ubuntu-latest` — `*.deb`, `*.rpm`, `*.AppImage`
-- A `SHA256SUMS` file inside each artifact, listing every binary with
-  its `sha256` hash.
+- `misedeck-macos-latest` — `*.dmg` only. The `.app` bundle directory is
+  not uploaded: it is what the DMG wraps, and it is too large to attach.
+- `misedeck-windows-latest` — `*.exe` (NSIS installer), plus `*.msi` if
+  a leg ever produces one.
+- `misedeck-ubuntu-22.04` — `*.deb`, `*.rpm`, `*.AppImage`.
 
-The `release` job downloads all three artifacts and attaches their
-files (binaries + the three `SHA256SUMS`) to the GitHub Release with
-their original filenames.
+Each upload keeps the bundler's directory layout, so an artifact is a
+nested tree (`dmg/`, `nsis/`, `deb/`, `rpm/`, `appimage/`), not a flat
+list of files.
+
+**One `SHA256SUMS` for the whole release — not one per platform.** The
+`release` job computes it after every leg has landed, over exactly the
+bytes that get attached: `find` walks the merged artifact tree (so the
+nested paths are what gets hashed), and each line prints the file's
+**bare basename**, because the manifest is meant to be checked from the
+directory the user downloaded into:
+
+```sh
+shasum -a 256 -c SHA256SUMS   # macOS
+sha256sum -c SHA256SUMS       # Linux
+```
+
+Entries are sorted by file name, so re-running the job over the same
+assets reproduces the file byte for byte. An empty manifest fails the job
+before the upload API can reject it. The `release` job then attaches
+every file under `artifacts/**` — the installers plus that one manifest —
+with its original filename.
+
+The per-platform manifests of earlier betas are gone (issue #251): a
+manifest built inside one leg could only ever cover that leg, and
+beta.16's ended up listing Linux alone.
 
 ## The unsigned / Gatekeeper caveat
 
-Per [ADR-0002 — Distribution via GitHub Releases and own Homebrew tap, unsigned](../adr/0002-distribution-github-releases-and-homebrew-tap.md):
+Per [ADR-0002 — Distribution via GitHub Releases only, unsigned](../adr/0002-distribution-github-releases-and-homebrew-tap.md):
 
 - **macOS** binaries are not Apple-notarized. First launch requires
   right-click → Open to clear Gatekeeper quarantine.
@@ -123,10 +155,10 @@ Per [ADR-0002 — Distribution via GitHub Releases and own Homebrew tap, unsigne
   managers handle trust locally (GPG signature on the package, not
   on the binary).
 
-The release template at `.github/release-template.md` and the bilingual
-README both link to this caveat. When the README points users at the
-template's "Gatekeeper / SmartScreen note" section, that link lands on
-ADR-0002.
+The release template at `.github/release-template.md` links to this
+decision, and the bilingual READMEs state the same caveat in their
+Install sections. There is no Homebrew tap for v1: GitHub Releases is
+the only channel (ADR-0002).
 
 Code signing and notarization are **out of scope** for v1 and are not
 on the roadmap until the project crosses the notability bar that would
@@ -174,7 +206,7 @@ platform caches don't collide; `ci.yml` runs on a single OS per
 1. Open the failed run from the Actions tab or the issue tracker
    link.
 2. Identify the failing leg (`build (windows-latest)`,
-   `build (ubuntu-latest)`, etc.) and the failing step.
+   `build (ubuntu-22.04)`, etc.) and the failing step.
 3. If it's a system-dependency error on Linux, the apt package list
    in this doc is the source of truth — update both the release and
    ci workflows to keep them in sync, and bump the package list per

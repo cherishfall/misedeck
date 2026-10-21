@@ -1,10 +1,17 @@
-# Distribution via GitHub Releases and own Homebrew tap, unsigned
+# 仅通过 GitHub Releases 分发，未签名
 
 > [English](../../../docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)
 
-> **状态（2026-09）：** 已接受。GitHub Releases 分发已实现（`release.yml`）；自托管 Homebrew tap **尚未实现** —— CI 中没有任何 tap 发布逻辑。
+> **状态（2026-10）：** 已接受。GitHub Releases 已实现（`release.yml`），并且是**唯一**的分发渠道。v1 **不提供 Homebrew tap** —— 没有 tap 仓库、没有 cask、CI 中没有任何 tap 发布步骤。tap 是 1.0 之后（post-1.0）的选项（issue #263）。
 
-v1 以未签名二进制发布在 GitHub Releases 上，并配合自托管的 Homebrew tap（`cherishfall/homebrew-tap`）。不做 Apple 公证（$99/年），不做 Windows 代码签名。提交到官方 `homebrew-cask` 仓库推迟到项目达到其知名度门槛（约 50 stars）之后；tap 不需要任何形式的审批。
+v1 只在 GitHub Releases 上分发未签名二进制：每个 tag 对应一个 Release，包含 macOS `.dmg`、Windows NSIS 安装包、Linux `.deb` / `.rpm` / `.AppImage`，以及一份覆盖全版本的 `SHA256SUMS`。不做 Apple 公证（$99/年），不做 Windows 代码签名，中间也没有包管理器。用户自己下载文件，并自行处理 Gatekeeper 或 SmartScreen（README → 安装）。
+
+**为什么 v1 不做 tap。** tap 意味着第二个仓库，加上每次发版的推送：每个 tag 都要改 cask 版本、算校验和，还要一个持有该仓库写权限 token 的 CI job。这些都不难，但每一件都可能独立于用户真正下载的那个 Release 出错 —— 而半成品状态已经造成了实际损害：release 模板里写着 `brew install --cask cherishfall/tap/misedeck`，可那个 tap 从未存在，照做的每个 macOS 用户都得到 404。一个能用的渠道胜过两个、其中一个是空头支票。
+
+## 考虑过的选项
+
+- **自托管 Homebrew tap（`cherishfall/homebrew-tap`）发布 cask。** 推迟到 **post-1.0**，不是否决。它需要 tap 仓库、每次发版都更新的 cask，以及一个对第二个仓库有写权限的 CI 步骤 —— 那是一块需要维护的分发面，而 v1 的任务是把应用本身做扎实。等发版节奏稳定后再议。
+- **把 cask 提交到官方 `homebrew-cask` 仓库。** 同样推迟到 post-1.0：它受该仓库的知名度门槛（约 50 stars）限制，所以无论其他条件如何，首个版本都够不到。
 
 ## Consequences
 

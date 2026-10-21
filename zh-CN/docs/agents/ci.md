@@ -9,19 +9,26 @@
 
 | Workflow      | 触发时机                                    | 做了什么                                                                                                                                  | 墙钟预算   |
 | ------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `tsc --noEmit` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run build` · `cargo check` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu；另有独立 Windows job 跑 `npm run ci` + `cargo test --lib` + `cargo build`（见下文）。 | < 5 分钟    |
-| `release.yml` | 推送 `v*.*.*` tag，或 `workflow_dispatch`   | 在 `macos-latest`、`windows-latest`、`ubuntu-latest` 上并行构建 Tauri bundle；上传各平台 artifact；真实 tag 推送时发布 GitHub Release。       | 由矩阵决定 |
+| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `tsc --noEmit` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run lint:install-echo-parity` · `npm run build` · `cargo check` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu；另有独立 Windows job 跑 `npm run ci` + `cargo test --lib` + `cargo build`（见下文）。 | < 5 分钟    |
+| `release.yml` | 推送 `v*.*.*` tag，或 `workflow_dispatch`   | 在 `macos-latest`、`windows-latest`、`ubuntu-22.04` 上并行构建 Tauri bundle；上传各平台 artifact；真实 tag 推送时计算一份覆盖全版本的 `SHA256SUMS` 并发布 GitHub Release。       | 由矩阵决定 |
 
 `ci.yml` 是保证 `master` 绿色的闸门。`release.yml` 才是真正产出
 artifact 的那个。
+
+`release.yml` 的 Linux 用 `ubuntu-22.04`，不是 `ubuntu-latest`
+（issue #247）：二进制链接的是构建机的 glibc，24.04 上构建的包在
+Ubuntu 22.04 / Debian 12 上无法启动。`ci.yml` 保持 `ubuntu-latest` ——
+那个 job 检查的是与当前依赖的兼容性，不是可移植性。
 
 ### Windows job
 
 `ci.yml` 还跑一个 `windows` job 覆盖 Windows beta 目标——评审循环里没有
 Windows 真机（issue #208），这是 Windows 代码路径唯一真正执行的地方。
-它跑完整的前端检查（`npm run ci`）、Rust 单元测试（`cargo test --lib`），
-以及 `cargo build` 编译冒烟（`dist/` 由 `npm run ci` 产出，所以顺序有讲究）。
-有两件事是刻意不做的：
+它跑完整的前端检查（`npm run ci`，即完整的 15 步脚本 —— 见
+`misedeck/README.md`，其中包含 `frontend` job 没有逐步执行的
+`modal-focus`、`nested-interactive`、`page-layout` 三个守门）、
+Rust 单元测试（`cargo test --lib`），以及 `cargo build` 编译冒烟
+（`dist/` 由 `npm run ci` 产出，所以顺序有讲究）。有两件事是刻意不做的：
 
 - 集成测试套件——它通过 `Command::new` 直接跑
   `tests/fixtures/mise/fixture-mise` 这个 bash 脚本，Windows 无法执行。
@@ -83,19 +90,38 @@ Windows job 绿 = 编译级与单元级正确；它**不能**替代在真实 Win
 
 ## 每个 artifact 里有什么
 
-`release.yml` 按矩阵腿上传一个 artifact，名字带 OS：
+`release.yml` 按矩阵腿上传一个 artifact，名字取自矩阵的 `os` 值：
 
-- `misedeck-macos-latest` —— `*.app` bundle 目录、`*.dmg`
-- `misedeck-windows-latest` —— `*.exe`（NSIS 安装包）
-- `misedeck-ubuntu-latest` —— `*.deb`、`*.rpm`、`*.AppImage`
-- 每个 artifact 内部还含一份 `SHA256SUMS`，列出每个二进制的 `sha256` 哈希。
+- `misedeck-macos-latest` —— 只有 `*.dmg`。`.app` bundle 目录不上传：
+  它是 DMG 打包的内容，而且体积太大，不适合挂到 Release。
+- `misedeck-windows-latest` —— `*.exe`（NSIS 安装包），将来若产出
+  `*.msi` 也会带上。
+- `misedeck-ubuntu-22.04` —— `*.deb`、`*.rpm`、`*.AppImage`。
 
-`release` job 下载全部三个 artifact，把它们的文件（二进制 + 三份
-`SHA256SUMS`）以原始文件名挂到 GitHub Release 上。
+每次上传都保留打包器的目录结构，所以 artifact 是一棵嵌套目录树
+（`dmg/`、`nsis/`、`deb/`、`rpm/`、`appimage/`），不是平铺的文件列表。
+
+**一份 `SHA256SUMS` 覆盖整个版本，不是每个平台一份。** `release` job 在
+三条腿全部落地之后才计算它，覆盖的正是最终挂出去的字节：`find` 遍历合并
+后的产物树（所以被哈希的是嵌套路径），而每行打印的是文件的**裸文件名** ——
+这份清单就是给用户在他下载到的目录里直接校验的：
+
+```sh
+shasum -a 256 -c SHA256SUMS   # macOS
+sha256sum -c SHA256SUMS       # Linux
+```
+
+条目按文件名排序，因此对同一批资产重跑该 job 会逐字节复现同一个文件。
+清单为空会让 job 直接失败，不用等上传 API 拒绝。随后 `release` job 把
+`artifacts/**` 下的每个文件 —— 安装包加上这一份清单 —— 以原始文件名
+挂到 GitHub Release 上。
+
+早期 beta 的按平台清单已经取消（issue #251）：在单条腿里生成的清单只能
+覆盖那条腿，beta.16 的那份最后只列了 Linux。
 
 ## 未签名 / Gatekeeper 提示
 
-按 [ADR-0002 — 通过 GitHub Releases 与自托管 Homebrew tap 分发，未签名](../adr/0002-distribution-github-releases-and-homebrew-tap.md)：
+按 [ADR-0002 — 仅通过 GitHub Releases 分发，未签名](../adr/0002-distribution-github-releases-and-homebrew-tap.md)：
 
 - **macOS** 二进制未做 Apple 公证。首次启动需要**右键 → 打开**绕过
   Gatekeeper 隔离。
@@ -104,9 +130,9 @@ Windows job 绿 = 编译级与单元级正确；它**不能**替代在真实 Win
 - **Linux** 以 `.deb`、`.rpm`、`.AppImage` 三种格式分发。包管理器
   在本地处理信任（包的 GPG 签名，不是二进制的签名）。
 
-`.github/release-template.md` 模板和双语 README 都链接到这份说明。
-当 README 把用户引到模板的 "Gatekeeper / SmartScreen note" 段时，
-该链接落在 ADR-0002 上。
+`.github/release-template.md` 模板链接到这项决定，双语 README 在各自的
+安装段里陈述同样的注意事项。v1 没有 Homebrew tap：GitHub Releases 是唯一
+渠道（ADR-0002）。
 
 代码签名与公证在 v1 中**不在路线图上**，直到项目跨过把
 `homebrew-cask` 提交流程变得值得的知名度门槛才会重新评估。
@@ -148,7 +174,7 @@ CI 矩阵使用 `dtolnay/rust-toolchain@stable` 与 Node 22；lockfile 是
 ## 构建失败时
 
 1. 从 Actions 标签页或 issue tracker 链接打开失败的运行。
-2. 定位失败的那一段（`build (windows-latest)`、`build (ubuntu-latest)` 等）
+2. 定位失败的那一段（`build (windows-latest)`、`build (ubuntu-22.04)` 等）
    和失败的那一步。
 3. 如果是 Linux 上的系统依赖报错，本页中 apt 包列表就是真值源 —— 同步更新
    release 与 ci 两个 workflow，并按
