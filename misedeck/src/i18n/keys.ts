@@ -653,6 +653,8 @@ export const I18N_KEYS = {
     keyPlaceholder: "settings.keyPlaceholder",
     valuePlaceholder: "settings.valuePlaceholder",
     showAll: "settings.showAll",
+    showAllScope: "settings.showAllScope",
+    defaultSource: "settings.defaultSource",
     filterPlaceholder: "settings.filterPlaceholder",
     count: "settings.count",
     guard: {

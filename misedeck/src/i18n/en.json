@@ -472,6 +472,8 @@
     "keyPlaceholder": "setting name",
     "valuePlaceholder": "value",
     "showAll": "Show all (--all)",
+    "showAllScope": "Show all lists mise's full settings set — built-in defaults and global config included. Writes still target this directory's config.",
+    "defaultSource": "default",
     "filterPlaceholder": "Filter settings…",
     "count": "{{count}} settings",
     "count_one": "{{count}} setting",

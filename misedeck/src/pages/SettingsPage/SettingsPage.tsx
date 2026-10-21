@@ -269,6 +269,12 @@ export function SettingsPage() {
               {shortenPathTail(r.source, SOURCE_CELL_CHARS)}
             </span>
           </Tooltip>
+        ) : showAll ? (
+          // A row without a source carries only a built-in default
+          // (issue #273): say so instead of an ambiguous dash.
+          <span className={styles.cellSource}>
+            {t(I18N_KEYS.settings.defaultSource)}
+          </span>
         ) : (
           <span className={styles.cellSource}>—</span>
         ),
@@ -344,6 +350,14 @@ export function SettingsPage() {
           </div>
         </div>
 
+        {/* Show all widens the scope past this directory's config
+            (issue #273): the Source column labels each row, and this
+            line keeps the view change from being silent. */}
+        {cwd !== null && showAll && (
+          <p className={styles.scopeHint} data-testid="settings-show-all-scope">
+            {t(I18N_KEYS.settings.showAllScope)}
+          </p>
+        )}
 
         <TrustBanner
           ref={bannerRef}

@@ -30,17 +30,7 @@ import type {
   RegistryItem,
   SettingsItem,
 } from "../types/tauri";
-
-/** Build the `mise settings ls` argv, mirroring the Rust helper
- *  `mise_settings_ls` (issue #29). `--all` lists unset keys with their
- *  defaults (issue #52); `--local` restricts the list to the project
- *  config when the context is a directory. */
-function settingsLsArgs(all: boolean, local: boolean): string[] {
-  const args = ["settings", "ls", "--json-extended"];
-  if (all) args.push("--all");
-  if (local) args.push("--local");
-  return args;
-}
+import { settingsLsArgs } from "./settingsLsArgs";
 
 /** Read-only mise settings list (`mise settings ls --json-extended`).
  *  Cache key is `["settings", "ls", cwd, all]`. The table loads itself,

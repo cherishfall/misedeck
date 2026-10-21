@@ -472,6 +472,8 @@
     "keyPlaceholder": "设置名",
     "valuePlaceholder": "值",
     "showAll": "显示全部（--all）",
+    "showAllScope": "显示全部会列出 mise 的完整设置——包含内置默认值和全局配置。写入仍作用于当前目录的配置。",
+    "defaultSource": "默认",
     "filterPlaceholder": "过滤设置…",
     "count": "{{count}} 项设置",
     "count_one": "{{count}} 项设置",

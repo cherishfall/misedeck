@@ -69,6 +69,17 @@
   margin: 0;
 }
 
+/* Explains the widened scope of the --all view in Directory mode
+ * (issue #273); the toolbar above already carries the switch. */
+.scopeHint {
+  font-family: var(--font-ui);
+  font-size: var(--size-data);
+  color: var(--dim);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 70ch;
+}
+
 /* ---------- Table cells ---------- */
 
 /* min-width = sum of declared column widths (240 key + 200 value + 84
