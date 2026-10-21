@@ -145,18 +145,23 @@ jobs:
           cd artifacts
           # One file for the whole release, computed after every platform
           # has landed, over exactly the bytes that get attached (#251).
-          # Names are bare file names, not repo paths: this file is meant
-          # to be checked from the directory the user downloaded into.
-          # Sorted by name so re-running the job on the same assets
-          # reproduces the file byte for byte.
-          : > /tmp/SHA256SUMS.partial
-          for f in *; do
-            [ -f "$f" ] || continue
-            if [ "$f" = "SHA256SUMS" ]; then continue; fi
-            sha256sum "$f" >> /tmp/SHA256SUMS.partial
-          done
-          sort -k2 /tmp/SHA256SUMS.partial > SHA256SUMS
-          rm -f /tmp/SHA256SUMS.partial
+          #
+          # Walk the tree instead of globbing `*`: `download-artifact` with
+          # `merge-multiple` keeps the layout each platform uploaded, so the
+          # installers sit under dmg/, deb/, rpm/, nsis/ — a top-level glob
+          # sees only directories and hashes nothing. Names are printed as
+          # bare file names because this file is meant to be checked from
+          # the directory the user downloaded into. Sorted by name so
+          # re-running the job on the same assets reproduces the file byte
+          # for byte.
+          find . -type f ! -name SHA256SUMS -print0 \
+            | while IFS= read -r -d '' f; do
+                printf '%s  %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$(basename "$f")"
+              done \
+            | sort -k2 > SHA256SUMS
+          # Guard the failure that shipped a 0-byte manifest once: an empty
+          # file is rejected by the upload API and the release fails anyway.
+          test -s SHA256SUMS
           cat SHA256SUMS
 
       - name: Resolve release notes
