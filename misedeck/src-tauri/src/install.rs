@@ -59,11 +59,16 @@ pub const INSTALL_SCRIPT_LINE: &str = "curl -fsSL https://mise.jdx.dev/install.s
 /// `Command` so the caller owns the spawn. Both branches hand
 /// `INSTALL_SCRIPT_LINE` to the platform's shell, so what the panel
 /// echoes is the same line the executor runs.
+///
+/// On Windows the program is the absolute Windows PowerShell 5.1 binary
+/// (`System32\WindowsPowerShell\v1.0\powershell.exe`) rather than a `PATH`
+/// lookup: `CreateProcess` searches the current directory first, so a bare
+/// name could run a planted binary with the app's privileges (issue #253).
 fn build_install_command() -> Command {
     #[cfg(target_os = "windows")]
-    let program = "powershell";
+    let program = crate::process_tree::windows_powershell();
     #[cfg(not(target_os = "windows"))]
-    let program = "sh";
+    let program = "sh".to_string();
 
     let mut cmd = Command::new(program);
     cmd.args(install_command_args());

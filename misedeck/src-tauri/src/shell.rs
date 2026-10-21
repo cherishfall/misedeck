@@ -134,8 +134,11 @@ pub struct ActivationStatus {
 
 /// Detect the user's shell. Order of preference:
 ///
-///   Unix:    `$SHELL` (the login shell set by login(1)/getty) — the
-///            path's basename is matched against the known set
+///   Unix:    `$SHELL` (the login shell set by login(1)/getty), then the
+///            passwd entry — a Finder/Dock launch inherits launchd's
+///            session environment, which has no `SHELL`, so most macOS
+///            users would otherwise be told "unknown shell" (issue #253).
+///            The path's basename is matched against the known set
 ///            (`zsh`, `bash`, `fish`). Other basenames fall through
 ///            to `Unknown` with the raw name preserved.
 ///   Windows: read `HKCU\Software\Microsoft\Windows NT\CurrentVersion\Once`
@@ -156,16 +159,88 @@ pub fn detect_user_shell() -> ShellKind {
         // git-bash run a Unix shell under Windows.
     }
 
-    let raw = match std::env::var_os("SHELL") {
-        Some(s) => s.to_string_lossy().to_string(),
-        None => return ShellKind::Unknown { name: "unknown".to_string() },
+    #[cfg(unix)]
+    let raw = {
+        let env_shell = std::env::var_os("SHELL").map(|s| s.to_string_lossy().into_owned());
+        let passwd_shell = passwd_login_shell();
+        resolve_login_shell(env_shell.as_deref(), passwd_shell.as_deref())
     };
-    let path = Path::new(&raw);
-    let basename = match path.file_name() {
-        Some(n) => n.to_string_lossy().to_string(),
-        None => raw.clone(),
+    #[cfg(not(unix))]
+    let raw = std::env::var_os("SHELL").map(|s| s.to_string_lossy().into_owned());
+
+    match raw {
+        Some(raw) => classify_shell_path(&raw),
+        None => ShellKind::Unknown { name: "unknown".to_string() },
+    }
+}
+
+/// Pick the shell path to classify: `$SHELL` when it says something, the
+/// passwd entry otherwise.
+///
+/// `$SHELL` is the truth where it exists, but it is a *login shell's*
+/// export: a `.app` started from Finder or the Dock inherits launchd's
+/// user-session environment instead, which does not set it. The passwd
+/// entry (`getpwuid_r` → `pw_shell`) is the same login shell `login(1)`
+/// would have exported, so falling back to it keeps the activation
+/// banner able to name the rc file the user actually edits (issue #253).
+///
+/// Pure and argument-driven so the fallback is testable without mutating
+/// the process environment (the test seam is "what the two sources say",
+/// not the OS). A blank value from either source counts as absent.
+#[cfg_attr(not(unix), allow(dead_code))]
+fn resolve_login_shell(env_shell: Option<&str>, passwd_shell: Option<&str>) -> Option<String> {
+    fn non_blank(raw: &str) -> Option<String> {
+        let trimmed = raw.trim();
+        (!trimmed.is_empty()).then(|| trimmed.to_string())
+    }
+    env_shell
+        .and_then(non_blank)
+        .or_else(|| passwd_shell.and_then(non_blank))
+}
+
+/// The login shell from the passwd entry (`getpwuid_r`), the fallback
+/// source for `$SHELL`. `None` when the lookup fails or the entry's
+/// shell is empty.
+#[cfg(unix)]
+fn passwd_login_shell() -> Option<String> {
+    use std::ffi::CStr;
+
+    // SAFETY: `getuid` has no preconditions and cannot fail.
+    let uid = unsafe { libc::getuid() };
+
+    // `sysconf` reports the buffer size the platform documents for
+    // `getpwuid_r`; 16 KiB is a generous cap when it does not answer.
+    let mut size = unsafe { libc::sysconf(libc::_SC_GETPW_R_SIZE_MAX) };
+    if size <= 0 {
+        size = 16 * 1024;
+    }
+    let mut buf = vec![0 as libc::c_char; size as usize];
+    // SAFETY: an all-zero `passwd` is a valid out-parameter slot;
+    // `getpwuid_r` overwrites it and points `result` at it on success.
+    let mut passwd: libc::passwd = unsafe { std::mem::zeroed() };
+    let mut result: *mut libc::passwd = std::ptr::null_mut();
+    // SAFETY: `buf` is `buf.len()` bytes, which is the length passed, and
+    // it outlives every read of the strings `passwd` points into.
+    let rc = unsafe {
+        libc::getpwuid_r(uid, &mut passwd, buf.as_mut_ptr(), buf.len(), &mut result)
     };
-    classify_shell(&basename, &raw)
+    if rc != 0 || result.is_null() || passwd.pw_shell.is_null() {
+        return None;
+    }
+    // SAFETY: `pw_shell` is NUL-terminated and points into `buf`, which
+    // is still alive here.
+    let shell = unsafe { CStr::from_ptr(passwd.pw_shell) }.to_string_lossy();
+    let trimmed = shell.trim();
+    (!trimmed.is_empty()).then(|| trimmed.to_string())
+}
+
+/// Classify a shell path: match the basename against the known families,
+/// keeping the raw path for the `Unknown` label.
+fn classify_shell_path(raw: &str) -> ShellKind {
+    match Path::new(raw).file_name() {
+        Some(basename) => classify_shell(&basename.to_string_lossy(), raw),
+        None => classify_shell(raw, raw),
+    }
 }
 
 pub fn classify_shell(basename: &str, raw: &str) -> ShellKind {
@@ -187,9 +262,11 @@ pub fn classify_shell(basename: &str, raw: &str) -> ShellKind {
 /// command that triggered it (issue #210).
 const PROBE_TIMEOUT: Duration = Duration::from_secs(5);
 
-/// Upper bound for a terminal launch. Every launcher we use hands the
-/// window off and exits; one that blocks longer is reported as a
-/// failure instead of pinning the command thread.
+/// Upper bound for the launchers that hand the window off and exit
+/// (`open -a`, `cmd /c start`, the server-forwarding Linux trio). One
+/// that blocks longer is reported as a failure instead of pinning the
+/// command thread. Foreground emulators never go through this bound —
+/// they are spawned and released (issue #253).
 const LAUNCH_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Wait for `child`, giving up after `timeout`. Returns `None` when the
@@ -542,12 +619,14 @@ pub fn check_shell_activation_for(shell: &ShellKind) -> Result<ActivationStatus,
 //                trio, then standalone emulators), each with its own
 //                cwd flag; the child also gets `current_dir`, so an
 //                emulator that ignores the flag still opens in the right
-//                place (issue #245). If none is found, return
-//                `TERMINAL_NOT_FOUND` so the UI surfaces the copyable
-//                command instead. The probe is a `which` lookup; we do
-//                not actually launch the terminal here — we hand the
-//                argv to the shell so the user can take the same action
-//                manually if the spawn ever fails.
+//                place (issue #245). Server-forwarding wrappers are
+//                waited on; foreground emulators are spawned and
+//                released, because they outlive the click (issue #253).
+//                If none is found, return `TERMINAL_NOT_FOUND` so the UI
+//                surfaces the copyable command instead. The probe is a
+//                `which` lookup; we do not actually launch the terminal
+//                here — we hand the argv to the shell so the user can
+//                take the same action manually if the spawn ever fails.
 //
 // All three code paths are cross-platform enough to be called from
 // a single `open_in_terminal(path: Option<&str>)` entry point; the
@@ -602,13 +681,22 @@ pub fn windows_cmd_start_plan() -> WindowsCmdStartPlan {
     // `start "" cmd`: the empty argument is `start`'s title, which must
     // be present or `start` treats the command as the title and opens
     // nothing. The new console window inherits the inherited cwd.
+    //
+    // Both `cmd.exe` references are the absolute `%SystemRoot%\System32`
+    // copy: `CreateProcess` searches the current directory before `PATH`,
+    // so a bare name runs a binary planted where the app was started
+    // (issue #253).
+    #[cfg(target_os = "windows")]
+    let cmd = crate::process_tree::system32("cmd.exe");
+    #[cfg(not(target_os = "windows"))]
+    let cmd = "cmd.exe".to_string();
     WindowsCmdStartPlan {
         argv: vec![
-            "cmd.exe".to_string(),
+            cmd.clone(),
             "/c".to_string(),
             "start".to_string(),
             String::new(),
-            "cmd.exe".to_string(),
+            cmd,
         ],
     }
 }
@@ -628,6 +716,18 @@ pub struct LinuxTerminalSpec {
     /// True when the path joins the last flag with `=` (the GNOME / KDE
     /// `--flag=<path>` form), false when it is its own argv element.
     pub equals_form: bool,
+    /// True when the binary hands the window to a long-lived server and
+    /// exits immediately (`gnome-terminal`, `konsole`, `xfce4-terminal`).
+    /// Those are the only candidates whose exit status means anything, so
+    /// they are the only ones worth waiting for.
+    ///
+    /// False for a **foreground** emulator (`kgx`, `ptyxis`, `kitty`,
+    /// `alacritty`, `foot`, `wezterm`, `urxvt`): it runs for as long as
+    /// its window is open, so waiting on it meant waiting out
+    /// `LAUNCH_TIMEOUT` and then killing the terminal the user had just
+    /// opened — reported as a failed launch (issue #253). Spawn success is
+    /// the success signal for those.
+    pub returns_immediately: bool,
 }
 
 /// Probe order for Linux (issue #245). `x-terminal-emulator` comes first
@@ -635,6 +735,12 @@ pub struct LinuxTerminalSpec {
 /// defaults of the big distros (Ubuntu 24.04 ships GNOME Console `kgx`,
 /// Fedora 40+ `ptyxis`, both of which dropped `gnome-terminal`), then the
 /// long-standing ones, then standalone emulators a developer installed.
+///
+/// `returns_immediately` is true only for the server-forwarding trio; see
+/// its doc comment. `x-terminal-emulator` is a symlink whose target is
+/// unknown, and it may resolve to a foreground emulator, so it is treated
+/// as one — not waiting costs nothing, waiting on the wrong target kills
+/// the terminal.
 pub const LINUX_TERMINALS: &[LinuxTerminalSpec] = &[
     LinuxTerminalSpec {
         binary: "x-terminal-emulator",
@@ -643,56 +749,67 @@ pub const LINUX_TERMINALS: &[LinuxTerminalSpec] = &[
         // the right directory.
         args: &[],
         equals_form: false,
+        returns_immediately: false,
     },
     LinuxTerminalSpec {
         binary: "kgx",
         args: &["--working-directory"],
         equals_form: true,
+        returns_immediately: false,
     },
     LinuxTerminalSpec {
         binary: "ptyxis",
         args: &["--working-directory"],
         equals_form: true,
+        returns_immediately: false,
     },
     LinuxTerminalSpec {
         binary: "gnome-terminal",
         args: &["--working-directory"],
         equals_form: true,
+        returns_immediately: true,
     },
     LinuxTerminalSpec {
         binary: "konsole",
         args: &["--workdir"],
         equals_form: true,
+        returns_immediately: true,
     },
     LinuxTerminalSpec {
         binary: "xfce4-terminal",
         args: &["--working-directory"],
         equals_form: true,
+        returns_immediately: true,
     },
     LinuxTerminalSpec {
         binary: "alacritty",
         args: &["--working-directory"],
         equals_form: false,
+        returns_immediately: false,
     },
     LinuxTerminalSpec {
         binary: "kitty",
         args: &["--directory"],
         equals_form: false,
+        returns_immediately: false,
     },
     LinuxTerminalSpec {
         binary: "wezterm",
         args: &["start", "--cwd"],
         equals_form: false,
+        returns_immediately: false,
     },
     LinuxTerminalSpec {
         binary: "foot",
         args: &["--working-directory"],
         equals_form: true,
+        returns_immediately: false,
     },
     LinuxTerminalSpec {
         binary: "urxvt",
         args: &["-cd"],
         equals_form: false,
+        returns_immediately: false,
     },
 ];
 
@@ -800,7 +917,16 @@ pub fn open_in_terminal(path: Option<&str>) -> Result<TerminalOpenOutcome, AppEr
                 let (bin, args) = argv.split_first().expect("argv is non-empty");
                 let mut cmd = Command::new(bin);
                 cmd.args(args).current_dir(&resolved);
-                run_prepared(cmd, "Linux", spec.binary, &path_str, &argv)?;
+                // A server-forwarding wrapper exits once it handed the
+                // window off, so its exit status is real. A foreground
+                // emulator stays alive for the window's lifetime — waiting
+                // on it would kill the terminal at the deadline and report
+                // a launch that visibly worked as a failure (issue #253).
+                if spec.returns_immediately {
+                    run_prepared(cmd, "Linux", spec.binary, &path_str, &argv)?;
+                } else {
+                    spawn_and_release(cmd, "Linux", spec.binary, &path_str, &argv)?;
+                }
                 Ok(TerminalOpenOutcome {
                     platform: "Linux".to_string(),
                     terminal_app: spec.binary.to_string(),
@@ -858,28 +984,43 @@ fn run_argv(
     run_prepared(cmd, platform, terminal_app, path, argv)
 }
 
-/// Spawn a prepared launcher and wait for it under `LAUNCH_TIMEOUT`.
-/// The launcher is expected to hand the window off and exit; one that
-/// is still running at the deadline is killed and reported as a
-/// failure so a hung binary cannot pin the command thread.
-fn run_prepared(
+/// Give a prepared launcher no inherited stdio and start it. The terminal
+/// owns its own window; a child that outlived us holding app pipes would
+/// only block on a full pipe. Spawn errors carry the argv so the UI's
+/// failure text names the exact command that did not start.
+fn spawn_launcher(
     mut cmd: Command,
     platform: &str,
     terminal_app: &str,
     path: &str,
     argv: &[String],
-) -> Result<(), AppError> {
+) -> Result<Child, AppError> {
     cmd.stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
-    let mut child = cmd.spawn().map_err(|e| {
+    cmd.spawn().map_err(|e| {
         AppError::command_failed(
             format!(
                 "{platform} terminal launch via {terminal_app} failed for {path}: {e} (argv: {argv:?})"
             ),
             String::new(),
         )
-    })?;
+    })
+}
+
+/// Spawn a launcher and wait for it under `LAUNCH_TIMEOUT`. Only for the
+/// wrappers that hand the window off and exit (`open -a`, `cmd /c start`,
+/// the server-forwarding Linux trio); one that is still running at the
+/// deadline is killed and reported as a failure so a hung binary cannot
+/// pin the command thread.
+fn run_prepared(
+    cmd: Command,
+    platform: &str,
+    terminal_app: &str,
+    path: &str,
+    argv: &[String],
+) -> Result<(), AppError> {
+    let mut child = spawn_launcher(cmd, platform, terminal_app, path, argv)?;
     match wait_with_timeout(&mut child, LAUNCH_TIMEOUT) {
         Some(s) if s.success() => Ok(()),
         Some(s) => Err(AppError::command_failed(
@@ -896,6 +1037,32 @@ fn run_prepared(
             String::new(),
         )),
     }
+}
+
+/// Spawn a foreground emulator and release it: `spawn` success is success
+/// (issue #253).
+///
+/// The emulator lives until the user closes its window, which is hours,
+/// not `LAUNCH_TIMEOUT` — so there is nothing to wait for and nothing to
+/// kill. The `Child` is handed to a detached thread whose only job is to
+/// `wait()` on it, so the exit is reaped instead of leaving a zombie
+/// behind. A thread per launch is cheap and bounded by the user's clicks.
+///
+/// Only the Linux branch has foreground candidates; the helper is
+/// unit-tested on every platform.
+#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
+fn spawn_and_release(
+    cmd: Command,
+    platform: &str,
+    terminal_app: &str,
+    path: &str,
+    argv: &[String],
+) -> Result<(), AppError> {
+    let mut child = spawn_launcher(cmd, platform, terminal_app, path, argv)?;
+    thread::spawn(move || {
+        let _ = child.wait();
+    });
+    Ok(())
 }
 
 #[cfg(test)]
@@ -1060,8 +1227,19 @@ mod tests {
         // target is `cmd` and the directory is the child's cwd (issues
         // #210 → #242). Nothing that a cmd parser could re-interpret may
         // appear in the argv, for any directory shape.
+        //
+        // The `cmd.exe` tokens are the absolute System32 copy on Windows
+        // and the bare name elsewhere (issue #253) — the directory still
+        // never reaches the argv either way.
+        #[cfg(target_os = "windows")]
+        let cmd = crate::process_tree::system32("cmd.exe");
+        #[cfg(not(target_os = "windows"))]
+        let cmd = "cmd.exe".to_string();
         let plan = windows_cmd_start_plan();
-        assert_eq!(plan.argv, vec!["cmd.exe", "/c", "start", "", "cmd.exe"]);
+        assert_eq!(
+            plan.argv,
+            vec![cmd.clone(), "/c".to_string(), "start".to_string(), String::new(), cmd]
+        );
         for dir in [
             r"C:\A & B",
             r"C:\50%off%",
@@ -1076,6 +1254,136 @@ mod tests {
                 "directory leaked into the cmd argv: {dir}"
             );
         }
+    }
+
+    /// Issue #253: a Finder/Dock launch has no `$SHELL`, so the passwd
+    /// entry must take over. Fixture-injected — the environment is not
+    /// touched, which is the point of `resolve_login_shell` being pure.
+    #[test]
+    fn resolve_login_shell_falls_back_to_the_passwd_entry() {
+        // The normal terminal launch: the env var wins.
+        assert_eq!(
+            resolve_login_shell(Some("/bin/zsh"), Some("/bin/bash")).as_deref(),
+            Some("/bin/zsh")
+        );
+        // Finder/Dock: no `SHELL` at all → the passwd entry.
+        assert_eq!(
+            resolve_login_shell(None, Some("/bin/zsh")).as_deref(),
+            Some("/bin/zsh")
+        );
+        // An empty / whitespace-only value is as absent as a missing one
+        // (some launchd sessions export an empty string).
+        assert_eq!(
+            resolve_login_shell(Some(""), Some("/usr/local/bin/fish")).as_deref(),
+            Some("/usr/local/bin/fish")
+        );
+        assert_eq!(
+            resolve_login_shell(Some("  "), Some("/bin/bash")).as_deref(),
+            Some("/bin/bash")
+        );
+        // Both sources empty: still "unknown", never a guess.
+        assert_eq!(resolve_login_shell(None, None), None);
+        assert_eq!(resolve_login_shell(Some(""), Some("")), None);
+        // The value is trimmed before it is classified.
+        assert_eq!(
+            resolve_login_shell(Some(" /bin/zsh\n"), None).as_deref(),
+            Some("/bin/zsh")
+        );
+    }
+
+    /// The classified fallback result: `/bin/zsh` from passwd still means
+    /// `ShellKind::Zsh`, i.e. the banner gets a real rc path.
+    #[test]
+    fn classify_shell_path_handles_a_passwd_shell() {
+        assert_eq!(classify_shell_path("/bin/zsh"), ShellKind::Zsh);
+        assert_eq!(classify_shell_path("/usr/local/bin/fish"), ShellKind::Fish);
+        match classify_shell_path("/opt/weird/nu") {
+            ShellKind::Unknown { name } => assert_eq!(name, "/opt/weird/nu"),
+            other => panic!("expected Unknown, got {other:?}"),
+        }
+    }
+
+    /// Issue #253, the Linux classes: the server-forwarding trio is
+    /// waited on, every foreground emulator is spawned and released.
+    #[test]
+    fn linux_terminal_specs_separate_wrappers_from_foreground_emulators() {
+        let spec = |binary: &str| {
+            LINUX_TERMINALS
+                .iter()
+                .find(|s| s.binary == binary)
+                .unwrap_or_else(|| panic!("{binary} missing from the probe table"))
+        };
+
+        // Wrappers that fork to a server and exit: their status is real.
+        for binary in ["gnome-terminal", "konsole", "xfce4-terminal"] {
+            assert!(
+                spec(binary).returns_immediately,
+                "{binary} exits immediately; its exit status is meaningful"
+            );
+        }
+        // Foreground emulators: spawn success is success. `x-terminal-emulator`
+        // is a symlink to an unknown target, so it must not be waited on.
+        for binary in [
+            "kgx",
+            "ptyxis",
+            "kitty",
+            "alacritty",
+            "foot",
+            "wezterm",
+            "urxvt",
+            "x-terminal-emulator",
+        ] {
+            assert!(
+                !spec(binary).returns_immediately,
+                "{binary} stays in the foreground; waiting would kill it"
+            );
+        }
+    }
+
+    /// Spawn success returns immediately for a foreground launcher even
+    /// though the child is still alive.
+    #[cfg(unix)]
+    #[test]
+    fn spawn_and_release_does_not_wait_for_a_foreground_child() {
+        let started = Instant::now();
+        let mut cmd = Command::new("sh");
+        cmd.args(["-c", "sleep 2"]);
+        spawn_and_release(cmd, "test", "sh", "/tmp", &["sh".to_string()])
+            .expect("spawn must succeed");
+        assert!(
+            started.elapsed() < Duration::from_secs(1),
+            "a foreground launcher must not be waited on, took {:?}",
+            started.elapsed()
+        );
+    }
+
+    /// The wrapper class still waits: that is the only way its exit status
+    /// can be reported as the launch result.
+    #[cfg(unix)]
+    #[test]
+    fn run_prepared_waits_for_a_wrapper_that_exits() {
+        let started = Instant::now();
+        let mut cmd = Command::new("sh");
+        cmd.args(["-c", "sleep 1"]);
+        run_prepared(cmd, "test", "sh", "/tmp", &["sh".to_string()])
+            .expect("a clean exit is a successful launch");
+        assert!(
+            started.elapsed() >= Duration::from_millis(900),
+            "a wrapper that exits must be waited on, took {:?}",
+            started.elapsed()
+        );
+    }
+
+    /// A wrapper that fails is still a failure; `spawn_and_release` reports
+    /// spawn errors the same way.
+    #[cfg(unix)]
+    #[test]
+    fn run_prepared_reports_a_non_zero_wrapper_exit() {
+        let mut cmd = Command::new("sh");
+        cmd.args(["-c", "exit 4"]);
+        let err = run_prepared(cmd, "test", "sh", "/tmp", &["sh".to_string()])
+            .expect_err("a non-zero exit is a failed launch");
+        assert!(err.message.contains("status"), "got {:?}", err.message);
     }
 
     /// The rc resolver must agree with `dirs::home_dir()` on every

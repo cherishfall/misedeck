@@ -73,22 +73,67 @@ pub struct ReleaseTag {
     pub published_at: Option<String>,
 }
 
+/// Feed fetch and parse outcomes share this code. `COMMAND_FAILED` would
+/// be the conventional one; the wire test pins this value today and the
+/// error-code set is a separate decision (#252 → #254), so the ticket
+/// that changes it changes both sides at once.
+const CHECK_FAILED_CODE: &str = "app_update_check_failed";
+
 /// Fetch the feed and decide. Blocking — call through `spawn_run`.
 pub fn check(current_version: &str) -> Result<Option<ReleaseTag>, AppError> {
     let feed = fetch_feed(current_version)?;
-    Ok(pick_newest(current_version, &parse_release_tags(&feed)))
+    check_from_body(current_version, &feed)
+}
+
+/// Decide from a response body. Split out of `check` so the
+/// captive-portal case is testable without the network.
+///
+/// An HTTP 200 is not proof that we read a release feed: hotel and
+/// corporate proxies answer with their own HTML page, a TLS-intercepting
+/// middlebox can serve anything, and `curl -f` is happy with all of it.
+/// Parsing zero entries out of that and calling it "up to date" is a
+/// claim we did not earn (issue #253) — the forward direction (a real
+/// feed with nothing newer) and "we never read a feed" must not collapse
+/// into the same answer. So the body has to look like an Atom feed with
+/// at least one complete entry; only then does `Ok(None)` mean "current".
+pub fn check_from_body(
+    current_version: &str,
+    body: &str,
+) -> Result<Option<ReleaseTag>, AppError> {
+    if !body.contains("<feed") {
+        return Err(feed_shape_error("the response is not an Atom feed"));
+    }
+    if entry_blocks(body).is_empty() {
+        return Err(feed_shape_error(
+            "the feed contains no complete <entry> element",
+        ));
+    }
+    Ok(pick_newest(current_version, &parse_release_tags(body)))
+}
+
+fn feed_shape_error(detail: &str) -> AppError {
+    AppError::new(
+        CHECK_FAILED_CODE,
+        format!("the release feed could not be read: {detail}"),
+        String::new(),
+    )
 }
 
 /// `curl -fsSL --max-time 8 --connect-timeout 5 -A misedeck/<version>`.
 /// One code path on every platform: Windows 10 1803+ ships `curl.exe`,
 /// and a Windows-specific PowerShell branch would be a second thing to
 /// keep honest with no real machine in the loop (issue #208).
+///
+/// On Windows `curl.exe` is the System32 copy, not a `PATH` lookup: the
+/// `CreateProcess` search order starts with the current directory, so a
+/// bare name can run a binary planted where the app was launched
+/// (issue #253).
 fn fetch_feed(current_version: &str) -> Result<String, AppError> {
-    let program = if cfg!(target_os = "windows") {
-        "curl.exe"
-    } else {
-        "curl"
-    };
+    #[cfg(target_os = "windows")]
+    let program = crate::process_tree::system32("curl.exe");
+    #[cfg(not(target_os = "windows"))]
+    let program = "curl".to_string();
+
     let mut cmd = Command::new(program);
     cmd.arg("-fsSL")
         .arg("--max-time")
@@ -106,7 +151,7 @@ fn fetch_feed(current_version: &str) -> Result<String, AppError> {
         .output()
         .map_err(|err| {
             AppError::new(
-                "app_update_check_failed",
+                CHECK_FAILED_CODE,
                 format!("could not run curl: {err}"),
                 String::new(),
             )
@@ -114,7 +159,7 @@ fn fetch_feed(current_version: &str) -> Result<String, AppError> {
 
     if !output.status.success() {
         return Err(AppError::new(
-            "app_update_check_failed",
+            CHECK_FAILED_CODE,
             "the release feed request did not succeed",
             String::from_utf8_lossy(&output.stderr).into_owned(),
         ));
@@ -322,6 +367,78 @@ mod tests {
             parse_release_tags(r#"<?xml version="1.0"?><feed></feed>"#).is_empty(),
             "a feed with no entries must not invent one"
         );
+    }
+
+    /// Issue #253: a 200 with nothing in it is not evidence of anything.
+    /// Reporting "up to date" here is the false claim the ticket is about.
+    #[test]
+    fn an_empty_200_is_a_failed_check_not_an_up_to_date_claim() {
+        let err = check_from_body("1.0.0-beta.17", "")
+            .expect_err("an empty body must fail the check");
+        assert_eq!(err.code, CHECK_FAILED_CODE);
+        assert!(!err.message.is_empty());
+    }
+
+    /// The captive-portal / proxy-block-page case from the audit (R-3): a
+    /// valid HTML page served with 200 where the feed should be.
+    #[test]
+    fn an_html_page_is_a_failed_check() {
+        let page = r#"<!DOCTYPE html>
+<html><head><title>Sign in to the network</title></head>
+<body><h1>Wi-Fi access required</h1><form action="/login">…</form></body></html>"#;
+        let err = check_from_body("1.0.0-beta.17", page)
+            .expect_err("an HTML page must not read as an empty release list");
+        assert_eq!(err.code, CHECK_FAILED_CODE);
+        // A truncated JSON body and a DNS error look the same way: neither
+        // is a feed.
+        assert!(check_from_body(
+            "1.0.0-beta.17",
+            r#"{"message":"rate limited"}"#
+        )
+        .is_err());
+    }
+
+    /// A real feed root with no entries is a broken response — the release
+    /// feed always carries entries, so "no entry" means we did not read it.
+    #[test]
+    fn a_feed_with_zero_entries_is_a_failed_check() {
+        let empty_feed = r#"<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Release notes from misedeck</title>
+</feed>"#;
+        let err = check_from_body("1.0.0-beta.17", empty_feed)
+            .expect_err("a feed without entries must fail the check");
+        assert_eq!(err.code, CHECK_FAILED_CODE);
+    }
+
+    /// The forward direction still works: a real feed answers "current"
+    /// when nothing is newer, and names the release when something is.
+    #[test]
+    fn a_real_feed_reports_current_or_the_newer_release() {
+        assert!(
+            check_from_body("1.0.0-beta.17", FEED)
+                .expect("a real feed is a successful check")
+                .is_none(),
+            "running the newest build is `current`, not an error"
+        );
+        let newer = check_from_body("1.0.0-beta.16", FEED)
+            .expect("a real feed is a successful check")
+            .expect("a newer beta exists");
+        assert_eq!(newer.version, "1.0.0-beta.17");
+        assert_eq!(
+            newer.url,
+            "https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.17"
+        );
+    }
+
+    /// A truncated entry is not an entry: the body was cut off, so the
+    /// check fails instead of claiming there is nothing newer.
+    #[test]
+    fn a_truncated_feed_is_a_failed_check() {
+        let mid = FEED.find("</entry>").expect("fixture has a closed entry") - 40;
+        let err = check_from_body("1.0.0-beta.16", &FEED[..mid])
+            .expect_err("a half-read entry means the feed was not read");
+        assert_eq!(err.code, CHECK_FAILED_CODE);
     }
 
     #[test]

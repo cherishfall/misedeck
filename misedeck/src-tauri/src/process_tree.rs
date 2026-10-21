@@ -30,6 +30,9 @@
 
 use std::collections::{HashMap, HashSet};
 use std::io;
+use std::path::Path;
+#[cfg(windows)]
+use std::path::PathBuf;
 use std::process::{Child, Command, ExitStatus};
 use std::sync::{Mutex, MutexGuard};
 
@@ -151,6 +154,56 @@ pub(crate) fn hide_console_window(cmd: &mut Command) {
 #[cfg(not(windows))]
 pub(crate) fn hide_console_window(_cmd: &mut Command) {}
 
+/// `…\System32\<parts…>` — where Windows keeps the system binaries this
+/// app is entitled to run (issue #253).
+///
+/// `CreateProcess` searches the **current directory** before `PATH`, so
+/// spawning `taskkill` / `curl.exe` / `powershell` / `cmd.exe` by bare
+/// name runs whatever file happens to sit in the directory the app was
+/// started from. Resolving the system copy explicitly removes the class:
+/// a planted binary is never considered, whatever the search order says.
+///
+/// `parts` is a path inside `System32`, not always one file name:
+/// `powershell.exe` sits in `System32\WindowsPowerShell\v1.0\`, not
+/// directly under `System32`. `system_root` is injected so the join is
+/// testable on every platform; `None` (no `%SystemRoot%`, i.e. a
+/// non-Windows build) falls back to the bare name rather than inventing a
+/// path.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub(crate) fn system32_under(system_root: Option<&Path>, parts: &[&str]) -> String {
+    let Some(root) = system_root else {
+        return parts.join("\\");
+    };
+    let mut path = root.join("System32");
+    for part in parts {
+        path.push(part);
+    }
+    path.to_string_lossy().into_owned()
+}
+
+/// The absolute System32 binary for this Windows machine.
+#[cfg(windows)]
+pub(crate) fn system32(program: &str) -> String {
+    let root = std::env::var_os("SystemRoot").map(PathBuf::from);
+    system32_under(root.as_deref(), &[program])
+}
+
+/// `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`.
+///
+/// Not `System32\powershell.exe`: Windows PowerShell 5.1 lives in its own
+/// versioned folder, which is precisely why the install command used a
+/// `PATH` lookup. The planted-binary argument is the same as `system32`,
+/// and a wrong guess here would break the one path a user without mise
+/// takes on day one.
+#[cfg(windows)]
+pub(crate) fn windows_powershell() -> String {
+    let root = std::env::var_os("SystemRoot").map(PathBuf::from);
+    system32_under(
+        root.as_deref(),
+        &["WindowsPowerShell", "v1.0", "powershell.exe"],
+    )
+}
+
 /// Force-kill one process group. Signal-only: it never reaps, so the
 /// owner of the `Child` handle stays responsible for `wait()`.
 #[cfg(unix)]
@@ -168,7 +221,11 @@ fn kill_group(group: u32) {
     // Its output is discarded: failure is handled by the caller's
     // `child.kill()` fallback, and a process that already exited is a
     // normal outcome, not an error.
-    let _ = Command::new("taskkill")
+    //
+    // Absolute System32 path (issue #253): a bare `taskkill` resolves
+    // through the current directory first, so a planted binary would run
+    // here with the app's privileges.
+    let _ = Command::new(system32("taskkill.exe"))
         .args(["/F", "/T", "/PID", &group.to_string()])
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
@@ -394,6 +451,76 @@ mod tests {
     fn alive(pid: i32) -> bool {
         // SAFETY: signal 0 only checks for existence/ownership.
         unsafe { libc::kill(pid, 0) == 0 }
+    }
+
+    /// Issue #253: system binaries are addressed under `System32`, never
+    /// by bare name. The join is pure, so the assertion runs on every
+    /// platform — including the nested PowerShell shape, which is the one
+    /// a naive `System32\<name>` join would get wrong.
+    #[test]
+    fn system32_paths_are_built_from_the_injected_root() {
+        let root = Path::new("/sysroot");
+        assert_eq!(
+            std::path::PathBuf::from(system32_under(Some(root), &["taskkill.exe"])),
+            root.join("System32").join("taskkill.exe")
+        );
+        assert_eq!(
+            std::path::PathBuf::from(system32_under(
+                Some(root),
+                &["WindowsPowerShell", "v1.0", "powershell.exe"],
+            )),
+            root.join("System32")
+                .join("WindowsPowerShell")
+                .join("v1.0")
+                .join("powershell.exe")
+        );
+        // No `%SystemRoot%` (non-Windows builds, tests): the bare name is
+        // reported rather than a made-up path.
+        assert_eq!(system32_under(None, &["curl.exe"]), "curl.exe");
+    }
+
+    /// On a real Windows process `%SystemRoot%` is always set, so every
+    /// helper must produce an absolute path, and PowerShell's must point
+    /// at its versioned folder.
+    #[cfg(windows)]
+    #[test]
+    fn system32_resolves_to_absolute_system_paths() {
+        for (resolved, name) in [
+            (PathBuf::from(system32("taskkill.exe")), "taskkill.exe"),
+            (PathBuf::from(system32("curl.exe")), "curl.exe"),
+            (PathBuf::from(system32("cmd.exe")), "cmd.exe"),
+        ] {
+            assert!(resolved.is_absolute(), "got {}", resolved.display());
+            assert_eq!(
+                resolved
+                    .parent()
+                    .and_then(|p| p.file_name())
+                    .map(|n| n.to_string_lossy().to_string()),
+                Some("System32".to_string()),
+                "got {}",
+                resolved.display()
+            );
+            assert_eq!(
+                resolved.file_name().map(|n| n.to_string_lossy().to_string()),
+                Some(name.to_string())
+            );
+        }
+
+        let powershell = PathBuf::from(windows_powershell());
+        assert!(powershell.is_absolute(), "got {}", powershell.display());
+        assert_eq!(
+            powershell.file_name().map(|n| n.to_string_lossy().to_string()),
+            Some("powershell.exe".to_string())
+        );
+        assert_eq!(
+            powershell
+                .parent()
+                .and_then(|p| p.file_name())
+                .map(|n| n.to_string_lossy().to_string()),
+            Some("v1.0".to_string()),
+            "Windows PowerShell 5.1 lives in System32\\WindowsPowerShell\\v1.0 (got {})",
+            powershell.display()
+        );
     }
 
     /// Issue #240: both flags must reach `CreateProcess` together — the
