@@ -57,6 +57,7 @@ import {
 import type { SettingsItem } from "../../types/tauri";
 
 import { settingsEmptyCopy } from "./settingsEmptyCopy";
+import { settingsCountCopy } from "./settingsCountCopy";
 import { settingsUnsetInScope } from "./settingsUnsetScope";
 import { readErrorBody } from "../../utils/readErrorBody";
 import tableStyles from "../../components/Table/Table.module.css";
@@ -186,17 +187,15 @@ export function SettingsPage() {
   // A count of zero above the empty-state card says "there is nothing"
   // twice (issue #226) — the card below already carries that fact and
   // the next step. The filtered count still renders: "0 of 12 settings"
-  // is information about the filter, not a second empty state.
+  // is information about the filter, not a second empty state. The
+  // three-way choice is pure (`settingsCountCopy`) so it is unit-tested.
   const settingsTotal = settings.data?.length ?? 0;
-  const settingsCountText =
-    settingsTotal === 0
-      ? ""
-      : filter.active
-        ? t(I18N_KEYS.settings.countFiltered, {
-            count: filter.rows.length,
-            total: settingsTotal,
-          })
-        : t(I18N_KEYS.settings.count, { count: settingsTotal });
+  const countCopy = settingsCountCopy({
+    total: settingsTotal,
+    filtered: filter.rows.length,
+    filterActive: filter.active,
+  });
+  const settingsCountText = countCopy === null ? "" : t(countCopy.key, countCopy.params);
 
   // Mise-missing or list-loading state. The list-level gate (issue
   // #146) covers the `mise settings ls` read too: while it is pending —
