@@ -74,8 +74,8 @@ impl ShellKind {
     ///   * fish        → `mise activate fish | source`
     ///   * pwsh        → `mise activate pwsh | Out-String | Invoke-Expression`
     ///   * unknown     → a generic one-liner that works for most
-    ///                    POSIX shells, with the caveat that the
-    ///                    user should consult `mise help activate`.
+    ///     POSIX shells, with the caveat that the
+    ///     user should consult `mise help activate`.
     pub fn activation_line(&self) -> String {
         match self {
             ShellKind::Zsh => r#"eval "$(mise activate zsh)""#.to_string(),
@@ -553,7 +553,9 @@ pub fn decode_rc_bytes(bytes: &[u8]) -> RcFile {
 
 fn decode_utf16(bytes: &[u8], little_endian: bool) -> String {
     let units: Vec<u16> = bytes
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| {
             if little_endian {
                 u16::from_le_bytes([pair[0], pair[1]])
@@ -983,12 +985,12 @@ pub fn open_in_terminal(path: Option<&str>) -> Result<TerminalOpenOutcome, AppEr
             resolved.to_string_lossy().to_string(),
         ];
         run_argv(&argv, "macOS", "Terminal.app", &path_str)?;
-        return Ok(TerminalOpenOutcome {
+        Ok(TerminalOpenOutcome {
             platform: "macOS".to_string(),
             terminal_app: "Terminal.app".to_string(),
             path: path_str,
             argv,
-        });
+        })
     }
 
     #[cfg(target_os = "windows")]
@@ -999,12 +1001,12 @@ pub fn open_in_terminal(path: Option<&str>) -> Result<TerminalOpenOutcome, AppEr
         // command line.
         let plan = windows_cmd_start_plan();
         run_cmd_start(&resolved, &plan.argv, &path_str)?;
-        return Ok(TerminalOpenOutcome {
+        Ok(TerminalOpenOutcome {
             platform: "Windows".to_string(),
             terminal_app: "cmd.exe".to_string(),
             path: path_str,
             argv: plan.argv,
-        });
+        })
     }
 
     #[cfg(all(unix, not(target_os = "macos")))]

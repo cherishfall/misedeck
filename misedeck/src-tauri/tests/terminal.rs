@@ -158,17 +158,22 @@ fn open_in_terminal_returns_terminal_not_found_when_nothing_on_path() {
     assert!(!err.message.is_empty());
 }
 
+// Only the Linux-only probe test above reads this guard; on other hosts
+// it would be dead code under `-D warnings` (issue #278).
+#[cfg(all(unix, not(target_os = "macos")))]
 struct PathGuard {
     key: &'static str,
     prev: Option<std::ffi::OsString>,
 }
 
+#[cfg(all(unix, not(target_os = "macos")))]
 impl PathGuard {
     fn new(key: &'static str, prev: Option<std::ffi::OsString>) -> Self {
         Self { key, prev }
     }
 }
 
+#[cfg(all(unix, not(target_os = "macos")))]
 impl Drop for PathGuard {
     fn drop(&mut self) {
         match self.prev.take() {

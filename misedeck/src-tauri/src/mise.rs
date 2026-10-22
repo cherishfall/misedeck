@@ -1444,14 +1444,14 @@ pub fn mise_tasks_edit_path(
 /// architecture doc's "MISE_SAFE=1" semantics:
 ///
 ///   * `ConfigTrusted`   — a `mise.toml` was found in the cwd's
-///      ancestry and is trusted; the trust banner stays hidden and
-///      mutating actions are allowed.
+///     ancestry and is trusted; the trust banner stays hidden and
+///     mutating actions are allowed.
 ///   * `ConfigUntrusted` — a `mise.toml` was found but the user
-///      has not trusted it yet. The directory preview banner
-///      surfaces this; mutating actions must route to the banner.
+///     has not trusted it yet. The directory preview banner
+///     surfaces this; mutating actions must route to the banner.
 ///   * `NoConfig`        — no `mise.toml` is in scope. There is
-///      nothing to trust, so the banner stays hidden and the
-///      `useTrustGuard()` API allows mutations.
+///     nothing to trust, so the banner stays hidden and the
+///     `useTrustGuard()` API allows mutations.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum TrustSource {

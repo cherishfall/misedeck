@@ -67,6 +67,7 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 /// belonged to.
 const MAX_CANCELLED_RUNS: usize = 256;
 
+#[derive(Default)]
 struct Registry {
     /// pid → process group of every child this process spawned and has
     /// not reaped. The group id equals the child's pid on both
@@ -78,16 +79,6 @@ struct Registry {
     /// The same ids in insertion order, so eviction drops the oldest
     /// unclaimed request first.
     cancelled_order: VecDeque<String>,
-}
-
-impl Default for Registry {
-    fn default() -> Self {
-        Self {
-            children: HashMap::new(),
-            cancelled: HashSet::new(),
-            cancelled_order: VecDeque::new(),
-        }
-    }
 }
 
 impl Registry {
@@ -536,6 +527,72 @@ mod tests {
         state.remember_cancel("same-run");
         state.remember_cancel("same-run");
         assert_eq!(state.cancelled_order.len(), 1);
+    }
+
+    /// Issue #278: the same teardown, driven natively on Windows. The
+    /// unix test above proves `killpg` reaches a grandchild; this one
+    /// proves the Windows half — `taskkill /F /T` — reaches the
+    /// grandchild of a child spawned through `ChildGuard`.
+    ///
+    /// PowerShell records the pid of the `ping` it starts (which runs
+    /// for ~30 s) and waits on it, so the guard owns a live two-process
+    /// tree. One `terminate_tree` must end both; the pid check runs
+    /// through `tasklist` so it observes the OS, not just the reaped
+    /// direct child.
+    #[cfg(windows)]
+    #[test]
+    fn terminate_tree_kills_a_windows_grandchild() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let pid_file = dir.path().join("grandchild.pid");
+        let script = format!(
+            "$p = Start-Process -FilePath '{}' -ArgumentList '-n','30','127.0.0.1' \
+             -PassThru -WindowStyle Hidden; \
+             Set-Content -LiteralPath '{}' -Value $p.Id; Wait-Process -Id $p.Id",
+            system32("ping.exe"),
+            pid_file.display()
+        );
+        let mut cmd = Command::new(windows_powershell());
+        cmd.args(["-NoProfile", "-NonInteractive", "-Command", &script]);
+        let mut guard = ChildGuard::spawn(&mut cmd, None).expect("spawn");
+
+        let written = wait_until(Duration::from_secs(20), || {
+            std::fs::read_to_string(&pid_file)
+                .ok()
+                .and_then(|s| s.trim().parse::<u32>().ok())
+                .is_some()
+        });
+        assert!(written, "fixture did not report its grandchild pid");
+        let grandchild: u32 = std::fs::read_to_string(&pid_file)
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap();
+        assert!(
+            process_exists(grandchild),
+            "grandchild {grandchild} must be running before the teardown"
+        );
+
+        guard.terminate_tree();
+
+        assert!(
+            wait_until(Duration::from_secs(5), || !process_exists(grandchild)),
+            "grandchild {grandchild} survived terminate_tree"
+        );
+    }
+
+    /// Whether Windows still reports `pid` in its task list. `tasklist`
+    /// with CSV output is the cheapest OS-level check that needs no
+    /// extra crate (there is no `OpenProcess` binding without one).
+    #[cfg(windows)]
+    fn process_exists(pid: u32) -> bool {
+        let filter = format!("PID eq {pid}");
+        let output = Command::new(system32("tasklist.exe"))
+            .args(["/FI", &filter, "/NH", "/FO", "CSV"])
+            .output();
+        match output {
+            Ok(output) => String::from_utf8_lossy(&output.stdout).contains(&format!("\"{pid}\"")),
+            Err(_) => false,
+        }
     }
 
     #[cfg(unix)]

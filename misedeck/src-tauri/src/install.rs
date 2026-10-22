@@ -306,13 +306,13 @@ pub fn mise_self_update_argv() -> Vec<String> {
 pub fn run_self_update<F>(
     mise_path: &Path,
     run_id: Option<&str>,
-    mut on_event: F,
+    on_event: F,
 ) -> Result<SelfUpdateOutcome, AppError>
 where
     F: FnMut(RunEvent) + Send + 'static,
 {
     let req = RunRequest::new(mise_self_update_argv());
-    let outcome = run_mise_tracked(mise_path, &req, run_id, move |e| on_event(e))?;
+    let outcome = run_mise_tracked(mise_path, &req, run_id, on_event)?;
 
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(

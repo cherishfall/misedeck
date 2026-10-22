@@ -10,7 +10,7 @@ maintainer cuts a release.
 
 | Workflow    | Trigger                                  | What it does                                                                                                                                       | Wall-clock budget |
 | ----------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run lint:eslint` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run lint:install-echo-parity` · `npm run lint:argv-parity` · `npm run build` · `cargo check` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu; a separate Windows job runs `npm run ci` + `cargo test --lib` + `cargo build` (see below). | < 5 min            |
+| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run lint:eslint` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run lint:install-echo-parity` · `npm run lint:argv-parity` · `npm run build` · `cargo check` · `cargo clippy --all-targets -- -D warnings` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu; a separate Windows job runs `npm run ci` + `cargo test --lib` + `cargo build` (see below). | < 5 min            |
 | `release.yml` | push of a `v*.*.*` tag, or `workflow_dispatch` | Builds Tauri bundles for `macos-latest`, `windows-latest`, `ubuntu-22.04` in parallel; uploads per-platform artifacts; on a real tag push, computes one release-wide `SHA256SUMS` and publishes a GitHub Release. | matrix-driven     |
 
 The `ci.yml` workflow is the gate that keeps `master` green. The
@@ -21,6 +21,31 @@ The `ci.yml` workflow is the gate that keeps `master` green. The
 refuse to start on Ubuntu 22.04 / Debian 12. `ci.yml` keeps
 `ubuntu-latest` — that job checks against current dependencies, not
 portability.
+
+### Permissions and action pins
+
+Both workflows run with least privilege (issue #278):
+
+- Top level is `permissions: contents: read` in **both** workflows. In
+  `release.yml` only the `release` job opts into `contents: write` at
+  job level — the build legs run `npm ci` and cargo build scripts, and
+  a compromised dependency must not be able to publish or rewrite a
+  Release.
+- Every third-party action is pinned to a full 40-character commit
+  SHA, with the human-readable version in a trailing comment
+  (`uses: actions/checkout@11d5960… # v4.4.0`). Tags and branches are
+  mutable; the SHA is not. `dtolnay/rust-toolchain@stable` is pinned to
+  the current head of its `stable` branch. Refreshing a pin means
+  resolving the tag again with `gh api` and updating both workflows
+  (and this table's version comment) in one change.
+
+The `rust` job also runs `cargo clippy --all-targets -- -D warnings`,
+so a lint (including `unexpected_cfgs`) fails CI instead of lingering
+on `master`. The Windows job runs unit tests through
+`cargo test --lib`, which includes the `#[cfg(windows)]` process-tree
+teardown test: it spawns PowerShell, which starts `ping` as a
+grandchild, calls the real `terminate_tree`, and asserts both
+processes are gone through `tasklist` (issue #278).
 
 ### The Windows job
 
@@ -192,18 +217,18 @@ npm ci
 npm run tauri build -- --bundles app,dmg  # or deb,rpm,appimage on Linux
 ```
 
-The CI matrix uses `dtolnay/rust-toolchain@stable` and Node 22; the
-exact lockfile is `misedeck/src-tauri/Cargo.lock` and
+The CI matrix uses a SHA-pinned `dtolnay/rust-toolchain` at `stable`
+and Node 22; the exact lockfile is `misedeck/src-tauri/Cargo.lock` and
 `misedeck/package-lock.json`. Both are committed.
 
 ## Caching
 
 `release.yml` and `ci.yml` both use:
 
-- `Swatinem/rust-cache@v2` for `~/.cargo` and
+- `Swatinem/rust-cache` (`v2.9.3`, pinned by SHA) for `~/.cargo` and
   `misedeck/src-tauri/target`, keyed on the lockfile + matrix OS.
-- `actions/setup-node@v4` with `cache: 'npm'` for `node_modules`,
-  keyed on `misedeck/package-lock.json`.
+- `actions/setup-node` (`v4.4.0`, pinned by SHA) with `cache: 'npm'`
+  for `node_modules`, keyed on `misedeck/package-lock.json`.
 
 `release.yml` uses `shared-key: ${{ matrix.os }}` so the three
 platform caches don't collide; `ci.yml` runs on a single OS per

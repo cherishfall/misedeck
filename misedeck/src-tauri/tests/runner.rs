@@ -131,9 +131,12 @@ fn cwd_is_passed_as_dash_c() {
         // fixture prints the error to stderr instead. So we assert the
         // cwd is present in stderr.
         let combined = format!("{}{}", outcome.stdout, outcome.stderr);
+        // Exact pair, not `contains(cwd) || contains("-C")`: the loose
+        // form passed even when the cwd was wrong, as long as some `-C`
+        // showed up somewhere (#278).
         assert!(
-            combined.contains(cwd_marker) || combined.contains("-C"),
-            "expected cwd in runner output, got stdout={:?} stderr={:?}",
+            combined.contains(&format!("-C {cwd_marker}")),
+            "expected `-C {cwd_marker}` in argv, got stdout={:?} stderr={:?}",
             outcome.stdout,
             outcome.stderr
         );

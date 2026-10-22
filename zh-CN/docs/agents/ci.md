@@ -9,7 +9,7 @@
 
 | Workflow      | 触发时机                                    | 做了什么                                                                                                                                  | 墙钟预算   |
 | ------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `tsc --noEmit` · `npm run lint:eslint` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run lint:install-echo-parity` · `npm run lint:argv-parity` · `npm run build` · `cargo check` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu；另有独立 Windows job 跑 `npm run ci` + `cargo test --lib` + `cargo build`（见下文）。 | < 5 分钟    |
+| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `tsc --noEmit` · `npm run lint:eslint` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run lint:install-echo-parity` · `npm run lint:argv-parity` · `npm run build` · `cargo check` · `cargo clippy --all-targets -- -D warnings` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu；另有独立 Windows job 跑 `npm run ci` + `cargo test --lib` + `cargo build`（见下文）。 | < 5 分钟    |
 | `release.yml` | 推送 `v*.*.*` tag，或 `workflow_dispatch`   | 在 `macos-latest`、`windows-latest`、`ubuntu-22.04` 上并行构建 Tauri bundle；上传各平台 artifact；真实 tag 推送时计算一份覆盖全版本的 `SHA256SUMS` 并发布 GitHub Release。       | 由矩阵决定 |
 
 `ci.yml` 是保证 `master` 绿色的闸门。`release.yml` 才是真正产出
@@ -19,6 +19,29 @@ artifact 的那个。
 （issue #247）：二进制链接的是构建机的 glibc，24.04 上构建的包在
 Ubuntu 22.04 / Debian 12 上无法启动。`ci.yml` 保持 `ubuntu-latest` ——
 那个 job 检查的是与当前依赖的兼容性，不是可移植性。
+
+### 权限与 action 固定
+
+两个 workflow 都按最小权限运行（issue #278）：
+
+- **两个** workflow 的顶层都是 `permissions: contents: read`。在
+  `release.yml` 中只有 `release` job 在 job 级别声明
+  `contents: write` —— 构建腿会执行 `npm ci` 和 cargo build 脚本，
+  被攻破的依赖不能借这些步骤发布或改写 Release。
+- 每个第三方 action 都固定到完整的 40 位 commit SHA，并在行尾注释
+  标出可读版本（`uses: actions/checkout@11d5960… # v4.4.0`）。
+  tag 和分支是可变的，SHA 不是。`dtolnay/rust-toolchain@stable`
+  固定在其 `stable` 分支当前 head。刷新固定点时，用 `gh api`
+  重新解析 tag，并在同一次改动里更新两个 workflow（以及本表的
+  版本注释）。
+
+`rust` job 还会跑 `cargo clippy --all-targets -- -D warnings`，
+任何 lint（包括 `unexpected_cfgs`）都会让 CI 失败，而不是留在
+`master` 上。Windows job 通过 `cargo test --lib` 跑单元测试，
+其中包含 `#[cfg(windows)]` 的进程树 teardown 测试：它启动
+PowerShell，由 PowerShell 再启动 `ping` 作为孙进程，调用真实的
+`terminate_tree`，再用 `tasklist` 断言两个进程都已消失
+（issue #278）。
 
 ### Windows job
 
@@ -162,7 +185,8 @@ npm ci
 npm run tauri build -- --bundles app,dmg  # Linux 上用 deb,rpm,appimage
 ```
 
-CI 矩阵使用 `dtolnay/rust-toolchain@stable` 与 Node 22；lockfile 是
+CI 矩阵使用按 SHA 固定的 `dtolnay/rust-toolchain` 的 `stable`
+与 Node 22；lockfile 是
 `misedeck/src-tauri/Cargo.lock` 与 `misedeck/package-lock.json`，
 两者都已提交。
 
@@ -170,10 +194,10 @@ CI 矩阵使用 `dtolnay/rust-toolchain@stable` 与 Node 22；lockfile 是
 
 `release.yml` 与 `ci.yml` 都使用：
 
-- `Swatinem/rust-cache@v2` 缓存 `~/.cargo` 与
+- `Swatinem/rust-cache`（`v2.9.3`，按 SHA 固定）缓存 `~/.cargo` 与
   `misedeck/src-tauri/target`，键包含 lockfile + 矩阵 OS。
-- `actions/setup-node@v4` 的 `cache: 'npm'` 缓存 `node_modules`，
-  键为 `misedeck/package-lock.json`。
+- `actions/setup-node`（`v4.4.0`，按 SHA 固定）的 `cache: 'npm'` 缓存
+  `node_modules`，键为 `misedeck/package-lock.json`。
 
 `release.yml` 用 `shared-key: ${{ matrix.os }}` 让三个平台缓存不互窜；
 `ci.yml` 的 `rust` job 只在单一 OS 上跑，无需这个维度。

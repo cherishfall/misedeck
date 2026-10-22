@@ -54,3 +54,9 @@ libc = "0.2"
 [dev-dependencies]
 tempfile = "3"
 serial_test = "3"
+
+# `objc`'s `msg_send!` expands to `cfg(feature = "cargo-clippy")` inside this
+# crate, so the feature has to be declared here for `-D unexpected-cfgs`
+# (issue #278). It is a probe, never enabled.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("cargo-clippy"))'] }
