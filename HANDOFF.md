@@ -4,7 +4,9 @@ This document is a continuation marker between autonomous driver sessions.
 
 ## CURRENT STATE (2026-10-22, late — **post-GA audit batch closed: #266–#280 done; only #239 open, owner-gated**)
 
-Owner asked for a second full review after GA. The findings and evidence live in `docs/feedback/1.0.0-final-audit.md`; 15 tickets (#266–#280) were filed and every one is closed. 17 commits from the GA state `3ce8d39` to `cea64a5`, pushed to `origin/master`. One operational note: GitHub's HTTP/2 path failed twice in this network (`Failed to connect to github.com:443`, then an HTTP/2 framing error); `git -c http.version=HTTP/1.1 push origin master` worked. `gh api` worked throughout.
+Owner asked for a second full review after GA. The findings and evidence live in `docs/feedback/1.0.0-final-audit.md`; 15 tickets (#266–#280) were filed and every one is closed. 19 commits from the GA state `3ce8d39` to `362bb9f`, pushed to `origin/master`; CI run **39721149845** is **green on all four jobs** (frontend + rust on Ubuntu, frontend + windows). One operational note: GitHub's HTTP/2 path failed twice in this network (`Failed to connect to github.com:443`, then an HTTP/2 framing error); `git -c http.version=HTTP/1.1 push origin master` worked. `gh api` worked throughout.
+
+The first CI run with the new clippy gate exposed two Linux-only dead-symbol errors that macOS could not see (`tauri::Manager` and `run_argv` are macOS-only); both are now `cfg(target_os = "macos")` in `362bb9f`. The Windows job also passed, so the windows-native teardown test from #278 and the #277 shell-order logic compile and run there.
 
 | Issue | Commit(s) | Scope |
 | --- | --- | --- |
@@ -20,20 +22,20 @@ Owner asked for a second full review after GA. The findings and evidence live in
 | #275 | `525dcc2` | Plugins show the installed ref and commit. |
 | #276 | `8cc7b08` | Panel-dispatched reads (`ls`, `settings ls`, `ls-remote`) carry an explicit `readOnly` flag → `MISE_SAFE=1`; mutations/run/install keep the unsafe stream. Rust + TS tests pin the split. |
 | #277 | `29dbaa9` | Streaming output caps (8 KiB line, 2 MiB/stream, bounded channel, drain-before-join) with a typed `outputTruncated` event rendered via i18n; installer shares the reader. Windows shell detection now prefers `$SHELL`, probes `pwsh` via System32 `where.exe`, never spawns bare names. |
-| #278 | `c07490e` | Release permissions are read-only except the publishing job; all 7 actions SHA-pinned; 14 clippy lints cleared and a `clippy -D warnings` gate added; Windows-native teardown test; exact `-C <cwd>` assertion. |
+| #278 | `c07490e` + `362bb9f` | Release permissions are read-only except the publishing job; all 7 actions SHA-pinned; 14 clippy lints cleared and a `clippy -D warnings` gate added; Windows-native teardown test; exact `-C <cwd>` assertion. Follow-up `362bb9f` gates the two macOS-only symbols the Linux clippy gate exposed. |
 | #279 | `8c2a2f6` | Docs aligned with shipped truth: unsigned Linux packages, ADR-0009 status note, one validated URL-opening surface, macOS 15 Gatekeeper path, README scaffold removed, inventories corrected (en + zh). |
 | #280 | `a634766` + `cea64a5` | Registry combobox scrolls the active option (Arrow/Home/End); Settings shows a filtered count (pure helper + 4 tests); Jump is disabled unless the draft is an integer in range (pure helper + 4 tests); capped `<pre>` viewers gain tab stop, region label and focus ring. |
 
 Audit working doc committed as `0f8c218`.
 
-**Gates at `cea64a5`** (run in the driver session): `npm run ci` exit 0 — 247 node tests, all 18 steps incl. i18n/CSS/argv/invoke guards and the production build; `cargo test --all-targets` exit 0 — 18 suites, 276 passed; `cargo clippy --all-targets -- -D warnings` exit 0; `scripts/test-release-notes.sh` ok.
+**Gates at `362bb9f`** (run in the driver session): `npm run ci` exit 0 — 247 node tests, all 18 steps incl. i18n/CSS/argv/invoke guards and the production build; `cargo test --all-targets` exit 0 — 18 suites, 276 passed; `cargo clippy --all-targets -- -D warnings` exit 0; `scripts/test-release-notes.sh` ok. GitHub CI on `362bb9f` is green on all four jobs.
 
-**Visual verification is partial — do not overclaim:** the dev build at 1200×720 confirmed the registry combobox (15 ArrowDowns, Home/End kept the highlight inside the 280px list). The Settings filtered count, Jump disabled state and `<pre>` focus ring were **not** visually re-confirmed: the macOS session locked mid-check, and an earlier pass may have hit the stale installed 1.0.0 window. Settings count and Jump now have unit coverage; the focus ring is static-reviewed only. CI on `cea64a5` was still in progress at handoff time; the new Windows teardown test and shell-order logic run only in the windows job.
+**Visual verification is partial — do not overclaim:** the dev build at 1200×720 confirmed the registry combobox (15 ArrowDowns, Home/End kept the highlight inside the 280px list). The Settings filtered count, Jump disabled state and `<pre>` focus ring were **not** visually re-confirmed: the macOS session locked mid-check, and an earlier pass may have hit the stale installed 1.0.0 window. Settings count and Jump now have unit coverage; the focus ring is static-reviewed only.
 
 **Next move:**
 1. #239 (cross-platform spec) stays open and owner-gated — there are no `ready-for-agent` issues left.
 2. If the owner wants the remaining visual pass: unlock the screen, run `cd misedeck && npm run tauri dev`, and check at 1200×720: Settings filtered count ("N of M"), Tools pager Jump disabled/enabled, config/lockfile Tab focus ring. Reopen #280 only if a defect shows.
-3. Watch the first CI run that exercises #278's SHA pins/permissions and #277/#278's Windows-only tests; both are syntax/compile-validated locally, not proven on GitHub until that run finishes.
+3. #278's gate is proven: CI run 39721149845 is green on Linux + macOS-less Ubuntu + Windows, including the clippy gate, SHA-pinned actions, and the windows-only teardown test. Keep it green — a local macOS clippy pass cannot see Linux dead code.
 4. Don't undo the two cross-cutting contracts when adding commands: panel reads must pass `readOnly`, and streaming paths must keep the capped reader + typed truncation event.
 
 ---
