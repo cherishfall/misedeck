@@ -2,7 +2,43 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-10-22, early — **v1.0.0 GA CUT**: every 1.0.0 ticket closed, tag pushed, release building)
+## CURRENT STATE (2026-10-22, late — **post-GA audit batch closed: #266–#280 done; only #239 open, owner-gated**)
+
+Owner asked for a second full review after GA. The findings and evidence live in `docs/feedback/1.0.0-final-audit.md`; 15 tickets (#266–#280) were filed and every one is closed. 17 commits from the GA state `3ce8d39` to `cea64a5`, pushed to `origin/master`. One operational note: GitHub's HTTP/2 path failed twice in this network (`Failed to connect to github.com:443`, then an HTTP/2 framing error); `git -c http.version=HTTP/1.1 push origin master` worked. `gh api` worked throughout.
+
+| Issue | Commit(s) | Scope |
+| --- | --- | --- |
+| #266 | `cf4282d` | Release workflow renders the curated template for lightweight tags instead of the commit message. |
+| #267 | `544d3b3` | Tasks inline edit gated to lossless, in-scope tasks. |
+| #268 | `e364e42` | Env: parent configs scoped out of directory writes; trust parsing hardened. |
+| #269 | `9954443` | Tools: requested-but-missing versions presented honestly. |
+| #270 | `c80adac` | Read payloads reject wrong-shaped data at the boundary. |
+| #271 | `56f3413` | Tasks/Settings table columns stay usable at the reference width. |
+| #272 | `0cdda21` | Escape reaches confirm dialogs nested inside KeyForm. |
+| #273 | `0f96247` | Settings "Show all" lists defaults in Directory mode. |
+| #274 | `b9656d6` | Preview distinguishes parent configs from global. |
+| #275 | `525dcc2` | Plugins show the installed ref and commit. |
+| #276 | `8cc7b08` | Panel-dispatched reads (`ls`, `settings ls`, `ls-remote`) carry an explicit `readOnly` flag → `MISE_SAFE=1`; mutations/run/install keep the unsafe stream. Rust + TS tests pin the split. |
+| #277 | `29dbaa9` | Streaming output caps (8 KiB line, 2 MiB/stream, bounded channel, drain-before-join) with a typed `outputTruncated` event rendered via i18n; installer shares the reader. Windows shell detection now prefers `$SHELL`, probes `pwsh` via System32 `where.exe`, never spawns bare names. |
+| #278 | `c07490e` | Release permissions are read-only except the publishing job; all 7 actions SHA-pinned; 14 clippy lints cleared and a `clippy -D warnings` gate added; Windows-native teardown test; exact `-C <cwd>` assertion. |
+| #279 | `8c2a2f6` | Docs aligned with shipped truth: unsigned Linux packages, ADR-0009 status note, one validated URL-opening surface, macOS 15 Gatekeeper path, README scaffold removed, inventories corrected (en + zh). |
+| #280 | `a634766` + `cea64a5` | Registry combobox scrolls the active option (Arrow/Home/End); Settings shows a filtered count (pure helper + 4 tests); Jump is disabled unless the draft is an integer in range (pure helper + 4 tests); capped `<pre>` viewers gain tab stop, region label and focus ring. |
+
+Audit working doc committed as `0f8c218`.
+
+**Gates at `cea64a5`** (run in the driver session): `npm run ci` exit 0 — 247 node tests, all 18 steps incl. i18n/CSS/argv/invoke guards and the production build; `cargo test --all-targets` exit 0 — 18 suites, 276 passed; `cargo clippy --all-targets -- -D warnings` exit 0; `scripts/test-release-notes.sh` ok.
+
+**Visual verification is partial — do not overclaim:** the dev build at 1200×720 confirmed the registry combobox (15 ArrowDowns, Home/End kept the highlight inside the 280px list). The Settings filtered count, Jump disabled state and `<pre>` focus ring were **not** visually re-confirmed: the macOS session locked mid-check, and an earlier pass may have hit the stale installed 1.0.0 window. Settings count and Jump now have unit coverage; the focus ring is static-reviewed only. CI on `cea64a5` was still in progress at handoff time; the new Windows teardown test and shell-order logic run only in the windows job.
+
+**Next move:**
+1. #239 (cross-platform spec) stays open and owner-gated — there are no `ready-for-agent` issues left.
+2. If the owner wants the remaining visual pass: unlock the screen, run `cd misedeck && npm run tauri dev`, and check at 1200×720: Settings filtered count ("N of M"), Tools pager Jump disabled/enabled, config/lockfile Tab focus ring. Reopen #280 only if a defect shows.
+3. Watch the first CI run that exercises #278's SHA pins/permissions and #277/#278's Windows-only tests; both are syntax/compile-validated locally, not proven on GitHub until that run finishes.
+4. Don't undo the two cross-cutting contracts when adding commands: panel reads must pass `readOnly`, and streaming paths must keep the capped reader + typed truncation event.
+
+---
+
+## GA STATE (2026-10-22, early — **v1.0.0 GA CUT**: every 1.0.0 ticket closed, tag pushed, release building)
 
 Owner pulled the whole pre-release audit into 1.0.0 (P0 + P1 + P2, plus #238 and #249). 21 commits from the audit baseline `37d27fb` to the release commit `99e0aad`; every ticket below is closed. The only open issue is **#239**, the cross-platform spec, which the owner deliberately leaves open — the READMEs keep "macOS polished / Linux unverified / Windows experimental" in step with it.
 
