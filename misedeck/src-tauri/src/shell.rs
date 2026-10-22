@@ -1070,6 +1070,7 @@ fn run_cmd_start(dir: &Path, argv: &[String], path: &str) -> Result<(), AppError
 /// don't wait for the terminal to actually render a prompt.
 /// `terminal_app` is included in the error message so the user
 /// can see which app the launch attempted.
+#[cfg(target_os = "macos")]
 fn run_argv(
     argv: &[String],
     platform: &str,

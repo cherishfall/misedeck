@@ -11,6 +11,7 @@ use std::sync::Mutex;
 
 use once_cell::sync::Lazy;
 use serde::Serialize;
+#[cfg(target_os = "macos")]
 use tauri::Manager;
 
 pub mod external_link;
