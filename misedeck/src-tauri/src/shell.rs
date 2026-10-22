@@ -150,22 +150,26 @@ pub struct ActivationStatus {
 ///            The path's basename is matched against the known set
 ///            (`zsh`, `bash`, `fish`). Other basenames fall through
 ///            to `Unknown` with the raw name preserved.
-///   Windows: read `HKCU\Software\Microsoft\Windows NT\CurrentVersion\Once`
-///            is overkill; we use the simpler heuristic of `pwsh`
-///            / `powershell` on PATH. If neither is present, the
-///            user is on a unix-style shell (git-bash / WSL) and
-///            `$SHELL` drives the result.
+///   Windows: `$SHELL` first — Git Bash / WSL export a unix-style shell
+///            path, and honoring it is what makes their activation
+///            instructions reachable (Windows PowerShell 5.1 is present
+///            on effectively every machine, so probing it first used to
+///            yield `PowerShell` for everyone). A recognized unix-style
+///            `$SHELL` (`zsh` / `bash` / `fish`) wins; otherwise `pwsh`
+///            on `PATH` (via `where.exe`) or the absolute System32
+///            Windows PowerShell decides `PowerShell` (issue #277).
 ///
 /// The function never fails: an undetectable shell returns
 /// `Unknown { name: "unknown" }` and the UI surfaces that.
 pub fn detect_user_shell() -> ShellKind {
     #[cfg(target_os = "windows")]
     {
-        if which_exists("pwsh.exe") || which_exists("powershell.exe") {
-            return ShellKind::PowerShell;
-        }
-        // Fall through to the Unix-style $SHELL check below — WSL /
-        // git-bash run a Unix shell under Windows.
+        let env_shell = std::env::var_os("SHELL").map(|s| s.to_string_lossy().into_owned());
+        detect_windows_shell(
+            env_shell.as_deref(),
+            windows_pwsh_on_path(),
+            windows_powershell_present(),
+        )
     }
 
     #[cfg(unix)]
@@ -174,11 +178,85 @@ pub fn detect_user_shell() -> ShellKind {
         let passwd_shell = passwd_login_shell();
         detect_user_shell_from(env_shell.as_deref(), passwd_shell.as_deref())
     }
-    #[cfg(not(unix))]
+    #[cfg(not(any(unix, target_os = "windows")))]
     {
         let raw = std::env::var_os("SHELL").map(|s| s.to_string_lossy().into_owned());
         detect_user_shell_from(raw.as_deref(), None)
     }
+}
+
+/// Decide the Windows shell from what `$SHELL` says and what the two
+/// PowerShell probes found.
+///
+/// Pure so the order is testable on every host (the probe results and
+/// the env value are injected; convention: `detect_user_shell_from`).
+/// Windows includes a unix-like shell for Git Bash and WSL, and those
+/// users need that shell's rc file, not a PowerShell profile. An
+/// unrecognized `$SHELL` (a custom shell, or PowerShell itself) does not
+/// beat an installed PowerShell — it only provides the fallback name
+/// when neither probe succeeds (issue #277).
+pub fn detect_windows_shell(
+    env_shell: Option<&str>,
+    has_pwsh: bool,
+    has_windows_powershell: bool,
+) -> ShellKind {
+    let env_shell = env_shell.map(str::trim).filter(|s| !s.is_empty());
+    if let Some(raw) = env_shell {
+        if let kind @ (ShellKind::Zsh | ShellKind::Bash | ShellKind::Fish) =
+            classify_shell_path(raw)
+        {
+            return kind;
+        }
+    }
+    if has_pwsh || has_windows_powershell {
+        return ShellKind::PowerShell;
+    }
+    match env_shell {
+        Some(raw) => classify_shell_path(raw),
+        None => ShellKind::Unknown {
+            name: "unknown".to_string(),
+        },
+    }
+}
+
+/// Is `pwsh.exe` on `PATH`? `where.exe` is spawned via its absolute
+/// System32 path and only the search is delegated to it — the binary it
+/// reports is never executed. Spawning the bare name `pwsh.exe` (the old
+/// probe) let `CreateProcess` resolve the current directory first, a
+/// binary-planting surface closed by #253 elsewhere (issue #277).
+#[cfg(target_os = "windows")]
+fn windows_pwsh_on_path() -> bool {
+    let where_exe = crate::process_tree::system32("where.exe");
+    // `system32` falls back to the bare name when `%SystemRoot%` is
+    // missing; spawning that would reopen the planting surface. A real
+    // Windows always has SystemRoot, so skipping is safe.
+    if !Path::new(&where_exe).is_absolute() {
+        return false;
+    }
+    let mut cmd = Command::new(where_exe);
+    cmd.arg("pwsh.exe")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    // A GUI process spawning a console program must not flash a window
+    // (issue #240).
+    crate::process_tree::hide_console_window(&mut cmd);
+    match cmd.spawn() {
+        Ok(mut child) => wait_with_timeout(&mut child, PROBE_TIMEOUT)
+            .map(|status| status.success())
+            .unwrap_or(false),
+        Err(_) => false,
+    }
+}
+
+/// Is Windows PowerShell 5.1 present? It lives at a fixed System32 path,
+/// so a file check is enough — no bare-name spawn, no `PATH` search
+/// (issue #277).
+#[cfg(target_os = "windows")]
+fn windows_powershell_present() -> bool {
+    let powershell = crate::process_tree::windows_powershell();
+    let path = Path::new(&powershell);
+    path.is_absolute() && path.is_file()
 }
 
 /// Classify what the login-shell sources say.
@@ -1325,6 +1403,72 @@ mod tests {
             ShellKind::Unknown { name } => assert_eq!(name, "/opt/weird/nu"),
             other => panic!("expected Unknown, got {other:?}"),
         }
+    }
+
+    /// Issue #277: Windows PowerShell 5.1 is present on effectively every
+    /// machine, so the old order always answered `PowerShell` and Git Bash
+    /// / WSL users got an activation line for the wrong shell. A
+    /// recognized unix-style `$SHELL` now wins.
+    #[test]
+    fn windows_shell_prefers_a_recognized_unix_shell_env() {
+        assert_eq!(
+            detect_windows_shell(Some("C:/Program Files/Git/bin/bash.exe"), true, true),
+            ShellKind::Bash
+        );
+        assert_eq!(
+            detect_windows_shell(Some("/usr/bin/zsh"), false, true),
+            ShellKind::Zsh
+        );
+        assert_eq!(
+            detect_windows_shell(
+                Some("C:/Users/u/AppData/Local/Programs/fish/fish.exe"),
+                false,
+                false
+            ),
+            ShellKind::Fish
+        );
+    }
+
+    /// Without a recognized unix-style `$SHELL`, either PowerShell probe
+    /// decides. An unrecognized value does not beat an installed
+    /// PowerShell — it only names the fallback shell.
+    #[test]
+    fn windows_shell_falls_back_to_powershell() {
+        assert_eq!(detect_windows_shell(None, true, false), ShellKind::PowerShell);
+        assert_eq!(detect_windows_shell(None, false, true), ShellKind::PowerShell);
+        assert_eq!(
+            detect_windows_shell(Some("   "), true, true),
+            ShellKind::PowerShell
+        );
+        assert_eq!(
+            detect_windows_shell(Some("/opt/weird/nu"), true, false),
+            ShellKind::PowerShell
+        );
+        // `$SHELL` naming PowerShell itself is not a unix-style shell, so
+        // the probe still decides (and agrees).
+        assert_eq!(
+            detect_windows_shell(
+                Some("C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"),
+                true,
+                false
+            ),
+            ShellKind::PowerShell
+        );
+    }
+
+    /// Nothing to decide with: keep the raw `$SHELL` name, or `unknown`.
+    #[test]
+    fn windows_shell_keeps_an_unrecognized_shell_when_no_powershell_is_found() {
+        match detect_windows_shell(Some("/opt/weird/nu"), false, false) {
+            ShellKind::Unknown { name } => assert_eq!(name, "/opt/weird/nu"),
+            other => panic!("expected Unknown, got {other:?}"),
+        }
+        assert_eq!(
+            detect_windows_shell(None, false, false),
+            ShellKind::Unknown {
+                name: "unknown".to_string()
+            }
+        );
     }
 
     /// Issue #253, the Linux classes: the server-forwarding trio is

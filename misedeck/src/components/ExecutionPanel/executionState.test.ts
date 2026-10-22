@@ -260,6 +260,31 @@ test("line after cancel: late output is not appended to the transcript", () => {
   assert.deepEqual(entry.lines, []);
 });
 
+// Issue #277: a cap notice is structured, localized at render, one per
+// stream — never a marker line in stdout.
+
+test("truncated: appends a typed notice once per stream", () => {
+  let state = startRun(emptyState(), "a");
+  state = executionReducer(state, { type: "truncated", id: "a", stream: "stdout" });
+  state = executionReducer(state, { type: "truncated", id: "a", stream: "stdout" });
+  state = executionReducer(state, { type: "truncated", id: "a", stream: "stderr" });
+  const entry = state.runs.find((r) => r.id === "a") as RunEntry;
+  assert.deepEqual(entry.lines, [
+    { stream: "notice", notice: "outputTruncated", source: "stdout" },
+    { stream: "notice", notice: "outputTruncated", source: "stderr" },
+  ]);
+});
+
+test("truncated: a finished run never grows a notice", () => {
+  const state = finishRun(startRun(emptyState(), "a"), "a", 0);
+  const next = executionReducer(state, {
+    type: "truncated",
+    id: "a",
+    stream: "stdout",
+  });
+  assert.equal(next, state);
+});
+
 // Issue #197: dismiss (close) is a panel fixture, usable in any state —
 // including the empty state the panel used to get stuck in.
 

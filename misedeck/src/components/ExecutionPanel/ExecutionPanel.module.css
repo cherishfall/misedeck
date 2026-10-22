@@ -259,6 +259,16 @@
   color: var(--flare);
 }
 
+/* A typed cap notice (issue #277), not a log line: same mono rhythm as
+   the transcript so it reads as part of the run, flare toned so the
+   missing output is noticed. */
+.notice {
+  color: var(--flare);
+  font-style: italic;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .affordance {
   align-self: flex-end;
   display: inline-flex;

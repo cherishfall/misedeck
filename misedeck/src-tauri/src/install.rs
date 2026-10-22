@@ -16,15 +16,15 @@
 
 use std::path::Path;
 use std::process::{Command, Stdio};
-use std::sync::mpsc::{channel, RecvTimeoutError};
+use std::sync::mpsc::{sync_channel, RecvTimeoutError};
 use std::time::{Duration, Instant};
 
 use serde::Serialize;
 
 use crate::mise::{
-    drain_streams, extract_date, join_readers_bounded, meets_minimum, mise_version,
-    run_mise_tracked, spawn_line_reader, AppError, RunEvent, RunRequest, MIN_MISE_VERSION,
-    READER_SHUTDOWN_BOUND,
+    deliver_line, drain_streams, extract_date, finish_streams, join_readers_bounded, meets_minimum,
+    mise_version, run_mise_tracked, spawn_line_reader, AppError, CappedStream, OutputLine,
+    OutputStream, RunEvent, RunRequest, LINE_CHANNEL_CAPACITY, MIN_MISE_VERSION,
 };
 use crate::process_tree::{self, ChildGuard};
 
@@ -166,16 +166,16 @@ where
     let stdout = guard.child().stdout.take().expect("piped");
     let stderr = guard.child().stderr.take().expect("piped");
 
-    let (out_tx, out_rx) = channel::<String>();
-    let (err_tx, err_rx) = channel::<String>();
+    let (out_tx, out_rx) = sync_channel::<OutputLine>(LINE_CHANNEL_CAPACITY);
+    let (err_tx, err_rx) = sync_channel::<OutputLine>(LINE_CHANNEL_CAPACITY);
 
     let out_thread = spawn_line_reader(stdout, out_tx);
     let err_thread = spawn_line_reader(stderr, err_tx);
 
     let started = Instant::now();
     let deadline = timeout;
-    let mut stdout_buf = String::new();
-    let mut stderr_buf = String::new();
+    let mut stdout_buf = CappedStream::default();
+    let mut stderr_buf = CappedStream::default();
 
     loop {
         // Cancel (issue #223): same contract as `run_mise` — the panel
@@ -184,8 +184,8 @@ where
         if let Some(id) = run_id {
             if process_tree::take_cancel(id) {
                 guard.terminate_tree();
-                join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
-                drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
+                finish_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
+                join_readers_bounded(vec![out_thread, err_thread], Duration::ZERO);
                 on_event(RunEvent::Exit {
                     exit_code: -1,
                     duration_ms: started.elapsed().as_millis() as u64,
@@ -200,14 +200,15 @@ where
         match guard.try_wait() {
             Ok(Some(status)) => {
                 // Reaped; the guard unregistered its group.
-                // Join readers BEFORE draining: once the child has exited the
-                // pipes usually go to EOF, so joining first is what makes their
-                // last lines visible. The join is bounded — a grandchild that
-                // inherited the pipe keeps it open, and waiting forever would
-                // swallow the exit event (issue #222). `run_mise` uses the same
-                // helper and bound so both runners share one shutdown contract.
-                join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
-                drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
+                // Drain before joining: the bounded channel may have a
+                // reader blocked in `send`. `finish_streams` drains until
+                // both close and is bounded — a grandchild that inherited
+                // the pipe keeps it open, and waiting forever would swallow
+                // the exit event (issue #222). `run_mise` uses the same
+                // helper and bound so both runners share one shutdown
+                // contract.
+                finish_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
+                join_readers_bounded(vec![out_thread, err_thread], Duration::ZERO);
                 let duration_ms = started.elapsed().as_millis() as u64;
                 let exit_code = status.code().unwrap_or(-1);
                 on_event(RunEvent::Exit {
@@ -222,12 +223,12 @@ where
                 if exit_code != 0 {
                     return Err(AppError::command_failed(
                         format!("install script exited with status {exit_code}"),
-                        stderr_buf.clone(),
+                        stderr_buf.text().to_string(),
                     ));
                 }
                 return Ok(InstallOutcome {
-                    stdout: stdout_buf,
-                    stderr: stderr_buf,
+                    stdout: stdout_buf.into_text(),
+                    stderr: stderr_buf.into_text(),
                     exit_code,
                     duration_ms,
                     timed_out: false,
@@ -240,11 +241,11 @@ where
                     // cancel does: `sh` dying alone leaves `curl` and
                     // the installer running (issue #223).
                     guard.terminate_tree();
-                    // Join readers BEFORE the final drain for the same reason as
-                    // the exit branch — still bounded, because the pipes may be
-                    // held by something that outlived the group (issue #222).
-                    join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
-                    drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
+                    // Same drain-then-join order as the exit branch —
+                    // still bounded, because the pipes may be held by
+                    // something that outlived the group (issue #222).
+                    finish_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
+                    join_readers_bounded(vec![out_thread, err_thread], Duration::ZERO);
                     let duration_ms = started.elapsed().as_millis() as u64;
                     on_event(RunEvent::Exit {
                         exit_code: -1,
@@ -257,9 +258,7 @@ where
                 let slice = remaining.min(Duration::from_millis(50));
                 match out_rx.recv_timeout(slice) {
                     Ok(line) => {
-                        on_event(RunEvent::Stdout { line: line.clone() });
-                        stdout_buf.push_str(&line);
-                        stdout_buf.push('\n');
+                        deliver_line(line, OutputStream::Stdout, &mut stdout_buf, &mut on_event);
                     }
                     Err(RecvTimeoutError::Timeout) => {}
                     Err(RecvTimeoutError::Disconnected) => {}
@@ -433,5 +432,48 @@ mod tests {
         if let Some(RunEvent::Exit { exit_code, .. }) = captured.last() {
             assert_eq!(*exit_code, 0);
         }
+    }
+
+    /// The installer shares the runner's capped reader (issue #277): a
+    /// huge line is truncated, the next line still arrives, and the typed
+    /// notice is emitted once instead of a marker string in stdout.
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn run_install_caps_a_huge_line_and_notifies() {
+        use crate::mise::MAX_LINE_BYTES;
+
+        let events: Arc<Mutex<Vec<RunEvent>>> = Arc::new(Mutex::new(Vec::new()));
+        let events_for_cb = events.clone();
+        let mut cmd = Command::new("sh");
+        cmd.args([
+            "-c",
+            "head -c 20000 /dev/zero | tr '\\0' x; printf '\\n'; printf 'tail\\n'",
+        ]);
+        let outcome = run_install_command(cmd, Duration::from_secs(5), None, move |e| {
+            events_for_cb.lock().unwrap().push(e);
+        })
+        .expect("a capped install-shaped command should still succeed");
+
+        assert_eq!(
+            outcome.stdout,
+            format!("{}\ntail\n", "x".repeat(MAX_LINE_BYTES))
+        );
+        let captured = events.lock().unwrap();
+        let notices = captured
+            .iter()
+            .filter(|e| matches!(e, RunEvent::OutputTruncated { .. }))
+            .count();
+        assert_eq!(notices, 1, "one notice per stream");
+        let lines = captured
+            .iter()
+            .filter_map(|e| match e {
+                RunEvent::Stdout { line } => Some(line.as_str()),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[0].len(), MAX_LINE_BYTES);
+        assert!(lines[0].chars().all(|c| c == 'x'));
+        assert_eq!(lines[1], "tail");
     }
 }

@@ -13,9 +13,11 @@ Runner 层位于 Tauri command 与 mise CLI 之间，代码在 `misedeck/src-tau
 
 ## Streaming
 
-Runner 用后台读线程（每个 pipe 一个）按行切分，通过有界 `mpsc::channel` 转发。主循环在两次 `try_wait` 之间非阻塞排空 channel，面板就能看到实时输出。`STREAMING_TIMEOUT`（30 分钟）到点自动结束进程；安装脚本另有 5 分钟上限，只读查询 2 分钟。
+Runner 用后台读线程（每个 pipe 一个）按行切分，通过有界 `mpsc::sync_channel`（256 行；子进程跑得比轮询循环快时施加背压，而不是让队列无限增长）转发。主循环在两次 `try_wait` 之间非阻塞排空 channel，面板就能看到实时输出。`STREAMING_TIMEOUT`（30 分钟）到点自动结束进程；安装脚本另有 5 分钟上限，只读查询 2 分钟。
 
-读线程按字节读取，每行用 `String::from_utf8_lossy` 解码，因此一个非法字节绝不会终止读线程、截断日志、或在子进程仍在运行时关掉管道（issue #222；`RunOutcome` 本就承诺 lossy 解码）。子进程消失后，runner 等待读线程收尾最多 `READER_SHUTDOWN_BOUND`（1 秒）：它们只需要排空管道里已缓冲的数据，而继承了管道的孙进程（`npm run dev &`、daemon）可能永远持有写端，绝不能因此吞掉退出事件。到期仍未结束的读线程会被放弃——丢弃其 handle，线程在管道最终关闭时自行退出。
+内存由构造方式封顶（issue #277）。单行最多保留 8 KiB；超过单行上限的字节会被丢弃，但仍会从管道中读掉，因此不含换行的写入方既不会让子进程卡住，也不会撑大读线程的缓冲区。每条流总共最多保留 2 MiB——流式日志和 `RunOutcome.stdout` / `stderr` 共用同一个 `CappedStream`——超过总上限的行会被丢弃，而读线程仍持续排空管道，所以长时间高输出的任务不会耗尽内存。当某条流第一次因上限而丢弃输出时，runner 会发出一个带类型的 `RunEvent::OutputTruncated { stream }`（每条流最多一次），面板通过 i18n 渲染它。它是 channel 事件，绝不是 stdout 里的标记行：捕获的输出保持逐字节真实，UI 文案保持本地化。安装器使用同一条 `spawn_line_reader` + `CappedStream` 路径。
+
+读线程按字节读取，每行用 `String::from_utf8_lossy` 解码，因此一个非法字节绝不会终止读线程、截断日志、或在子进程仍在运行时关掉管道（issue #222；`RunOutcome` 本就承诺 lossy 解码）。子进程消失后，runner 会持续排空两个 channel 直到读线程关闭它们，最多 `READER_SHUTDOWN_BOUND`（1 秒）：先排空能为阻塞在 `send` 上的读线程腾出容量，队列满时也不会丢掉尾部输出。继承了管道的孙进程（`npm run dev &`、daemon）可能永远持有写端，绝不能因此吞掉退出事件；到期仍未结束的读线程会被放弃——丢弃其 handle，线程在管道最终关闭时自行退出（#277）。
 
 ## 进程树
 

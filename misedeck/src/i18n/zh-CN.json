@@ -688,7 +688,8 @@
     "runsRecent": "{{count}} 条运行记录",
     "closeRun": "关闭",
     "resizeHandle": "调整执行面板高度",
-    "workingDirHome": "运行目录：~（主目录）"
+    "workingDirHome": "运行目录：~（主目录）",
+    "outputTruncated": "{{stream}} 输出已截断，命令仍在继续运行。"
   },
   "failureNotice": {
     "label": "操作失败",

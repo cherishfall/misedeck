@@ -73,6 +73,8 @@ Verification is static-first, and agent-side visual verification is off the tabl
 
 Paths, home dirs, process spawning, and shell detection go through Tauri/Rust cross-platform APIs. macOS-only behavior (e.g. Gatekeeper notes) lives behind platform guards with a no-op or equivalent elsewhere.
 
+Windows shell detection (#277) is split into a pure decision half (`detect_windows_shell`: `$SHELL` first, then PowerShell) that is unit-tested on every host, and probes that run only on Windows (`where.exe pwsh.exe` by absolute path; a file check of the absolute System32 Windows PowerShell). Those probes, and the resulting activation banners, have not been run on a real Windows desktop — Windows runtime verification remains owner-gated (the `windows-latest` CI leg only compiles and runs unit tests).
+
 - **Home is `dirs::home_dir()`, never the `HOME` env var** (issue #229): Windows sets no `HOME`, so every `$HOME` read resolved to nothing there — the activation probe reported `activated: null` and `open_in_terminal` failed on every launch. The same applies to shell rc paths and to any other home-relative string.
 - **Locating mise scans `PATH`** after the well-known candidates: a scoop/winget mise on Windows or `/usr/bin/mise` on Linux lives only there.
 - **An echo must show the branch the executor takes** — the guided install runs `irm … | iex` on Windows and `curl … | sh` elsewhere, so the echoed line is platform-derived too. `npm run lint:install-echo-parity` fails the build when the frontend's copy and `src-tauri/src/install.rs` disagree.

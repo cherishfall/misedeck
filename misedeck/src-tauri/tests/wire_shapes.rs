@@ -12,7 +12,8 @@ use std::path::PathBuf;
 
 use misedeck_lib::install::InstallOutcome;
 use misedeck_lib::mise::{
-    AppError, ConfigFile, DetectMiseOk, MisePluginRow, RunOutcome, TrustSource, TrustStatus,
+    AppError, ConfigFile, DetectMiseOk, MisePluginRow, OutputStream, RunEvent, RunOutcome,
+    TrustSource, TrustStatus,
 };
 use misedeck_lib::shell::{ActivationStatus, ShellKind, TerminalOpenOutcome};
 use misedeck_lib::{
@@ -76,6 +77,21 @@ fn run_command_result_err() {
     })
     .unwrap();
     assert_eq!(v, err_json());
+}
+
+// ---------- execution panel channel events (issue #277) ----------
+
+#[test]
+fn run_event_output_truncated_is_a_typed_notice() {
+    // The notice crosses the IPC channel as its own `kind`, never as a
+    // marker line inside stdout, so the panel can render localized copy.
+    for (stream, wire) in [
+        (OutputStream::Stdout, "stdout"),
+        (OutputStream::Stderr, "stderr"),
+    ] {
+        let v = serde_json::to_value(RunEvent::OutputTruncated { stream }).unwrap();
+        assert_eq!(v, json!({ "kind": "outputTruncated", "stream": wire }));
+    }
 }
 
 // ---------- install_mise / mise_self_update ----------

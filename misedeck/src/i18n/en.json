@@ -688,7 +688,8 @@
     "runsRecent": "{{count}} recent",
     "closeRun": "Close",
     "resizeHandle": "Resize execution panel",
-    "workingDirHome": "Working directory: ~ (home)"
+    "workingDirHome": "Working directory: ~ (home)",
+    "outputTruncated": "{{stream}} output was truncated; the command kept running."
   },
   "failureNotice": {
     "label": "Action failed",

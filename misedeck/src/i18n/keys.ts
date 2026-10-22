@@ -129,6 +129,12 @@ export const I18N_KEYS = {
      * echo in Global mode, where the echo omits `-C $HOME` (issue #191).
      */
     workingDirHome: "execution.workingDirHome",
+    /**
+     * Typed cap notice in the transcript (issue #277). `{{stream}}` is
+     * the ISO stream name (`stdout` / `stderr`), interpolated — never
+     * concatenated — so both locales control the sentence.
+     */
+    outputTruncated: "execution.outputTruncated",
   },
   /** The global failure surface (issue #249). The body is the generic
       sentence used when a rejected command carries no displayable

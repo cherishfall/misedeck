@@ -177,11 +177,24 @@ function makeChannel(
     // dispatched into the run whose id this channel closed over, so a
     // run's stdout can never land in another run's transcript (#138).
     if (!msg || typeof msg !== "object") return;
-    const m = msg as { kind?: string; line?: string; exitCode?: number; durationMs?: number };
+    const m = msg as {
+      kind?: string;
+      line?: string;
+      stream?: string;
+      exitCode?: number;
+      durationMs?: number;
+    };
     if (m.kind === "stdout" && typeof m.line === "string") {
       dispatch({ type: "line", id, stream: "stdout", text: m.line });
     } else if (m.kind === "stderr" && typeof m.line === "string") {
       dispatch({ type: "line", id, stream: "stderr", text: m.line });
+    } else if (
+      m.kind === "outputTruncated" &&
+      (m.stream === "stdout" || m.stream === "stderr")
+    ) {
+      // A typed cap notice (issue #277) — never a marker line in the
+      // transcript, so the panel renders it through i18n.
+      dispatch({ type: "truncated", id, stream: m.stream });
     } else if (m.kind === "exit") {
       dispatch({
         type: "exit",

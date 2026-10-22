@@ -10,7 +10,7 @@
 use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
+use std::sync::mpsc::{sync_channel, Receiver, RecvTimeoutError, SyncSender, TryRecvError};
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
@@ -259,6 +259,15 @@ pub struct RunOutcome {
     pub timed_out: bool,
 }
 
+/// Which pipe an output event came from. Serialized lowercase
+/// (`"stdout"` / `"stderr"`) to match the frontend's channel parser.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum OutputStream {
+    Stdout,
+    Stderr,
+}
+
 /// A single line emitted by a streaming run. The frontend renders these
 /// in the execution panel; the final `Exit` event carries the same fields
 /// as `RunOutcome` minus the buffered stdout/stderr (the panel already has
@@ -269,6 +278,11 @@ pub struct RunOutcome {
 pub enum RunEvent {
     Stdout { line: String },
     Stderr { line: String },
+    /// A per-line or aggregate cap withheld output. Typed instead of a
+    /// marker line inside the stream, so the panel renders localized copy
+    /// and the raw output stays byte-faithful (issue #277). Emitted at
+    /// most once per stream and run; the stream itself keeps draining.
+    OutputTruncated { stream: OutputStream },
     Exit {
         exit_code: i32,
         duration_ms: u64,
@@ -379,6 +393,89 @@ pub fn resolve_cwd_anchor(cwd: Option<&Path>) -> Result<PathBuf, AppError> {
 /// issue #223's job, not this bound's.
 pub(crate) const READER_SHUTDOWN_BOUND: Duration = Duration::from_secs(1);
 
+/// Largest payload retained from a single line (8 KiB). A newline-free
+/// writer (`yes`, a minified JSON blob, a progress bar with no `\n`)
+/// otherwise grew the reader's buffer for as long as the child ran.
+/// Bytes past the cap are consumed and dropped, never left in the pipe
+/// (issue #277).
+pub(crate) const MAX_LINE_BYTES: usize = 8 * 1024;
+
+/// Largest aggregate retained per stream (2 MiB), shared by the streamed
+/// transcript and the `RunOutcome` buffers. Past this bound lines are
+/// dropped from both while the reader keeps draining the pipe, so a
+/// chatty 30-minute task cannot grow the app's memory (issue #277).
+pub(crate) const MAX_STREAM_BYTES: usize = 2 * 1024 * 1024;
+
+/// Lines a reader may queue ahead of the main loop. The channel was
+/// unbounded, so a child that outran the panel's poll loop could grow it
+/// without limit. A bounded channel applies backpressure to the reader,
+/// whose pipe (64 KiB unix / 4 KiB Windows) absorbs the gap; the main
+/// loop drains both channels on every poll slice, so the child does not
+/// block (issue #277).
+pub(crate) const LINE_CHANNEL_CAPACITY: usize = 256;
+
+/// One line as it came off a pipe, after the per-line cap.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct OutputLine {
+    pub text: String,
+    /// Bytes the per-line cap withheld from this line (0 when intact).
+    pub truncated_bytes: u64,
+}
+
+/// Read one newline-delimited line, retaining at most `MAX_LINE_BYTES`.
+/// Returns the number of bytes dropped to the per-line cap; `None` at
+/// EOF with no bytes left (an empty line is `Some(0)`).
+///
+/// Bytes past the cap are still consumed here rather than left for the
+/// next call: returning early would stall on a pipe the child keeps
+/// filling, which is the opposite of the drain guarantee (issue #277).
+fn read_line_capped<R: BufRead>(reader: &mut R, out: &mut Vec<u8>) -> std::io::Result<Option<u64>> {
+    out.clear();
+    let mut dropped = 0u64;
+    let mut saw_bytes = false;
+    loop {
+        let (consume_len, done) = {
+            let available = reader.fill_buf()?;
+            if available.is_empty() {
+                return Ok(saw_bytes.then_some(dropped));
+            }
+            match available.iter().position(|&b| b == b'\n') {
+                Some(i) => {
+                    let room = MAX_LINE_BYTES.saturating_sub(out.len());
+                    let payload = &available[..i];
+                    if payload.len() > room {
+                        out.extend_from_slice(&payload[..room]);
+                        dropped += (payload.len() - room) as u64;
+                    } else {
+                        out.extend_from_slice(payload);
+                        // Strip CRLF even when the `\r` landed in the
+                        // previous `fill_buf` (its `\n` is here).
+                        if out.last() == Some(&b'\r') {
+                            out.pop();
+                        }
+                    }
+                    (i + 1, true)
+                }
+                None => {
+                    let room = MAX_LINE_BYTES.saturating_sub(out.len());
+                    if available.len() > room {
+                        out.extend_from_slice(&available[..room]);
+                        dropped += (available.len() - room) as u64;
+                    } else {
+                        out.extend_from_slice(available);
+                    }
+                    (available.len(), false)
+                }
+            }
+        };
+        saw_bytes = true;
+        reader.consume(consume_len);
+        if done {
+            return Ok(Some(dropped));
+        }
+    }
+}
+
 /// Spawn a reader thread that splits one pipe into lines and forwards
 /// them over `tx`.
 ///
@@ -390,33 +487,29 @@ pub(crate) const READER_SHUTDOWN_BOUND: Duration = Duration::from_secs(1);
 /// lossy decoding; this is that promise. `\n` splits, a trailing `\r`
 /// is stripped, and a final unterminated line is still delivered — the
 /// same line shape `lines()` produced.
-pub(crate) fn spawn_line_reader<R>(pipe: R, tx: Sender<String>) -> JoinHandle<()>
+///
+/// The per-line cap lives here, before the channel: a single huge line
+/// never enters the queue or the aggregate buffers (issue #277).
+pub(crate) fn spawn_line_reader<R>(pipe: R, tx: SyncSender<OutputLine>) -> JoinHandle<()>
 where
     R: Read + Send + 'static,
 {
     thread::spawn(move || {
         let mut reader = BufReader::new(pipe);
         let mut buf = Vec::new();
-        loop {
-            buf.clear();
-            match reader.read_until(b'\n', &mut buf) {
-                Ok(0) => break,
-                Ok(_) => {
-                    if buf.last() == Some(&b'\n') {
-                        buf.pop();
-                        if buf.last() == Some(&b'\r') {
-                            buf.pop();
-                        }
-                    }
-                    if tx.send(String::from_utf8_lossy(&buf).into_owned()).is_err() {
-                        break;
-                    }
-                }
-                // An I/O error is the pipe going away, not a decode
-                // problem — either way there is nothing left to read.
-                Err(_) => break,
+        while let Ok(Some(dropped)) = read_line_capped(&mut reader, &mut buf) {
+            let line = OutputLine {
+                text: String::from_utf8_lossy(&buf).into_owned(),
+                truncated_bytes: dropped,
+            };
+            // A blocked send is bounded backpressure, not a lost
+            // drain: the main loop empties the queue every slice.
+            if tx.send(line).is_err() {
+                break;
             }
         }
+        // EOF or an I/O error — the pipe going away, not a decode
+        // problem; either way there is nothing left.
     })
 }
 
@@ -443,28 +536,161 @@ pub(crate) fn join_readers_bounded(handles: Vec<JoinHandle<()>>, bound: Duration
     }
 }
 
+/// Result of offering one line to an aggregate buffer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct PushOutcome {
+    /// The line fits and should be streamed to the panel.
+    pub emitted: bool,
+    /// This call crossed a cap and the one-shot notice should be sent.
+    pub notify: bool,
+}
+
+/// Aggregate stdout/stderr retained for `RunOutcome`, capped per stream.
+/// A line offered after `MAX_STREAM_BYTES` is dropped from both the
+/// transcript and the outcome — the panels and the buffers share this
+/// bound — while the caller keeps draining the pipe (issue #277).
+#[derive(Debug, Default)]
+pub(crate) struct CappedStream {
+    text: String,
+    aggregate_full: bool,
+    notice_emitted: bool,
+}
+
+impl CappedStream {
+    pub(crate) fn text(&self) -> &str {
+        &self.text
+    }
+
+    /// Offer one line. The truncation notice is sent once per stream:
+    /// a long run with thousands of oversized lines must not flood the
+    /// transcript with notices.
+    pub(crate) fn push(&mut self, line: &OutputLine) -> PushOutcome {
+        let mut notify = false;
+        if line.truncated_bytes > 0 && !self.notice_emitted {
+            self.notice_emitted = true;
+            notify = true;
+        }
+        if self.aggregate_full {
+            return PushOutcome {
+                emitted: false,
+                notify,
+            };
+        }
+        // +1 for the newline `RunOutcome` appends with every line.
+        if self.text.len() + line.text.len() + 1 > MAX_STREAM_BYTES {
+            self.aggregate_full = true;
+            if !self.notice_emitted {
+                self.notice_emitted = true;
+                notify = true;
+            }
+            return PushOutcome {
+                emitted: false,
+                notify,
+            };
+        }
+        self.text.push_str(&line.text);
+        self.text.push('\n');
+        PushOutcome {
+            emitted: true,
+            notify,
+        }
+    }
+
+    pub(crate) fn into_text(self) -> String {
+        self.text
+    }
+}
+
+/// Emit one line and offer it to its aggregate buffer. The polling loop
+/// and `drain_streams` share this path so the caps and the one-shot
+/// notice behave identically wherever a line arrives (issue #277).
+pub(crate) fn deliver_line<F>(
+    line: OutputLine,
+    stream: OutputStream,
+    sink: &mut CappedStream,
+    on_event: &mut F,
+) where
+    F: FnMut(RunEvent),
+{
+    let outcome = sink.push(&line);
+    if outcome.emitted {
+        on_event(match stream {
+            OutputStream::Stdout => RunEvent::Stdout { line: line.text },
+            OutputStream::Stderr => RunEvent::Stderr { line: line.text },
+        });
+    }
+    if outcome.notify {
+        on_event(RunEvent::OutputTruncated { stream });
+    }
+}
+
 /// Move every line the readers have already queued into `on_event` and
 /// the aggregate buffers. Every exit path of both streaming runners —
 /// normal exit, timeout, cancel — ends the same way, so the drain lives
 /// here instead of being copied per branch.
+///
+/// Returns whether both readers have closed their channel (`Disconnected`),
+/// which `finish_streams` uses to keep draining a bounded queue until the
+/// tail is captured.
 pub(crate) fn drain_streams<F>(
-    out_rx: &Receiver<String>,
-    err_rx: &Receiver<String>,
+    out_rx: &Receiver<OutputLine>,
+    err_rx: &Receiver<OutputLine>,
     on_event: &mut F,
-    stdout: &mut String,
-    stderr: &mut String,
+    stdout: &mut CappedStream,
+    stderr: &mut CappedStream,
+) -> bool
+where
+    F: FnMut(RunEvent),
+{
+    let out_closed = drain_one(out_rx, OutputStream::Stdout, stdout, on_event);
+    let err_closed = drain_one(err_rx, OutputStream::Stderr, stderr, on_event);
+    out_closed && err_closed
+}
+
+/// Drain one channel; `true` once the sender is gone.
+fn drain_one<F>(
+    rx: &Receiver<OutputLine>,
+    stream: OutputStream,
+    sink: &mut CappedStream,
+    on_event: &mut F,
+) -> bool
+where
+    F: FnMut(RunEvent),
+{
+    loop {
+        match rx.try_recv() {
+            Ok(line) => deliver_line(line, stream, sink, on_event),
+            Err(TryRecvError::Empty) => return false,
+            Err(TryRecvError::Disconnected) => return true,
+        }
+    }
+}
+
+/// Drain until both readers close their channels, bounded by
+/// `READER_SHUTDOWN_BOUND`.
+///
+/// With a bounded channel a reader can be blocked in `send` when the child
+/// exits; joining before draining would wait out the join bound and leave
+/// queued lines behind (and a single post-join drain can race a reader that
+/// is still sending). Draining first frees capacity and looping until the
+/// senders are gone captures the tail. The bound is the same one
+/// `join_readers_bounded` uses, because a grandchild may hold the pipes
+/// open (issues #222, #277).
+pub(crate) fn finish_streams<F>(
+    out_rx: &Receiver<OutputLine>,
+    err_rx: &Receiver<OutputLine>,
+    on_event: &mut F,
+    stdout: &mut CappedStream,
+    stderr: &mut CappedStream,
 ) where
     F: FnMut(RunEvent),
 {
-    while let Ok(line) = out_rx.try_recv() {
-        on_event(RunEvent::Stdout { line: line.clone() });
-        stdout.push_str(&line);
-        stdout.push('\n');
-    }
-    while let Ok(line) = err_rx.try_recv() {
-        on_event(RunEvent::Stderr { line: line.clone() });
-        stderr.push_str(&line);
-        stderr.push('\n');
+    let deadline = Instant::now() + READER_SHUTDOWN_BOUND;
+    while !drain_streams(out_rx, err_rx, on_event, stdout, stderr) {
+        if Instant::now() >= deadline {
+            break;
+        }
+        thread::sleep(Duration::from_millis(1));
     }
 }
 
@@ -527,16 +753,16 @@ where
     let stdout = guard.child().stdout.take().expect("piped");
     let stderr = guard.child().stderr.take().expect("piped");
 
-    let (out_tx, out_rx) = channel::<String>();
-    let (err_tx, err_rx) = channel::<String>();
+    let (out_tx, out_rx) = sync_channel::<OutputLine>(LINE_CHANNEL_CAPACITY);
+    let (err_tx, err_rx) = sync_channel::<OutputLine>(LINE_CHANNEL_CAPACITY);
 
     let out_thread = spawn_line_reader(stdout, out_tx);
     let err_thread = spawn_line_reader(stderr, err_tx);
 
     let started = Instant::now();
     let deadline = timeout;
-    let mut stdout_buf = String::new();
-    let mut stderr_buf = String::new();
+    let mut stdout_buf = CappedStream::default();
+    let mut stderr_buf = CappedStream::default();
 
     loop {
         // Cancel (issue #223): the panel has already flipped the run to
@@ -546,8 +772,8 @@ where
         if let Some(id) = run_id {
             if process_tree::take_cancel(id) {
                 guard.terminate_tree();
-                join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
-                drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
+                finish_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
+                join_readers_bounded(vec![out_thread, err_thread], Duration::ZERO);
                 on_event(RunEvent::Exit {
                     exit_code: -1,
                     duration_ms: started.elapsed().as_millis() as u64,
@@ -560,15 +786,14 @@ where
             Ok(Some(status)) => {
                 // The process has been reaped; the guard unregistered
                 // its group, so nothing can signal it again.
-                // Join readers BEFORE draining: once the child has exited the
-                // pipes usually go to EOF, so joining first is what makes their
-                // last lines visible. The join is bounded, though: a grandchild
-                // that inherited the pipe keeps it open, and waiting on it
-                // forever would swallow the exit event (issue #222). Whatever
-                // the readers managed to send is drained below either way.
-                join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
-                // Drain remaining lines.
-                drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
+                // Drain BEFORE joining: a bounded channel may have blocked
+                // a reader in `send`, and joining first would wait out the
+                // bound with the tail still queued. `finish_streams`
+                // drains until both readers close, so their last lines are
+                // visible; it is bounded because a grandchild that
+                // inherited the pipe keeps it open (issue #222).
+                finish_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
+                join_readers_bounded(vec![out_thread, err_thread], Duration::ZERO);
 
                 let duration_ms = started.elapsed().as_millis() as u64;
                 let exit_code = status.code().unwrap_or(-1);
@@ -579,8 +804,8 @@ where
                     timed_out,
                 });
                 let outcome = RunOutcome {
-                    stdout: stdout_buf,
-                    stderr: stderr_buf,
+                    stdout: stdout_buf.into_text(),
+                    stderr: stderr_buf.into_text(),
                     exit_code,
                     duration_ms,
                     timed_out,
@@ -596,11 +821,12 @@ where
                     // run` task shell must not outlive its 30-minute
                     // ceiling.
                     guard.terminate_tree();
-                    // Join readers BEFORE the final drain for the same reason as
-                    // the exit branch — still bounded, because the pipes may be
-                    // held by something that outlived the group (issue #222).
-                    join_readers_bounded(vec![out_thread, err_thread], READER_SHUTDOWN_BOUND);
-                    drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
+                    // Same drain-then-join order as the exit branch: the
+                    // bounded channel may hold a blocked reader. Both are
+                    // bounded because something that outlived the group may
+                    // still hold the pipes (issue #222).
+                    finish_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
+                    join_readers_bounded(vec![out_thread, err_thread], Duration::ZERO);
                     on_event(RunEvent::Exit {
                         exit_code: -1,
                         duration_ms: started.elapsed().as_millis() as u64,
@@ -613,9 +839,7 @@ where
                 let slice = remaining.min(Duration::from_millis(50));
                 match out_rx.recv_timeout(slice) {
                     Ok(line) => {
-                        on_event(RunEvent::Stdout { line: line.clone() });
-                        stdout_buf.push_str(&line);
-                        stdout_buf.push('\n');
+                        deliver_line(line, OutputStream::Stdout, &mut stdout_buf, &mut on_event);
                     }
                     Err(RecvTimeoutError::Timeout) => {}
                     Err(RecvTimeoutError::Disconnected) => {
@@ -2038,6 +2262,162 @@ pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Cursor;
+    use std::sync::mpsc::channel;
+
+    /// Issue #277: a newline-free writer used to grow the reader's
+    /// buffer without bound. The per-line cap keeps 8 KiB, reports the
+    /// dropped bytes, and the reader still reaches the next line (i.e.
+    /// it drained the rest of the huge line instead of stopping).
+    #[test]
+    fn line_reader_caps_a_huge_line_and_keeps_reading() {
+        let mut data = vec![b'x'; MAX_LINE_BYTES * 3];
+        data.push(b'\n');
+        data.extend_from_slice(b"after\r\n");
+        data.extend_from_slice(b"tail-without-newline");
+
+        let (tx, rx) = sync_channel::<OutputLine>(8);
+        let handle = spawn_line_reader(Cursor::new(data), tx);
+        handle.join().expect("the reader must reach EOF");
+
+        let first = rx.recv().expect("the huge line");
+        assert_eq!(first.text.len(), MAX_LINE_BYTES);
+        assert_eq!(first.truncated_bytes, (MAX_LINE_BYTES * 2) as u64);
+
+        let second = rx.recv().expect("the line after the cap");
+        assert_eq!(second.text, "after");
+        assert_eq!(second.truncated_bytes, 0);
+
+        // The final unterminated line is still delivered, as before.
+        let third = rx.recv().expect("the unterminated tail");
+        assert_eq!(third.text, "tail-without-newline");
+        assert!(rx.recv().is_err());
+    }
+
+    /// The aggregate cap stops retaining (and emitting) lines, emits the
+    /// notice exactly once, and never lets the buffer exceed the bound.
+    #[test]
+    fn capped_stream_drops_lines_past_the_aggregate_cap_and_notifies_once() {
+        let line = OutputLine {
+            text: "x".repeat(64 * 1024),
+            truncated_bytes: 0,
+        };
+        let mut sink = CappedStream::default();
+        let mut notices = 0;
+        let mut emitted = 0;
+        for _ in 0..(MAX_STREAM_BYTES / line.text.len() + 10) {
+            let outcome = sink.push(&line);
+            if outcome.emitted {
+                emitted += 1;
+            }
+            if outcome.notify {
+                notices += 1;
+            }
+        }
+        assert!(sink.text().len() <= MAX_STREAM_BYTES);
+        assert!(emitted > 0);
+        assert_eq!(notices, 1, "the notice is one-shot per stream");
+
+        // Once full, nothing else is appended.
+        let before = sink.text().len();
+        let outcome = sink.push(&line);
+        assert!(!outcome.emitted);
+        assert!(!outcome.notify);
+        assert_eq!(sink.text().len(), before);
+    }
+
+    /// A per-line truncation also raises the typed notice, but only once,
+    /// and the capped line itself is still shown.
+    #[test]
+    fn per_line_truncation_notifies_once_and_still_shows_the_prefix() {
+        let mut sink = CappedStream::default();
+        let first = sink.push(&OutputLine {
+            text: "prefix".to_string(),
+            truncated_bytes: 42,
+        });
+        assert!(first.emitted);
+        assert!(first.notify);
+        let second = sink.push(&OutputLine {
+            text: "next".to_string(),
+            truncated_bytes: 42,
+        });
+        assert!(second.emitted);
+        assert!(!second.notify);
+        assert_eq!(sink.text(), "prefix\nnext\n");
+    }
+
+    /// The drain keeps emptying the channel after the aggregate cap: the
+    /// child must never block on a pipe nobody reads (issue #277).
+    #[test]
+    fn drain_streams_keeps_draining_after_the_aggregate_cap() {
+        let (out_tx, out_rx) = channel::<OutputLine>();
+        let (_err_tx, err_rx) = channel::<OutputLine>();
+        let line = OutputLine {
+            text: "y".repeat(64 * 1024),
+            truncated_bytes: 0,
+        };
+        let sent = MAX_STREAM_BYTES / line.text.len() + 25;
+        for _ in 0..sent {
+            out_tx.send(line.clone()).expect("channel open");
+        }
+
+        let mut stdout = CappedStream::default();
+        let mut stderr = CappedStream::default();
+        let mut notices = 0;
+        drain_streams(
+            &out_rx,
+            &err_rx,
+            &mut |event| {
+                if matches!(event, RunEvent::OutputTruncated { .. }) {
+                    notices += 1;
+                }
+            },
+            &mut stdout,
+            &mut stderr,
+        );
+
+        assert!(
+            out_rx.try_recv().is_err(),
+            "every queued line must be consumed even after the cap"
+        );
+        assert_eq!(notices, 1);
+        assert!(stdout.text().len() <= MAX_STREAM_BYTES);
+        assert!(stdout.text().len() >= MAX_STREAM_BYTES - line.text.len() - 1);
+    }
+
+    /// With a bounded channel the reader can be blocked in `send` when the
+    /// child exits; `finish_streams` drains and keeps going until the
+    /// senders close, so no tail is lost (issue #277).
+    #[test]
+    fn finish_streams_captures_a_tail_larger_than_the_channel() {
+        let (out_tx, out_rx) = sync_channel::<OutputLine>(4);
+        let (err_tx, err_rx) = channel::<OutputLine>();
+        drop(err_tx);
+        let producer = std::thread::spawn(move || {
+            for _ in 0..20 {
+                let line = OutputLine {
+                    text: "line".to_string(),
+                    truncated_bytes: 0,
+                };
+                if out_tx.send(line).is_err() {
+                    break;
+                }
+            }
+        });
+
+        let mut stdout = CappedStream::default();
+        let mut stderr = CappedStream::default();
+        finish_streams(
+            &out_rx,
+            &err_rx,
+            &mut |_event| {},
+            &mut stdout,
+            &mut stderr,
+        );
+        producer.join().expect("the producer must finish");
+
+        assert_eq!(stdout.text(), "line\n".repeat(20));
+    }
 
     #[test]
     fn extract_date_parses_known_shape() {

@@ -68,6 +68,8 @@ MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  TIMEOUT  TERMINAL_NO
 
 路径、home 目录、进程生成和 shell 检测都走 Tauri/Rust 的跨平台 API。macOS 专属行为（如 Gatekeeper 说明）放在平台守卫之后，其他平台上为空操作或等价实现。
 
+Windows 的 shell 检测（#277）拆成两半：纯判定函数 `detect_windows_shell`（先看 `$SHELL`，再看 PowerShell）在任意宿主上都跑单元测试；探测本身只在 Windows 上执行（用绝对路径的 `where.exe pwsh.exe`；对绝对 System32 Windows PowerShell 做文件存在检查）。这些探测及其产生的激活提示尚未在真实 Windows 桌面上运行过——Windows 运行时验证仍需维护者把关（`windows-latest` CI 只编译并跑单元测试）。
+
 - **home 一律用 `dirs::home_dir()`，绝不读 `HOME` 环境变量**（issue #229）：Windows 上没有 `HOME`，每一处 `$HOME` 读取都会得到空值——激活探测因此恒为 `activated: null`，`open_in_terminal` 每次都失败。shell rc 路径和其他任何 home 相对路径同理。
 - **查找 mise 时，在已知候选之后还要扫描 `PATH`**：Windows 上 scoop/winget 装的 mise、Linux 上的 `/usr/bin/mise` 只存在于 `PATH`。
 - **回显必须显示执行层真正走的分支**：引导安装在 Windows 跑 `irm … | iex`、其他平台跑 `curl … | sh`，回显行同样按平台生成。`npm run lint:install-echo-parity` 会在前端副本与 `src-tauri/src/install.rs` 不一致时让构建失败。

@@ -20,10 +20,12 @@ export interface RunRequest {
   args: string[];
 }
 
-export type LogLine = {
-  stream: "stdout" | "stderr";
-  text: string;
-};
+export type LogLine =
+  | { stream: "stdout" | "stderr"; text: string }
+  /** A typed truncation notice from the backend (issue #277). Kept as
+   *  structured data, not a marker line in stdout, so the panel renders
+   *  localized copy and the raw transcript stays byte-faithful. */
+  | { stream: "notice"; notice: "outputTruncated"; source: "stdout" | "stderr" };
 
 export type ExecutionStatus = "idle" | "running" | "ok" | "failed" | "cancelled";
 
@@ -85,6 +87,7 @@ function fallbackActiveId(runs: RunEntry[]): string | null {
 export type Action =
   | { type: "start"; id: string; kind: ExecutionKind; request: RunRequest }
   | { type: "line"; id: string; stream: "stdout" | "stderr"; text: string }
+  | { type: "truncated"; id: string; stream: "stdout" | "stderr" }
   | { type: "exit"; id: string; exitCode: number; durationMs: number }
   | { type: "complete"; id: string; newVersion: string | null }
   | { type: "fail"; id: string; error: AppError }
@@ -143,6 +146,38 @@ export function executionReducer(state: ExecState, action: Action): ExecState {
         runs: state.runs.map((r) =>
           r.id === action.id
             ? { ...r, lines: [...r.lines, { stream: action.stream, text: action.text }] }
+            : r,
+        ),
+      };
+    }
+    case "truncated": {
+      // Same terminal-status guard as `line`: a cancelled/finished run
+      // must not grow a notice. Backend emits at most once per stream,
+      // but the reducer dedupes so a duplicated event cannot stack rows.
+      const target = state.runs.find((r) => r.id === action.id);
+      if (!target || target.status !== "running") return state;
+      if (
+        target.lines.some(
+          (line) => line.stream === "notice" && line.source === action.stream,
+        )
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        runs: state.runs.map((r) =>
+          r.id === action.id
+            ? {
+                ...r,
+                lines: [
+                  ...r.lines,
+                  {
+                    stream: "notice",
+                    notice: "outputTruncated",
+                    source: action.stream,
+                  },
+                ],
+              }
             : r,
         ),
       };

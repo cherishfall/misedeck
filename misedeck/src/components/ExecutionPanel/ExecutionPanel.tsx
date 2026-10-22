@@ -372,15 +372,24 @@ export function ExecutionPanel() {
           {state.lines.length === 0 && state.status === "idle" && (
             <div className={styles.emptyHint}>{t(I18N_KEYS.execution.emptyHint)}</div>
           )}
-          {state.lines.map((line, i) => (
-            <div
-              key={i}
-              className={styles.line}
-              data-stream={line.stream}
-            >
-              {line.text}
-            </div>
-          ))}
+          {state.lines.map((line, i) =>
+            line.stream === "notice" ? (
+              <div
+                key={i}
+                className={styles.notice}
+                data-stream="notice"
+                data-testid="execution-output-truncated"
+              >
+                {t(I18N_KEYS.execution.outputTruncated, {
+                  stream: line.source,
+                })}
+              </div>
+            ) : (
+              <div key={i} className={styles.line} data-stream={line.stream}>
+                {line.text}
+              </div>
+            ),
+          )}
         </div>
       </div>
     </div>
