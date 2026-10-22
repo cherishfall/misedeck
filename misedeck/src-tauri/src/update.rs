@@ -15,11 +15,11 @@
 //!    github.com — the host that is usually reachable where
 //!    api.github.com is not — needs no token and no rate budget, and is
 //!    tiny (a few KB for ten releases).
-//! 3. **The Atom feed, not `latest.json`.** Decisive, this one: every
-//!    MiseDeck tag is a prerelease (`release.yml` marks anything with
-//!    `-beta` as such), and `releases/latest/download/latest.json` only
-//!    follows the non-prerelease "Latest" marker. A static manifest route
-//!    would see nothing at all.
+//! 3. **The Atom feed, not `latest.json`.** The feed lists every release,
+//!    prereleases included, with no manifest to publish and no signing
+//!    key to keep. `releases/latest` only follows the non-prerelease
+//!    "Latest" marker, which is why a static manifest route would have
+//!    been blind to the betas this project shipped before v1.0.0.
 //!
 //! Parsing is a few dozen lines over a fixed, documented feed shape
 //! rather than a new XML crate; the fixtures in `tests` pin every

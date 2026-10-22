@@ -21,7 +21,7 @@ React UI (src/)
 - **Trust**（issue #6）：对不受信任目录的只读视图以 `MISE_SAFE=1` 运行；变更或求值环境变量的操作先检查信任状态，并把用户引导到信任横幅。落地在 runner：专用读命令都汇聚到 `run_mise_json`；经执行面板发起的读通过显式标志加入（`run_mise_command` 的 `readOnly` → `run_mise_tracked_read_only`），两条路径都会设置 `MISE_SAFE=1`；流式面（变更、`mise run`、安装、trust）刻意不设（issue #230、#276）。
 - **目录上下文只校验一次**（issue #230）：每个接收 `cwd` 的命令在派生前都经过同一个 helper，于是目录已删除或卷已卸载时，失败以该页自己的错误形态呈现，而不是把 mise 原始的 `cd` 报错漏出去；空字符串也永远不会被拼成 `-C ""`。
 - **lockfile 解析**（issue #230）：mise 通过*配置文件*管一个目录，并把 lockfile 放在配置旁边，因此概览页向上逐级查找最近的 `mise.lock`——只读 `<cwd>/mise.lock` 会让项目子目录误报「没有 lockfile」。
-- **能力清单**（issue #230）：主窗口只保留实际用到的权限 —— `clipboard-manager:allow-write-text`、`dialog:allow-open`、`opener:allow-open-path`。默认集里打开 URL 的 `opener:default` 被移除：应用内没有任何地方打开 URL。路径打开器不做路径限定，因为目录上下文是用户自选的目录；唯一消费者打开的是 mise 自己报出的路径（`mise tasks edit --path` / `mise config ls`）。
+- **能力清单**（issue #230）：主窗口只保留实际用到的权限 —— `clipboard-manager:allow-write-text`、`dialog:allow-open`、`opener:allow-open-path`。打开 URL 的入口只有一个：所有链接都经 `ExternalLink` 渲染，再由 `src/api/externalLink.ts` 调用 `open_external` 命令，由 `src-tauri/src/external_link.rs` 先校验 URL（仅 `http`/`https`、长度有上限、不含空白或控制字符），之后才交给 opener 插件。宽泛的 `opener:default` —— 会让任意调用点打开 URL —— 被刻意移除，从而让这条经过校验的命令成为唯一出口。路径打开器不做路径限定，因为目录上下文是用户自选的目录；唯一消费者打开的是 mise 自己报出的路径（`mise tasks edit --path` / `mise config ls`）。
 - **i18n**：UI 文案存放在 en + zh-CN 资源文件中，按字符串 ID 索引；组件消费这些键。
 - **前端状态**：服务端状态（mise 数据）按目录上下文获取，并按 (context, query) 缓存；UI 状态（选中的标签页、面板开合）保持本地。除最近目录列表和用户偏好外不做持久化。
 - **Chrome 级 context**（issue #130）：每个页面都在自身内部渲染 `PageShell`，因此由 `PageShell` 持有的 React context 位于渲染它的页面组件*之下*，该页面永远消费不到它。面向页面注册能力的 provider（如工具栏刷新按钮的 `PageRefreshProvider`）放在应用根部、路由之上；`PageShell` 及其 chrome 只消费 context，绝不持有它。

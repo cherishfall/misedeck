@@ -181,12 +181,14 @@ beta.16's ended up listing Linux alone.
 Per [ADR-0002 — Distribution via GitHub Releases only, unsigned](../adr/0002-distribution-github-releases-and-homebrew-tap.md):
 
 - **macOS** binaries are not Apple-notarized. First launch requires
-  right-click → Open to clear Gatekeeper quarantine.
+  clearing the quarantine flag — `xattr -dr com.apple.quarantine
+  /Applications/MiseDeck.app` — or **System Settings → Privacy &
+  Security → Open Anyway** (README → Install).
 - **Windows** binaries are not code-signed. SmartScreen shows
   "Windows protected your PC" — More info → Run anyway.
-- **Linux** ships as `.deb`, `.rpm`, and `.AppImage`. Package
-  managers handle trust locally (GPG signature on the package, not
-  on the binary).
+- **Linux** ships as `.deb`, `.rpm`, and `.AppImage`. The packages are
+  unsigned too: no GPG signature, no repository metadata. `SHA256SUMS`
+  is the only integrity check, on every platform.
 
 The release template at `.github/release-template.md` links to this
 decision, and the bilingual READMEs state the same caveat in their
@@ -264,6 +266,6 @@ zh-CN/.github/
 
 The `zh-CN/.github/release-template.md` file is kept in sync with the
 English one, per the documentation languages rule in `AGENTS.md`. The
-workflow currently consumes the English template only; once #32
-(bilingual README + release prep) lands, the release job can be
-extended to pick the language based on the tag or a workflow input.
+release job consumes the English template only: `scripts/resolve-release-notes.sh`
+reads the tag annotation or `.github/release-template.md`. Both READMEs
+are bilingual, but they are not an input to the workflow.

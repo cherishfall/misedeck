@@ -49,11 +49,3 @@ UI 文案位于 `src/i18n/en.json` 和 `src/i18n/zh-CN.json`，通过
 完整规范见 [docs/agents/i18n.md](../../docs/agents/i18n.md)
 （或 [简体中文](../../zh-CN/docs/agents/i18n.md)）——命名、
 如何新增字符串、检测链路、错误码契约。
-
-## Tauri + React + Typescript（脚手架原 README）
-
-This template should help get you started developing with Tauri, React and Typescript in Vite.
-
-### Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)

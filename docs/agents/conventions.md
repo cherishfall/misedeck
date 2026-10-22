@@ -49,7 +49,7 @@ tickets should reuse the existing six when possible.
 - Surfaces that never call mise inject their own boundary instead of touching the network or the host OS: the update check splits fetch from decision (`check` → `check_with`), the guided-install loop takes the command it streams (`run_install_command`), and shell detection takes what `$SHELL` and the passwd entry said (`detect_user_shell_from`). The production entry points pass the real implementations — a seam, not a second behavior (issue #255).
 - The tools page's argv exists twice: TS builds the dispatched command, Rust pins the test-only builder. Both halves are asserted against `tests/fixtures/argv-parity.json` — `npm run lint:argv-parity` (wired into `npm run ci`) executes the TS builders, `tests/argv_parity.rs` executes the Rust ones. A one-sided change fails that side's gate (issue #255).
 - Test external behavior only: given this fixture response, the command returns this shape / the panel shows this state. No tests of internal helpers.
-- Frontend: unit tests of pure functions with node:test — `npm run test` (`tsx --test "src/**/*.test.ts"`), wired into `npm run ci`. Existing suites: `src/utils/paths.test.ts`, `src/api/miseTools.test.ts`. No component harness exists, so UI behavior is not unit-tested; new pure logic ships with a colocated `*.test.ts`.
+- Frontend: unit tests of pure functions with node:test — `npm run test` (`tsx --test "src/**/*.test.ts"`), wired into `npm run ci`. There are 26 colocated suites under `src/` today (e.g. `src/utils/paths.test.ts`, `src/api/miseTools.test.ts`). No component harness exists, so UI behavior is not unit-tested; new pure logic ships with a colocated `*.test.ts`.
 
 ## Definition of done (every ticket, no exceptions)
 

@@ -2,6 +2,8 @@
 
 > [简体中文](../../zh-CN/docs/adr/0009-app-update-check-is-manual-and-ends-at-the-release-page.md)
 
+> **Status (2026-10):** accepted; one premise has expired. The decision — a manual, bounded check that ends at the Release page — stands. Premise 2 below ("every MiseDeck release is a prerelease", so `releases/latest` resolves to nothing) described the beta era: v1.0.0 shipped as a stable release (`isPrerelease: false`), so `latest` now resolves. The transport stays the Atom feed, because it lists every release — prereleases included — without a manifest or a signing key.
+
 MiseDeck had no way to say which build was running, and no way to learn that a newer one existed. Fifteen betas shipped before anyone asked. The obvious fix is Tauri's updater plugin; the honest fix is less than that, because three constraints make in-place updating worse than useless here.
 
 **1. The builds are unsigned.** There is no Apple Developer ID and no notarization (README → Known limitations), and every macOS install needs `xattr -dr com.apple.quarantine` before it will launch. The Tauri updater swaps the `.app` bundle in place; Gatekeeper then re-assesses the new bundle and reports it as damaged. Auto-update would not remove that step — it would add a way for the app to brick itself, and the user would still end up in the terminal. Tauri's minisign signature protects the bytes, not the Gatekeeper verdict.

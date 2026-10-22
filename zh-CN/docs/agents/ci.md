@@ -153,12 +153,14 @@ sha256sum -c SHA256SUMS       # Linux
 
 按 [ADR-0002 — 仅通过 GitHub Releases 分发，未签名](../adr/0002-distribution-github-releases-and-homebrew-tap.md)：
 
-- **macOS** 二进制未做 Apple 公证。首次启动需要**右键 → 打开**绕过
-  Gatekeeper 隔离。
+- **macOS** 二进制未做 Apple 公证。首次启动需要清除隔离标记 ——
+  `xattr -dr com.apple.quarantine /Applications/MiseDeck.app` —— 或者
+  **系统设置 → 隐私与安全性 → 仍要打开**（README → 安装）。
 - **Windows** 二进制未做代码签名。SmartScreen 会显示
   "Windows 已保护你的电脑"——**更多信息** → **仍要运行**。
-- **Linux** 以 `.deb`、`.rpm`、`.AppImage` 三种格式分发。包管理器
-  在本地处理信任（包的 GPG 签名，不是二进制的签名）。
+- **Linux** 以 `.deb`、`.rpm`、`.AppImage` 三种格式分发。这些包同样
+  未签名：没有 GPG 签名，也没有仓库元数据。`SHA256SUMS` 是所有平台
+  唯一的完整性校验。
 
 `.github/release-template.md` 模板链接到这项决定，双语 README 在各自的
 安装段里陈述同样的注意事项。v1 没有 Homebrew tap：GitHub Releases 是唯一
@@ -229,5 +231,6 @@ zh-CN/.github/
 ```
 
 `zh-CN/.github/release-template.md` 与英文版保持同步，遵循 `AGENTS.md` 中
-的"文档语言"规则。workflow 目前只消费英文模板；#32（双语 README + 发版准备）
-落地后，release job 可以按 tag 或 workflow 输入选择语言。
+的"文档语言"规则。release job 只消费英文模板：`scripts/resolve-release-notes.sh`
+读取 tag 附注或 `.github/release-template.md`。两份 README 都是双语的，
+但它们不是 workflow 的输入。

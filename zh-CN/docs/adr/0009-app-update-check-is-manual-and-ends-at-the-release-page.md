@@ -2,6 +2,8 @@
 
 > [English](../../../docs/adr/0009-app-update-check-is-manual-and-ends-at-the-release-page.md)
 
+> **状态（2026-10）：** 已接受；一条前提已过期。决定本身——手动、有上限、以 Release 页收尾的检查——仍然成立。下文第 2 条前提（"每个 MiseDeck 发布都是 prerelease"，因此 `releases/latest` 解析不到任何东西）描述的是 beta 时期：v1.0.0 以正式版发布（`isPrerelease: false`），所以 `latest` 现在可以解析。传输方式仍用 Atom feed，因为它列出所有发布——包括 prerelease——且不需要 manifest 或签名私钥。
+
 MiseDeck 之前无法说明自己在跑哪个构建，也无从得知有更新的构建存在——十五个 beta 发出去之后才有人想起这件事。显而易见的解法是 Tauri 的 updater 插件；诚实的解法比它小得多，因为三条约束让"原地自动更新"在这里弊大于利。
 
 **1. 构建未签名。** 没有 Apple Developer ID，也没有公证（见 README → 已知限制），每次 macOS 安装都得先执行 `xattr -dr com.apple.quarantine` 才能启动。Tauri updater 会原地替换 `.app` 包，Gatekeeper 随后重新评估新的包并判定其"已损坏"。自动更新不但省不掉那一步，还会给应用增加一条"把自己搞坏"的路径，用户最后仍然要回到终端。Tauri 的 minisign 签名保护的是字节，不是 Gatekeeper 的裁决。

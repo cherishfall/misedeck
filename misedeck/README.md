@@ -50,11 +50,3 @@ language switcher is at `src/components/LanguageSwitcher/`. See
 [简体中文](../zh-CN/docs/agents/i18n.md)) for the full conventions —
 naming, how to add a string, the detection chain, and the error-code
 contract.
-
-## Tauri + React + Typescript (original scaffold README)
-
-This template should help get you started developing with Tauri, React and Typescript in Vite.
-
-### Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)

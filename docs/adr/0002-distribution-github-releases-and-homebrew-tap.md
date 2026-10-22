@@ -15,6 +15,6 @@ v1 ships as unsigned binaries on GitHub Releases only: one release per tag, carr
 
 ## Consequences
 
-- First launch requires right-click → Open (macOS Gatekeeper quarantine); this must be documented in the README.
+- First launch requires clearing macOS Gatekeeper quarantine — `xattr -dr com.apple.quarantine /Applications/MiseDeck.app`, or **System Settings → Privacy & Security → Open Anyway**; this must be documented in the README.
 - Getting listed in mise's official docs (community projects) and bilingual README keywords are the primary discovery channels; the product is named **MiseDeck** (GitHub repo renamed to `cherishfall/misedeck`; GitHub keeps redirects from the old `cherishfall/mise-ui` name). SEO note: name match is a minor factor — docs listing, GitHub topics, and bilingual README keywords carry the weight.
 - **Three names, fixed (#250).** Display name `MiseDeck`; slug `misedeck` for the repo, npm package and cargo binary — a one-word brand keeps one token, the way GitHub's repo is `github` and not `git-hub` (Spring Boot only needs `spring-boot` because its brand is two words with a space); bundle identifier `io.github.cherishfall.misedeck` — the domain-less convention GitHub documents for its own hosting, where `com.github.*` would instead claim github.com's namespace. The identifier is frozen from the first public release: macOS preferences, keychain items, privacy grants and the Windows uninstall entry are all keyed to it, so changing it later presents every user with what looks like a fresh install.

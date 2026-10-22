@@ -21,7 +21,9 @@
 │   ├── 0007-gui-layer-affordances-are-orthogonal.md
 │   ├── 0008-tool-removal-is-unuse-not-uninstall.md
 │   └── 0009-app-update-check-is-manual-and-ends-at-the-release-page.md
-└── src/
+└── misedeck/
+    ├── src/            # React UI
+    └── src-tauri/      # Tauri commands + mise runner
 ```
 
 ## Before exploring, read these
