@@ -103,7 +103,7 @@ export function useToolsList(): UseQueryResult<JsonResult> {
   const read = usePanelRead();
   return useQuery({
     queryKey: ["tools", "ls", cwd],
-    queryFn: () => read(cwd, ["ls", "--json"], { background: true }),
+    queryFn: () => read(cwd, ["ls", "--json"], { background: true, readOnly: true }),
     refetchOnWindowFocus: false,
     retry: false,
   });

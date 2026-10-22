@@ -271,10 +271,11 @@ export function TasksPage() {
   );
 
   // Run a task via the panel. The trust guard is checked first
-  // (running a task in an untrusted directory would also fail
-  // — the runner would set MISE_SAFE=1 — so we surface the
-  // banner up front). Arguments arrive already split into words
-  // and become the verbatim `-- <args>` tail (issue #260).
+  // (running a task in an untrusted directory would also fail:
+  // `mise run` evaluates the config, and the streaming runner
+  // deliberately does not use MISE_SAFE — so we surface the banner
+  // up front). Arguments arrive already split into words and become
+  // the verbatim `-- <args>` tail (issue #260).
   const runTask = useCallback(
     async (name: string, args: string[]) => {
       if (!guard.allowed) {

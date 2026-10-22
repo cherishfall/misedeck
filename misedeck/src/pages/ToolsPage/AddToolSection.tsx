@@ -203,6 +203,7 @@ export function AddToolSection({
     if (queryClient.getQueryData(remoteKey) !== undefined) return;
     void readIntoCache(remoteKey, cwd, ["ls-remote", "--json", selectedTool], {
       background: true,
+      readOnly: true,
     });
   }, [
     remoteKey,

@@ -16,8 +16,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use misedeck_lib::mise::{
-    code, require_success, run_mise, run_mise_json, run_mise_tracked, run_mise_with_timeout,
-    RunEvent, RunRequest,
+    code, require_success, run_mise, run_mise_json, run_mise_tracked, run_mise_tracked_read_only,
+    run_mise_with_timeout, RunEvent, RunRequest,
 };
 use serial_test::serial;
 
@@ -305,6 +305,25 @@ fn read_json_sets_mise_safe_and_streaming_does_not() {
         let req = RunRequest::new(vec!["upgrade".to_string()]);
         run_mise(&script, &req, |_| {}).expect("the recorded upgrade fixture exits cleanly");
     });
+    // A panel-dispatched read (Tools / Settings table) opts into the same
+    // contract explicitly (issue #276).
+    with_slug("ls---json", || {
+        let req = RunRequest::new(vec![
+            "settings".to_string(),
+            "ls".to_string(),
+            "--json-extended".to_string(),
+        ]);
+        run_mise_tracked_read_only(&script, &req, None, |_| {})
+            .expect("the tracked read fixture exits cleanly");
+    });
+
+    // The same runner without the flag stays unsafe: the contract is the
+    // explicit flag, never the argv shape (issue #276).
+    with_slug("ls---json", || {
+        let req = RunRequest::new(vec!["ls".to_string(), "--json".to_string()]);
+        run_mise_tracked(&script, &req, None, |_| {})
+            .expect("the unsafe tracked fixture exits cleanly");
+    });
 
     unsafe {
         std::env::remove_var("FIXTURE_MISE_ENV_LOG");
@@ -327,6 +346,22 @@ fn read_json_sets_mise_safe_and_streaming_does_not() {
     assert!(
         stream_call.ends_with("MISE_SAFE=<unset>"),
         "a streaming mutation must not run under MISE_SAFE: {stream_call:?}"
+    );
+    let panel_read_call = calls
+        .lines()
+        .find(|line| line.contains("settings ls --json-extended"))
+        .expect("the panel read must have invoked the fixture");
+    assert!(
+        panel_read_call.ends_with("MISE_SAFE=1"),
+        "a panel read marked read-only must run with MISE_SAFE=1: {panel_read_call:?}"
+    );
+    let unsafe_call = calls
+        .lines()
+        .find(|line| line.contains("ls --json MISE_SAFE=<unset>"))
+        .expect("the unsafe tracked call must have been logged");
+    assert!(
+        unsafe_call.ends_with("MISE_SAFE=<unset>"),
+        "a tracked run without read_only must not run under MISE_SAFE: {unsafe_call:?}"
     );
 }
 

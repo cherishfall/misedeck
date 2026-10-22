@@ -26,7 +26,7 @@ use mise::{
     check_trust, detect_mise as run_mise_probe, locate_mise, mise_config_files, mise_doctor,
     mise_env, mise_env_extended, mise_outdated, mise_plugins_ls,
     mise_registry, mise_tasks_ls, read_mise_lockfile,
-    require_success, run_mise_tracked, run_trust, validate_run_args,
+    require_success, run_mise_tracked, run_mise_tracked_read_only, run_trust, validate_run_args,
     AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
 };
 use shell::{check_shell_activation, open_in_terminal as open_in_terminal_inner};
@@ -230,6 +230,7 @@ async fn detect_mise() -> DetectMiseResult {
 async fn run_mise_command(
     cwd: Option<String>,
     args: Vec<String>,
+    read_only: Option<bool>,
     run_id: Option<String>,
     on_event: tauri::ipc::Channel<RunEvent>,
 ) -> RunCommandResult {
@@ -250,6 +251,10 @@ async fn run_mise_command(
 
     let req = RunRequest { cwd, args };
     let run_id = run_id.filter(|id| !id.is_empty());
+    // Explicit opt-in, never inferred from argv (issue #276): the caller
+    // knows whether it dispatched a read view or a mutation. Only the
+    // read path gets the `MISE_SAFE=1` contract.
+    let read_only = read_only == Some(true);
 
     // Run the (process-spawning) work off the main thread so the
     // window chrome stays responsive while the process runs.
@@ -258,12 +263,17 @@ async fn run_mise_command(
             // A fresh clone per attempt: the retry path runs the command
             // again, and the channel is cheap to clone.
             let channel = on_event.clone();
-            run_mise_tracked(path, &req, run_id.as_deref(), move |evt| {
+            let emit = move |evt| {
                 // Channel::send is fallible only if the receiver is
                 // dropped; swallow the error rather than panicking in the
                 // runner thread.
                 let _ = channel.send(evt);
-            })
+            };
+            if read_only {
+                run_mise_tracked_read_only(path, &req, run_id.as_deref(), emit)
+            } else {
+                run_mise_tracked(path, &req, run_id.as_deref(), emit)
+            }
         })
     }).await;
     match res {

@@ -27,6 +27,7 @@ import type { AppError, JsonResult } from "../../types/tauri";
 import { isAppError } from "../../api/mise";
 import { loadPersistent, savePersistent } from "../../hooks/usePersistentState";
 import { executionReducer } from "./executionState";
+import { runMiseCommandPayload } from "./runPayload";
 import type {
   Action,
   ExecutionKind,
@@ -55,6 +56,15 @@ export interface RunOptions {
    * and is transcribed in its own run entry.
    */
   background?: boolean;
+  /**
+   * Mark the command as a read-only view (issue #276). The Rust
+   * `run_mise_command` boundary then runs it with `MISE_SAFE=1`, the
+   * same contract the dedicated read commands get. Only reads the app
+   * issues on its own behalf set this — mutations, `mise run`, install
+   * and trust must not, because they evaluate the directory's config.
+   * Never infer it from argv.
+   */
+  readOnly?: boolean;
 }
 
 /** Projected view of the active run, kept so existing consumers
@@ -327,7 +337,7 @@ export function useExecution() {
       runMiseInternal(
         "run_mise_command",
         "mise",
-        { cwd: request.cwd, args: request.args },
+        runMiseCommandPayload(request, options),
         request,
         options,
       ),

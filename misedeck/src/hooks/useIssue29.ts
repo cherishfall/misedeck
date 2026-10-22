@@ -43,7 +43,7 @@ function useSettingsList(all: boolean): UseQueryResult<JsonResult> {
   const { run } = useExecutionContext();
   const read = useCallback(
     async (dir: string | null, argv: string[]) =>
-      toJsonResult(await run({ cwd: dir, args: argv }, { background: true })),
+      toJsonResult(await run({ cwd: dir, args: argv }, { background: true, readOnly: true })),
     [run],
   );
   return useQuery({

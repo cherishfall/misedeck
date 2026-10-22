@@ -668,6 +668,27 @@ where
     run_mise_timed(mise_path, req, on_event, STREAMING_TIMEOUT, run_id, false)
 }
 
+/// A read dispatched through the panel, with the same read-only
+/// `MISE_SAFE=1` contract as `run_mise_json` (issue #276).
+///
+/// The panel is the single path for every mise invocation (ADR-0005), so
+/// the Tools and Settings table reads still stream through it — but they
+/// are views, not mutations, and must resolve an untrusted directory
+/// exactly like the dedicated read commands do. Mutations and
+/// `mise run` keep [`run_mise_tracked`]'s unsafe mode because they
+/// evaluate the directory's config.
+pub fn run_mise_tracked_read_only<F>(
+    mise_path: &Path,
+    req: &RunRequest,
+    run_id: Option<&str>,
+    on_event: F,
+) -> Result<RunOutcome, AppError>
+where
+    F: FnMut(RunEvent) + Send + 'static,
+{
+    run_mise_timed(mise_path, req, on_event, STREAMING_TIMEOUT, run_id, true)
+}
+
 /// The timed core with an explicit deadline, exposed for tests that
 /// need to drive the timeout path without waiting 30 minutes (issue
 /// #223) and for callers with their own ceiling. No cancel id: a
