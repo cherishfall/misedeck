@@ -230,6 +230,14 @@
   overflow: auto;
 }
 
+/* The capped content viewers are keyboard-scrollable (issue #280): a
+ * tab stop plus the shared ring, the same focus treatment as inputs. */
+.lockfile:focus-visible {
+  outline: none;
+  border-color: var(--beam);
+  box-shadow: var(--ring);
+}
+
 .lockfileMuted {
   font-family: var(--font-mono);
   font-size: var(--size-data);

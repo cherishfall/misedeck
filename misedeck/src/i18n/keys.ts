@@ -124,6 +124,8 @@ export const I18N_KEYS = {
     /** Accessible name for the panel's top-edge resize handle, a
         focusable separator with ArrowUp / ArrowDown support (issue #257). */
     resizeHandle: "execution.resizeHandle",
+    /** Accessible name for the focusable transcript viewer (issue #280). */
+    logLabel: "execution.logLabel",
     /**
      * Working-directory context line paired with the terminal-perspective
      * echo in Global mode, where the echo omits `-C $HOME` (issue #191).
@@ -399,6 +401,9 @@ export const I18N_KEYS = {
       hide: "preview.config.hide",
       unreadable: "preview.config.unreadable",
       overrideBadge: "preview.config.overrideBadge",
+      /** Accessible name for the focusable, scrollable content viewer
+          (issue #280). */
+      viewerLabel: "preview.config.viewerLabel",
       errorTitle: "preview.config.errorTitle",
       errorBody: "preview.config.errorBody",
       /** No-stderr variant (V-7, issue #262). */
@@ -441,6 +446,9 @@ export const I18N_KEYS = {
     lockfile: {
       title: "preview.lockfile.title",
       empty: "preview.lockfile.empty",
+      /** Accessible name for the focusable, scrollable content viewer
+          (issue #280). */
+      viewerLabel: "preview.lockfile.viewerLabel",
       errorTitle: "preview.lockfile.errorTitle",
       errorBody: "preview.lockfile.errorBody",
     },
@@ -666,6 +674,9 @@ export const I18N_KEYS = {
     defaultSource: "settings.defaultSource",
     filterPlaceholder: "settings.filterPlaceholder",
     count: "settings.count",
+    /** Filter-aware count (issue #280): "N of M settings", the same
+        shape as `tasks.countFiltered`. */
+    countFiltered: "settings.countFiltered",
     guard: {
       untrustedBody: "settings.guard.untrustedBody",
     },

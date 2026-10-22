@@ -191,7 +191,12 @@ export function SettingsPage() {
   const settingsCountText =
     settingsTotal === 0
       ? ""
-      : t(I18N_KEYS.settings.count, { count: settingsTotal });
+      : filter.active
+        ? t(I18N_KEYS.settings.countFiltered, {
+            count: filter.rows.length,
+            total: settingsTotal,
+          })
+        : t(I18N_KEYS.settings.count, { count: settingsTotal });
 
   // Mise-missing or list-loading state. The list-level gate (issue
   // #146) covers the `mise settings ls` read too: while it is pending —

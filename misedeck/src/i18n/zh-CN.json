@@ -242,6 +242,7 @@
       "hide": "收起内容",
       "unreadable": "（无法读取此文件）",
       "overrideBadge": "覆盖",
+      "viewerLabel": "配置文件内容",
       "errorTitle": "加载配置文件失败",
       "errorBody": "mise config ls --json 未返回结果。stderr 如下所示。",
       "errorBodyNoStderr": "mise config ls --json 未返回结果，也没有输出 stderr。请刷新重试。"
@@ -281,6 +282,7 @@
     "lockfile": {
       "title": "mise.lock",
       "empty": "（空文件）",
+      "viewerLabel": "锁文件内容",
       "errorTitle": "读取锁文件失败",
       "errorBody": "MiseDeck 无法读取当前目录的 mise.lock。错误信息如下所示。"
     }
@@ -480,6 +482,7 @@
     "filterPlaceholder": "过滤设置…",
     "count": "{{count}} 项设置",
     "count_one": "{{count}} 项设置",
+    "countFiltered": "{{count}} / {{total}} 项设置",
     "guard": {
       "untrustedBody": "在修改此目录的设置之前，请先信任它。"
     },
@@ -688,6 +691,7 @@
     "runsRecent": "{{count}} 条运行记录",
     "closeRun": "关闭",
     "resizeHandle": "调整执行面板高度",
+    "logLabel": "执行日志",
     "workingDirHome": "运行目录：~（主目录）",
     "outputTruncated": "{{stream}} 输出已截断，命令仍在继续运行。"
   },

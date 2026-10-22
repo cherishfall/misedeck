@@ -892,7 +892,16 @@ function RegistrySearch({ query, onQueryChange, registry, onPick }: RegistrySear
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const listId = useId();
+
+  // Keyboard movement must keep the active option visible: the list caps
+  // at 280px, so without this Enter can pick a row the user cannot see
+  // (block: "nearest" scrolls only the list, never the page).
+  const moveActive = (next: number) => {
+    setActiveIndex(next);
+    optionRefs.current[next]?.scrollIntoView({ block: "nearest" });
+  };
 
   const matches = useMemo<RegistryItem[]>(() => {
     const q = query.trim().toLowerCase();
@@ -947,12 +956,22 @@ function RegistrySearch({ query, onQueryChange, registry, onPick }: RegistrySear
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown" && open && suggestions.length > 0) {
       e.preventDefault();
-      setActiveIndex((i) => (i + 1) % suggestions.length);
+      moveActive((activeIndex + 1) % suggestions.length);
       return;
     }
     if (e.key === "ArrowUp" && open && suggestions.length > 0) {
       e.preventDefault();
-      setActiveIndex((i) => (i - 1 + suggestions.length) % suggestions.length);
+      moveActive((activeIndex - 1 + suggestions.length) % suggestions.length);
+      return;
+    }
+    if (e.key === "Home" && open && suggestions.length > 0) {
+      e.preventDefault();
+      moveActive(0);
+      return;
+    }
+    if (e.key === "End" && open && suggestions.length > 0) {
+      e.preventDefault();
+      moveActive(suggestions.length - 1);
       return;
     }
     if (e.key === "Escape" && open) {
@@ -1021,6 +1040,9 @@ function RegistrySearch({ query, onQueryChange, registry, onPick }: RegistrySear
               key={item.short}
               type="button"
               id={`${listId}-${i}`}
+              ref={(el) => {
+                optionRefs.current[i] = el;
+              }}
               role="option"
               aria-selected={i === activeIndex}
               className={

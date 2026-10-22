@@ -138,7 +138,14 @@ function ErrorFallback({ error, componentStack, onReset }: ErrorFallbackProps) {
           </div>
           {detailsOpen && (
             <div className={styles.details}>
-              <pre className={styles.detailsText}>{details}</pre>
+              <pre
+                className={styles.detailsText}
+                role="region"
+                aria-label={t(I18N_KEYS.errorBoundary.detailsLabel)}
+                tabIndex={0}
+              >
+                {details}
+              </pre>
               <CopyButton text={details} className={styles.detailsCopy} />
             </div>
           )}

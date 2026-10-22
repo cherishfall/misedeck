@@ -22,6 +22,7 @@ import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { Button } from "../Button/Button";
+import { parseJumpTarget } from "./paginationJump";
 
 import styles from "./Pagination.module.css";
 
@@ -65,13 +66,13 @@ export function Pagination({
     }
   };
 
+  // One guard for both paths (issue #280): the button's disabled state
+  // and Enter cannot disagree, and an invalid draft never jumps.
+  const jumpTarget = parseJumpTarget(jumpDraft, totalPages);
   const commitJump = () => {
-    const n = parseInt(jumpDraft, 10);
+    if (jumpTarget === null) return;
     setJumpDraft("");
-    if (Number.isFinite(n)) {
-      const clamped = Math.min(Math.max(1, n), totalPages);
-      onPageChange(clamped);
-    }
+    onPageChange(jumpTarget);
   };
 
   return (
@@ -147,6 +148,7 @@ export function Pagination({
           variant="ghost"
           size="sm"
           onClick={commitJump}
+          disabled={jumpTarget === null}
           data-testid="pager-jump-go"
         >
           {t(I18N_KEYS.tools.queries.pagination.jump)}

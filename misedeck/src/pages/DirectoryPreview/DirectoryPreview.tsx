@@ -534,7 +534,13 @@ export function DirectoryPreview() {
             </div>
           )}
           {!lockfileError && lockfileContent !== undefined && lockfileContent !== "" && (
-            <pre className={styles.lockfile} data-testid="preview-lockfile-content">
+            <pre
+              className={styles.lockfile}
+              role="region"
+              aria-label={t(I18N_KEYS.preview.lockfile.viewerLabel)}
+              tabIndex={0}
+              data-testid="preview-lockfile-content"
+            >
               {lockfileContent}
             </pre>
           )}
@@ -645,7 +651,13 @@ function ConfigFileRow({ file, rank }: { file: ConfigFile; rank: number }) {
       </div>
       {expanded &&
         (file.content !== null ? (
-          <pre className={styles.lockfile} data-testid="preview-config-content">
+          <pre
+            className={styles.lockfile}
+            role="region"
+            aria-label={t(I18N_KEYS.preview.config.viewerLabel)}
+            tabIndex={0}
+            data-testid="preview-config-content"
+          >
             {file.content}
           </pre>
         ) : (

@@ -246,6 +246,14 @@
   gap: var(--space-0-5);
 }
 
+/* The transcript scrolls, so it takes a tab stop (issue #280 class
+ * sweep): keyboard users can read the whole log with the arrow keys. */
+.log:focus-visible {
+  outline: none;
+  border-color: var(--beam);
+  box-shadow: var(--ring);
+}
+
 .line {
   display: flex;
   align-items: baseline;

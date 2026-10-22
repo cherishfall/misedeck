@@ -242,6 +242,7 @@
       "hide": "Hide content",
       "unreadable": "(could not read this file)",
       "overrideBadge": "override",
+      "viewerLabel": "Config file contents",
       "errorTitle": "Failed to load config files",
       "errorBody": "mise config ls --json did not return. Stderr is shown below.",
       "errorBodyNoStderr": "mise config ls --json did not return and wrote no stderr. Refresh to try again."
@@ -281,6 +282,7 @@
     "lockfile": {
       "title": "mise.lock",
       "empty": "(empty file)",
+      "viewerLabel": "Lockfile contents",
       "errorTitle": "Failed to read lockfile",
       "errorBody": "MiseDeck could not read the current directory's mise.lock. The error message is shown below."
     }
@@ -480,6 +482,7 @@
     "filterPlaceholder": "Filter settings…",
     "count": "{{count}} settings",
     "count_one": "{{count}} setting",
+    "countFiltered": "{{count}} of {{total}} settings",
     "guard": {
       "untrustedBody": "Trust this directory before mutating its settings."
     },
@@ -688,6 +691,7 @@
     "runsRecent": "{{count}} recent",
     "closeRun": "Close",
     "resizeHandle": "Resize execution panel",
+    "logLabel": "Execution log",
     "workingDirHome": "Working directory: ~ (home)",
     "outputTruncated": "{{stream}} output was truncated; the command kept running."
   },

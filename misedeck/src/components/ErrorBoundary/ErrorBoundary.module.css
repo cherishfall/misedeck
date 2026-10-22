@@ -97,6 +97,13 @@
   word-break: break-word;
 }
 
+/* Capped diagnostic dump, keyboard-scrollable (issue #280 class sweep):
+ * the shared focus ring, same as the input controls. */
+.detailsText:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
 .detailsCopy {
   position: absolute;
   top: var(--space-2);

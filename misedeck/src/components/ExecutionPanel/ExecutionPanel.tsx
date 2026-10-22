@@ -367,6 +367,9 @@ export function ExecutionPanel() {
           onScroll={handleScroll}
           className={styles.log}
           style={{ maxHeight: panelHeight }}
+          role="region"
+          aria-label={t(I18N_KEYS.execution.logLabel)}
+          tabIndex={0}
           data-testid="execution-log"
         >
           {state.lines.length === 0 && state.status === "idle" && (

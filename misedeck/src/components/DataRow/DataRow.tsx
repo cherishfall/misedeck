@@ -9,7 +9,7 @@
 // remember the wrapper is what produced the bug. Callers stack rows in
 // a plain container; each row is a complete description list.
 
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 
 import styles from "./DataRow.module.css";
 
@@ -44,9 +44,14 @@ export function DataRow({
   ]
     .filter(Boolean)
     .join(" ");
+  // A capped multi-line block scrolls, so it needs the keyboard path the
+  // pointer has (issue #280 class sweep). The <dt> names the stop.
+  const labelId = useId();
   return (
     <dl className={classes}>
-      <dt className={styles.label}>{label}</dt>
+      <dt className={styles.label} id={block ? labelId : undefined}>
+        {label}
+      </dt>
       <dd
         className={[
           styles.value,
@@ -55,6 +60,8 @@ export function DataRow({
         ]
           .filter(Boolean)
           .join(" ")}
+        tabIndex={block ? 0 : undefined}
+        aria-labelledby={block ? labelId : undefined}
       >
         {value}
       </dd>
