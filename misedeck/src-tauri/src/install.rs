@@ -404,8 +404,14 @@ mod tests {
     /// Smoke-test the streaming loop body against `printf` so we
     /// exercise the line-splitter + exit plumbing without hitting the
     /// network. Unix-only because the helper shell is `sh`.
+    ///
+    /// `#[serial]` because this spawns through `ChildGuard`, which
+    /// registers in a process-global map that
+    /// `process_tree::tests::terminate_all_kills_a_registered_tree`
+    /// empties with SIGKILL (see that test's note).
     #[cfg(not(target_os = "windows"))]
     #[test]
+    #[serial_test::serial]
     fn run_install_streams_a_short_command() {
         let events: Arc<Mutex<Vec<RunEvent>>> = Arc::new(Mutex::new(Vec::new()));
         let events_for_cb = events.clone();
@@ -441,8 +447,15 @@ mod tests {
     /// The installer shares the runner's capped reader (issue #277): a
     /// huge line is truncated, the next line still arrives, and the typed
     /// notice is emitted once instead of a marker string in stdout.
+    ///
+    /// This is the test the ubuntu leg failed on, twice, before the gate
+    /// was added — not because the cap was wrong but because a parallel
+    /// test's `terminate_all` SIGKILLed this `sh`, and a signal death
+    /// surfaces as `exited with status -1` with empty stderr. Keep the
+    /// `#[serial]` and keep it on every `ChildGuard`-spawning test.
     #[cfg(not(target_os = "windows"))]
     #[test]
+    #[serial_test::serial]
     fn run_install_caps_a_huge_line_and_notifies() {
         use crate::mise::MAX_LINE_BYTES;
 

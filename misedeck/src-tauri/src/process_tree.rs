@@ -441,8 +441,20 @@ mod tests {
     /// Unix-only: it relies on `sh` and on signalling the group, and
     /// the Windows CI job runs `cargo test --lib` but has no fixture
     /// shell to drive.
+    ///
+    /// `#[serial]` here is load-bearing, not tidy-up. The registry is a
+    /// process-global map, so `terminate_all` kills **every** tracked
+    /// child in the test binary — including the one a neighbouring test
+    /// is in the middle of waiting for. Without the gate this test
+    /// SIGKILLs its neighbours at random depending on scheduling, which
+    /// is exactly how `install::tests::run_install_caps_a_huge_line_and_notifies`
+    /// failed on the ubuntu leg with `install script exited with status
+    /// -1` (no `code()`, because the child died of a signal) and empty
+    /// stderr. Every test that spawns through `ChildGuard` carries the
+    /// same gate for the same reason.
     #[cfg(unix)]
     #[test]
+    #[serial_test::serial]
     fn terminate_all_kills_a_registered_tree() {
         let dir = tempfile::tempdir().expect("tempdir");
         let pid_file = dir.path().join("grandchild.pid");
@@ -539,8 +551,13 @@ mod tests {
     /// tree. One `terminate_tree` must end both; the pid check runs
     /// through `tasklist` so it observes the OS, not just the reaped
     /// direct child.
+    ///
+    /// Serialized for the same reason as the test above: this guard is
+    /// visible to `terminate_all`, and the Windows half of that test
+    /// (when it exists) will be in this same binary.
     #[cfg(windows)]
     #[test]
+    #[serial_test::serial]
     fn terminate_tree_kills_a_windows_grandchild() {
         let dir = tempfile::tempdir().expect("tempdir");
         let pid_file = dir.path().join("grandchild.pid");
@@ -674,8 +691,13 @@ mod tests {
     /// Issue #240: both flags must reach `CreateProcess` together — the
     /// process-group one for tree teardown, the no-window one so the GUI
     /// process never flashes a console on the user's screen.
+    ///
+    /// Serialized because it spawns through `ChildGuard` and would
+    /// otherwise be a victim of `terminate_all` (see the note on
+    /// `terminate_all_kills_a_registered_tree`).
     #[cfg(windows)]
     #[test]
+    #[serial_test::serial]
     fn windows_spawn_flag_word_carries_group_and_no_window() {
         assert_eq!(CREATE_NEW_PROCESS_GROUP, 0x0000_0200);
         assert_eq!(CREATE_NO_WINDOW, 0x0800_0000);
