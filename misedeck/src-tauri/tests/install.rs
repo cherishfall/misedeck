@@ -39,7 +39,15 @@ fn mise_self_update_argv_includes_yes() {
     );
 }
 
+// Serialized because it rewrites the process environment
+// (`FIXTURE_MISE_ENV_LOG`) and `set_var` is only sound while no other
+// thread reads the environment. Every test in this binary that spawns a
+// child carries the same attribute: a spawn copies the environment, so
+// it must not overlap the window this test opens. The pure argv case
+// below spawns nothing and stays ungated. Same convention as the
+// `with_slug` tests in `tests/tools.rs` and friends.
 #[test]
+#[serial_test::serial]
 fn run_self_update_streams_to_exit_and_probes_version() {
     let script = fixture_script();
     // Record what each mise call saw, to prove the post-update probe
@@ -50,6 +58,12 @@ fn run_self_update_streams_to_exit_and_probes_version() {
         std::process::id()
     ));
     let _ = std::fs::remove_file(&env_log);
+    // SAFETY: `set_var` is unsound while another thread reads or writes
+    // the environment, so every test in this binary that spawns a child
+    // is `#[serial]` — a child inherits this variable, and one that ran
+    // inside this window would append to `env_log` and break the
+    // assertions below. The serial attribute is the exclusion, not the
+    // restore call at the end.
     unsafe {
         std::env::set_var("FIXTURE_MISE_ENV_LOG", &env_log);
     }
@@ -109,6 +123,7 @@ fn sh(script: &str) -> Command {
 
 #[cfg(not(target_os = "windows"))]
 #[test]
+#[serial_test::serial]
 fn run_install_command_streams_and_aggregates_a_clean_exit() {
     let events: Arc<Mutex<Vec<RunEvent>>> = Arc::new(Mutex::new(Vec::new()));
     let events_for_cb = events.clone();
@@ -147,6 +162,7 @@ fn run_install_command_streams_and_aggregates_a_clean_exit() {
 
 #[cfg(not(target_os = "windows"))]
 #[test]
+#[serial_test::serial]
 fn run_install_command_nonzero_exit_keeps_stderr_and_fails() {
     let events: Arc<Mutex<Vec<RunEvent>>> = Arc::new(Mutex::new(Vec::new()));
     let events_for_cb = events.clone();
@@ -185,6 +201,7 @@ fn run_install_command_nonzero_exit_keeps_stderr_and_fails() {
 
 #[cfg(not(target_os = "windows"))]
 #[test]
+#[serial_test::serial]
 fn run_install_command_times_out_and_reports_the_ceiling() {
     let events: Arc<Mutex<Vec<RunEvent>>> = Arc::new(Mutex::new(Vec::new()));
     let events_for_cb = events.clone();

@@ -391,7 +391,12 @@ fn wait_with_timeout(child: &mut Child, timeout: Duration) -> Option<ExitStatus>
     }
 }
 
-#[allow(dead_code)]
+// Only the Linux `linux_terminal_plan` call site uses this, so on every
+// other host it is dead code and `-D warnings` would reject it. Scope the
+// allowance to exactly those hosts instead of blanket-allowing it
+// everywhere (issue #278) — the platform-specific `cfg_attr` pattern the
+// rest of this file uses.
+#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
 fn which_exists(name: &str) -> bool {
     // Probe the binary by trying to spawn it with a no-op arg. The
     // path is resolved by the OS, so a missing binary returns

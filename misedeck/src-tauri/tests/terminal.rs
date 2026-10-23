@@ -19,8 +19,15 @@
 // The actual platform-specific launch is asserted end-to-end via
 // the `tauri-plugin-opener` integration on the JS side; this
 // file is the Rust-side boundary test.
-
-use std::path::PathBuf;
+//
+// Every test that can spawn a process is `#[serial_test::serial]`,
+// because one of them rewrites `$PATH` for the duration of the call:
+// a spawned child inherits the process environment, so an unserialized
+// spawn could run against a temporarily empty `$PATH` and fail for a
+// reason that has nothing to do with what it asserts. That is also why
+// the `serial` attribute, not just the `PathGuard` in the test, is what
+// makes the write safe — `std::env::set_var` has no thread safety of
+// its own.
 
 use misedeck_lib::mise::code;
 use misedeck_lib::shell::{open_in_terminal, TerminalOpenOutcome};
@@ -53,6 +60,7 @@ fn open_in_terminal_rejects_non_directory_path() {
 }
 
 #[test]
+#[serial_test::serial]
 fn open_in_terminal_rejects_empty_path() {
     // An empty string is treated like `None` → falls back to
     // `$HOME`. On test runners `$HOME` is almost always set, so
@@ -85,6 +93,7 @@ fn open_in_terminal_rejects_empty_path() {
 }
 
 #[test]
+#[serial_test::serial]
 #[cfg(target_os = "macos")]
 fn open_in_terminal_resolves_existing_directory_on_macos() {
     // On macOS the spawn is `open -a Terminal <path>`. In a CI
@@ -121,6 +130,7 @@ fn terminal_outcome_serializes_with_camel_case_keys() {
 }
 
 #[test]
+#[serial_test::serial]
 fn home_path_resolution_picks_home() {
     // The default path is `$HOME`; on any Unix-likes the call
     // either succeeds (open / xdg-open) or returns
@@ -130,6 +140,7 @@ fn home_path_resolution_picks_home() {
 }
 
 #[test]
+#[serial_test::serial]
 #[cfg(all(unix, not(target_os = "macos")))]
 fn open_in_terminal_returns_terminal_not_found_when_nothing_on_path() {
     // On a Linux CI runner with no `gnome-terminal`,
@@ -144,8 +155,13 @@ fn open_in_terminal_returns_terminal_not_found_when_nothing_on_path() {
     // empty `$PATH` makes the probe fail.
     let empty_path = tempdir();
     let prev_path = std::env::var_os("PATH");
-    // SAFETY: serial_test below serializes all env-var writes
-    // in this test binary.
+    // SAFETY: rewriting the process environment is only sound while no
+    // other thread is reading it, and `set_var` is `unsafe` for exactly
+    // that reason. The `#[serial_test::serial]` attribute above is what
+    // buys that: this test and `home_path_resolution_picks_home` — the
+    // only other test in this binary that spawns a process — exclude
+    // each other. The remaining tests here never spawn and never read
+    // `$PATH`, so they cannot observe the window either.
     unsafe {
         std::env::set_var("PATH", empty_path.path());
     }
@@ -188,10 +204,4 @@ impl Drop for PathGuard {
             None => unsafe { std::env::remove_var(self.key) },
         }
     }
-}
-
-// Suppress the unused import warning on platforms that don't use PathBuf.
-#[allow(dead_code)]
-fn _pathbuf_anchor() -> PathBuf {
-    PathBuf::new()
 }
