@@ -15,6 +15,20 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 
 Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 
+## Commit messages close issues by accident
+
+GitHub scans every commit that lands on the default branch (and every PR description) for
+`close`/`closes`/`closed`, `fix`/`fixes`/`fixed`, `resolve`/`resolves`/`resolved`, `implements`
+followed by `#<n>` — and closes that issue. **It does not read the rest of the sentence.**
+`closes #281's three narrow items` closes #281, and this repo did exactly that to a ticket that
+still had eight open items in it; it had to be reopened minutes later.
+
+So: write `refs #281` unless the ticket is genuinely finished, and give a multi-item ticket its
+own closing commit at the very end rather than mentioning it in the commit that finishes part of
+it. When a commit must describe the work, describe it — `` fixes the `EINTR` path in
+`read_line_capped` (refs #281) `` — and keep the keyword word out of the sentence entirely if the
+ticket is staying open.
+
 ## Pull requests as a triage surface
 
 **PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/triage` reads this flag.)_

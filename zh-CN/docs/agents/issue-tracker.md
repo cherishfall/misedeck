@@ -15,6 +15,18 @@
 
 从 `git remote -v` 推断仓库；在克隆目录内运行时 `gh` 会自动完成这一步。
 
+## 提交信息会“顺手”关掉 issue
+
+GitHub 会扫描所有进入默认分支的 commit（以及每个 PR 描述），只要出现
+`close`/`closes`/`closed`、`fix`/`fixes`/`fixed`、`resolve`/`resolves`/`resolved`、`implements`
+后面跟 `#<n>`，就直接关闭那张 issue。**它不会去读句子剩下的部分。**
+`closes #281's three narrow items` 会关掉整张 #281 —— 本仓库就这样关掉过一张还剩八项未完成的票，
+几分钟后又得手动重开。
+
+所以：除非票真的做完了，一律写 `refs #281`；一张包含多项的票，应当在最后用一条专门的提交收尾，
+而不是在「只做完其中一部分」的那条提交里提它。commit 需要说明改了什么时，就正常描述 ——
+`` 修掉 `read_line_capped` 的 `EINTR` 路径（refs #281） `` —— 票还要留着，就别让关键字出现在句子里。
+
 ## Pull requests as a triage surface
 
 **PR 作为请求入口：否。** _（如果本仓库把外部 PR 当作功能请求处理，则设为 `yes`；`/triage` 会读取此标志。）_
