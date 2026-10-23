@@ -197,6 +197,17 @@ jobs:
             cat "$RUNNER_TEMP/failure-digest.txt"
             echo '```'
           } >>"$GITHUB_STEP_SUMMARY"
+          # The raw log needs repository admin rights to download; an
+          # annotation does not. Re-emit the digest (first 6 KiB — the
+          # runner caps a single annotation well below this) so the
+          # failure is readable through the checks API as well as in
+          # the browser. `%` and CR/LF are escaped per the runner's
+          # property protocol.
+          digest=$(head -c 6000 "$RUNNER_TEMP/failure-digest.txt")
+          digest=${digest//'%'/'%25'}
+          digest=${digest//$'\r'/}
+          digest=${digest//$'\n'/'%0A'}
+          echo "::error title=Failing tests::${digest}"
 
   # Windows is a beta target (issue #208). This job is the place the
   # Windows code paths actually execute: the `frontend` job above covers
@@ -274,6 +285,17 @@ jobs:
             cat "$RUNNER_TEMP/failure-digest.txt"
             echo '```'
           } >>"$GITHUB_STEP_SUMMARY"
+          # The raw log needs repository admin rights to download; an
+          # annotation does not. Re-emit the digest (first 6 KiB — the
+          # runner caps a single annotation well below this) so the
+          # failure is readable through the checks API as well as in
+          # the browser. `%` and CR/LF are escaped per the runner's
+          # property protocol.
+          digest=$(head -c 6000 "$RUNNER_TEMP/failure-digest.txt")
+          digest=${digest//'%'/'%25'}
+          digest=${digest//$'\r'/}
+          digest=${digest//$'\n'/'%0A'}
+          echo "::error title=Failing tests::${digest}"
 
       # Compile smoke, deliberately `cargo build` and not
       # `npm run tauri build`: Windows bundling pulls NSIS/WiX, is slow
