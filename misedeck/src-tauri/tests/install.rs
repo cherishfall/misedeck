@@ -8,15 +8,27 @@
 // under the default `version---json` slug, so that fixture exists too.
 
 use std::path::PathBuf;
-use std::process::Command;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
-use misedeck_lib::install::{mise_self_update_argv, run_install_command, run_self_update};
-use misedeck_lib::mise::{code, RunEvent};
+use misedeck_lib::install::{mise_self_update_argv, run_self_update};
+use misedeck_lib::mise::RunEvent;
+
+// The install streaming loop below drives `run_install_command` through a
+// local `sh` stand-in, so it is unix-only. Its imports must be gated the
+// same way: an unused import is a clippy error, and clippy runs with
+// `-D warnings`.
+#[cfg(not(target_os = "windows"))]
+use std::process::Command;
+#[cfg(not(target_os = "windows"))]
+use std::time::Duration;
+#[cfg(not(target_os = "windows"))]
+use misedeck_lib::install::run_install_command;
+#[cfg(not(target_os = "windows"))]
+use misedeck_lib::mise::code;
+mod common;
 
 fn fixture_script() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/mise/fixture-mise")
+    common::fixture_script()
 }
 
 #[test]

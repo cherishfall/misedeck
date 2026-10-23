@@ -24,8 +24,15 @@ use std::path::PathBuf;
 
 use misedeck_lib::mise::code;
 use misedeck_lib::shell::{open_in_terminal, TerminalOpenOutcome};
+
+// The `TERMINAL_NOT_FOUND` probe test is Linux-only (the probe looks for
+// `gnome-terminal` / `konsole` / `xfce4-terminal`), so the imports it
+// needs must be gated the same way — an unused import is a clippy error,
+// and clippy runs with `-D warnings`.
+#[cfg(all(unix, not(target_os = "macos")))]
 use tempfile::TempDir;
 
+#[cfg(all(unix, not(target_os = "macos")))]
 fn tempdir() -> TempDir {
     tempfile::tempdir().expect("tempdir")
 }

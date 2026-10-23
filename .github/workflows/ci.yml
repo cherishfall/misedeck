@@ -163,12 +163,15 @@ jobs:
         working-directory: misedeck/src-tauri
         run: cargo test --all-targets
 
-  # Windows is a beta target with no real machine in the review loop
-  # (issue #208): this job is the only place the Windows code paths
-  # actually execute. The `frontend` job above already covers the npm
-  # checks on Windows; this one adds the Rust side plus the Tauri
-  # compile smoke, which is what broke-by-construction `locate_mise`
-  # needed. Bundling stays out — see the last step.
+  # Windows is a beta target (issue #208). This job is the place the
+  # Windows code paths actually execute: the `frontend` job above covers
+  # the npm checks on Windows; this one adds the Rust side plus the
+  # Tauri compile smoke, which is what broke-by-construction
+  # `locate_mise` needed. Bundling stays out — see the last step.
+  #
+  # The integration suite runs here too, since the fixtures are
+  # cross-platform Rust binaries rather than bash scripts. Bundling
+  # stays out of every leg — see the last step.
   windows:
     name: windows (windows-latest)
     runs-on: windows-latest
@@ -202,13 +205,16 @@ jobs:
           workspaces: misedeck/src-tauri -> target
           cache-on-failure: true
 
-      # `--lib`: the integration suite drives a bash fixture script
-      # (`tests/fixtures/mise/fixture-mise`) through `Command::new`,
-      # which Windows cannot execute. That coverage stays on the Ubuntu
-      # leg; the #208 candidate-path tests are unit tests and run here.
+      # The full suite, integration tests included. The fixtures are
+      # cross-platform Rust binaries (`src/bin/fixture-mise.rs`,
+      # `src/bin/fixture-process-tree.rs`), not bash scripts: `CreateProcess`
+      # on Windows refuses a file with no executable extension (os error
+      # 193), which is why this job used to run `cargo test --lib` only.
+      # `--no-fail-fast` keeps every target's result visible instead of
+      # stopping at the first failure.
       - name: cargo test
         working-directory: misedeck/src-tauri
-        run: cargo test --lib
+        run: cargo test --all-targets --no-fail-fast
 
       # Compile smoke, deliberately `cargo build` and not
       # `npm run tauri build`: Windows bundling pulls NSIS/WiX, is slow

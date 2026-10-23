@@ -351,6 +351,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    // The streaming-loop tests below are unix-only (their helper shell is
+    // `sh`), so the import they need must be gated the same way — an unused
+    // import is a clippy error, and clippy runs with `-D warnings`.
+    #[cfg(not(target_os = "windows"))]
     use std::sync::{Arc, Mutex};
 
     #[test]

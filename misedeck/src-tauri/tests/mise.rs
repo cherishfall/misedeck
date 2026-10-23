@@ -16,11 +16,10 @@ use misedeck_lib::mise::{
     code, detect_mise, extract_date, locate_mise, meets_minimum, MIN_MISE_VERSION,
 };
 use serial_test::serial;
+mod common;
 
 fn fixture_script() -> PathBuf {
-    // CARGO_MANIFEST_DIR points at the crate root (src-tauri) at compile time.
-    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    manifest.join("tests/fixtures/mise/fixture-mise")
+    common::fixture_script()
 }
 
 /// Set FIXTURE_MISE_SLUG for the duration of the closure so the fixture

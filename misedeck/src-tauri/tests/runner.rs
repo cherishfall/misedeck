@@ -17,12 +17,21 @@ use std::time::{Duration, Instant};
 
 use misedeck_lib::mise::{
     code, require_success, run_mise, run_mise_json, run_mise_tracked, run_mise_tracked_read_only,
-    run_mise_with_timeout, RunEvent, RunRequest,
+    RunEvent, RunRequest,
 };
 use serial_test::serial;
+mod common;
 
 fn fixture_script() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/mise/fixture-mise")
+    common::fixture_script()
+}
+
+/// The process-tree fixture — the cross-platform twin of the two bash
+/// scripts under `tests/fixtures/`. It cannot be a script: `CreateProcess`
+/// on Windows refuses a file with no executable extension (os error 193),
+/// so the #222 / #223 cases could not run there at all.
+fn process_tree_fixture() -> PathBuf {
+    PathBuf::from(env!("CARGO_BIN_EXE_fixture-process-tree"))
 }
 
 /// Set FIXTURE_MISE_SLUG for the duration of the closure.
@@ -207,14 +216,16 @@ fn streaming_emits_stdout_stderr_and_exit_in_order() {
 }
 
 /// The fixture-mise script only replays recorded bytes, so this case gets
-/// its own script: the child exits while a grandchild (`sleep 10 &`) holds
-/// the stdout pipe open, exactly like a task that ends with `npm run dev &`
-/// or starts a daemon (issue #222).
+/// its own fixture: the child exits while a grandchild holds the stdout
+/// pipe open, exactly like a task that ends with `npm run dev &` or starts
+/// a daemon (issue #222).
 #[test]
 fn exited_child_whose_grandchild_holds_stdout_still_returns() {
-    let script =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/hold-stdout-fixture");
-    let req = RunRequest::new(vec!["run".to_string(), "dev".to_string()]);
+    let script = process_tree_fixture();
+    let req = RunRequest::new(vec![
+        "hold-stdout".to_string(),
+        "10".to_string(),
+    ]);
     let started = Instant::now();
     let outcome = run_mise(&script, &req, |_| {}).expect("runner must return Ok");
     let elapsed = started.elapsed();
@@ -370,42 +381,62 @@ fn read_json_sets_mise_safe_and_streaming_does_not() {
 
 // ---------- process tree (issue #223) ----------
 //
-// Both tests below are unix-only and deliberately so, stated here rather
-// than implied: the fixture is a bash script that starts a grandchild
-// (`sleep 300`), which the Windows CI job cannot execute (it runs
-// `cargo test --lib` for exactly that reason), and the liveness probe
-// uses `kill(pid, 0)`. The Windows side of the mechanism —
-// `CREATE_NEW_PROCESS_GROUP` + `taskkill /F /T` — has no test: there is
-// no Windows machine in the review loop, only the compile/test CI job.
+// Both tests below run on every platform. They used to be unix-only:
+// the fixture was a bash script that starts a grandchild (`sleep 300`),
+// which the Windows CI job could not execute, and the liveness probe
+// used `kill(pid, 0)`. The cross-platform `fixture-process-tree`
+// binary and a `tasklist`-based liveness probe on Windows removed both
+// obstacles, so the Windows half of the mechanism —
+// `CREATE_NEW_PROCESS_GROUP` + `taskkill /F /T` — is now covered by
+// the same assertions as the unix half (`setsid` + `killpg`).
 //
 // Both tests put a hard bound on the runner: a broken implementation
-// blocks until the grandchild's `sleep 300` ends, and `recv_timeout`
+// blocks until the grandchild's sleep ends, and `recv_timeout`
 // turns that hang into a failure instead of a stuck CI job.
 
-#[cfg(unix)]
 mod process_tree {
     use super::*;
+    use misedeck_lib::mise::run_mise_with_timeout;
     use misedeck_lib::process_tree::request_cancel;
     use std::sync::mpsc::channel as std_channel;
 
     fn tree_fixture() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/tree-kill-fixture")
+        process_tree_fixture()
     }
 
-    /// `kill(pid, 0)` — "the process exists and we may signal it".
-    fn alive(pid: i32) -> bool {
+    /// Is the process with this pid still running?
+    ///
+    /// Unix: `kill(pid, 0)` — "the process exists and we may signal it".
+    /// Windows: no such signal exists, and there is no `OpenProcess`
+    /// binding without an extra crate, so `tasklist` is the OS-level
+    /// check that needs no dependency. Its CSV output carries the pid
+    /// in quotes, which is what the match looks for.
+    #[cfg(unix)]
+    fn alive(pid: u32) -> bool {
         // SAFETY: signal 0 only checks existence; no handler runs.
-        unsafe { libc::kill(pid, 0) == 0 }
+        unsafe { libc::kill(pid as libc::pid_t, 0) == 0 }
+    }
+
+    #[cfg(windows)]
+    fn alive(pid: u32) -> bool {
+        let filter = format!("PID eq {pid}");
+        let output = std::process::Command::new("tasklist.exe")
+            .args(["/FI", &filter, "/NH", "/FO", "CSV"])
+            .output();
+        match output {
+            Ok(output) => String::from_utf8_lossy(&output.stdout).contains(&format!("\"{pid}\"")),
+            Err(_) => false,
+        }
     }
 
     /// The fixture writes its grandchild's pid once the background
-    /// `sleep` is running; poll until the file parses.
-    fn wait_for_pid(path: &std::path::Path, bound: Duration) -> Option<i32> {
+    /// sleep is running; poll until the file parses.
+    fn wait_for_pid(path: &std::path::Path, bound: Duration) -> Option<u32> {
         let deadline = Instant::now() + bound;
         while Instant::now() < deadline {
             if let Some(pid) = std::fs::read_to_string(path)
                 .ok()
-                .and_then(|s| s.trim().parse::<i32>().ok())
+                .and_then(|s| s.trim().parse::<u32>().ok())
             {
                 return Some(pid);
             }
@@ -414,9 +445,9 @@ mod process_tree {
         None
     }
 
-    /// SIGKILL is asynchronous: give the kernel (and the reaper) a
+    /// The kill is asynchronous: give the kernel (and the reaper) a
     /// moment before declaring the grandchild a survivor.
-    fn dead_within(pid: i32, bound: Duration) -> bool {
+    fn dead_within(pid: u32, bound: Duration) -> bool {
         let deadline = Instant::now() + bound;
         while Instant::now() < deadline {
             if !alive(pid) {
@@ -427,9 +458,9 @@ mod process_tree {
         !alive(pid)
     }
 
-    /// Cancel must stop the work, not just `sh`. Before #223 the runner
-    /// had no cancel path at all (soft cancel) and killed only the direct
-    /// child at timeout.
+    /// Cancel must stop the work, not just the direct child. Before #223
+    /// the runner had no cancel path at all (soft cancel) and killed only
+    /// the direct child at timeout.
     #[test]
     fn cancel_kills_the_grandchild_too() {
         let dir = tempfile::tempdir().expect("tempdir");
@@ -440,7 +471,7 @@ mod process_tree {
         let script = tree_fixture();
         let pid_arg = pid_file.to_string_lossy().to_string();
         std::thread::spawn(move || {
-            let req = RunRequest::new(vec![pid_arg]);
+            let req = RunRequest::new(vec!["tree-kill".to_string(), pid_arg]);
             let result = run_mise_tracked(&script, &req, Some(run_id), |_| {});
             let _ = tx.send(result.map(|o| o.exit_code));
         });
@@ -486,7 +517,7 @@ mod process_tree {
         let script = tree_fixture();
         let pid_arg = pid_file.to_string_lossy().to_string();
         std::thread::spawn(move || {
-            let req = RunRequest::new(vec![pid_arg]);
+            let req = RunRequest::new(vec!["tree-kill".to_string(), pid_arg]);
             let result = run_mise_with_timeout(&script, &req, Duration::from_secs(2), |_| {});
             let _ = tx.send(result.map(|o| o.exit_code));
         });

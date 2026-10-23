@@ -23,9 +23,10 @@ use misedeck_lib::mise::{
     mise_settings_unset_argv,
 };
 use serial_test::serial;
+mod common;
 
 fn fixture_script() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/mise/fixture-mise")
+    common::fixture_script()
 }
 
 /// Set `FIXTURE_MISE_SLUG` for the duration of the closure so the
