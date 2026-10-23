@@ -163,6 +163,15 @@ jobs:
         working-directory: misedeck/src-tauri
         run: cargo test --all-targets
 
+      # When a test fails, the raw `cargo test` output buries the
+      # failing test names in a wall of `running N tests` lines. This
+      # step re-runs the suite and prints just the failure summary, so
+      # the log says *which* test broke without a scroll.
+      - name: Test failure summary
+        if: failure()
+        working-directory: misedeck/src-tauri
+        run: cargo test --all-targets --no-fail-fast 2>&1 | grep -A 40 -E "^(failures:|test result: FAILED)" || true
+
   # Windows is a beta target (issue #208). This job is the place the
   # Windows code paths actually execute: the `frontend` job above covers
   # the npm checks on Windows; this one adds the Rust side plus the
@@ -215,6 +224,13 @@ jobs:
       - name: cargo test
         working-directory: misedeck/src-tauri
         run: cargo test --all-targets --no-fail-fast
+
+      # Same failure summary as the ubuntu leg: print the failing test
+      # names instead of making the reader dig through the raw output.
+      - name: Test failure summary
+        if: failure()
+        working-directory: misedeck/src-tauri
+        run: cargo test --all-targets --no-fail-fast 2>&1 | grep -A 40 -E "^(failures:|test result: FAILED)" || true
 
       # Compile smoke, deliberately `cargo build` and not
       # `npm run tauri build`: Windows bundling pulls NSIS/WiX, is slow
