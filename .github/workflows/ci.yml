@@ -165,12 +165,38 @@ jobs:
 
       # When a test fails, the raw `cargo test` output buries the
       # failing test names in a wall of `running N tests` lines. This
-      # step re-runs the suite and prints just the failure summary, so
-      # the log says *which* test broke without a scroll.
+      # step re-runs the suite once and prints only the digest — the
+      # names, then the panic sites — so the log says *which* test
+      # broke without a scroll.
+      #
+      # Body is a block scalar on purpose: a one-line `run:` that greps
+      # for `failures:` contains `: ` mid-value, which is invalid YAML
+      # and silently turns the whole workflow file into "Invalid
+      # workflow file" (the run then fails in zero seconds without ever
+      # starting a job).
+      #
+      # The same digest goes to `$GITHUB_STEP_SUMMARY`, which the run
+      # page renders at the top — one click instead of downloading logs.
       - name: Test failure summary
         if: failure()
         working-directory: misedeck/src-tauri
-        run: cargo test --all-targets --no-fail-fast 2>&1 | grep -A 40 -E "^(failures:|test result: FAILED)" || true
+        shell: bash
+        run: |
+          log="$RUNNER_TEMP/cargo-test-failures.log"
+          cargo test --all-targets --no-fail-fast >"$log" 2>&1 || true
+          {
+            echo '=== failing tests ==='
+            grep -A 100 -E '^failures:$' "$log" || true
+            echo '=== panic sites ==='
+            grep -B 2 -A 12 'panicked at' "$log" || true
+          } | tee "$RUNNER_TEMP/failure-digest.txt"
+          {
+            echo '## Failing tests'
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/failure-digest.txt"
+            echo '```'
+          } >>"$GITHUB_STEP_SUMMARY"
 
   # Windows is a beta target (issue #208). This job is the place the
   # Windows code paths actually execute: the `frontend` job above covers
@@ -227,10 +253,27 @@ jobs:
 
       # Same failure summary as the ubuntu leg: print the failing test
       # names instead of making the reader dig through the raw output.
+      # Block scalar for the same YAML reason as above.
       - name: Test failure summary
         if: failure()
         working-directory: misedeck/src-tauri
-        run: cargo test --all-targets --no-fail-fast 2>&1 | grep -A 40 -E "^(failures:|test result: FAILED)" || true
+        shell: bash
+        run: |
+          log="$RUNNER_TEMP/cargo-test-failures.log"
+          cargo test --all-targets --no-fail-fast >"$log" 2>&1 || true
+          {
+            echo '=== failing tests ==='
+            grep -A 100 -E '^failures:$' "$log" || true
+            echo '=== panic sites ==='
+            grep -B 2 -A 12 'panicked at' "$log" || true
+          } | tee "$RUNNER_TEMP/failure-digest.txt"
+          {
+            echo '## Failing tests'
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/failure-digest.txt"
+            echo '```'
+          } >>"$GITHUB_STEP_SUMMARY"
 
       # Compile smoke, deliberately `cargo build` and not
       # `npm run tauri build`: Windows bundling pulls NSIS/WiX, is slow
