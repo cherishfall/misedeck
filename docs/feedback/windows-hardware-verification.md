@@ -202,7 +202,7 @@ unix-only 测试已正确加 `#[cfg]`，但**对应导入没加**，CI 的 clipp
 | **目录选择器**（原生对话框） | CDP 无法驱动原生 Win32 对话框。已验证 `directory_exists` 命令与 `-C <cwd>` 上下文正确，但"点击选择器 → 选目录 → 应用"这条链路未点过。 |
 | **Windows 打包（NSIS/WiX）** | 打包是发版时 owner 的决定，`bundle.targets` 仍只发 macOS (+ Linux)。 |
 | **WebView2 GPU 崩溃** | 本机虚拟显示驱动所致，非 MiseDeck 缺陷。正常 Windows 硬件不受影响。 |
-| **#239** | 唯一仍 open 且 owner-gated 的跨平台 SPEC，本轮未动。 |
+| **#239** | 已于 2026-10-23 关闭。逐条验收结论（含每一项的证据等级）见 `docs/feedback/beta17-audit-cross-platform.md` § 真机验收；Linux 桌面与几个需要特殊启动方式的窄项转入独立票据。 |
 
 ---
 

@@ -2,7 +2,28 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-10-22, night — **Windows verified on real hardware: 8/8 pages, 14/14 commands, write loop closed; `cargo test --all-targets` 266 passed / 0 failed**)
+## CURRENT STATE (2026-10-23 — **#239 closed; the READMEs' Windows wording now matches the evidence**)
+
+A third pass on the same Windows 11 x64 box closed out the two things the earlier passes left dangling: the commands that had only unit-test coverage, and two test defects that the audit had flagged.
+
+**Commands.** Four more were exercised over real IPC through CDP (`window.__TAURI_INTERNALS__.invoke`), bringing the real-hardware count to **19 of 22**: `set_window_theme` (`dark`/`light` return `null`; `purple` is refused), `check_app_update` (structured retryable `Err` — the box cannot reach GitHub from the app process), `open_external` (`javascript:` and `file://` both refused, no window opened, so #248's scheme allow-list holds on hardware), `cancel_run` (unknown id returns `null` silently). The remaining three — `install_mise`, `mise_self_update`, `mise_trust` — would reinstall or re-trust the owner's own mise, so they stay untriggered by choice.
+
+**Test defects fixed** (`4fb829f`): `tests/terminal.rs` rewrote `$PATH` under a comment claiming "serial_test below serializes env-var writes" while the file contained no `serial_test` at all; `tests/install.rs` set `FIXTURE_MISE_ENV_LOG` the same way. `set_var` in a multi-threaded test binary is UB, so every test that spawns is now `#[serial_test::serial]`, and the comment states the real reason. Dead-code suppression narrowed (`which_exists`), the fake `_pathbuf_anchor()` that only existed to silence an unused import deleted. The rule is now written down in `docs/agents/conventions.md` (+ zh-CN).
+
+**CI defects fixed** (`81effd4`, `da9205b`): the failure-summary step I added was invalid YAML — a `: ` inside an unquoted scalar — and GitHub's symptom is misleading: the push still creates a run, but it is named after the file, finishes in 0 seconds and fails with **no job ever starting**, which reads exactly like a test failure. Rewritten as a block scalar that also emits an `::error` annotation, so a future flake names its own test in a place that is readable without admin rights. The ubuntu leg does have an intermittent `cargo test` failure (same source: fail, fail, pass) that is still unreproduced; this machine has no Linux environment and WSL is blocked by policy.
+
+**#239 closed.** Its acceptance table is answered item by item in `docs/feedback/beta17-audit-cross-platform.md` § 真机验收, with the evidence level stated for each row rather than one blanket "verified": Windows product-level verification passed (8 pages, 19/22 commands, write round-trip, process-tree kill), `#244` verified on hardware, `#240`/`#242` structurally unobservable from a console-launched dev build (a parent console means no child window either way), `#243` needs a real install run, `#245`/`#247` need a Linux desktop. Those residuals moved to their own issue rather than keeping the parent open indefinitely.
+
+**READMEs rewritten** (both languages): Windows is no longer described as never having run on real hardware — the wording now says the app was exercised end-to-end on one Windows 11 machine while the installer remains untested; the Rust CI paragraph says Windows runs the same `cargo test --all-targets` as Linux instead of a `--lib` smoke; and a new known limitation documents that the `curl`-based update check ignores the Windows system proxy (set `https_proxy`), which is how this box failed its check.
+
+**Next move:**
+1. No open issue is agent-pickable; the residual-verification issue needs either a Linux desktop or a console-less Windows launch.
+2. If Windows visual work resumes, the reusable pieces stay: `.workbuddy/tmp/msvcenv.sh` (self-built MSVC env — cargo must be preceded by `. .workbuddy/tmp/msvcenv.sh`, otherwise linking asks for a `msvcrt.lib` this box does not have), `cdp.py` (hand-rolled WebSocket CDP client), and the SwiftShader flag set in the verification report § 0.2.
+3. Do not undo the two cross-cutting contracts when adding commands: panel reads must pass `readOnly`, and streaming paths must keep the capped reader + typed truncation event.
+
+---
+
+## PREVIOUS STATE (2026-10-22, night — **Windows verified on real hardware: 8/8 pages, 14/14 commands, write loop closed; `cargo test --all-targets` 266 passed / 0 failed**)
 
 The owner asked for a functional verification of the shipping Windows build on an actual Windows machine — the first time the Windows target has ever run outside CI. Answer: **yes, the app works**, with two real defects found and fixed along the way. Full evidence (screenshots, per-command results, root causes) is in `docs/feedback/windows-hardware-verification.md`.
 

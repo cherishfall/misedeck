@@ -273,3 +273,35 @@ Terminal argv、PowerShell sibling、install 编码前缀）并且全绿 —— 
 四处改动共享同一批测试和启动器，逐票拆分会产生编译不过的中间提交 —— 于是 #240 的 shell 侧
 （`which_exists`）随 `422e096` 落地，#240 自己的提交 `e78e6e6` 只含 `process_tree.rs` + `update.rs`。
 这是本批唯一一处偏离 commit-per-issue 的地方，判据是「master 必须始终可编译」优先于提交粒度。
+
+---
+
+## 真机验收（2026-10-23，Windows 11 x64 单机）
+
+本票的验收条件是「八张票在真机上确认」，此前一直卡在没有 Windows/Linux 实机。2026-10-23 起
+有一台真实 Windows 11 x64 机器可用，产品级验证已跑完：**8 个页面、22 个后端命令里的 19 个、
+写入闭环、进程树 teardown 全部通过**（`docs/feedback/windows-hardware-verification.md`）。
+逐条对账如下 —— **证据等级分成「真机观察到」/「代码+CI 钉住但未在真机观察到」/「本机结构上无法判定」**，
+不含推断。
+
+| 闸门项 | 结论 | 证据 |
+| --- | --- | --- |
+| **#240** 控制台黑框 | **本机结构上无法判定** | `process_tree.rs` 的单测断言 `CREATE_NO_WINDOW` 位，`windows-latest` 上执行；但本机始终从 Git Bash 启动应用 —— 父进程带控制台时，子进程无论如何都不会新开窗口，症状不可能出现。要判这项必须从资源管理器启动 release 包 |
+| **#242** 终端打开 | **argv 通过，窗口未观察** | `open_in_terminal` 返回平台标签与 argv 正确，`current_dir` 传目录由单测钉住；「点一下真的弹出 cmd 窗口」未逐项观察 |
+| **#243** 安装输出编码 | **未验** | 触发它必须跑 `install_mise`（会重装用户自己的 mise），故意未点。本机正好是中文 Windows，环境对，但入口没走 |
+| **#244** PowerShell rc 探针 | **真机通过** | `shell_activation_check` → `kind: "powerShell"`，`rcPath` 落在真实 profile 目录下的 pwsh 配置；5.1 候选与 UTF-16/BOM 解码由 `tests/shell.rs` 覆盖 |
+| **#241** 字体自托管 | **构建产物通过，字形需 macOS 复核** | `dist/index.html` 中 `fonts.googleapis`/`gstatic` 出现 0 次；`dist/assets/` 有 6 个 woff2；`check-css-tokens.ts` 断言字体栈首项必须是打包族。字形与字宽变化需要重拍 macOS 截图才能对比，旧截图已过期 |
+| **#246** 滚动条占位 | **Windows 正常，macOS 待确认** | `scrollbar-gutter: stable` 落 `PageShell` 与 `Table` 两处；Windows 上两处渲染正常（截图）；「macOS 上应无变化」只能在 macOS 上确认 |
+| **#245** Linux 终端探测 | **未验** | 无 Linux 桌面 |
+| **#247** Linux 构建基准 | **未验** | 无 Linux 桌面；`release.yml` 钉的是 `ubuntu-22.04` 构建机，deb 在 22.04 上是否真报 `GLIBC_2.39` 要装一次才知道 |
+
+顺带落地的两条结论：
+
+1. **「Windows 实验性」的措辞已过期**。README 双语从「CI 只编译 + 跑单测，从未有人在真机跑过」
+   改成「CI 跑与 Linux 相同的测试套件；应用已在一台真实 Windows 11 上走通；安装包未在真机安装」，
+   并指向验证报告。措辞按证据收窄，没有升级成「已支持」。
+2. **更新检查在这类网络下必然失败**（本轮发现，未改代码）：`curl` 不读 Windows 系统代理，
+   只认 `https_proxy` 环境变量。已作为已知限制写进 README 双语，不擅自改产品行为。
+
+剩余未验项（Linux 桌面、Windows 四个窄项、macOS 视觉复核）独立跟踪，见后续票据；本票的
+「Windows 到底能不能用」这个问题已有真机答案，故关闭。
