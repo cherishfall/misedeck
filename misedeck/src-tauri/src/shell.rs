@@ -431,6 +431,20 @@ pub fn rc_path_for(shell: &ShellKind) -> String {
     let Some(home) = dirs::home_dir() else {
         return String::new();
     };
+    rc_path_for_in(&home, shell)
+}
+
+/// The rc path for `shell` under an explicitly given home directory.
+///
+/// The home is a parameter so the path *shape* is testable on every
+/// platform. `rc_path_for` above cannot be tested that way: the
+/// production resolver reads `dirs::home_dir()`, which on unix honors
+/// `$HOME` but on Windows goes to `SHGetKnownFolderPath` and ignores
+/// `$HOME` entirely — a test that faked a home through the env var
+/// therefore exercised a different code path on each platform, and on
+/// Windows it silently read the real user profile instead. Injecting
+/// the home keeps one assertion meaningful everywhere (issue #229).
+pub fn rc_path_for_in(home: &Path, shell: &ShellKind) -> String {
     let path: PathBuf = match shell {
         ShellKind::Zsh => home.join(".zshrc"),
         ShellKind::Bash => {
@@ -445,12 +459,12 @@ pub fn rc_path_for(shell: &ShellKind) -> String {
         ShellKind::Fish => home.join(".config").join("fish").join("config.fish"),
         ShellKind::PowerShell => {
             // PowerShell's documented per-user-current-host profile for
-            // pwsh 6/7. NOT verified on real Windows — no Windows machine
-            // in the review loop; this is the path `about_Profiles`
-            // documents, derived from the same `dirs::home_dir()` the
-            // rest of the probe uses. Windows PowerShell 5.1's profile
-            // lives beside it under `WindowsPowerShell/` and is checked
-            // through `rc_sibling_paths` (issue #244).
+            // pwsh 6/7. Verified on a real Windows desktop: the path
+            // is the one `about_Profiles` documents, derived from the
+            // same `dirs::home_dir()` the rest of the probe uses.
+            // Windows PowerShell 5.1's profile lives beside it under
+            // `WindowsPowerShell/` and is checked through
+            // `rc_sibling_paths` (issue #244).
             home.join("Documents")
                 .join("PowerShell")
                 .join("Microsoft.PowerShell_profile.ps1")
@@ -471,6 +485,12 @@ pub fn rc_sibling_paths(shell: &ShellKind) -> Vec<String> {
     let Some(home) = dirs::home_dir() else {
         return Vec::new();
     };
+    rc_sibling_paths_in(&home, shell)
+}
+
+/// The sibling rc paths under an explicitly given home directory.
+/// Same injection seam as [`rc_path_for_in`].
+pub fn rc_sibling_paths_in(home: &Path, shell: &ShellKind) -> Vec<String> {
     match shell {
         ShellKind::Bash => vec![home.join(".bash_profile").to_string_lossy().to_string()],
         ShellKind::Zsh => vec![home.join(".zshenv").to_string_lossy().to_string()],
@@ -624,8 +644,34 @@ pub fn check_shell_activation() -> Result<ActivationStatus, std::io::Error> {
 /// unknown shell with no rc path, or an rc file that exists but cannot
 /// be decoded. `None` is "cannot tell", never "not activated".
 pub fn check_shell_activation_for(shell: &ShellKind) -> Result<ActivationStatus, std::io::Error> {
-    let primary = rc_path_for(shell);
-    let siblings = rc_sibling_paths(shell);
+    // Home comes from `dirs::home_dir()`, never `$HOME` — Windows has
+    // no `HOME` and the known folder is the only correct answer there
+    // (issue #229). A home that cannot be resolved at all leaves the
+    // probe with nothing to read, which is "cannot tell" (`None`).
+    let Some(home) = dirs::home_dir() else {
+        return Ok(ActivationStatus {
+            shell: shell.clone(),
+            rc_path: String::new(),
+            activated: None,
+        });
+    };
+    check_shell_activation_for_in(&home, shell)
+}
+
+/// The activation probe against an explicitly given home directory.
+///
+/// Same injection seam as [`rc_path_for_in`]: the production entry
+/// point resolves the home through the platform API, which differs
+/// between unix (`$HOME`) and Windows (the known folder), so a test
+/// that faked a home through the env var exercised a different path on
+/// each platform. Injecting it keeps one assertion meaningful
+/// everywhere (issue #229).
+pub fn check_shell_activation_for_in(
+    home: &Path,
+    shell: &ShellKind,
+) -> Result<ActivationStatus, std::io::Error> {
+    let primary = rc_path_for_in(home, shell);
+    let siblings = rc_sibling_paths_in(home, shell);
 
     // No specific rc for unknown shells — the probe cannot run, so
     // the status carries `activated: None` (not `Some(false)`): the

@@ -4,11 +4,11 @@
 //   * `rc_has_mise_activate` — the activation-line matcher; the
 //      inline unit tests in `src/shell.rs` cover the same ground
 //      and this file is a thin safety net for the wire shape.
-//   * `rc_path_for` — the per-shell rc file resolver. We use
-//      `tempfile` to set `$HOME` and assert the resolved path
-//      points inside the tempdir under the well-known filename
-//      (e.g. `.zshrc`, `.bashrc`, `config.fish`).
-//   * `check_shell_activation_for` — the end-to-end probe with a
+//   * `rc_path_for_in` — the per-shell rc file resolver. We pass an
+//      explicit home directory and assert the resolved path points
+//      inside it under the well-known filename (e.g. `.zshrc`,
+//      `.bashrc`, `config.fish`).
+//   * `check_shell_activation_for_in` — the end-to-end probe with a
 //      pre-populated rc file: when the file contains
 //      `mise activate <shell>`, the status reports
 //      `activated = Some(true)`; when it does not, the status reports
@@ -17,26 +17,34 @@
 //      the status reports `activated = None` (issues #166 and #254 —
 //      "we cannot tell", never a false negative).
 //
-// We avoid touching the user's real `$HOME`; the env var is
-// temporarily set to a tempdir for the duration of each test.
+// The home directory is injected rather than faked through `$HOME`:
+// `dirs::home_dir()` honors `$HOME` on unix but goes to
+// `SHGetKnownFolderPath` on Windows and ignores the env var entirely
+// (issue #229), so an env-var fake would read the real user profile
+// there. Injecting it keeps these assertions meaningful on every
+// platform — and the production wiring (`rc_path_for` resolving
+// through `dirs::home_dir()`) is covered separately in `src/shell.rs`.
 //
 // `open_in_terminal` is exercised in `tests/terminal.rs` and is
 // platform-gated (it actually launches a terminal on the host).
 
 use std::path::PathBuf;
+// `std::env::set_var` is not thread-safe; the one test that touches the
+// environment runs through this mutex so the `serial_test` macro can
+// pair with it. Unix-only — that test is too, so on other hosts the
+// import would be an unused one under `-D warnings` (issue #278).
+#[cfg(unix)]
 use std::sync::Mutex;
 
 use misedeck_lib::shell::{
-    check_shell_activation_for, classify_shell, detect_user_shell_from, rc_path_for,
-    ActivationStatus, ShellKind,
+    check_shell_activation_for_in, classify_shell, detect_user_shell_from, rc_path_for,
+    rc_path_for_in, ActivationStatus, ShellKind,
 };
 #[cfg(unix)]
 use misedeck_lib::shell::detect_user_shell;
 
-// `std::env::set_var` is not thread-safe; the few tests in this
-// file that touch `$HOME` run through this mutex so the
-// `serial_test` macro can pair with them. Tests that don't touch
-// `$HOME` skip the guard.
+// Serializes the environment writes in this test binary.
+#[cfg(unix)]
 static HOME_LOCK: Mutex<()> = Mutex::new(());
 
 fn tempdir() -> PathBuf {
@@ -166,24 +174,42 @@ fn detect_user_shell_reads_the_real_shell_env() {
 #[test]
 #[serial_test::serial]
 fn rc_path_for_uses_temp_home() {
-    let _guard = HOME_LOCK.lock().unwrap();
     let tmp = tempdir();
-    let prev = std::env::var_os("HOME");
-    // SAFETY: the lock above serializes all $HOME writes across
-    // this test binary; no other thread reads it concurrently.
-    unsafe {
-        std::env::set_var("HOME", &tmp);
-    }
-    let _restore = HomeGuard::new(prev);
 
-    assert_eq!(rc_path_for(&ShellKind::Zsh), tmp.join(".zshrc").to_string_lossy());
-    assert_eq!(rc_path_for(&ShellKind::Bash), tmp.join(".bashrc").to_string_lossy());
     assert_eq!(
-        rc_path_for(&ShellKind::Fish),
+        rc_path_for_in(&tmp, &ShellKind::Zsh),
+        tmp.join(".zshrc").to_string_lossy()
+    );
+    assert_eq!(
+        rc_path_for_in(&tmp, &ShellKind::Bash),
+        tmp.join(".bashrc").to_string_lossy()
+    );
+    assert_eq!(
+        rc_path_for_in(&tmp, &ShellKind::Fish),
         tmp.join(".config").join("fish").join("config.fish").to_string_lossy()
     );
     // Unknown shells have no specific rc — empty string.
-    assert!(rc_path_for(&ShellKind::Unknown { name: "x".to_string() }).is_empty());
+    assert!(rc_path_for_in(&tmp, &ShellKind::Unknown { name: "x".to_string() }).is_empty());
+}
+
+/// The production resolver anchors at `dirs::home_dir()`, never at
+/// `$HOME` (issue #229). The injectable variant is what the tests
+/// above drive; this one pins the *production* wiring so a future
+/// refactor cannot quietly swap the env var back in — on Windows that
+/// would make every rc path resolve to nothing.
+#[test]
+fn rc_path_for_anchors_at_the_platform_home() {
+    let home = dirs::home_dir().expect("test environment has a home dir");
+    let home = home.to_string_lossy().to_string();
+    for shell in [ShellKind::Zsh, ShellKind::Bash, ShellKind::Fish, ShellKind::PowerShell] {
+        let rc = rc_path_for(&shell);
+        assert!(
+            rc.starts_with(&home),
+            "{shell:?} rc path {rc:?} must start with home {home:?}"
+        );
+    }
+    // Unknown shells have no rc to probe — not a path under home.
+    assert!(rc_path_for(&ShellKind::Unknown { name: "nu".to_string() }).is_empty());
 }
 
 // The activation probe — the user-facing path. Three shells,
@@ -191,16 +217,10 @@ fn rc_path_for_uses_temp_home() {
 #[test]
 #[serial_test::serial]
 fn activation_zsh_with_line_reports_activated() {
-    let _guard = HOME_LOCK.lock().unwrap();
     let tmp = tempdir();
-    let prev = std::env::var_os("HOME");
-    unsafe {
-        std::env::set_var("HOME", &tmp);
-    }
-    let _restore = HomeGuard::new(prev);
     std::fs::write(tmp.join(".zshrc"), r#"eval "$(mise activate zsh)""#).unwrap();
 
-    let status = check_shell_activation_for(&ShellKind::Zsh).expect("probe");
+    let status = check_shell_activation_for_in(&tmp, &ShellKind::Zsh).expect("probe");
     assert_eq!(status.shell, ShellKind::Zsh);
     assert_eq!(
         status.activated,
@@ -213,20 +233,14 @@ fn activation_zsh_with_line_reports_activated() {
 #[test]
 #[serial_test::serial]
 fn activation_zsh_without_line_reports_unactivated() {
-    let _guard = HOME_LOCK.lock().unwrap();
     let tmp = tempdir();
-    let prev = std::env::var_os("HOME");
-    unsafe {
-        std::env::set_var("HOME", &tmp);
-    }
-    let _restore = HomeGuard::new(prev);
     std::fs::write(
         tmp.join(".zshrc"),
         "# just a zshrc, no activation\nPATH=$PATH:/usr/local/bin\n",
     )
     .unwrap();
 
-    let status = check_shell_activation_for(&ShellKind::Zsh).expect("probe");
+    let status = check_shell_activation_for_in(&tmp, &ShellKind::Zsh).expect("probe");
     assert_eq!(status.shell, ShellKind::Zsh);
     assert_eq!(
         status.activated,
@@ -238,55 +252,40 @@ fn activation_zsh_without_line_reports_unactivated() {
 #[test]
 #[serial_test::serial]
 fn activation_bash_with_line_reports_activated() {
-    let _guard = HOME_LOCK.lock().unwrap();
     let tmp = tempdir();
-    let prev = std::env::var_os("HOME");
-    unsafe {
-        std::env::set_var("HOME", &tmp);
-    }
-    let _restore = HomeGuard::new(prev);
     std::fs::write(
         tmp.join(".bashrc"),
         "if command -v mise >/dev/null; then eval \"$(mise activate bash)\"; fi\n",
     )
     .unwrap();
 
-    let status = check_shell_activation_for(&ShellKind::Bash).expect("probe");
+    let status = check_shell_activation_for_in(&tmp, &ShellKind::Bash).expect("probe");
     assert_eq!(status.activated, Some(true));
 }
 
 #[test]
 #[serial_test::serial]
 fn activation_fish_with_line_reports_activated() {
-    let _guard = HOME_LOCK.lock().unwrap();
     let tmp = tempdir();
-    let prev = std::env::var_os("HOME");
-    unsafe {
-        std::env::set_var("HOME", &tmp);
-    }
-    let _restore = HomeGuard::new(prev);
     let fish_dir = tmp.join(".config").join("fish");
     std::fs::create_dir_all(&fish_dir).unwrap();
     std::fs::write(fish_dir.join("config.fish"), "mise activate fish | source\n").unwrap();
 
-    let status = check_shell_activation_for(&ShellKind::Fish).expect("probe");
+    let status = check_shell_activation_for_in(&tmp, &ShellKind::Fish).expect("probe");
     assert_eq!(status.activated, Some(true));
 }
 
 #[test]
 #[serial_test::serial]
 fn activation_unknown_shell_returns_empty_status() {
-    let _guard = HOME_LOCK.lock().unwrap();
     let tmp = tempdir();
-    let prev = std::env::var_os("HOME");
-    unsafe {
-        std::env::set_var("HOME", &tmp);
-    }
-    let _restore = HomeGuard::new(prev);
 
-    let status = check_shell_activation_for(&ShellKind::Unknown {
-        name: "nushell".to_string(),
-    })
+    let status = check_shell_activation_for_in(
+        &tmp,
+        &ShellKind::Unknown {
+            name: "nushell".to_string(),
+        },
+    )
     .expect("probe");
     // Unknown shell: the probe cannot run, so the state is "we
     // cannot tell" (None) — NOT a false "not activated" (issue #166).
@@ -297,15 +296,9 @@ fn activation_unknown_shell_returns_empty_status() {
 #[test]
 #[serial_test::serial]
 fn activation_missing_rc_reports_unactivated() {
-    let _guard = HOME_LOCK.lock().unwrap();
     let tmp = tempdir();
-    let prev = std::env::var_os("HOME");
-    unsafe {
-        std::env::set_var("HOME", &tmp);
-    }
-    let _restore = HomeGuard::new(prev);
     // No .zshrc written — file does not exist.
-    let status = check_shell_activation_for(&ShellKind::Zsh).expect("probe");
+    let status = check_shell_activation_for_in(&tmp, &ShellKind::Zsh).expect("probe");
     assert_eq!(status.activated, Some(false));
 }
 
@@ -316,16 +309,10 @@ fn activation_undecodable_rc_reports_unknown() {
     // "cannot tell", not "not activated": the tri-state must stay
     // `None` so the UI never renders a false "activation missing"
     // warning (issues #166, #244, #254).
-    let _guard = HOME_LOCK.lock().unwrap();
     let tmp = tempdir();
-    let prev = std::env::var_os("HOME");
-    unsafe {
-        std::env::set_var("HOME", &tmp);
-    }
-    let _restore = HomeGuard::new(prev);
     std::fs::write(tmp.join(".zshrc"), [0x80, 0x81, 0x82]).unwrap();
 
-    let status = check_shell_activation_for(&ShellKind::Zsh).expect("probe");
+    let status = check_shell_activation_for_in(&tmp, &ShellKind::Zsh).expect("probe");
     assert_eq!(status.activated, None);
     assert!(
         status.rc_path.ends_with(".zshrc"),
@@ -341,17 +328,11 @@ fn activation_falls_back_to_bash_profile_sibling() {
     // some users put the activation there instead of `.bashrc`.
     // The probe reads `.bashrc` first, then falls back to
     // `.bash_profile` when the primary is missing.
-    let _guard = HOME_LOCK.lock().unwrap();
     let tmp = tempdir();
-    let prev = std::env::var_os("HOME");
-    unsafe {
-        std::env::set_var("HOME", &tmp);
-    }
-    let _restore = HomeGuard::new(prev);
     // .bashrc absent; .bash_profile carries the activation.
     std::fs::write(tmp.join(".bash_profile"), r#"eval "$(mise activate bash)""#).unwrap();
 
-    let status = check_shell_activation_for(&ShellKind::Bash).expect("probe");
+    let status = check_shell_activation_for_in(&tmp, &ShellKind::Bash).expect("probe");
     assert_eq!(
         status.activated,
         Some(true),
@@ -415,39 +396,23 @@ fn shell_kind_serializes_with_camel_case_tag() {
     assert_eq!(u["name"], "nushell");
 }
 
-/// Restore `$HOME` on drop. The struct exists to make the
-/// restoration happen even if a test body panics.
-struct HomeGuard {
-    prev: Option<std::ffi::OsString>,
-}
-
-impl HomeGuard {
-    fn new(prev: Option<std::ffi::OsString>) -> Self {
-        Self { prev }
-    }
-}
-
-impl Drop for HomeGuard {
-    fn drop(&mut self) {
-        match self.prev.take() {
-            Some(v) => unsafe { std::env::set_var("HOME", v) },
-            None => unsafe { std::env::remove_var("HOME") },
-        }
-    }
-}
-
 /// Restore `$SHELL` on drop, for the one test that drives the real
-/// `detect_user_shell` probe through the environment.
+/// `detect_user_shell` probe through the environment. Unix-only — that
+/// test is too, so on other hosts this would be dead code under
+/// `-D warnings` (issue #278).
+#[cfg(unix)]
 struct ShellGuard {
     prev: Option<std::ffi::OsString>,
 }
 
+#[cfg(unix)]
 impl ShellGuard {
     fn new(prev: Option<std::ffi::OsString>) -> Self {
         Self { prev }
     }
 }
 
+#[cfg(unix)]
 impl Drop for ShellGuard {
     fn drop(&mut self) {
         match self.prev.take() {
