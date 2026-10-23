@@ -286,14 +286,38 @@ Terminal argv、PowerShell sibling、install 编码前缀）并且全绿 —— 
 
 | 闸门项 | 结论 | 证据 |
 | --- | --- | --- |
-| **#240** 控制台黑框 | **本机结构上无法判定** | `process_tree.rs` 的单测断言 `CREATE_NO_WINDOW` 位，`windows-latest` 上执行；但本机始终从 Git Bash 启动应用 —— 父进程带控制台时，子进程无论如何都不会新开窗口，症状不可能出现。要判这项必须从资源管理器启动 release 包 |
-| **#242** 终端打开 | **argv 通过，窗口未观察** | `open_in_terminal` 返回平台标签与 argv 正确，`current_dir` 传目录由单测钉住；「点一下真的弹出 cmd 窗口」未逐项观察 |
-| **#243** 安装输出编码 | **未验** | 触发它必须跑 `install_mise`（会重装用户自己的 mise），故意未点。本机正好是中文 Windows，环境对，但入口没走 |
+| **#240** 控制台黑框 | **真机通过（2026-10-23 补验）** | 见下方「第二轮修正」：判据改成「窗口是否可见」，mise 跑 3.86 s 全程无可见控制台，阳性对照（`ping` + `CREATE_NEW_CONSOLE`）立刻被检测到 |
+| **#242** 终端打开 | **真机通过（2026-10-23 补验）** | `open_in_terminal` 弹出真实 cmd 窗口，提示符为 `D:\AiCodingProjects\mise-deck\misedeck\src-tauri\src>`，截图 `windows-hardware-verification-shots/round3-terminal-at-directory.png` |
+| **#243** 安装输出编码 | **真机通过（2026-10-23 补验）** | 用生产 argv 前缀在 `CREATE_NO_WINDOW` 下做 A/B：带 pin 解出「基础连接已经关闭」，字节 `e5 9f ba`；无 pin 对照是 cp936 字节 `bb f9 b4 a1`，按 UTF-8 解码出现 36 个替换字符 |
 | **#244** PowerShell rc 探针 | **真机通过** | `shell_activation_check` → `kind: "powerShell"`，`rcPath` 落在真实 profile 目录下的 pwsh 配置；5.1 候选与 UTF-16/BOM 解码由 `tests/shell.rs` 覆盖 |
 | **#241** 字体自托管 | **构建产物通过，字形需 macOS 复核** | `dist/index.html` 中 `fonts.googleapis`/`gstatic` 出现 0 次；`dist/assets/` 有 6 个 woff2；`check-css-tokens.ts` 断言字体栈首项必须是打包族。字形与字宽变化需要重拍 macOS 截图才能对比，旧截图已过期 |
 | **#246** 滚动条占位 | **Windows 正常，macOS 待确认** | `scrollbar-gutter: stable` 落 `PageShell` 与 `Table` 两处；Windows 上两处渲染正常（截图）；「macOS 上应无变化」只能在 macOS 上确认 |
 | **#245** Linux 终端探测 | **未验** | 无 Linux 桌面 |
 | **#247** Linux 构建基准 | **未验** | 无 Linux 桌面；`release.yml` 钉的是 `ubuntu-22.04` 构建机，deb 在 22.04 上是否真报 `GLIBC_2.39` 要装一次才知道 |
+
+### 修正：上一版把 #240 判成「结构上无法判定」是错的
+
+上一版表格里 #240 那行的理由是「本机从 Git Bash 启动应用，父进程带控制台时子进程不会新开窗口」。
+两条都站不住：
+
+1. **`CREATE_NO_WINDOW` 的语义读反了**。它**不是**「不要控制台」，而是「要一个没有窗口的控制台」。
+   所以子进程仍会拿到 conhost（`conhost.exe` 的父进程就是 mise.exe），这不代表缺陷。
+   真正的判据是**窗口是否可见**，不是有没有 conhost。
+2. **症状是可观察的**，与从哪个 shell 启动无关：GUI 子系统的应用本身不附着控制台，
+   它的控制台子进程要么新建窗口，要么退到 `CREATE_NO_WINDOW` 的隐藏控制台。
+
+重做的方法与结果（2026-10-23 下午）：
+
+| 命令 | 判据 | 结果 |
+| --- | --- | --- |
+| `mise ls-remote node`（经 IPC，3.86 s） | 采样「`MainWindowHandle != 0` 的 conhost/OpenConsole」+ Windows Terminal 标题变化 | 两者全程无变化 → **无可见控制台** |
+| 阳性对照：`ping` + `CREATE_NEW_CONSOLE` | 同上 | WT 标题立刻变成 `C:\WINDOWS\SYSTEM32\ping.exe` → **检测器有效** |
+| `open_in_terminal(path=…\src-tauri\src)` | 桌面截图读提示符 | 窗口打开，提示符 `D:\AiCodingProjects\mise-deck\misedeck\src-tauri\src>` |
+| 安装 argv 前缀 + `irm https://mise.invalid/…`（带 pin / 不带 pin，均 `CREATE_NO_WINDOW`） | 原始字节与 UTF-8 解码 | 带 pin：`69 72 6d … e5 9f ba`（UTF-8「基」）、0 个替换字符；不带 pin：`bb f9 b4 a1`（cp936），按 UTF-8 解码 36 个替换字符 |
+
+#243 用的是**生产的 argv 前缀 + 一个必定失败的假域名**，不是真的重装 mise：真正的风险在下载与安装，
+而这条票要的是「PowerShell 自己生成的本地化文本能否被正确解码」。#240 的对照组是关键——
+没有它，「没有可见窗口」可能只是检测器看不见。
 
 顺带落地的两条结论：
 
@@ -303,5 +327,5 @@ Terminal argv、PowerShell sibling、install 编码前缀）并且全绿 —— 
 2. **更新检查在这类网络下必然失败**（本轮发现，未改代码）：`curl` 不读 Windows 系统代理，
    只认 `https_proxy` 环境变量。已作为已知限制写进 README 双语，不擅自改产品行为。
 
-剩余未验项（Linux 桌面、Windows 四个窄项、macOS 视觉复核）独立跟踪，见后续票据；本票的
-「Windows 到底能不能用」这个问题已有真机答案，故关闭。
+剩余未验项只剩**没有对应硬件**的那些（Linux 桌面、macOS 视觉复核），以及发版决策（NSIS 安装包真机安装）；
+它们独立跟踪，见后续票据。本票的「Windows 到底能不能用」已有真机答案，故关闭。

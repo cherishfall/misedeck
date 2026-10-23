@@ -285,3 +285,60 @@ unix-only 测试已正确加 `#[cfg]`，但**对应导入没加**，CI 的 clipp
 
 本机跑 cargo 必须先 `. .workbuddy/tmp/msvcenv.sh`（静态 CRT + 自建 MSVC + `link.exe`）；不 source 它、只依赖 `src-tauri/.cargo/config.toml` 时，链接会去要 `msvcrt.lib` 而失败——那份 config 指向的是不完整的 CRT 包。
 
+---
+
+## 11. 第三轮补验（2026-10-23 下午）：#281 的三个 Windows 窄项
+
+这三项此前被记为「真机无法判定」，**其中 #240 的判断是错的**，原因写在 `beta17-audit-cross-platform.md`
+§ 修正：`CREATE_NO_WINDOW` 的语义不是「不要控制台」而是「要一个没有窗口的控制台」，所以判据必须是
+**窗口是否可见**，而不是有没有 `conhost.exe`。
+
+### 11.1 #240 控制台黑框：通过
+
+方法：在 `mise ls-remote node`（经 IPC，单进程、跑 3.86 s）运行期间，每 50 ms 采样一次
+
+- 所有 `conhost.exe` / `OpenConsole.exe` 里 `MainWindowHandle != 0` 的（即真的存在窗口）
+- Windows Terminal 的窗口标题（本机默认终端，控制台若要显示会新开标签页）
+
+结果：两者**全程无变化**。同时观察到 `conhost.exe pid=13552 parent=13512 (mise.exe)` ——
+这正是 `CREATE_NO_WINDOW` 的预期行为：控制台存在，窗口不可见。
+
+**阳性对照**（关键，否则「没看见窗口」可能只是检测器瞎）：用 `CREATE_NEW_CONSOLE` 起一个 `ping`，
+同一套采样立刻抓到 WT 标题变成 `C:\WINDOWS\SYSTEM32\ping.exe`。检测器有效，所以上面的空结果有意义。
+
+### 11.2 #242 在终端中打开：通过
+
+`open_in_terminal(path = D:\AiCodingProjects\mise-deck\misedeck\src-tauri\src)` 返回
+
+```
+platform: Windows | terminalApp: cmd.exe
+argv: [C:\WINDOWS\System32\cmd.exe, /c, start, "", C:\WINDOWS\System32\cmd.exe]
+```
+
+窗口确实弹出，桌面截图里提示符是 `D:\AiCodingProjects\mise-deck\misedeck\src-tauri\src>`：
+`windows-hardware-verification-shots/round3-terminal-at-directory.png`。
+本机默认终端是 Windows Terminal，所以新控制台是**同一个 WT 进程里的新标签页**——
+按「有没有新进程」判断会漏，按窗口标题变化判断才对。
+
+### 11.3 #243 安装输出编码：通过（含反向对照）
+
+不重装 owner 的 mise：用**生产 argv 前缀**（`-NoProfile -ExecutionPolicy Bypass -Command
+"try { [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false) } catch { }; …"`）跑一个必定失败的
+`irm https://mise.invalid/install.ps1`，并且用 `CREATE_NO_WINDOW` 起进程——**和产品一样的无控制台条件**。
+
+第一次做这个实验时结果是无效的：从 Git Bash 起子进程会继承 UTF-8 控制台，两组都是 UTF-8，对照无法失败。
+`chcp` 在本机是 **936**，加上 `CREATE_NO_WINDOW` 才复现出真实条件。
+
+| 组 | 首字节 | 按 UTF-8 解码 |
+| --- | --- | --- |
+| 带 pin（生产 argv） | `69 72 6d 20 3a 20 e5 9f ba …` | `irm : 基础连接已经关闭: 发送时发生错误。`，0 个替换字符，无 BOM |
+| 无 pin（修复前行为） | `69 72 6d 20 3a 20 bb f9 b4 a1 …` | `irm : ���������Ѿ��ر�: …`，**36 个替换字符** |
+
+对照组精确复现了 #243 描述的乱码，pin 把它修好；BOM 也为空，首行没有零宽字符。
+
+### 11.4 仍未验
+
+- **Linux 桌面**（#245 终端探测、#247 glibc/WebKitGTK、portal 目录选择器、GTK 主题污染、`set_theme` 语义）
+- **macOS 视觉复核**（自托管字体的字形/字宽、`scrollbar-gutter` 无变化、重拍 `docs/screenshots/`）
+- **NSIS 安装包真机安装**（发版决策）
+
