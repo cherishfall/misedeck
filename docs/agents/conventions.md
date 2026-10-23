@@ -50,6 +50,7 @@ tickets should reuse the existing six when possible.
 - The tools page's argv exists twice: TS builds the dispatched command, Rust pins the test-only builder. Both halves are asserted against `tests/fixtures/argv-parity.json` — `npm run lint:argv-parity` (wired into `npm run ci`) executes the TS builders, `tests/argv_parity.rs` executes the Rust ones. A one-sided change fails that side's gate (issue #255).
 - Test external behavior only: given this fixture response, the command returns this shape / the panel shows this state. No tests of internal helpers.
 - Frontend: unit tests of pure functions with node:test — `npm run test` (`tsx --test "src/**/*.test.ts"`), wired into `npm run ci`. There are 26 colocated suites under `src/` today (e.g. `src/utils/paths.test.ts`, `src/api/miseTools.test.ts`). No component harness exists, so UI behavior is not unit-tested; new pure logic ships with a colocated `*.test.ts`.
+- A test that rewrites the process environment is `#[serial_test::serial]`, and so is **every other test in that binary that spawns a child**: a spawn copies the environment, so `std::env::set_var` is unsound while one can run. Annotating only the writer protects nothing — the serial attribute is what excludes, not the guard that restores the value afterwards. Live cases: the Linux `$PATH` probe in `tests/terminal.rs`, `FIXTURE_MISE_ENV_LOG` in `tests/install.rs` (issue #278).
 
 ## Definition of done (every ticket, no exceptions)
 

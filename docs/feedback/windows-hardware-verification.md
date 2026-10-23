@@ -3,7 +3,7 @@
 **日期**：2026-10-22
 **机器**：Windows 11 x64（非管理员，GitHub 不可达，装有向日葵/OrayIddDriver 虚拟显示驱动）
 **宿主**：Windows 11 用户 `reformer`，Git Bash（PortableGit 1.3.0）
-**结论**：**功能全部可用**。8 个页面、14 个后端命令、写入闭环、进程树 teardown 均在真实 Windows 上验证通过；`cargo test --all-targets` **266 passed / 0 failed**（此前 9 失败）。
+**结论**：**功能全部可用**。8 个页面、**22 个后端命令里的 19 个**（18 个 IPC 直调 + `run_mise_command` 经执行面板间接验证）、写入闭环、进程树 teardown 均在真实 Windows 上验证通过；`cargo test --all-targets` **266 passed / 0 failed**（此前 9 失败）。剩下的 3 个（`install_mise` / `mise_self_update` / `mise_trust`）只被自动化测试覆盖——它们会改动用户自己的 mise 安装与信任状态，故意未在真机触发，见第 10 节。
 
 ---
 
@@ -244,3 +244,44 @@ unix-only 测试已正确加 `#[cfg]`，但**对应导入没加**，CI 的 clipp
 本轮**实际执行**了：应用启动、8 页真实点击导航、14 个后端命令 IPC 调用、UI→mise→磁盘→UI 写入闭环、执行面板观察、截图（CDP 渲染像素）、`cargo test` / `cargo clippy` / `npm run ci`。
 
 本轮**未执行**：原生目录选择器点击、Windows 打包、`mise` 真实安装/升级（会改动用户环境）。
+
+---
+
+## 10. 第二轮补验（2026-10-23）：把剩下的命令也点掉
+
+第一轮结束时还有 7 个后端命令"只被自动化测试覆盖、没在真机上按过"。本轮补了 4 个，并且是**真的走 IPC**（`window.__TAURI_INTERNALS__.invoke`），不是读代码推断。
+
+| 命令 | 调用 | 结果 |
+| --- | --- | --- |
+| `set_window_theme` | `dark` → `light` → `purple` | 前两次 `null`（成功切换，窗口未崩）；`purple` 返回 `COMMAND_FAILED`（未知主题被拒，符合实现） |
+| `check_app_update` | 无参 | 返回结构化的 `status: "err"`，`code: COMMAND_FAILED`，`stderr: curl: (28) Connection timed out after 5009 ms` —— **命令本身工作正常**，是本机 5 秒连不上 GitHub release feed（应用进程没走 7890 代理）。这正是 #236 设计的"可重试的 Err"，UI 会显示重试而不是崩溃 |
+| `open_external` | `javascript:alert(1)`、`file:///C:/Windows/win.ini` | 两条都被拒绝（`COMMAND_FAILED`），**没有打开任何窗口** —— #248 的 scheme 白名单在真机成立 |
+| `cancel_run` | 未知 runId | 静默 `null`（不 panic、不报错）；真正的树杀语义由 `tests/runner.rs::process_tree` 覆盖 |
+| `shell_activation_check`（复核） | 无参 | `shell: {kind:"powerShell"}`、`rcPath` 指向真实 profile、`activated: false` —— 与 UI 顶部那条告警一致 |
+
+补验后**仍未在真机触发**的只剩 3 个，全部会改动用户自己的环境，故意不点：`install_mise`、`mise_self_update`、`mise_trust`。`run_mise_command` 由写入闭环里的执行面板间接走过。
+
+### 10.1 这一轮踩到的三个坑（供下次直接抄）
+
+- **debug 构建永远加载 `devUrl`**（`http://localhost:1420`），不是内嵌的 `dist`。所以要么起 `npm run dev`，要么用 release 构建。白屏先查这个。
+- **Tauri 给 devUrl 页面发的是产品 CSP（`default-src 'self'`）**，而 Vite 的 React 插件注入的是**内联** preamble → 被 CSP 拦掉，`#root` 一直空。解法：`Page.setBypassCSP`，不用改仓库里的任何配置。
+- **本机 WebView2 必须带全套 SwiftShader 参数**才是活的：`--disable-gpu --disable-gpu-compositing --disable-software-rasterizer --use-angle=swiftshader --in-process-gpu`（0.2 节）。少一个 `--disable-gpu` 就只有白窗口 + 没有 `msedgewebview2.exe`。
+- 顺带确认 0.2 的结论：`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` **确实无效**（wry 总是显式设置 `AdditionalBrowserArguments`），必须改 `tauri.conf.json` 再编译。
+
+### 10.2 补验同时修掉的测试缺陷
+
+- `tests/terminal.rs` 改 `$PATH` 的那条测试，注释写着"serial_test below serializes env-var writes"，但**整个文件里一个 `serial_test` 都没有** —— 多线程测试进程里 `std::env::set_var` 是 UB。已给同文件里所有会 spawn 的测试加 `#[serial_test::serial]`，并把注释改成真实原因。
+- `tests/install.rs` 设 `FIXTURE_MISE_ENV_LOG`（同样是 `set_var`），给了同文件的 spawn 测试同样的门。
+- `tests/terminal.rs` 末尾原来用一个假函数 `_pathbuf_anchor()` 压 unused-import 警告，已删掉假函数和那个 import。
+- `src/shell.rs` 的 `which_exists` 原来是无条件的 `#[allow(dead_code)]`，改成 `#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]` —— 与本文件其他平台专属 helper 一致。
+
+### 10.3 门禁复跑（2026-10-23，改动之后）
+
+| 门禁 | 结果 |
+| --- | --- |
+| `cargo clippy --all-targets -- -D warnings` | exit 0，零警告 |
+| `cargo test --all-targets --no-fail-fast` | **266 passed / 0 failed**（20 个 target） |
+| `npm run ci` | exit 0（typecheck + eslint + 247 tests + 12 个 lint 守卫 + build） |
+
+本机跑 cargo 必须先 `. .workbuddy/tmp/msvcenv.sh`（静态 CRT + 自建 MSVC + `link.exe`）；不 source 它、只依赖 `src-tauri/.cargo/config.toml` 时，链接会去要 `msvcrt.lib` 而失败——那份 config 指向的是不完整的 CRT 包。
+
