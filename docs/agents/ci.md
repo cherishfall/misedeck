@@ -10,7 +10,7 @@ maintainer cuts a release.
 
 | Workflow    | Trigger                                  | What it does                                                                                                                                       | Wall-clock budget |
 | ----------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run lint:eslint` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run lint:install-echo-parity` · `npm run lint:argv-parity` · `npm run build` · `cargo check` · `cargo clippy --all-targets -- -D warnings` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu; a separate Windows job runs `npm run ci` + `cargo test --lib` + `cargo build` (see below). | < 5 min            |
+| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run lint:eslint` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run lint:install-echo-parity` · `npm run lint:argv-parity` · `npm run build` · `cargo check` · `cargo clippy --all-targets -- -D warnings` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu; a separate Windows job runs `npm run ci` + `cargo test --all-targets` + `cargo build` (see below). | < 5 min            |
 | `release.yml` | push of a `v*.*.*` tag, or `workflow_dispatch` | Builds Tauri bundles for `macos-latest`, `windows-latest`, `ubuntu-22.04` in parallel; uploads per-platform artifacts; on a real tag push, computes one release-wide `SHA256SUMS` and publishes a GitHub Release. | matrix-driven     |
 
 The `ci.yml` workflow is the gate that keeps `master` green. The
@@ -41,34 +41,46 @@ Both workflows run with least privilege (issue #278):
 
 The `rust` job also runs `cargo clippy --all-targets -- -D warnings`,
 so a lint (including `unexpected_cfgs`) fails CI instead of lingering
-on `master`. The Windows job runs unit tests through
-`cargo test --lib`, which includes the `#[cfg(windows)]` process-tree
+on `master`. The Windows job runs the same full suite — unit **and**
+integration tests — which includes the `#[cfg(windows)]` process-tree
 teardown test: it spawns PowerShell, which starts `ping` as a
 grandchild, calls the real `terminate_tree`, and asserts both
 processes are gone through `tasklist` (issue #278).
 
 ### The Windows job
 
-`ci.yml` also runs a `windows` job for the Windows beta target, which has
-no real machine in the review loop (issue #208) — it is the only place
-the Windows code paths actually execute. It runs the full frontend check
-(`npm run ci`, the whole 18-step script — see `misedeck/README.md`, which
-adds the `modal-focus`, `nested-interactive`, `page-layout` and
-`invoke-wrapper` guards the `frontend` job does not run step-by-step), the Rust unit tests
-(`cargo test --lib`), and a `cargo build` compile smoke (`dist/` comes
-from `npm run ci`, so the order matters). Two things are deliberately
-left out:
+`ci.yml` also runs a `windows` job for the Windows beta target
+(issue #208). It is the place the Windows code paths actually execute
+in CI — and as of 2026-10-22 it is no longer the *only* place: the
+Windows code paths have now been run on real Windows hardware, which is
+how the `#222` / `#223` fixtures were found to be unusable there. It runs
+the full frontend
+check (`npm run ci`, the whole 18-step script — see `misedeck/README.md`,
+which adds the `modal-focus`, `nested-interactive`, `page-layout` and
+`invoke-wrapper` guards the `frontend` job does not run step-by-step), the
+full Rust suite (`cargo test --all-targets --no-fail-fast`), and a
+`cargo build` compile smoke (`dist/` comes from `npm run ci`, so the
+order matters). One thing is deliberately left out:
 
-- The integration suite — it drives the
-  `tests/fixtures/mise/fixture-mise` bash script through `Command::new`,
-  which Windows cannot execute. That coverage stays on the Ubuntu leg;
-  the platform-specific `candidate_paths` expectations are unit tests
-  and do run here.
 - The Tauri bundler (`npm run tauri build`) — Windows bundling pulls
   NSIS/WiX, and packaging is a release-time decision.
 
-A green Windows job means compile-level and unit-level correctness; it
-is **not** a substitute for running the app on real Windows.
+The integration suite runs here too, because the fixtures are cross-platform
+Rust binaries under `src-tauri/src/bin/` (`fixture-mise`,
+`fixture-process-tree`) rather than bash scripts. A bash script cannot be
+spawned on Windows at all: `CreateProcess` refuses a file with no
+executable extension (os error 193), which is why this job used to be
+limited to `cargo test --lib`. The `#222` / `#223` process-tree cases
+(`tests/runner.rs`) therefore now assert the *Windows* teardown —
+`CREATE_NEW_PROCESS_GROUP` plus `taskkill /F /T` — with the same
+assertions as the unix half.
+
+A green Windows job means compile-level and test-level correctness; it
+is **not** a substitute for running the app on real Windows. That
+substitution is still worth refusing — the run on real hardware is what
+turned up the two defects this job could not have caught (bash fixtures,
+and a home-resolution seam that silently no-ops when a test fakes `$HOME`
+on a platform that ignores it).
 
 ## Cutting a release
 

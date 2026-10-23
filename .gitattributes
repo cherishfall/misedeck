@@ -1,0 +1,36 @@
+# Normalize line endings on commit, and check out with the platform
+# default. Text files are stored in the repository with LF endings, so
+# a checkout on Windows (CRLF) and a checkout on macOS/Linux (LF)
+# produce the same content, and a diff never shows a whole file as
+# changed just because of line endings.
+#
+# This matters for this project in practice: the Windows verification
+# session ran against a source tree extracted from a GitHub zip, which
+# arrives with CRLF. Without this file, every one of those files
+# showed up as modified.
+* text=auto eol=lf
+
+# Binary files must never be touched by the eol machinery.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.exe binary
+*.dll binary
+*.msi binary
+*.dmg binary
+*.deb binary
+*.rpm binary
+*.appimage binary
+
+# Lockfiles and generated files are still text — they only need the
+# same LF normalization, so `text=auto eol=lf` is kept rather than
+# opting them out of the eol machinery. Marking them `-text` would
+# make every line a diff on a CRLF checkout.
+misedeck/package-lock.json text eol=lf
+misedeck/src-tauri/Cargo.lock text eol=lf

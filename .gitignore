@@ -68,5 +68,17 @@ fastlane/test_output
 misedeck/scripts-capture.mjs
 scripts-capture-exec.mjs
 
-# WorkBuddy local agent memory (machine-local, never shared)
-.workbuddy/memory/
+# WorkBuddy local agent state (machine-local, never shared)
+#
+# The whole directory is ignored, not just `memory/`: it also holds
+# the local MSVC toolchain the Windows verification session built
+# (hundreds of MB of VS channel packages), CDP client scripts, and
+# the capture screenshots. `src-tauri/.cargo/config.toml` points at
+# those paths, so it is machine-local too — see the rule below.
+.workbuddy/
+
+# Windows-local Rust build configuration
+#
+# `src-tauri/.cargo/config.toml` hard-codes absolute paths into the
+# machine-local toolchain above, so it must never be committed.
+misedeck/src-tauri/.cargo/
