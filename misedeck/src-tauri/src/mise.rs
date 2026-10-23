@@ -435,7 +435,22 @@ fn read_line_capped<R: BufRead>(reader: &mut R, out: &mut Vec<u8>) -> std::io::R
     let mut saw_bytes = false;
     loop {
         let (consume_len, done) = {
-            let available = reader.fill_buf()?;
+            // `EINTR` is not EOF. `BufReader::fill_buf` hands back the
+            // raw `io::Error`, so an interrupted read used to end the
+            // reader loop, drop the `BufReader` — and with it the read
+            // end of the pipe — while the child was still writing. The
+            // child then died of `SIGPIPE`, `ExitStatus::code()` returned
+            // `None`, and the caller reported `exited with status -1`
+            // with empty stderr: a product-looking failure produced by
+            // one interrupted syscall. Retrying is what every other
+            // std read loop does.
+            let available = loop {
+                match reader.fill_buf() {
+                    Ok(available) => break available,
+                    Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+                    Err(e) => return Err(e),
+                }
+            };
             if available.is_empty() {
                 return Ok(saw_bytes.then_some(dropped));
             }
