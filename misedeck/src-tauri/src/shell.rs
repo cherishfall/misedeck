@@ -29,10 +29,13 @@
 //                  the documented per-user-current-host default for
 //                  pwsh 6+. Windows PowerShell 5.1 uses the sibling
 //                  `~/Documents/WindowsPowerShell/…` path, which the
-//                  probe checks too (issue #244). There is no `$PROFILE`
-//                  *environment* variable — `$PROFILE` is a PowerShell
-//                  variable, invisible to a spawned process — so the
-//                  lookup always missed (issue #229).
+//                  probe checks too (issue #244) — and which it names
+//                  as the primary when pwsh 7 is not installed, because
+//                  on such a machine the `Documents/PowerShell`
+//                  directory does not exist at all. There is no
+//                  `$PROFILE` *environment* variable — `$PROFILE` is a
+//                  PowerShell variable, invisible to a spawned process —
+//                  so the lookup always missed (issue #229).
 
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, ExitStatus, Stdio};
@@ -436,7 +439,27 @@ pub fn rc_path_for(shell: &ShellKind) -> String {
     let Some(home) = dirs::home_dir() else {
         return String::new();
     };
-    rc_path_for_in(&home, shell)
+    rc_path_for_in_with(&home, shell, powershell_seven_installed())
+}
+
+/// Is a PowerShell 7+ (`pwsh.exe`) installed?
+///
+/// This decides which of the two PowerShell profiles is the one worth
+/// naming. The two hosts read different files, and a Windows machine
+/// with only the inbox 5.1 has no `Documents/PowerShell` directory at
+/// all — pointing the banner there sends the user to create a file
+/// their shell will never read.
+#[cfg(target_os = "windows")]
+fn powershell_seven_installed() -> bool {
+    windows_pwsh_on_path()
+}
+
+/// Off Windows the question does not arise: `ShellKind::PowerShell` is
+/// only produced by the Windows detection, so keep the pwsh 7 shape and
+/// let the injected-home tests stay meaningful everywhere.
+#[cfg(not(target_os = "windows"))]
+fn powershell_seven_installed() -> bool {
+    true
 }
 
 /// The rc path for `shell` under an explicitly given home directory.
@@ -450,6 +473,18 @@ pub fn rc_path_for(shell: &ShellKind) -> String {
 /// Windows it silently read the real user profile instead. Injecting
 /// the home keeps one assertion meaningful everywhere (issue #229).
 pub fn rc_path_for_in(home: &Path, shell: &ShellKind) -> String {
+    rc_path_for_in_with(home, shell, true)
+}
+
+/// The rc path for `shell` under `home`, with the host question "is
+/// pwsh 7 installed?" injected.
+///
+/// `has_pwsh` only matters for `ShellKind::PowerShell`. Both profiles
+/// stay in the candidate list either way (`rc_sibling_paths_in_with`),
+/// so activation found in the *other* PowerShell's file is still
+/// reported as activated — what changes is which file is named when the
+/// user has to be told where to add the line (issue #244 follow-up).
+pub fn rc_path_for_in_with(home: &Path, shell: &ShellKind, has_pwsh: bool) -> String {
     let path: PathBuf = match shell {
         ShellKind::Zsh => home.join(".zshrc"),
         ShellKind::Bash => {
@@ -470,9 +505,17 @@ pub fn rc_path_for_in(home: &Path, shell: &ShellKind) -> String {
             // Windows PowerShell 5.1's profile lives beside it under
             // `WindowsPowerShell/` and is checked through
             // `rc_sibling_paths` (issue #244).
-            home.join("Documents")
-                .join("PowerShell")
-                .join("Microsoft.PowerShell_profile.ps1")
+            //
+            // Without pwsh 7 installed that path is the *wrong* primary:
+            // the directory does not exist, 5.1 never reads it, and the
+            // banner would ask the user to create a file for a shell
+            // they do not have. The inbox 5.1 profile is the primary in
+            // that case, and the pwsh 7 one becomes the sibling.
+            if has_pwsh {
+                powershell7_profile(home)
+            } else {
+                windows_powershell_profile(home)
+            }
         }
         ShellKind::Unknown { .. } => {
             // No specific rc to suggest; the UI surfaces a
@@ -490,29 +533,54 @@ pub fn rc_sibling_paths(shell: &ShellKind) -> Vec<String> {
     let Some(home) = dirs::home_dir() else {
         return Vec::new();
     };
-    rc_sibling_paths_in(&home, shell)
+    rc_sibling_paths_in_with(&home, shell, powershell_seven_installed())
 }
 
 /// The sibling rc paths under an explicitly given home directory.
 /// Same injection seam as [`rc_path_for_in`].
 pub fn rc_sibling_paths_in(home: &Path, shell: &ShellKind) -> Vec<String> {
+    rc_sibling_paths_in_with(home, shell, true)
+}
+
+/// The sibling rc paths under `home`, with the pwsh-7 question injected.
+/// Always the *other* PowerShell's profile, whichever one the primary
+/// turned out to be — the pair is symmetric, so an activation line in
+/// either file is honoured (issues #244, and the 5.1-only machine that
+/// prompted [`powershell_seven_installed`]).
+pub fn rc_sibling_paths_in_with(home: &Path, shell: &ShellKind, has_pwsh: bool) -> Vec<String> {
     match shell {
         ShellKind::Bash => vec![home.join(".bash_profile").to_string_lossy().to_string()],
         ShellKind::Zsh => vec![home.join(".zshenv").to_string_lossy().to_string()],
         // Windows ships two PowerShells with two different profiles:
         // pwsh 6+ reads `Documents/PowerShell`, Windows PowerShell 5.1
-        // reads `Documents/WindowsPowerShell`. The primary path above is
-        // the pwsh one, so a machine with only 5.1 used to read a file
-        // that does not exist and report "activation missing" with a
-        // path the user has never seen (issue #244).
-        ShellKind::PowerShell => vec![home
-            .join("Documents")
-            .join("WindowsPowerShell")
-            .join("Microsoft.PowerShell_profile.ps1")
-            .to_string_lossy()
-            .to_string()],
+        // reads `Documents/WindowsPowerShell`. Both are probed; the one
+        // that is *not* primary is the sibling. A machine with only 5.1
+        // used to read a path the user had never seen and report
+        // "activation missing" against it (issue #244).
+        ShellKind::PowerShell => {
+            let other = if has_pwsh {
+                windows_powershell_profile(home)
+            } else {
+                powershell7_profile(home)
+            };
+            vec![other.to_string_lossy().to_string()]
+        }
         _ => Vec::new(),
     }
+}
+
+/// The pwsh 6/7 per-user profile.
+fn powershell7_profile(home: &Path) -> PathBuf {
+    home.join("Documents")
+        .join("PowerShell")
+        .join("Microsoft.PowerShell_profile.ps1")
+}
+
+/// The inbox Windows PowerShell 5.1 per-user profile.
+fn windows_powershell_profile(home: &Path) -> PathBuf {
+    home.join("Documents")
+        .join("WindowsPowerShell")
+        .join("Microsoft.PowerShell_profile.ps1")
 }
 
 /// Read the rc file at `path`. A missing file is `RcFile::Missing`; an
@@ -675,8 +743,20 @@ pub fn check_shell_activation_for_in(
     home: &Path,
     shell: &ShellKind,
 ) -> Result<ActivationStatus, std::io::Error> {
-    let primary = rc_path_for_in(home, shell);
-    let siblings = rc_sibling_paths_in(home, shell);
+    check_shell_activation_for_in_with(home, shell, powershell_seven_installed())
+}
+
+/// The activation probe with both seams injected: the home directory
+/// and the "is pwsh 7 installed?" answer. The second one decides which
+/// PowerShell profile the banner names when neither file has an
+/// activation line (issue #244 follow-up).
+pub fn check_shell_activation_for_in_with(
+    home: &Path,
+    shell: &ShellKind,
+    has_pwsh: bool,
+) -> Result<ActivationStatus, std::io::Error> {
+    let primary = rc_path_for_in_with(home, shell, has_pwsh);
+    let siblings = rc_sibling_paths_in_with(home, shell, has_pwsh);
 
     // No specific rc for unknown shells — the probe cannot run, so
     // the status carries `activated: None` (not `Some(false)`): the
@@ -1348,25 +1428,83 @@ mod tests {
         ));
     }
 
-    /// The PowerShell probe must look at both profiles (issues #229, #244).
-    /// Written with `Path` components so the assertion holds on both
-    /// separators — this file runs on the Windows CI leg too.
+    /// The PowerShell probe must look at both profiles (issues #229,
+    /// #244) *and* name the one belonging to the PowerShell that is
+    /// actually installed: a 5.1-only machine has no `Documents/PowerShell`
+    /// directory at all, so naming that path sends the user to create a
+    /// file their shell will never read.
+    ///
+    /// Home and the pwsh answer are both injected, so this holds on every
+    /// host with either separator — this file runs on the Windows CI leg
+    /// too, where a real host probe would make the assertion depend on
+    /// whether pwsh 7 happens to be installed on the runner.
     #[test]
-    fn powershell_rc_siblings_cover_windows_powershell_5() {
-        let siblings = rc_sibling_paths(&ShellKind::PowerShell);
-        assert_eq!(siblings.len(), 1);
-        let path = Path::new(&siblings[0]);
+    fn powershell_rc_paths_follow_the_installed_host() {
+        let home = Path::new("/home/test");
+        for (has_pwsh, primary_dir, sibling_dir) in [
+            (true, "PowerShell", "WindowsPowerShell"),
+            (false, "WindowsPowerShell", "PowerShell"),
+        ] {
+            let primary = PathBuf::from(rc_path_for_in_with(home, &ShellKind::PowerShell, has_pwsh));
+            assert_eq!(
+                primary.file_name().unwrap().to_string_lossy(),
+                "Microsoft.PowerShell_profile.ps1"
+            );
+            assert_eq!(
+                primary.parent().unwrap().file_name().unwrap().to_string_lossy(),
+                primary_dir,
+                "primary profile for has_pwsh={has_pwsh}"
+            );
+            assert_eq!(
+                primary
+                    .parent()
+                    .unwrap()
+                    .parent()
+                    .unwrap()
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy(),
+                "Documents"
+            );
+
+            let siblings = rc_sibling_paths_in_with(home, &ShellKind::PowerShell, has_pwsh);
+            assert_eq!(siblings.len(), 1);
+            let sibling = Path::new(&siblings[0]);
+            assert_eq!(
+                sibling.parent().unwrap().file_name().unwrap().to_string_lossy(),
+                sibling_dir,
+                "sibling profile for has_pwsh={has_pwsh}"
+            );
+            // The two must never collapse onto the same file: the pair is
+            // what makes "activated in the other PowerShell" detectable.
+            assert_ne!(siblings[0], primary.to_string_lossy().to_string());
+        }
+    }
+
+    /// The end-to-end decision: with no profile on disk, the reported
+    /// path is the installed PowerShell's, not always the pwsh 7 one.
+    #[test]
+    fn missing_profiles_name_the_installed_powershell() {
+        let home = std::env::temp_dir().join(format!("misedeck-shell-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&home);
+        std::fs::create_dir_all(&home).expect("temp home");
+
+        let five_one =
+            check_shell_activation_for_in_with(&home, &ShellKind::PowerShell, false).unwrap();
+        assert_eq!(five_one.activated, Some(false));
         assert_eq!(
-            path.file_name().unwrap().to_string_lossy(),
-            "Microsoft.PowerShell_profile.ps1"
-        );
-        assert_eq!(
-            path.parent().unwrap().file_name().unwrap().to_string_lossy(),
+            Path::new(&five_one.rc_path).parent().unwrap().file_name().unwrap().to_string_lossy(),
             "WindowsPowerShell"
         );
-        // The pwsh 7 profile is the primary path, not a sibling — the two
-        // must not be the same file.
-        assert_ne!(siblings[0], rc_path_for(&ShellKind::PowerShell));
+
+        let seven = check_shell_activation_for_in_with(&home, &ShellKind::PowerShell, true).unwrap();
+        assert_eq!(seven.activated, Some(false));
+        assert_eq!(
+            Path::new(&seven.rc_path).parent().unwrap().file_name().unwrap().to_string_lossy(),
+            "PowerShell"
+        );
+
+        let _ = std::fs::remove_dir_all(&home);
     }
 
     #[test]
