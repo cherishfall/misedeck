@@ -17,6 +17,30 @@ edition = "2021"
 name = "misedeck_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+# The two `src/bin/*.rs` binaries are test harnesses, not products — and
+# they must not exist while an installer is being built.
+#
+# `tauri build` compiles with `cargo build --bins` and then picks *the*
+# app binary to patch and package. With three bins in the package it
+# picked a fixture: the NSIS installer came out at 262 KB and launched a
+# program that printed "no fixture for slug" and exited. The pick is not
+# controlled by `mainBinaryName` (already set below in tauri.conf.json)
+# and not by `-- --bin misedeck`, so the only reliable fix is to make the
+# fixtures absent from a release build. They stay available to the test
+# suite through `--features fixtures`.
+[features]
+fixtures = []
+
+[[bin]]
+name = "fixture-mise"
+path = "src/bin/fixture-mise.rs"
+required-features = ["fixtures"]
+
+[[bin]]
+name = "fixture-process-tree"
+path = "src/bin/fixture-process-tree.rs"
+required-features = ["fixtures"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 

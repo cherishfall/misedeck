@@ -47,7 +47,7 @@ MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  TIMEOUT  TERMINAL_NO
 - 前端：用 node:test 对纯函数写单元测试 —— `npm run test`（`tsx --test "src/**/*.test.ts"`），已接入 `npm run ci`。目前 `src/` 下共有 26 个同目录测试套件（例如 `src/utils/paths.test.ts`、`src/api/miseTools.test.ts`）。组件测试设施不存在，UI 行为不做单元测试；新增纯逻辑须附带同目录的 `*.test.ts`。
 - 改写进程环境变量的测试要加 `#[serial_test::serial]`，**同一测试二进制里所有会 spawn 子进程的测试也要加**：spawn 会复制环境，因此只要有子进程可能在跑，`std::env::set_var` 就是不健全的。只给"写"的那条加属性保护不了任何东西——真正起互斥作用的是 serial 属性，不是事后恢复变量的 guard。现存两例：`tests/terminal.rs` 的 Linux `$PATH` 探测、`tests/install.rs` 的 `FIXTURE_MISE_ENV_LOG`（issue #278）。
 - 同一条门也适用于 `process_tree::terminate_all`：它杀掉的是**进程级全局**注册表里的所有子进程，所以一个调用它的单元测试会顺手 SIGKILL 掉同二进制里邻居正在等的子进程。所有经 `ChildGuard` spawn 的单元测试都要 `#[serial]`，调用 `terminate_all` 的那条也要。
-- `exited with status -1` 且 stderr 为空，意思是**进程死于信号**，不是退出码异常：`ExitStatus::code()` 返回 `None`，调用方补成 `-1`。进程内只有两条路径会造成它，现在两条都堵住了：上面说的 `terminate_all`，以及读取线程把被中断的 `fill_buf` 当成 EOF（这会关掉管道读端，让子进程吃 SIGPIPE——`read_line_capped` 现在重试 `ErrorKind::Interrupted`）。ubuntu 腿两次撞上这个症状；要注意在空闲 runner 上把 lib 套件循环压 240 次**也没能复现**，所以时间窗口很窄——别因为本地从不触发就把这两道门删掉。
+- Rust 测试的命令是 `cargo test --all-targets --features fixtures`，这个 flag 不是可选项：两个 harness 二进制（`src/bin/fixture-mise.rs`、`src/bin/fixture-process-tree.rs`）被 `fixtures` 特性挡住，以保证 release 构建里只有**一个**二进制。`tauri build` 先跑 `cargo build --bins`，再打包「那个」应用二进制；包里有三个 bin 时它选中过 fixture —— 安装包只有 262 KB，装出来的应用打印 `no fixture for slug` 就退出。`mainBinaryName`（本来就设了）和 `-- --bin misedeck` 都控制不了这个选择，所以干脆让 fixture 不进 release 构建。不带 flag 跑，集成测试会直接 panic 并打印上面的命令。
 
 ## Definition of done（每个 ticket，无例外）
 

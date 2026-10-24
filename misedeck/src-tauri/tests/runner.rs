@@ -31,7 +31,14 @@ fn fixture_script() -> PathBuf {
 /// on Windows refuses a file with no executable extension (os error 193),
 /// so the #222 / #223 cases could not run there at all.
 fn process_tree_fixture() -> PathBuf {
-    PathBuf::from(env!("CARGO_BIN_EXE_fixture-process-tree"))
+    // `option_env!` for the same reason as `common::fixture_script`: the
+    // fixture bins live behind the `fixtures` feature so that a release
+    // build contains exactly one binary.
+    common::fixture_binary(
+        "CARGO_BIN_EXE_fixture-process-tree",
+        option_env!("CARGO_BIN_EXE_fixture-process-tree"),
+        "fixture-process-tree",
+    )
 }
 
 /// Set FIXTURE_MISE_SLUG for the duration of the closure.

@@ -9,11 +9,20 @@
 
 | Workflow      | 触发时机                                    | 做了什么                                                                                                                                  | 墙钟预算   |
 | ------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `tsc --noEmit` · `npm run lint:eslint` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run lint:install-echo-parity` · `npm run lint:argv-parity` · `npm run build` · `cargo check` · `cargo clippy --all-targets -- -D warnings` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu；另有独立 Windows job 跑 `npm run ci` + `cargo test --all-targets` + `cargo build`（见下文）。 | < 5 分钟    |
+| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `tsc --noEmit` · `npm run lint:eslint` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run lint:install-echo-parity` · `npm run lint:argv-parity` · `npm run build` · `cargo check` · `cargo clippy --all-targets --features fixtures -- -D warnings` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu；另有独立 Windows job 跑 `npm run ci` + `cargo test --all-targets --features fixtures` + `cargo build`（见下文）。 | < 5 分钟    |
 | `release.yml` | 推送 `v*.*.*` tag，或 `workflow_dispatch`   | 在 `macos-latest`、`windows-latest`、`ubuntu-22.04` 上并行构建 Tauri bundle；上传各平台 artifact；真实 tag 推送时计算一份覆盖全版本的 `SHA256SUMS` 并发布 GitHub Release。       | 由矩阵决定 |
 
 `ci.yml` 是保证 `master` 绿色的闸门。`release.yml` 才是真正产出
 artifact 的那个。
+
+**每一处 cargo 调用都带 `--features fixtures`，这不是装饰。**
+`misedeck/src-tauri/src/bin/` 下的两个 harness 二进制（`mise` 脚本的跨平台替身）
+被这个 feature 挡住，好让 release 构建里只有一个二进制。`tauri build` 先跑
+`cargo build --bins`，然后打包「那个」应用二进制；包里有三个 bin 时它选中过
+fixture —— 安装包只有 262 KB，装出来的应用打印 `no fixture for slug` 就退出。
+这个选择既没法用 `tauri.conf.json` 的 `mainBinaryName` 控制（本来就已经设了），
+也没法用 `-- --bin misedeck` 控制（试过，结果一样），所以干脆让 fixture 在
+release 构建里不存在。不带这个 flag 时，集成测试会直接 panic 并打印它需要的命令。
 
 `release.yml` 的 Linux 用 `ubuntu-22.04`，不是 `ubuntu-latest`
 （issue #247）：二进制链接的是构建机的 glibc，24.04 上构建的包在
@@ -35,7 +44,7 @@ Ubuntu 22.04 / Debian 12 上无法启动。`ci.yml` 保持 `ubuntu-latest` —�
   重新解析 tag，并在同一次改动里更新两个 workflow（以及本表的
   版本注释）。
 
-`rust` job 还会跑 `cargo clippy --all-targets -- -D warnings`，
+`rust` job 还会跑 `cargo clippy --all-targets --features fixtures -- -D warnings`，
 任何 lint（包括 `unexpected_cfgs`）都会让 CI 失败，而不是留在
 `master` 上。Windows job 跑的是同一套完整测试——单元测试**和**集成测试
 ——其中包含 `#[cfg(windows)]` 的进程树 teardown 测试：它启动
@@ -52,7 +61,7 @@ PowerShell，由 PowerShell 再启动 `ping` 作为孙进程，调用真实的
 它跑完整的前端检查（`npm run ci`，即完整的 18 步脚本 —— 见
 `misedeck/README.md`，其中包含 `frontend` job 没有逐步执行的
 `modal-focus`、`nested-interactive`、`page-layout`、`invoke-wrapper` 四个守门）、
-完整 Rust 测试套件（`cargo test --all-targets --no-fail-fast`），以及
+完整 Rust 测试套件（`cargo test --all-targets --features fixtures --no-fail-fast`），以及
 `cargo build` 编译冒烟（`dist/` 由 `npm run ci` 产出，所以顺序有讲究）。
 有一件事是刻意不做的：
 

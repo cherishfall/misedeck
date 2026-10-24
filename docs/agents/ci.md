@@ -10,11 +10,23 @@ maintainer cuts a release.
 
 | Workflow    | Trigger                                  | What it does                                                                                                                                       | Wall-clock budget |
 | ----------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run lint:eslint` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run lint:install-echo-parity` · `npm run lint:argv-parity` · `npm run build` · `cargo check` · `cargo clippy --all-targets -- -D warnings` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu; a separate Windows job runs `npm run ci` + `cargo test --all-targets` + `cargo build` (see below). | < 5 min            |
+| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run lint:eslint` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run lint:install-echo-parity` · `npm run lint:argv-parity` · `npm run build` · `cargo check` · `cargo clippy --all-targets --features fixtures -- -D warnings` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu; a separate Windows job runs `npm run ci` + `cargo test --all-targets --features fixtures` + `cargo build` (see below). | < 5 min            |
 | `release.yml` | push of a `v*.*.*` tag, or `workflow_dispatch` | Builds Tauri bundles for `macos-latest`, `windows-latest`, `ubuntu-22.04` in parallel; uploads per-platform artifacts; on a real tag push, computes one release-wide `SHA256SUMS` and publishes a GitHub Release. | matrix-driven     |
 
 The `ci.yml` workflow is the gate that keeps `master` green. The
 `release.yml` workflow is the one that ships artifacts.
+
+**Every cargo invocation passes `--features fixtures`, and that is
+load-bearing.** The two harness binaries under `misedeck/src-tauri/src/bin/`
+(the cross-platform stand-ins for the `mise` script) sit behind that
+feature so a release build contains exactly one binary. `tauri build`
+runs `cargo build --bins` and then packages *the* app binary; with three
+bins in the package it once packaged a fixture — the installer came out at
+262 KB, and the installed app printed `no fixture for slug` and exited.
+The pick is not steerable from `tauri.conf.json` (`mainBinaryName` was
+already set) or from `-- --bin misedeck` (tried, same result), so the
+fixtures are simply absent from a release build. Without the flag the
+integration tests panic with the command they need.
 
 `release.yml` builds Linux on `ubuntu-22.04`, not `ubuntu-latest`
 (issue #247): the binary links the build host's glibc, and 24.04 builds
@@ -39,7 +51,7 @@ Both workflows run with least privilege (issue #278):
   resolving the tag again with `gh api` and updating both workflows
   (and this table's version comment) in one change.
 
-The `rust` job also runs `cargo clippy --all-targets -- -D warnings`,
+The `rust` job also runs `cargo clippy --all-targets --features fixtures -- -D warnings`,
 so a lint (including `unexpected_cfgs`) fails CI instead of lingering
 on `master`. The Windows job runs the same full suite — unit **and**
 integration tests — which includes the `#[cfg(windows)]` process-tree
@@ -58,7 +70,7 @@ the full frontend
 check (`npm run ci`, the whole 18-step script — see `misedeck/README.md`,
 which adds the `modal-focus`, `nested-interactive`, `page-layout` and
 `invoke-wrapper` guards the `frontend` job does not run step-by-step), the
-full Rust suite (`cargo test --all-targets --no-fail-fast`), and a
+full Rust suite (`cargo test --all-targets --features fixtures --no-fail-fast`), and a
 `cargo build` compile smoke (`dist/` comes from `npm run ci`, so the
 order matters). One thing is deliberately left out:
 

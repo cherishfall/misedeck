@@ -123,7 +123,7 @@ npm run tauri build
 
 Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on macOS, `nsis/` on Windows, `deb/`, `rpm/`, `appimage/` on Linux. macOS builds come out unsigned, exactly like the released ones.
 
-`npm run ci` is the full frontend gate — CI's Windows job runs it verbatim. Its 18 steps, in order: `typecheck`, `lint:eslint` (React Hooks rules), `test`, fourteen lint guards (i18n parity and concatenation, CSS tokens/type/spacing/tracking, ellipsis, command hints, install-echo parity, tool-argv parity, modal focus, nested interactives, page layout, invoke wrapper), and `build`. The Rust checks are separate: `cargo check --all-targets`, `cargo clippy --all-targets -- -D warnings` and `cargo test --all-targets` on Ubuntu, and `cargo test --all-targets` plus a `cargo build` compile smoke on Windows — the same suite on both, not a Windows-only subset.
+`npm run ci` is the full frontend gate — CI's Windows job runs it verbatim. Its 18 steps, in order: `typecheck`, `lint:eslint` (React Hooks rules), `test`, fourteen lint guards (i18n parity and concatenation, CSS tokens/type/spacing/tracking, ellipsis, command hints, install-echo parity, tool-argv parity, modal focus, nested interactives, page layout, invoke wrapper), and `build`. The Rust checks are separate: `cargo check --all-targets --features fixtures`, `cargo clippy --all-targets --features fixtures -- -D warnings` and `cargo test --all-targets --features fixtures` on Ubuntu, and `cargo test --all-targets --features fixtures` plus a `cargo build` compile smoke on Windows — the same suite on both, not a Windows-only subset.
 
 ## Known limitations
 

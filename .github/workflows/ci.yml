@@ -150,18 +150,25 @@ jobs:
 
       - name: cargo check
         working-directory: misedeck/src-tauri
-        run: cargo check --all-targets
+        run: cargo check --all-targets --features fixtures
 
       # Style + cfg lints are warnings by default; `-D warnings` turns the
       # gate on (issue #278). Keep this before `cargo test` so a lint
       # failure reports as a lint, not as a mystery later step.
       - name: cargo clippy (zero warnings)
         working-directory: misedeck/src-tauri
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --all-targets --features fixtures -- -D warnings
 
+      # `--features fixtures` is mandatory, not decoration: the two
+      # `src/bin/fixture-*.rs` harnesses are behind that feature so a
+      # release build contains exactly one binary. `tauri build` runs
+      # `cargo build --bins` and then packages *the* app binary; with
+      # three bins present it once packaged a fixture (a 262 KB installer
+      # that printed "no fixture for slug" and exited). Without the flag
+      # these tests panic with that exact command in the message.
       - name: cargo test
         working-directory: misedeck/src-tauri
-        run: cargo test --all-targets
+        run: cargo test --all-targets --features fixtures
 
       # When a test fails, the raw `cargo test` output buries the
       # failing test names in a wall of `running N tests` lines. This
@@ -183,7 +190,7 @@ jobs:
         shell: bash
         run: |
           log="$RUNNER_TEMP/cargo-test-failures.log"
-          cargo test --all-targets --no-fail-fast >"$log" 2>&1 || true
+          cargo test --all-targets --features fixtures --no-fail-fast >"$log" 2>&1 || true
           {
             echo '=== failing tests ==='
             grep -A 100 -E '^failures:$' "$log" || true
@@ -260,7 +267,7 @@ jobs:
       # stopping at the first failure.
       - name: cargo test
         working-directory: misedeck/src-tauri
-        run: cargo test --all-targets --no-fail-fast
+        run: cargo test --all-targets --features fixtures --no-fail-fast
 
       # Same failure summary as the ubuntu leg: print the failing test
       # names instead of making the reader dig through the raw output.
@@ -271,7 +278,7 @@ jobs:
         shell: bash
         run: |
           log="$RUNNER_TEMP/cargo-test-failures.log"
-          cargo test --all-targets --no-fail-fast >"$log" 2>&1 || true
+          cargo test --all-targets --features fixtures --no-fail-fast >"$log" 2>&1 || true
           {
             echo '=== failing tests ==='
             grep -A 100 -E '^failures:$' "$log" || true

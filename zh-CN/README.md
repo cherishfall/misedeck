@@ -123,7 +123,7 @@ npm run tauri build
 
 产物在 `src-tauri/target/release/bundle/`——macOS 是 `dmg/` 与 `macos/`，Windows 是 `nsis/`，Linux 是 `deb/`、`rpm/`、`appimage/`。macOS 构建和正式发布的一样，都是未签名的。
 
-`npm run ci` 是完整的前端闸门——CI 的 Windows 任务原样运行它。共 18 步，按顺序为：`typecheck`、`lint:eslint`（React Hooks 规则）、`test`、14 个 lint 守卫（i18n 键一致性与拼接、CSS token/字号/间距/字距、省略号、命令提示、安装回显一致性、工具参数一致性、模态焦点、嵌套交互、页面布局、invoke 包装）和 `build`。Rust 检查是另一套：Ubuntu 上跑 `cargo check --all-targets`、`cargo clippy --all-targets -- -D warnings` 与 `cargo test --all-targets`，Windows 上跑 `cargo test --all-targets` 加一个 `cargo build` 编译冒烟——两边跑的是同一套测试，不是 Windows 专属子集。
+`npm run ci` 是完整的前端闸门——CI 的 Windows 任务原样运行它。共 18 步，按顺序为：`typecheck`、`lint:eslint`（React Hooks 规则）、`test`、14 个 lint 守卫（i18n 键一致性与拼接、CSS token/字号/间距/字距、省略号、命令提示、安装回显一致性、工具参数一致性、模态焦点、嵌套交互、页面布局、invoke 包装）和 `build`。Rust 检查是另一套：Ubuntu 上跑 `cargo check --all-targets --features fixtures`、`cargo clippy --all-targets --features fixtures -- -D warnings` 与 `cargo test --all-targets --features fixtures`，Windows 上跑 `cargo test --all-targets --features fixtures` 加一个 `cargo build` 编译冒烟——两边跑的是同一套测试，不是 Windows 专属子集。
 
 ## 已知限制
 
