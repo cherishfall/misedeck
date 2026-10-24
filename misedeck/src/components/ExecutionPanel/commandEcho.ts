@@ -15,9 +15,11 @@
 // Global mode renders the bare command body (`use`/`unuse` carry `-g`
 // explicitly) and the working directory is disclosed separately by the
 // "Working directory: ~ (home)" context line rendered next to this echo
-// in the panel and in ConfirmDialog. The `selfUpdate` echo is the one
-// deliberate exception: it keeps `-C $HOME` verbatim (out of #191's
-// scope per the beta13 settlement).
+// in the panel and in ConfirmDialog. `selfUpdate` used to keep
+// `-C $HOME` verbatim (it was carved out of #191 in the beta13
+// settlement); owner feedback on 1.0.0 read that as a broken command,
+// and the carve-out was never a rule — only a scope boundary — so it
+// follows the same rendering now.
 //
 // Exported so confirmations (e.g. the uninstall dialog, issue #56) can
 // show the exact command that will run — identical to what the deck
@@ -102,9 +104,14 @@ export function commandEcho(
   }
   if (kind === "selfUpdate") {
     const parts: string[] = ["mise"];
-    // `$HOME` is a placeholder the shell must expand, not a literal
-    // path — quoting it would pass the five characters `$HOME` to mise.
-    parts.push("-C", cwd === null ? "$HOME" : quoteArg(cwd, platform));
+    // Terminal perspective (#191), same as the `mise` branch below:
+    // `-C $HOME` is the runner's anchor (#179), not something a user
+    // types to update mise. Global mode discloses the working
+    // directory through the context line instead; Directory mode still
+    // shows the anchor inline if a cwd is ever passed.
+    if (cwd !== null) {
+      parts.push("-C", quoteArg(cwd, platform));
+    }
     // `--yes` is what the runner really passes (issue #125): the CLI's
     // own `[Y/n]` prompt is bypassed, the GUI confirms first instead.
     parts.push("self-update", "--yes");

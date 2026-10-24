@@ -64,8 +64,9 @@ export interface ConfirmDialogProps {
    * (`null`) renders a "Working directory: ~ (home)" context line under
    * the command, because the terminal-perspective echo omits `-C $HOME`
    * there (issue #191); Directory mode shows the directory inline in
-   * the `-C <dir>` echo and gets no extra line. Omit for non-mise
-   * commands (e.g. the self-update confirmation).
+   * the `-C <dir>` echo and gets no extra line. Omit only for commands
+   * with no directory context at all (the install script), where the
+   * line would be noise.
    */
   cwd?: string | null;
   onConfirm: () => void;

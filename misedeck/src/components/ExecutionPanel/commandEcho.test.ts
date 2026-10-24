@@ -68,11 +68,12 @@ test("a cwd containing spaces is quoted like any other argv token", () => {
   );
 });
 
-test("self-update echo is out of #191 scope and keeps -C $HOME", () => {
-  assert.equal(
-    commandEcho("selfUpdate", null, []),
-    "mise -C $HOME self-update --yes",
-  );
+// Self-update used to be carved out of #191 and kept `-C $HOME` in the
+// Global-mode echo. It was a scope boundary, not a rule: the anchor is
+// the runner's, and a terminal user updating mise types the bare
+// command. The working-directory line is what discloses the anchor.
+test("self-update echo drops -C $HOME in global mode too", () => {
+  assert.equal(commandEcho("selfUpdate", null, []), "mise self-update --yes");
 });
 
 // Issue #229: the echo promises a command line the user can paste.

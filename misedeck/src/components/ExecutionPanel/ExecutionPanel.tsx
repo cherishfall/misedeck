@@ -357,11 +357,18 @@ export function ExecutionPanel() {
             )}
           </div>
         )}
-        {echo && state.kind === "mise" && state.request?.cwd === null && (
-          <div className={styles.workingDir}>
-            {t(I18N_KEYS.execution.workingDirHome)}
-          </div>
-        )}
+        {/* Global-mode disclosure (#191): the echo omits the runner's
+            `-C $HOME` anchor, so the directory it actually runs in is
+            stated separately. `selfUpdate` counts — it runs anchored
+            at home too; `install` does not (its echo is the script,
+            which has no directory context). */}
+        {echo &&
+          (state.kind === "mise" || state.kind === "selfUpdate") &&
+          state.request?.cwd === null && (
+            <div className={styles.workingDir}>
+              {t(I18N_KEYS.execution.workingDirHome)}
+            </div>
+          )}
         <div
           ref={logRef}
           onScroll={handleScroll}

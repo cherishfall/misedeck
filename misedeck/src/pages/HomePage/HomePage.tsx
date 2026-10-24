@@ -494,6 +494,10 @@ export function HomePage() {
               : ""
           }
           command={commandEcho("selfUpdate", null, [])}
+          // Global-mode context line (#191): the echo no longer carries
+          // the runner's `-C $HOME`, so the dialog states the directory
+          // the update really runs in.
+          cwd={null}
           confirmLabel={t(I18N_KEYS.miseManagement.selfUpdateButton)}
           cancelLabel={t(I18N_KEYS.common.cancel)}
           danger={false}
