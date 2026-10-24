@@ -144,10 +144,15 @@ one-off hotfix messages.
 
 The resolver is `scripts/resolve-release-notes.sh`; it only reads
 `%(contents)` when `git cat-file -t "$TAG"` reports `tag`, because a
-lightweight tag returns its commit message otherwise. CI runs
-`scripts/test-release-notes.sh`, which covers both tag shapes and checks
-that the rendered body has no repo-relative links (they 404 on
-`/releases/tag/`).
+lightweight tag returns its commit message otherwise. It runs
+`git fetch --tags --force origin` first (failure tolerated) because a
+tag-triggered run checks out the tag's **commit**, and the tag object
+itself is not guaranteed to be in that clone: on `v1.0.1` it was not,
+so the annotation was skipped and the generic template shipped in its
+place. CI runs `scripts/test-release-notes.sh`, which covers a
+lightweight tag, an annotated tag, and an annotated tag whose object
+has to be recovered from `origin`, and checks that the rendered body
+has no repo-relative links (they 404 on `/releases/tag/`).
 
 ## Testing the matrix without cutting a tag
 

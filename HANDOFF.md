@@ -16,6 +16,8 @@ Also in this cut: the Home page's RAW disclosure no longer repeats its own label
 
 **The NSIS installer has been installed on the real box** (per-user, `%LOCALAPPDATA%`, no admin, uninstalls from Settings → Apps) — superseding the "still never installed on real hardware" line in the section below. Windows still has one machine behind it, not a matrix.
 
+**1.0.1 shipped** — tag `v1.0.1`, release run `40079635363` (all three build legs plus the release job green; six assets, `isPrerelease: false`). One thing went wrong and is worth remembering: the published body came out as the **generic template**, not the tag's annotation. The tag-triggered checkout holds the tag's commit but not necessarily the tag object, so `git cat-file -t` found nothing, the resolver fell through, and the fallback template shipped. The body was rewritten with `gh release edit`, and the resolver now runs `git fetch --tags --force origin` before deciding. `scripts/test-release-notes.sh` gained a third case — an annotated tag whose object must be recovered from `origin` — and removing the fetch makes that case fail with the template body, so the guard is load-bearing rather than decorative.
+
 **Next move:** #281 is the only open ticket and holds what needs other hardware — a Linux desktop (`kgx` probe, glibc/WebKitGTK baseline, portal picker, GTK theme bleed, `set_theme`) and a macOS pass (self-hosted font glyph/width, `scrollbar-gutter`, re-shoot `docs/screenshots/`). `docs/screenshots/` was **not** re-captured for 1.0.1: the changed surfaces (RAW expanded, the update dialog) are not in the README shots, and re-capturing needs the macOS box.
 
 ## PREVIOUS STATE (2026-10-23 — **#239 closed; the READMEs' Windows wording now matches the evidence**)

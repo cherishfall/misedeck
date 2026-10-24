@@ -2,7 +2,7 @@
 
 > [English](https://github.com/cherishfall/misedeck/blob/master/README.md) · [简体中文](https://github.com/cherishfall/misedeck/blob/master/zh-CN/README.md)
 
-MiseDeck 的首个稳定版本——[mise](https://mise.jdx.dev) 的忠实桌面 GUI。跨平台（macOS 优先打磨，Windows / Linux 为 beta）。
+MiseDeck 的稳定版本——[mise](https://mise.jdx.dev) 的忠实桌面 GUI。跨平台（macOS 优先打磨，Windows / Linux 为 beta）。
 
 ## 本期要点
 

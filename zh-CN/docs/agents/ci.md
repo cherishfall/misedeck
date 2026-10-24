@@ -120,9 +120,12 @@ Windows job 绿 = 编译级与测试级正确；它**不能**替代在真实 Win
 
 解析逻辑在 `scripts/resolve-release-notes.sh`：只有
 `git cat-file -t "$TAG"` 返回 `tag` 时才读取 `%(contents)`，因为轻量
-tag 会返回 commit 消息。CI 会运行 `scripts/test-release-notes.sh`，
-覆盖两种 tag 形态，并检查渲染结果里没有仓库相对链接（它们在
-`/releases/tag/` 下会 404）。
+tag 会返回 commit 消息。脚本会先跑一次 `git fetch --tags --force origin`
+（失败可容忍）：由 tag 触发的那次运行检出的只是 tag 指向的**提交**，
+tag 对象本身不保证在克隆里——`v1.0.1` 就撞上了，附注被跳过、发出去的
+是通用模板。CI 会运行 `scripts/test-release-notes.sh`，覆盖轻量 tag、
+附注 tag，以及「附注 tag 的对象需要从 `origin` 取回」这一种，并检查渲染
+结果里没有仓库相对链接（它们在 `/releases/tag/` 下会 404）。
 
 ## 不切 tag 也能测试矩阵
 
