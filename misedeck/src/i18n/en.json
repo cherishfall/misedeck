@@ -708,7 +708,7 @@
     "openInTerminalError": "Could not open a terminal at {{path}}. Copy the command and run it yourself.",
     "openInTerminalSuccess": "Opened {{terminal}} at {{path}}.",
     "bannerLabel": "Shell activation missing",
-    "bannerBody": "Your {{shell}} config at {{rcPath}} does not have the mise activate line. Add the line below to use mise in interactive sessions.",
+    "bannerBody": "Your {{shell}} config at {{rcPath}} does not have the mise activate line. Add the line below to the end of that file (create it if it does not exist), save it, then reopen your terminal — it is a profile entry, not a command to run.",
     "bannerBodyUnknownShell": "MiseDeck does not know how to activate {{name}}. Add the appropriate mise activate line to its rc file to use mise in interactive sessions.",
     "bannerLabelUnverified": "Shell activation unverified",
     "bannerBodyUnverified": "MiseDeck could not determine whether mise is activated for this shell. Compare the line below with your rc file, and add it if it is missing.",

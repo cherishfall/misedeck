@@ -708,7 +708,7 @@
     "openInTerminalError": "无法在 {{path}} 打开终端。请复制命令后手动执行。",
     "openInTerminalSuccess": "已通过 {{terminal}} 在 {{path}} 打开终端。",
     "bannerLabel": "Shell 激活缺失",
-    "bannerBody": "你的 {{shell}} 配置文件 {{rcPath}} 中没有 mise activate。请在下方添加该行，以便在交互式 shell 中使用 mise。",
+    "bannerBody": "你的 {{shell}} 配置文件 {{rcPath}} 中没有 mise activate。把下方这一行加到该文件的末尾（文件不存在就新建）并保存，然后重开终端才会生效——它不是一条要在终端里执行的命令。",
     "bannerBodyUnknownShell": "MiseDeck 不知道如何激活 {{name}}。请在其 rc 文件中添加相应的 mise activate 行，以便在交互式 shell 中使用 mise。",
     "bannerLabelUnverified": "Shell 激活状态未知",
     "bannerBodyUnverified": "MiseDeck 无法判断此 shell 是否已激活 mise。请将下方这一行与你的 rc 文件对照，如缺失请添加。",
