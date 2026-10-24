@@ -104,6 +104,31 @@
   align-self: stretch;
 }
 
+/* The expanded payload, styled exactly like DataRow's `block` value
+ * (mono, dim, hull well, 180px cap, keyboard-scrollable) — it *is* that
+ * treatment, but it cannot stay a `DataRow`: the section's label lives
+ * on the disclosure trigger, and restating it as the row's `<dt>` is
+ * what printed "RAW" twice (beta18). */
+.rawText {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--size-data);
+  color: var(--dim);
+  background: color-mix(in srgb, var(--hull) 60%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: var(--space-3);
+  white-space: pre;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.rawText:focus-visible {
+  outline: none;
+  border-color: var(--beam);
+  box-shadow: var(--ring);
+}
+
 .rawCopy {
   position: absolute;
   top: var(--space-2);

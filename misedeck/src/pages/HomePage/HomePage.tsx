@@ -12,7 +12,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 
 import { detectMise } from "../../api/mise";
 import { I18N_KEYS } from "../../i18n/keys";
@@ -153,6 +153,10 @@ export function HomePage() {
   // Diagnostic-grade raw output is collapsed by default (beta11, Q3);
   // the disclosure expands to the full block with the copy affordance.
   const [rawOpen, setRawOpen] = useState(false);
+  // The trigger names the revealed block (`aria-labelledby`), so the
+  // section is announced once instead of being labelled twice.
+  const rawLabelId = useId();
+  const rawBlockId = useId();
 
   // Top-toolbar refresh (issue #98): the version probe is the page's
   // only query.
@@ -250,12 +254,23 @@ export function HomePage() {
             {/* Diagnostic-grade raw output (the `mise version --json`
                 payload) renders collapsed by default behind a
                 disclosure (beta11, Q3); expanded is the previous
-                full block, copy affordance included. */}
+                full block, copy affordance included.
+
+                The trigger carries the section's only visible label
+                (beta18): the revealed block is a `region` named *by
+                that trigger*, the same disclosure contract
+                ErrorBoundary and the config-file viewer use. Before
+                this, the block was a `DataRow` whose row label was the
+                trigger's own text, so expanding printed "RAW" twice —
+                once as the button, once as the `<dt>` above the
+                payload. */}
             <div className={styles.rawSection}>
               <Button
                 variant="ghost"
                 size="sm"
+                id={rawLabelId}
                 aria-expanded={rawOpen}
+                aria-controls={rawOpen ? rawBlockId : undefined}
                 onClick={() => setRawOpen((v) => !v)}
                 data-testid="home-raw-toggle"
               >
@@ -263,12 +278,16 @@ export function HomePage() {
               </Button>
               {rawOpen && (
                 <div className={styles.rawWrap}>
-                  <DataRow
-                    label={t(I18N_KEYS.home.rawLabel)}
-                    value={JSON.stringify(view.ok.raw, null, 2)}
-                    block
-                    full
-                  />
+                  <pre
+                    id={rawBlockId}
+                    className={styles.rawText}
+                    role="region"
+                    aria-labelledby={rawLabelId}
+                    tabIndex={0}
+                    data-testid="home-raw-output"
+                  >
+                    {JSON.stringify(view.ok.raw, null, 2)}
+                  </pre>
                   <CopyButton
                     text={JSON.stringify(view.ok.raw, null, 2)}
                     className={styles.rawCopy}
