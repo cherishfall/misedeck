@@ -2,7 +2,23 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-10-23 — **#239 closed; the READMEs' Windows wording now matches the evidence**)
+## CURRENT STATE (2026-10-24 — **1.0.1 cut; the Windows installer has now been installed on real hardware**)
+
+The gap between 1.0.0 and 1.0.1 was mostly the post-GA audit batch plus what a **real install** on the owner's Windows 11 box turned up. 1.0.1 is that batch, version-bumped in all six places and tagged with release notes (annotated tag, so the body is the annotation, not `release-template.md`).
+
+**Three fixes came out of actually installing 1.0.0**, which is the part no amount of CI could have produced:
+
+- **The release build could package a test fixture.** `npm run tauri build` compiles with `cargo build --bins` and then packages "the" app binary; with three bins in the package (app + two test harnesses) it picked a harness, producing a 262 KB installer that printed `no fixture for slug` and exited 0. `mainBinaryName` and `-- --bin misedeck` both failed to steer it; removing the harnesses from `src/bin` fixed it, which pinned the cause. The harnesses now sit behind a `fixtures` feature, so a release build contains exactly one binary. The released v1.0.0 installer was unaffected (2.7 MB), but nothing stopped CI from hitting it.
+- **The activation prompt named a PowerShell the machine does not have.** The primary rc path was hard-coded to pwsh 7's `Documents/PowerShell/…`; this box has only Windows PowerShell 5.1, which reads `Documents/WindowsPowerShell/…` and never touches that file. The primary now follows `where pwsh.exe`, both profiles stay in the candidate list, and the resolution is injectable so the ordering is asserted on any host.
+- **The Home page's self-update dialog printed `mise -C $HOME self-update --yes`.** That was a scope carve-out from the terminal-perspective echo rule, not a rule; it now renders `mise self-update --yes` with the shared "Working directory: ~ (home)" line, in the dialog and in the panel.
+
+Also in this cut: the Home page's RAW disclosure no longer repeats its own label (the revealed block is a `role="region"` named by the trigger), and the pre-existing batch of audit fixes — Tasks inline-edit scoping, Env parent-config scope, honest requested-but-missing versions, wrong-shaped payload rejection, table layout at 900×600 / 1200×720, Settings "Show all" in Directory mode, parent-vs-global config distinction, plugin ref/commit, `MISE_SAFE` on panel reads, capped streaming output, `EINTR` retry in the line reader, and `#[serial]` on the tests that can see `terminate_all`.
+
+**The NSIS installer has been installed on the real box** (per-user, `%LOCALAPPDATA%`, no admin, uninstalls from Settings → Apps) — superseding the "still never installed on real hardware" line in the section below. Windows still has one machine behind it, not a matrix.
+
+**Next move:** #281 is the only open ticket and holds what needs other hardware — a Linux desktop (`kgx` probe, glibc/WebKitGTK baseline, portal picker, GTK theme bleed, `set_theme`) and a macOS pass (self-hosted font glyph/width, `scrollbar-gutter`, re-shoot `docs/screenshots/`). `docs/screenshots/` was **not** re-captured for 1.0.1: the changed surfaces (RAW expanded, the update dialog) are not in the README shots, and re-capturing needs the macOS box.
+
+## PREVIOUS STATE (2026-10-23 — **#239 closed; the READMEs' Windows wording now matches the evidence**)
 
 A third pass on the same Windows 11 x64 box closed out the two things the earlier passes left dangling: the commands that had only unit-test coverage, and two test defects that the audit had flagged.
 

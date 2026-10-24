@@ -4,7 +4,7 @@
 
 **A desktop GUI for [mise](https://mise.jdx.dev), the polyglot tool version manager.** It is built from mise's own concepts, not an invented layer on top: each page mirrors a part of the CLI, and every change it makes runs a real `mise` command, shown verbatim — command, logs, exit code — in the execution panel. MiseDeck is an independent community project, not affiliated with mise or its maintainer.
 
-> **Status: 1.0.0** — the first stable release, after 16 tagged betas between `v1.0.0-beta.1` and `v1.0.0-beta.17` (September–October 2026). macOS on Apple Silicon is the polished target; Windows x64 runs and has been exercised end-to-end on one real Windows 11 machine, though its installer is untested; Linux is packaged but not verified on real hardware.
+> **Status: 1.0.1** — a patch on the first stable release (`v1.0.0`, 2026-10-21). Three of its fixes came straight out of installing 1.0.0 on a real Windows 11 machine: a release build can no longer package a test fixture instead of the app, the activation prompt names the PowerShell that is actually installed, and the Home page's update dialog no longer prints `-C $HOME`. The rest is a batch of correctness and keyboard fixes the post-GA audit found. macOS on Apple Silicon is the polished target; Windows x64 runs, has been exercised end-to-end on one real Windows 11 machine, and its NSIS installer has been installed there; Linux is packaged but not verified on real hardware.
 
 ## Why
 
@@ -89,7 +89,7 @@ Packaged by CI; the maintainer has not run these on a real desktop.
 
 ### Windows x64 — experimental
 
-Each release attaches `MiseDeck_<version>_x64-setup.exe`. CI compiles it and runs the same Rust test suite as Linux, plus the full frontend gate. The app has been run end-to-end on one real Windows 11 machine — all eight pages, the IPC commands, the write round-trip and the process-tree kill passed ([report](./docs/feedback/windows-hardware-verification.md)) — but the installer itself has not been installed on real hardware, and Windows has no release history yet. Expect breakage; feedback is welcome.
+Each release attaches `MiseDeck_<version>_x64-setup.exe`. CI compiles it and runs the same Rust test suite as Linux, plus the full frontend gate. The app has been run end-to-end on one real Windows 11 machine — all eight pages, the IPC commands, the write round-trip and the process-tree kill passed ([report](./docs/feedback/windows-hardware-verification.md)) — and the NSIS installer has been installed and launched there: `MiseDeck_1.0.0_x64-setup.exe` installs per-user into `%LOCALAPPDATA%`, needs no administrator rights, and uninstalls from Settings → Apps. Windows still has the shortest track record of the three platforms — that is one machine, not a hardware matrix.
 
 ## Run from source
 
@@ -131,7 +131,7 @@ Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on ma
 - No auto-update: even when a newer build exists, the panel stops at its Release page — you download and install it yourself, and macOS needs the `xattr` fix re-applied afterwards.
 - Cancel does not wait for the process: the panel marks the run cancelled immediately and MiseDeck then kills the run's whole process tree (a `curl | sh` install, a `mise run` task shell). Closing the app kills anything still running.
 - Update checks shell out to `curl`, which ignores the Windows system proxy: a machine that reaches GitHub only through a proxy never sees an update. Set `https_proxy` (e.g. `https_proxy=http://127.0.0.1:7890`) before launching the app. A failed check is retryable, not fatal.
-- Windows is experimental: CI runs the full suite there, and the app has been exercised on one Windows 11 machine, but the installer is untested and the platform has no release history yet; Linux packages are built but not verified on a desktop.
+- Windows is experimental: CI runs the full suite there, the app has been exercised on one Windows 11 machine and its installer installed there, but one machine is not a hardware matrix; Linux packages are built but not verified on a desktop.
 - Linux needs **WebKitGTK 2.40 or newer** (Ubuntu 22.04+, Debian 12+, Fedora 38+). The whole palette is derived with `color-mix()`, so an older webview does not degrade gracefully — borders and elevated surfaces lose their colours. Packages are built against Ubuntu 22.04, so they run on any distro with glibc 2.35+. Verified on: none. Ubuntu 24.04 is the target, not a tested environment.
 - No Intel macOS build; build from source if you need one.
 

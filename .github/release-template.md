@@ -2,7 +2,7 @@
 
 > [English](https://github.com/cherishfall/misedeck/blob/master/README.md) · [简体中文](https://github.com/cherishfall/misedeck/blob/master/zh-CN/README.md)
 
-First stable release of MiseDeck, a faithful desktop GUI for [mise](https://mise.jdx.dev). Cross-platform (macOS polished, Windows / Linux beta).
+A stable release of MiseDeck, a faithful desktop GUI for [mise](https://mise.jdx.dev). Cross-platform (macOS polished, Windows / Linux beta).
 
 ## What's in v1
 
