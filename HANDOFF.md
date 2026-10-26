@@ -16,7 +16,7 @@ The 2026-10-26 full audit (`docs/feedback/full-audit-2026-10-26.md`, committed `
 | #285 | `fe979c3` | Every config-dependent view is invalidated after a write command. |
 | #286 | `38413e3` | The panel run settles from the invoke outcome; the latest tool row is not duplicated; a locale change no longer re-probes the shell. |
 | #287 | `06f05cc` + `a538ab6` | CI gaps: `cargo fmt` gate, macOS Rust code compiled before release, one frontend check set. |
-| #288 | this commit | Docs governance: AGENTS.md links to ADR-0005 instead of restating it, and ADR-0005's exemption list is complete (`doctor`, `registry`, `trust --show`, plus the `mise version` gate probe); the "use" vocabulary is unified on mise's **active / 已激活**; HANDOFF refreshed; `.DS_Store` ignored repo-wide; the `uninstall --all` pointer names `CONTEXT.md`, which is where that ban actually lives. |
+| #288 | `4d1bc17` | Docs governance: AGENTS.md links to ADR-0005 instead of restating it, and ADR-0005's exemption list is complete (`doctor`, `registry`, `trust --show`, plus the `mise version` gate probe); the "use" vocabulary is unified on mise's **active / 已激活**; HANDOFF refreshed; `.DS_Store` ignored repo-wide; the `uninstall --all` pointer names `CONTEXT.md`, which is where that ban actually lives. |
 
 **Vocabulary decision (#288), do not re-litigate:** the action is **Use / 使用**; the state it produces is **Active / 已激活** — mise's own terms (`mise ls --help`: "List installed and active tool versions"; `mise ls --json` carries `"active": true`). `enable` / `activate` / "in use" are retired as alternate *state* words; CONTEXT.md → Use is the one home. Shell activation (`mise activate`, Doctor's 已激活/未激活) is a different concept and keeps its wording.
 
