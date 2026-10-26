@@ -62,11 +62,14 @@ pub const INSTALL_SCRIPT_LINE: &str = "curl -fsSL https://mise.jdx.dev/install.s
 /// (`System32\WindowsPowerShell\v1.0\powershell.exe`) rather than a `PATH`
 /// lookup: `CreateProcess` searches the current directory first, so a bare
 /// name could run a planted binary with the app's privileges (issue #253).
+/// Unix gets the equivalent treatment through `posix_binary`: a bare `sh`
+/// is resolved by `execvp`, whose empty-`PATH` entry means the current
+/// directory, so the standard absolute location goes first (issue #289).
 fn build_install_command() -> Command {
     #[cfg(target_os = "windows")]
     let program = crate::process_tree::windows_powershell();
     #[cfg(not(target_os = "windows"))]
-    let program = "sh".to_string();
+    let program = crate::process_tree::posix_binary("sh");
 
     let mut cmd = Command::new(program);
     cmd.args(install_command_args());

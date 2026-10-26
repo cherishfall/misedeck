@@ -142,12 +142,15 @@ fn feed_shape_error(detail: &str) -> AppError {
 /// On Windows `curl.exe` is the System32 copy, not a `PATH` lookup: the
 /// `CreateProcess` search order starts with the current directory, so a
 /// bare name can run a binary planted where the app was launched
-/// (issue #253).
+/// (issue #253). Unix has the same problem through `execvp` — an empty
+/// `PATH` entry means the current directory — so `curl` resolves to a
+/// standard absolute location first, bare name only as a last resort
+/// (issue #289).
 fn fetch_feed(current_version: &str) -> Result<String, AppError> {
     #[cfg(target_os = "windows")]
     let program = crate::process_tree::system32("curl.exe");
     #[cfg(not(target_os = "windows"))]
-    let program = "curl".to_string();
+    let program = crate::process_tree::posix_binary("curl");
 
     let mut cmd = Command::new(program);
     cmd.args(curl_args(current_version));

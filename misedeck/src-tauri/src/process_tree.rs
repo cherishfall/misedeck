@@ -39,6 +39,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::{Child, Command, ExitStatus};
 use std::sync::{Mutex, MutexGuard};
+use std::time::Duration;
 
 use once_cell::sync::Lazy;
 
@@ -230,6 +231,38 @@ pub(crate) fn system32(program: &str) -> String {
     system32_under(root.as_deref(), &[program])
 }
 
+/// Standard absolute locations for a POSIX system binary, in probe order.
+/// `/usr/bin` first because that is where the system keeps `curl`; `/bin`
+/// is where `sh` lives on the systems this app runs on.
+#[cfg(not(windows))]
+const POSIX_BIN_DIRS: &[&str] = &["/usr/bin", "/bin", "/usr/local/bin", "/opt/homebrew/bin"];
+
+/// `dirs/<name>` for the first directory that actually holds it, else the
+/// bare `name`. The directories are injected so the decision is testable
+/// on every platform, including the Windows runner.
+///
+/// On unix a bare name goes through `execvp`, which searches `PATH` — and
+/// an empty `PATH` entry means **the current directory** — so a planted
+/// `curl`/`sh` sits in the same class Windows' `CreateProcess` search
+/// closed in issue #253. The standard absolute locations are tried first;
+/// the bare name stays as the fallback so a host that keeps the binary
+/// somewhere unusual still runs (issue #289).
+#[cfg_attr(windows, allow(dead_code))]
+pub(crate) fn system_binary_in(name: &str, dirs: &[&str]) -> String {
+    dirs.iter()
+        .map(|dir| Path::new(dir).join(name))
+        .find(|candidate| candidate.is_file())
+        .map(|candidate| candidate.to_string_lossy().into_owned())
+        .unwrap_or_else(|| name.to_string())
+}
+
+/// A POSIX system binary at an absolute standard location, or the bare
+/// name when none of them has it (see `system_binary_in`).
+#[cfg(not(windows))]
+pub(crate) fn posix_binary(name: &str) -> String {
+    system_binary_in(name, POSIX_BIN_DIRS)
+}
+
 /// `%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`.
 ///
 /// Not `System32\powershell.exe`: Windows PowerShell 5.1 lives in its own
@@ -334,6 +367,41 @@ pub(crate) fn terminate_all() {
     for group in groups {
         kill_group(group);
     }
+}
+
+/// How long the exit path waits between its two sweeps. One map insertion
+/// is the whole race window, so this is short; it is still long enough
+/// for a runner thread that is between `Command::spawn` and
+/// `children.insert` to finish registering.
+const SWEEP_GRACE: Duration = Duration::from_millis(150);
+
+/// Kill every tree, wait out the spawn window, kill again.
+///
+/// `ChildGuard::spawn` registers a child only *after* `Command::spawn`
+/// returns, so a quit that lands between those two lines snapshots a
+/// registry without the new child — and that child, with its whole tree,
+/// would outlive the app. That is exactly the orphan shape issue #223
+/// exists to eliminate, in a window one map insertion wide (issue #289).
+/// The second sweep covers it.
+///
+/// The wait is synchronous on purpose: `RunEvent::Exit` fires
+/// immediately before the process ends, so a detached timer thread would
+/// not be guaranteed to run at all. The delay is bounded and invisible
+/// next to app teardown.
+pub(crate) fn terminate_all_with_grace() {
+    sweep_late_children(|| std::thread::sleep(SWEEP_GRACE));
+}
+
+/// `terminate_all`, run `between`, `terminate_all` again, and hand back
+/// what `between` produced. The seam is the race window itself: a test
+/// registers a child in `between` — exactly where a runner thread that
+/// lost the race with exit would be — and proves the second sweep kills
+/// it without depending on thread-scheduling luck.
+fn sweep_late_children<T>(between: impl FnOnce() -> T) -> T {
+    terminate_all();
+    let result = between();
+    terminate_all();
+    result
 }
 
 /// A spawned child that is tracked in the registry and killed as a
@@ -565,6 +633,42 @@ mod tests {
         );
     }
 
+    /// Issue #289: a child whose registration landed after the first
+    /// sweep — the exact shape of `spawn` succeeding while the app is
+    /// quitting — is killed by the second.
+    ///
+    /// `sweep_late_children` runs `terminate_all`, then the fixture
+    /// spawns and registers its tree, then `terminate_all` again — the
+    /// same two-sweep composition the exit path runs, with the race
+    /// window made deterministic instead of hoped for.
+    ///
+    /// What it does not prove: that the production 150 ms grace is long
+    /// enough on every machine. The window it must cover is one map
+    /// insertion, not a process start (the child is registered before
+    /// the test's `between` step returns), so the assertion is about the
+    /// second sweep's reach, not about scheduling.
+    #[cfg(any(unix, windows))]
+    #[test]
+    #[serial_test::serial]
+    fn the_second_sweep_kills_a_child_registered_after_the_first() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let pid_file = dir.path().join("grandchild.pid");
+
+        let (mut guard, grandchild) = sweep_late_children(|| spawned_tree(&pid_file));
+
+        assert!(
+            wait_until(Duration::from_secs(5), || !process_alive(grandchild)),
+            "grandchild {grandchild} registered after the first sweep survived the second"
+        );
+        assert!(
+            wait_until(Duration::from_secs(5), || matches!(
+                guard.try_wait(),
+                Ok(Some(_))
+            )),
+            "the late-registered child was not reaped"
+        );
+    }
+
     /// Issue #254: a cancel that loses the race with a normal exit has
     /// no runner left to consume it. The registry must keep those from
     /// growing without bound, and must evict the oldest first so a live
@@ -660,6 +764,41 @@ mod tests {
             Ok(output) => String::from_utf8_lossy(&output.stdout).contains(&format!("\"{pid}\"")),
             Err(_) => false,
         }
+    }
+
+    /// Issue #289: on unix the app resolves `curl`/`sh` to an absolute
+    /// standard location instead of leaving the lookup to `execvp`
+    /// (whose empty-`PATH` entry means the current directory, the same
+    /// planted-binary class #253 closed on Windows). Nothing at any
+    /// location still falls back to the bare name rather than refusing
+    /// to run at all.
+    #[test]
+    fn system_binary_prefers_an_absolute_standard_location() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let curl = dir.path().join("curl");
+        std::fs::write(&curl, b"#!/bin/sh\n").expect("write fixture binary");
+        let dirs = [dir.path().to_str().expect("utf-8 tempdir"), "/usr/bin"];
+
+        assert_eq!(
+            system_binary_in("curl", &dirs),
+            curl.to_string_lossy(),
+            "the first existing absolute candidate must win"
+        );
+        assert_eq!(
+            system_binary_in("definitely-no-such-program-289", &dirs),
+            "definitely-no-such-program-289",
+            "no candidate means the bare name, not an invented path"
+        );
+    }
+
+    /// The production call sites ask for `sh`; on every unix `/bin/sh`
+    /// exists, so the resolver must produce an absolute path here.
+    #[cfg(not(windows))]
+    #[test]
+    fn posix_binary_resolves_sh_to_an_absolute_path() {
+        let sh = posix_binary("sh");
+        assert!(Path::new(&sh).is_absolute(), "got {sh}");
+        assert!(Path::new(&sh).is_file(), "got {sh}");
     }
 
     /// Issue #253: system binaries are addressed under `System32`, never

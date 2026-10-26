@@ -90,6 +90,24 @@ fn too_old_version_returns_mise_too_old() {
     });
 }
 
+/// Issue #289: the day segment of a prerelease (`2026.1.0-rc1`) carries
+/// a `-suffix`. Splitting the head on `.` alone saw four parts, parsed
+/// no date, and `detect_mise` sent a current rc build into the guided
+/// install flow as `MISE_TOO_OLD`.
+#[test]
+#[serial]
+fn prerelease_version_is_not_mise_too_old() {
+    let script = fixture_script();
+    with_slug("version---json-prerelease", || {
+        let ok = detect_mise(&script).expect("an rc build above the floor must pass");
+        assert_eq!(ok.version, "2026.1.0-rc1 macos-arm64 (2026-01-02)");
+        assert_eq!(
+            ok.version_date, "2026.1.0",
+            "the date is the date; the suffix is not part of it"
+        );
+    });
+}
+
 #[test]
 #[serial]
 fn non_zero_exit_returns_command_failed_with_stderr() {

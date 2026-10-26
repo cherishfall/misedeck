@@ -255,16 +255,23 @@ fn is_executable_candidate(path: &Path) -> bool {
 
 /// Extract the `YYYY.MM.DD` date prefix from a mise version string like
 /// `"2026.8.14 macos-arm64 (2026-08-26)"`.
+///
+/// A prerelease rides on the day segment (`2026.1.0-rc1`) and is not
+/// part of the date: splitting the whole head on `.` saw four parts and
+/// reported `MISE_TOO_OLD`, which sent a perfectly current rc build into
+/// the guided-install flow (#289). The suffix is stripped before the
+/// day is parsed, and the returned date stays a date.
 pub fn extract_date(version: &str) -> Option<(String, [u32; 3])> {
     let head = version.split_whitespace().next()?;
-    let parts: Vec<&str> = head.split('.').collect();
+    let date = head.split('-').next()?;
+    let parts: Vec<&str> = date.split('.').collect();
     if parts.len() != 3 {
         return None;
     }
     let y = parts[0].parse::<u32>().ok()?;
     let m = parts[1].parse::<u32>().ok()?;
     let d = parts[2].parse::<u32>().ok()?;
-    Some((head.to_string(), [y, m, d]))
+    Some((date.to_string(), [y, m, d]))
 }
 
 pub fn meets_minimum(found: &str, minimum: &str) -> bool {
@@ -1435,29 +1442,51 @@ pub struct MiseLsRemoteItem {
 /// * non-zero exit → `COMMAND_FAILED` with stderr preserved verbatim
 /// * malformed JSON → `PARSE_FAILED` with the raw payload logged
 /// * timeout → `TIMEOUT`
+///
+/// Every read in the app funnels through here (`mise ls`, `env`, `config
+/// ls`, `tasks ls`, `plugins ls`, `outdated`, `doctor`, `registry`,
+/// `trust --show`, `tasks edit --path`, version detection), so this is
+/// the one place the read-only MISE_SAFE contract is enforced (issue
+/// #230), and the payload is read as raw bytes (issue #282):
+/// `ls-remote --json` is one line, not a transcript.
 pub fn run_mise_json(mise_path: &Path, req: &RunRequest) -> Result<serde_json::Value, AppError> {
-    // Every read in the app funnels through here (`mise ls`, `env`,
-    // `config ls`, `tasks ls`, `plugins ls`, `outdated`, `doctor`,
-    // `registry`, `trust --show`, `tasks edit --path`, version
-    // detection), so this is the one place the read-only MISE_SAFE
-    // contract is enforced (issue #230). It reads the payload as raw
-    // bytes (issue #282): `ls-remote --json` is one line, not a
-    // transcript.
-    let outcome = run_mise_capture(mise_path, req, READ_TIMEOUT)?;
-    if outcome.exit_code != 0 {
-        return Err(AppError::command_failed(
-            format!("mise exited with status {}", outcome.exit_code),
-            outcome.stderr,
-        ));
+    run_mise_json_attempt(mise_path, req).0
+}
+
+/// One `--json` read with the exit code kept beside the mapped error.
+///
+/// `AppError` deliberately carries no exit code (the wire shape is
+/// frozen), but a caller that may retry needs to tell "this mise does not
+/// understand `--json`" from "this mise failed": only `mise registry`
+/// retries, and it may only do so on a usage error (#289). Everything
+/// else about the read — the read ceiling, `MISE_SAFE`, the raw pipe
+/// mode — stays in `run_mise_capture`, unchanged.
+fn run_mise_json_attempt(
+    mise_path: &Path,
+    req: &RunRequest,
+) -> (Result<serde_json::Value, AppError>, Option<i32>) {
+    let outcome = match run_mise_capture(mise_path, req, READ_TIMEOUT) {
+        Ok(outcome) => outcome,
+        // Spawn failure or timeout: there is no exit code to report.
+        Err(e) => return (Err(e), None),
+    };
+    let exit_code = outcome.exit_code;
+    if exit_code != 0 {
+        return (
+            Err(AppError::command_failed(
+                format!("mise exited with status {exit_code}"),
+                outcome.stderr,
+            )),
+            Some(exit_code),
+        );
     }
-    let value: serde_json::Value =
-        serde_json::from_slice(outcome.stdout.as_bytes()).map_err(|e| {
-            AppError::parse_failed(
-                format!("invalid mise JSON output: {e}"),
-                outcome.stderr.clone(),
-            )
-        })?;
-    Ok(value)
+    let value = serde_json::from_slice(outcome.stdout.as_bytes()).map_err(|e| {
+        AppError::parse_failed(
+            format!("invalid mise JSON output: {e}"),
+            outcome.stderr.clone(),
+        )
+    });
+    (value, Some(exit_code))
 }
 
 /// `mise ls --json` — the global tools list. Returns the raw JSON
@@ -2258,6 +2287,19 @@ fn registry_table_fallback(
     Ok(serde_json::Value::Array(rows))
 }
 
+/// Does a failed `mise registry --json` justify the plain-text retry?
+///
+/// Only one situation does: this mise cannot answer `--json`. It either
+/// rejects the flag — a usage error, which mise exits 2 for — or it
+/// exits 0 with something that is not JSON. Any other failure is the
+/// answer: retrying it would add a second `READ_TIMEOUT` wait and, when
+/// the retry fails too, overwrite the original stderr with the
+/// fallback's own (issue #289). Timeouts and a missing binary never
+/// retry, matching every other read helper.
+fn registry_fallback_applies(code: &str, exit_code: Option<i32>) -> bool {
+    code == code::PARSE_FAILED || (code == code::COMMAND_FAILED && exit_code == Some(2))
+}
+
 /// `mise registry --json` for the active context. If the mise binary
 /// does not support `--json` (or the output is not valid JSON), the
 /// runner falls back to parsing the plain-text registry table into a
@@ -2268,13 +2310,14 @@ pub fn mise_registry(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json:
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    match run_mise_json(mise_path, &req) {
+    let (attempt, exit_code) = run_mise_json_attempt(mise_path, &req);
+    match attempt {
         Ok(v) => Ok(v),
-        // Same rule as `mise_doctor` (issue #230): the table fallback
-        // covers "this mise has no `--json` / emitted unparseable
-        // output", never a timeout or a missing binary — retrying those
-        // doubles the wait and repeats a known failure.
-        Err(e) if e.code == code::PARSE_FAILED || e.code == code::COMMAND_FAILED => {
+        // Same rule as `mise_doctor` (issue #230), narrowed by #289: the
+        // table fallback covers "this mise has no `--json` / emitted
+        // unparseable output", never a genuine failure, a timeout or a
+        // missing binary.
+        Err(e) if registry_fallback_applies(&e.code, exit_code) => {
             registry_table_fallback(mise_path, cwd)
         }
         Err(e) => Err(e),
@@ -2823,6 +2866,39 @@ mod tests {
         assert!(extract_date("nope").is_none());
         assert!(extract_date("2026.8").is_none());
         assert!(extract_date("").is_none());
+    }
+
+    /// Issue #289: a prerelease suffix rides on the day segment, so the
+    /// old three-part split saw `2026.1.0-rc1` as four parts, returned
+    /// `None`, and `detect_mise` classified a current build as
+    /// `MISE_TOO_OLD` — sending the user into guided install.
+    #[test]
+    fn extract_date_accepts_a_prerelease_suffix() {
+        let (date, [y, m, d]) = extract_date("2026.1.0-rc1").expect("an rc build has a date");
+        assert_eq!(date, "2026.1.0");
+        assert_eq!((y, m, d), (2026, 1, 0));
+
+        // The real version string shape: head, platform, build date.
+        let (date, _) =
+            extract_date("2026.1.0-rc1 macos-arm64 (2026-01-02)").expect("rc version string");
+        assert_eq!(date, "2026.1.0");
+        assert!(meets_minimum("2026.1.0-rc1", MIN_MISE_VERSION));
+    }
+
+    /// Issue #289: the registry table retry may not run for a genuine
+    /// failure. `COMMAND_FAILED` with exit 1 is mise's answer, not a
+    /// reason for a second 120 s read that overwrites its stderr.
+    #[test]
+    fn registry_fallback_applies_only_to_usage_and_parse_failures() {
+        assert!(registry_fallback_applies(code::PARSE_FAILED, Some(0)));
+        assert!(
+            registry_fallback_applies(code::COMMAND_FAILED, Some(2)),
+            "clap exits 2 for an unknown flag: this mise has no `--json`"
+        );
+        assert!(!registry_fallback_applies(code::COMMAND_FAILED, Some(1)));
+        assert!(!registry_fallback_applies(code::COMMAND_FAILED, None));
+        assert!(!registry_fallback_applies(code::TIMEOUT, None));
+        assert!(!registry_fallback_applies(code::MISE_NOT_FOUND, None));
     }
 
     #[test]

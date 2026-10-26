@@ -89,6 +89,7 @@ That real-Windows pass is now done for the whole surface, not just the shell pro
 - **Locating mise scans `PATH`** after the well-known candidates: a scoop/winget mise on Windows or `/usr/bin/mise` on Linux lives only there.
 - **An echo must show the branch the executor takes** — the guided install runs `irm … | iex` on Windows and `curl … | sh` elsewhere, so the echoed line is platform-derived too. `npm run lint:install-echo-parity` fails the build when the frontend's copy and `src-tauri/src/install.rs` disagree.
 - **Echo quoting is shell quoting** (single quotes; `'\''` on POSIX, `''` in PowerShell), not JSON quoting: the panel promises a line the user can paste, and `$HOME`, `$(…)`, backticks and `!` change meaning in a shell even though they are inert in argv.
+- **System binaries are addressed by absolute path on every platform** (issues #253, #289): `%SystemRoot%\System32` on Windows, and the standard unix locations (`/usr/bin`, `/bin`, `/usr/local/bin`, `/opt/homebrew/bin`) for `curl` and `sh`; the bare name remains only as a last-resort fallback. A bare name is looked up through `PATH`, and on POSIX an empty `PATH` entry means the current directory, so a planted binary could run with the app's privileges.
 
 ## i18n
 

@@ -83,6 +83,7 @@ Windows 的 shell 检测（#277）拆成两半：纯判定函数 `detect_windows
 - **查找 mise 时，在已知候选之后还要扫描 `PATH`**：Windows 上 scoop/winget 装的 mise、Linux 上的 `/usr/bin/mise` 只存在于 `PATH`。
 - **回显必须显示执行层真正走的分支**：引导安装在 Windows 跑 `irm … | iex`、其他平台跑 `curl … | sh`，回显行同样按平台生成。`npm run lint:install-echo-parity` 会在前端副本与 `src-tauri/src/install.rs` 不一致时让构建失败。
 - **回显引号是 shell 引号**（单引号；POSIX 用 `'\''`、PowerShell 用 `''`），不是 JSON 引号：执行面板承诺给出可粘贴的一行，而 `$HOME`、`$(…)`、反引号和 `!` 在 argv 里无害、在 shell 里却会改变含义。
+- **系统二进制在所有平台都用绝对路径寻址**（issue #253、#289）：Windows 走 `%SystemRoot%\System32`；unix 的 `curl` 与 `sh` 先找标准位置（`/usr/bin`、`/bin`、`/usr/local/bin`、`/opt/homebrew/bin`），裸名只作最后兜底。裸名会经 `PATH` 查找，而 POSIX 上空的 `PATH` 条目表示当前目录，被植入的二进制就可能带着应用权限运行。
 
 ## i18n
 

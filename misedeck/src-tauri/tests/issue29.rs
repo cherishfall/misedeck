@@ -324,6 +324,60 @@ fn registry_falls_back_to_table_parsing() {
     });
 }
 
+/// Issue #289: a genuine failure is the answer, not a reason to retry.
+/// The old condition retried every `COMMAND_FAILED` on the plain-text
+/// path, adding a second 120 s read ceiling and potentially replacing
+/// the original stderr with the fallback's own. Exit 1 here is a broken
+/// config, the shape the audit named.
+///
+/// The exit-2 (unknown `--json`) half of the condition is covered by the
+/// pure `registry_fallback_applies` unit test in `mise.rs`: the fixture
+/// can serve only one payload per slug, so it cannot make the `--json`
+/// call exit 2 and the fallback call exit 0 in the same run.
+#[test]
+#[serial]
+fn registry_does_not_retry_a_real_failure() {
+    let script = fixture_script();
+    let log = std::env::temp_dir().join(format!(
+        "misedeck-registry-calls-{}.log",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_file(&log);
+    unsafe {
+        std::env::set_var("FIXTURE_MISE_SLUG", "registry---json-command-failed");
+        std::env::set_var("FIXTURE_MISE_CALL_LOG", &log);
+    }
+    let result = mise_registry(&script, None);
+    unsafe {
+        std::env::remove_var("FIXTURE_MISE_SLUG");
+        std::env::remove_var("FIXTURE_MISE_CALL_LOG");
+    }
+    let calls = std::fs::read_to_string(&log).unwrap_or_default();
+    let _ = std::fs::remove_file(&log);
+
+    let err = result.expect_err("a broken config must surface, not fall back");
+    assert_eq!(err.code, code::COMMAND_FAILED);
+    assert!(
+        err.stderr.contains("failed to read mise config"),
+        "the original stderr must survive, got {:?}",
+        err.stderr
+    );
+    assert!(
+        err.message.contains("status 1"),
+        "the original exit must survive, got {:?}",
+        err.message
+    );
+    assert_eq!(
+        calls.lines().count(),
+        1,
+        "the table fallback must not run, calls: {calls:?}"
+    );
+    assert!(
+        calls.contains("--json"),
+        "the one call must be the --json attempt, calls: {calls:?}"
+    );
+}
+
 // ---------- plugins ls (issue #51) ----------
 
 #[test]

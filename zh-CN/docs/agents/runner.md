@@ -28,7 +28,7 @@ Runner 用后台读线程（每个 pipe 一个）按行切分，通过有界 `mp
 - **Spawn**：每个子进程进入自己的进程组——Unix `pre_exec` + `setsid()`，Windows `CREATE_NEW_PROCESS_GROUP`。
 - **终止**：Unix `killpg(pgid, SIGKILL)`；Windows `taskkill /F /T /PID`。组信号用不上时（进程离开了自己的组、`taskkill` 不存在、两者都没有的平台）保留 `child.kill()` 作为直接子进程的兜底。这才让 `sh -c "curl … | sh"` 真的停下：只杀 `sh` 时 `curl` 与安装脚本会继续写 shim，`mise run` 则会留下任务 shell。
 - **取消**在产品语义上仍是*软取消*：面板立即标记为 cancelled 并释放按钮，不等进程。但 #223 之后取消会到达 Rust——`cancel_run(runId)`——由持有该子进程的 runner 在一个轮询切片内（≤ 50 ms）拆掉进程组。kill 永远在持有 `Child` handle 的线程上执行，绝不在取消调用里执行，因此取消不可能误伤应用没有启动的 pid。
-- **退出**：Tauri 的 `RunEvent::ExitRequested` 与 `RunEvent::Exit` 会终止进程级注册表里仍然存活的每个进程组，所以安装途中关窗口不会留下后台下载。
+- **退出**：Tauri 的 `RunEvent::ExitRequested` 与 `RunEvent::Exit` 会终止进程级注册表里仍然存活的每个进程组，所以安装途中关窗口不会留下后台下载。清扫会执行两次，中间隔一段短而有界的延迟（issue #289）：子进程要等 `Command::spawn` 返回后才登记，如果退出恰好落在两者之间，第一次快照里就没有它。第二次 sweep 负责收掉这个子进程；延迟是同步的，因为 `Exit` 在进程结束前立即触发，分离的定时线程不保证能跑到。
 - **pid 复用**：注册表只保存本进程启动且尚未回收的子进程。条目在被回收的同一步删除——回收后的 pid 可被复用——而 `try_wait` 在注册表锁内完成「回收 + 注销」两步，所以存活的条目永远指向本应用仍拥有的 pid。`terminate_all` 在锁内只取 group id 快照，释放锁之后才 kill（issue #284）：Windows 的 kill 要等 `taskkill`，它会遍历子树，每棵树可达数秒；如果在锁内等，所有 runner 线程的 `try_wait` 轮询都会在整个清扫期间停摆，关窗口就成了全应用卡死。
 
 平台说明：Windows 由 `windows-latest` CI job 做运行时覆盖，它跑的是完整套件（`cargo test --all-targets --features fixtures --no-fail-fast`）。有四条行为测试真正走 `taskkill /F /T` 路径：取消与超时杀掉孙进程（`tests/runner.rs`；fixture 改为 Rust 二进制后跨平台），以及退出清扫 `terminate_all` 与 `terminate_tree`（`process_tree.rs` 的单元测试，只有它能碰到 crate 私有的清扫函数）——后两条都由 PowerShell 子进程启动一个隐藏的 `ping` 孙进程，再用 `tasklist` 断言两个进程都已消失（#278、#284）。Unix 用同一套 `terminate_all` 测试，fixture 是 `sh` + `sleep`。
@@ -38,6 +38,8 @@ Runner 用后台读线程（每个 pipe 一个）按行切分，通过有界 `mp
 捕获型读取——`run_mise_json` 及其背后的读 helper（`mise ls`、`env`、`config ls`、`tasks`、`plugins`、`outdated`、`doctor`、`registry`、`trust --show`，以及 `detect_mise` 的版本探测）——走 `run_mise_capture`：子进程由与面板相同的 `drive_child` 循环驱动，但两条管道都以**原始字节模式**读取。stdout 直接读到 EOF，既不按 `\n` 切行，也不做单行截断，唯一上限是聚合的 `MAX_STREAM_BYTES`（2 MiB）。这是正确性要求，不是容量偏好：真实 mise 的 `ls-remote --json <tool>` 就是一行紧凑 JSON（2026.10.17 上 node 为 51,741 字节、python 为 74,716 字节），而日志路径的 8 KiB 单行上限会把它切成无法解析的前缀——每个真实工具都报 `PARSE_FAILED`（issue #282）。确实超过 2 MiB 的 payload 会明确报 `PARSE_FAILED`，而不是静默给出前缀。流式面板路径的单行上限保持不变。
 
 两种模式的错误映射一致：非零退出 + 非空 stderr → `COMMAND_FAILED`，JSON 解析失败 → `PARSE_FAILED`，超时 → `TIMEOUT`。
+
+唯一会二次尝试的读取是 `mise registry`——它的明文表格回退是给没有 `--json` 的 mise 准备的。只有 usage 错误（exit 2）或无法解析的 JSON 才会重试；真正的失败会带着自己的 stderr 和退出码返回，而不是再等一个只读上限、再把原始错误覆盖掉（issue #289）。
 
 ## 测试
 

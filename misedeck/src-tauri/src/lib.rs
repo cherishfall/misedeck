@@ -372,6 +372,17 @@ async fn mise_self_update(
     }
 }
 
+/// The `MISE_BINARY` lock, surviving poisoning. The cache holds one
+/// `Option<PathBuf>` and no partial invariant, so there is nothing a
+/// poison could have corrupted — and `expect` in command code is a bug
+/// (docs/agents/conventions.md). Same pattern as the process-tree
+/// registry, whose teardown must also never panic (#289).
+fn mise_binary_cache() -> std::sync::MutexGuard<'static, Option<PathBuf>> {
+    MISE_BINARY
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 /// Resolve the mise binary path, populating the cache on first call.
 /// Returns `Err(AppError)` (wrapped in the supplied closure) when the
 /// binary cannot be located.
@@ -379,15 +390,12 @@ fn resolve_mise_binary<F>(on_err: F) -> Result<PathBuf, AppError>
 where
     F: FnOnce(AppError) -> AppError,
 {
-    let path = {
-        let cached = MISE_BINARY.lock().expect("mise path mutex poisoned");
-        cached.clone()
-    };
+    let path = { mise_binary_cache().clone() };
     match path {
         Some(p) => Ok(p),
         None => match locate_mise() {
             Ok(p) => {
-                *MISE_BINARY.lock().expect("mise path mutex poisoned") = Some(p.clone());
+                *mise_binary_cache() = Some(p.clone());
                 Ok(p)
             }
             Err(e) => Err(on_err(e)),
@@ -399,7 +407,7 @@ where
 /// again. Used when a cached path stops resolving (mise reinstalled or
 /// moved while the app was running).
 fn invalidate_mise_binary() {
-    *MISE_BINARY.lock().expect("mise path mutex poisoned") = None;
+    *mise_binary_cache() = None;
 }
 
 /// Warm the `MISE_BINARY` cache with one probe, off the caller's thread
@@ -1042,9 +1050,14 @@ pub fn run() {
         // window-close and app-quit paths; `Exit` is the last chance
         // before the process leaves. Both are idempotent — the registry
         // drains what it kills, and only pids this app started are in it.
+        //
+        // The sweep runs twice (issue #289): a child spawned between
+        // `Command::spawn` and its registry insertion is invisible to
+        // the first snapshot, so a second sweep after a short grace
+        // collects it. See `process_tree::terminate_all_with_grace`.
         .run(|_app, event| match event {
             tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit => {
-                process_tree::terminate_all();
+                process_tree::terminate_all_with_grace();
             }
             #[cfg(target_os = "macos")]
             tauri::RunEvent::Ready | tauri::RunEvent::Resumed => {
