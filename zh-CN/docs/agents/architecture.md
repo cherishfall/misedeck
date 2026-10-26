@@ -43,6 +43,6 @@ React UI (src/)
 - **i18n**：react-i18next；资源位于 `src/i18n/en.json` 和 `src/i18n/zh-CN.json`，扁平字符串 ID。
 - **服务端状态**：TanStack Query v5；缓存键 = `[directoryContext, queryName, params]`。
 - **本地状态**：只用 React state/context。不用 Redux，不用 zustand。
-- **样式**：设计 token 以 CSS 自定义属性集中在单个 tokens 文件中 + 每个组件使用 CSS modules。不使用 CSS 框架。
+- **样式**：设计 token 以 CSS 自定义属性集中在单个 tokens 文件中 + 每个组件使用 CSS modules。不使用 CSS 框架。逐元素的动态值（执行面板高度、表格列宽、浮层坐标）一律走 React 的 `style` 属性，绝不走被解析的内联形式。应用在 `default-src 'self'` 下发布（`src-tauri/tauri.conf.json`），而 dev 经 `devUrl` 没有 CSP，所以这类疏漏只在 release 包暴露：在 WKWebView 与 Chromium 上用生产版 React 19 bundle 实测，CSP 会拒绝 `style="…"` 属性、内联 `<script>` / `<style>` 块、`setAttribute("style", …)`、`cssText` 和 `insertRule`，而 CSSOM 路径正常生效（issue #290）。`npm run lint:csp-inline`（接入 `npm run ci`）在 `index.html` 与 `src/**` 中拒绝这些被拒形式；首屏前的主题 bootstrap 因此是 `public/` 下的普通脚本。
 - **Rust**：tauri 2 stable，serde/serde_json，tokio 用于进程生成。向执行面板流式输出使用 `tauri::ipc::Channel`，每行输出一条消息。任何新 crate 都需要在 PR 中说明理由。
 - **Directory context 类型**：`enum DirContext { Global, Dir(PathBuf) }`，序列化到前端为 `{ kind: "global" } | { kind: "dir", path: string }`。

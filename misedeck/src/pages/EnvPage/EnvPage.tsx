@@ -84,6 +84,16 @@ function miseEnvUnsetArgs(key: string, cwd: string | null): string[] {
 
 // ---------- Page ----------
 
+// Sort and filter keys live at module scope so their identity is
+// stable: the shared Table's sort memo and `useTableFilter`'s memo key
+// on these functions, and an inline arrow rebuilt every render made both
+// recompute on every frame (issue #290).
+const envNameOf = (r: EnvRow) => r.name;
+const envValueOf = (r: EnvRow) => r.value;
+const envSourceOf = (r: EnvRow) => `${r.source} ${r.sourceDetail ?? ""}`.trim();
+const envSearchText = (r: EnvRow) =>
+  [r.name, r.value, r.sourceDetail ?? "", r.sourcePath ?? ""].join("\n");
+
 export function EnvPage() {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
@@ -197,9 +207,7 @@ export function EnvPage() {
 
   // Text filter over the full row set (issue #106), shared with the
   // tools / tasks / settings tables via `useTableFilter`.
-  const filter = useTableFilter(envRows, (r) =>
-    [r.name, r.value, r.sourceDetail ?? "", r.sourcePath ?? ""].join("\n"),
-  );
+  const filter = useTableFilter(envRows, envSearchText);
 
   // Mise-missing or list-loading state. The list-level gate (issue
   // #146) covers the `mise env` read too: while it is pending — first
@@ -236,7 +244,7 @@ export function EnvPage() {
     {
       key: "name",
       header: t(I18N_KEYS.env.columns.name),
-      sortValue: (r) => r.name,
+      sortValue: envNameOf,
       cell: (r) => <Tooltip text={r.name}><span className={styles.cellName}>{r.name}</span></Tooltip>,
       // 190px (issue #265): trimmed from 220px so the table fits the
       // default window's content column; long names ellipsize and the
@@ -246,7 +254,7 @@ export function EnvPage() {
     {
       key: "value",
       header: t(I18N_KEYS.env.columns.value),
-      sortValue: (r) => r.value,
+      sortValue: envValueOf,
       // Declared 320px (issue #225) so the head-elision budget below is
       // measured against a known column width, and the table's min-width
       // can equal the sum of its declared columns (issue #90 pattern).
@@ -267,7 +275,7 @@ export function EnvPage() {
     {
       key: "source",
       header: t(I18N_KEYS.env.columns.source),
-      sortValue: (r) => `${r.source} ${r.sourceDetail ?? ""}`.trim(),
+      sortValue: envSourceOf,
       cell: (r) => <EnvSourceCell row={r} />,
       // 190px (issue #265): trimmed from 220px to fit the default
       // window's content column. The path head-elides and the badge row

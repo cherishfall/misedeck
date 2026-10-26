@@ -114,6 +114,16 @@ function isConfigSource(source: EnvSource): boolean {
 
 // ---------- Page ----------
 
+// Sort keys live at module scope so their identity is stable: the
+// shared Table's sort memo keys on them, and an inline arrow rebuilt
+// every render made the sort recompute on every frame (issue #290).
+const previewToolOf = (r: ToolRow) => r.tool;
+const previewToolVersionOf = (r: ToolRow) => r.version;
+const previewToolSourceOf = (r: ToolRow) => r.source ?? "";
+const previewEnvNameOf = (r: EnvRow) => r.name;
+const previewEnvValueOf = (r: EnvRow) => r.value;
+const previewEnvSourceOf = (r: EnvRow) => `${r.source} ${r.sourceDetail ?? ""}`.trim();
+
 export function DirectoryPreview() {
   const { t } = useTranslation();
   const { cwd, setDirectory } = useDirectory();
@@ -270,7 +280,7 @@ export function DirectoryPreview() {
       header: t(I18N_KEYS.preview.columns.tool),
       width: "160px",
       minWidth: "120px",
-      sortValue: (r) => r.tool,
+      sortValue: previewToolOf,
       cell: (r) => (
         <Tooltip text={r.tool}>
           <span className={styles.cellTool}>
@@ -283,7 +293,7 @@ export function DirectoryPreview() {
       key: "version",
       header: t(I18N_KEYS.preview.columns.version),
       width: "120px",
-      sortValue: (r) => r.version,
+      sortValue: previewToolVersionOf,
       sortVersion: true,
       cell: (r) => <Tooltip text={r.version}><span className={styles.cellVersion}>{r.version}</span></Tooltip>,
     },
@@ -294,7 +304,7 @@ export function DirectoryPreview() {
       // (issue #274); the tools table floor moves to 440px.
       width: "160px",
       minWidth: "100px",
-      sortValue: (r) => r.source ?? "",
+      sortValue: previewToolSourceOf,
       cell: (r) => {
         // No config-file source — mise never said where this row came
         // from, so the cell claims nothing: a dim "—" (issue #224),
@@ -329,14 +339,14 @@ export function DirectoryPreview() {
     {
       key: "name",
       header: t(I18N_KEYS.preview.columns.name),
-      sortValue: (r) => r.name,
+      sortValue: previewEnvNameOf,
       cell: (r) => <Tooltip text={r.name}><span className={styles.cellEnvName}>{r.name}</span></Tooltip>,
       width: "240px",
     },
     {
       key: "value",
       header: t(I18N_KEYS.preview.columns.value),
-      sortValue: (r) => r.value,
+      sortValue: previewEnvValueOf,
       cell: (r) => (
         <Tooltip text={r.value}>
           <span className={styles.cellEnvValue}>
@@ -349,7 +359,7 @@ export function DirectoryPreview() {
       key: "source",
       header: t(I18N_KEYS.preview.columns.source),
       width: "160px",
-      sortValue: (r) => `${r.source} ${r.sourceDetail ?? ""}`.trim(),
+      sortValue: previewEnvSourceOf,
       cell: (r) => {
         const label =
           r.source === "tool" && r.sourceDetail

@@ -87,6 +87,11 @@ export function ExecutionPanel() {
 
   // Drag the panel's top edge to resize: moving up grows the log. Same
   // pointer pattern as the table column resize (issue #104).
+  //
+  // The window listeners come off on pointerup / pointercancel, and the
+  // unmount effect below covers the case where the panel goes away
+  // mid-drag (issue #290).
+  const endGestureRef = useRef<(() => void) | null>(null);
   const beginHeightResize = (e: ReactPointerEvent<HTMLDivElement>) => {
     e.preventDefault();
     const startY = e.clientY;
@@ -105,7 +110,9 @@ export function ExecutionPanel() {
       window.removeEventListener("pointerup", onEnd);
       window.removeEventListener("pointercancel", onEnd);
       document.body.style.userSelect = previousUserSelect;
+      endGestureRef.current = null;
     };
+    endGestureRef.current = onEnd;
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onEnd);
     window.addEventListener("pointercancel", onEnd);
@@ -140,6 +147,15 @@ export function ExecutionPanel() {
       if (copiedTimerRef.current !== null) {
         window.clearTimeout(copiedTimerRef.current);
       }
+    },
+    [],
+  );
+
+  // A drag still in flight when the panel unmounts would otherwise leak
+  // its window listeners and the body's `user-select: none` lock (#290).
+  useEffect(
+    () => () => {
+      endGestureRef.current?.();
     },
     [],
   );

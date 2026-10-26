@@ -54,6 +54,13 @@ function misePluginsUninstallArgs(name: string): string[] {
   return ["plugins", "uninstall", name];
 }
 
+// Sort keys live at module scope so their identity is stable: the
+// shared Table's sort memo keys on them, and an inline arrow rebuilt
+// every render made the sort recompute on every frame (issue #290).
+const pluginNameOf = (p: InstalledPlugin) => p.name;
+const pluginSourceOf = (p: InstalledPlugin) => p.source ?? "";
+const pluginRefOf = (p: InstalledPlugin) => [p.ref, p.sha].filter(Boolean).join(" ");
+
 export function PluginsPage() {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
@@ -179,7 +186,7 @@ export function PluginsPage() {
       // horizontal scroller.
       width: "150px",
       minWidth: "110px",
-      sortValue: (p) => p.name,
+      sortValue: pluginNameOf,
       cell: (p) => (
         <Tooltip text={p.name}>
           <span className={styles.cellTool}>{p.name}</span>
@@ -189,7 +196,7 @@ export function PluginsPage() {
     {
       key: "source",
       header: t(I18N_KEYS.plugins.columns.source),
-      sortValue: (p) => p.source ?? "",
+      sortValue: pluginSourceOf,
       // The flex column: no declared width, so it absorbs the leftover
       // space and ellipsizes the URL head (tooltip carries the full URL).
       cell: (p) =>
@@ -207,7 +214,7 @@ export function PluginsPage() {
       // "HEAD" ellipsizes its tail behind the tooltip.
       width: "180px",
       minWidth: "140px",
-      sortValue: (p) => [p.ref, p.sha].filter(Boolean).join(" "),
+      sortValue: pluginRefOf,
       // A plugin's checkout identity (issue #275): the ref mise tracked
       // and the short commit it resolved to. Both come verbatim from
       // `plugins ls --urls`; a plugin with no git data renders the

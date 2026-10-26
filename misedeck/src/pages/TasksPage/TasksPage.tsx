@@ -167,6 +167,17 @@ function miseTasksAddArgs(
 
 // ---------- Page ----------
 
+// Sort and filter keys live at module scope so their identity is
+// stable: the shared Table's sort memo and `useTableFilter`'s memo key
+// on these functions, and an inline arrow rebuilt every render made both
+// recompute on every frame (issue #290).
+const taskDescriptionOf = (r: TaskRow) => r.description ?? "";
+const taskNameOf = (r: TaskRow) => r.name;
+const taskRunOf = (r: TaskRow) => r.run ?? "";
+const taskDependsOf = (r: TaskRow) => r.depends.join(", ");
+const taskSearchText = (r: TaskRow) =>
+  [r.name, r.run, r.description, r.depends.join(" ")].join("\n");
+
 export function TasksPage() {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
@@ -460,21 +471,19 @@ export function TasksPage() {
   // need `--hidden`, which the hint rules bar as an internal flag).
   const taskRows: TaskRow[] = useMemo(() => {
     if (!tasks.data) return [];
-    return tasks.data.map((t) => ({
-      id: t.name,
-      name: t.name,
-      run: taskRunDisplay(t.run),
-      description: t.description,
-      depends: t.depends,
-      editBlock: taskEditBlock(t, cwd),
+    return tasks.data.map((task) => ({
+      id: task.name,
+      name: task.name,
+      run: taskRunDisplay(task.run),
+      description: task.description,
+      depends: task.depends,
+      editBlock: taskEditBlock(task, cwd),
     }));
   }, [tasks.data, cwd]);
 
   // Text filter over the full row set (issue #106), shared with the
   // tools / env / settings tables via `useTableFilter`.
-  const filter = useTableFilter(taskRows, (r) =>
-    [r.name, r.run, r.description, r.depends.join(" ")].join("\n"),
-  );
+  const filter = useTableFilter(taskRows, taskSearchText);
 
   // The currently-edited task — used to inject the edit form
   // below the table so the user can see what they are editing
@@ -553,7 +562,7 @@ export function TasksPage() {
     // at 900×600 the header and body collapsed to 0 px.
     width: "140px",
     minWidth: "120px",
-    sortValue: (r) => r.description ?? "",
+    sortValue: taskDescriptionOf,
     cell: (r) =>
       r.description ? (
         <span className={styles.cellDescription}>{r.description}</span>
@@ -569,7 +578,7 @@ export function TasksPage() {
       header: t(I18N_KEYS.tasks.columns.name),
       width: "168px",
       minWidth: "140px",
-      sortValue: (r) => r.name,
+      sortValue: taskNameOf,
       cell: (r) => (
         <span className={styles.nameCell}>
           <Tooltip text={r.name}>
@@ -586,7 +595,7 @@ export function TasksPage() {
       header: t(I18N_KEYS.tasks.columns.run),
       width: "200px",
       minWidth: "160px",
-      sortValue: (r) => r.run ?? "",
+      sortValue: taskRunOf,
       cell: (r) =>
         r.run ? (
           <Tooltip text={r.run}>
@@ -604,7 +613,7 @@ export function TasksPage() {
       header: t(I18N_KEYS.tasks.columns.depends),
       width: "165px",
       minWidth: "120px",
-      sortValue: (r) => r.depends.join(", "),
+      sortValue: taskDependsOf,
       cell: (r) =>
         r.depends.length > 0 ? (
           <span className={styles.cellDepends}>

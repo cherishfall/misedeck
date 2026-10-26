@@ -41,6 +41,12 @@ interface ToolsetRow {
   id: string;
 }
 
+// Sort keys live at module scope so their identity is stable: the
+// shared Table's sort memo keys on them, and an inline arrow rebuilt
+// every render made the sort recompute on every frame (issue #290).
+const toolsetToolOf = (r: ToolsetRow) => r.tool;
+const toolsetVersionOf = (r: ToolsetRow) => r.version;
+
 export function DoctorPage() {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
@@ -240,13 +246,13 @@ function DoctorContent({
     {
       key: "tool",
       header: t(I18N_KEYS.doctor.columns.tool),
-      sortValue: (r) => r.tool,
+      sortValue: toolsetToolOf,
       cell: (r) => <Tooltip text={r.tool}><span className={styles.cellTool}>{r.tool}</span></Tooltip>,
     },
     {
       key: "version",
       header: t(I18N_KEYS.doctor.columns.version),
-      sortValue: (r) => r.version,
+      sortValue: toolsetVersionOf,
       sortVersion: true,
       cell: (r) => <Tooltip text={r.version}><span className={styles.cellVersion}>{r.version}</span></Tooltip>,
     },

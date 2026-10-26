@@ -205,3 +205,34 @@ test("a run that fails while the panel is closed opens it and reports the failur
     "the header states the failure",
   );
 });
+
+test("a resize drag still in flight is torn down when the panel unmounts", async (t) => {
+  t.after(cleanup);
+  ctx = null;
+  localStorage.clear();
+
+  const { unmount } = renderPanel();
+  await act(async () => {
+    ctl().openPanel();
+  });
+
+  // jsdom has no PointerEvent; a bubbling MouseEvent of the same type
+  // reaches the React handler with the coordinates the drag reads.
+  act(() => {
+    screen.getByRole("separator").dispatchEvent(
+      new MouseEvent("pointerdown", { bubbles: true, cancelable: true, clientY: 400 }),
+    );
+  });
+  assert.equal(
+    document.body.style.userSelect,
+    "none",
+    "the drag locks text selection for its duration",
+  );
+
+  unmount();
+  assert.equal(
+    document.body.style.userSelect,
+    "",
+    "the window listeners and the body lock do not outlive the panel (issue #290)",
+  );
+});

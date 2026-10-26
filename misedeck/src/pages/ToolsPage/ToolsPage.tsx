@@ -169,6 +169,18 @@ function toolBackend(tool: string): string | undefined {
 
 // ---------- Page ----------
 
+// Sort and filter keys live at module scope so their identity is
+// stable: the shared Table's sort memo and `useTableFilter`'s memo key
+// on these functions, and an inline arrow rebuilt every render made both
+// recompute on every frame (issue #290).
+const toolBackendOf = (r: ToolRow) => r.backend ?? "";
+const toolNameOf = (r: ToolRow) => r.tool;
+const toolVersionOf = (r: ToolRow) => r.version;
+const toolRequestedOf = (r: ToolRow) => r.requested;
+const toolSourceOf = (r: ToolRow) => r.source;
+const toolSearchText = (r: ToolRow) =>
+  [r.tool, r.version, r.requested, r.backend ?? "", r.source, r.latest].join("\n");
+
 export function ToolsPage() {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
@@ -383,9 +395,7 @@ export function ToolsPage() {
 
   // Text filter over the full row set (issue #106); sorting applies to
   // the filtered rows inside the Table.
-  const filter = useTableFilter(rows, (r) =>
-    [r.tool, r.version, r.requested, r.backend ?? "", r.source, r.latest].join("\n"),
-  );
+  const filter = useTableFilter(rows, toolSearchText);
 
   // The use-version dropdown (issue #132) lists exactly the tool's
   // installed versions from the live `mise ls` read — picking one runs
@@ -441,7 +451,7 @@ export function ToolsPage() {
     // 90px (issue #265): backend names are short identifiers, so the
     // column only has to hold its header plus the sort glyph.
     width: "90px",
-    sortValue: (r) => r.backend ?? "",
+    sortValue: toolBackendOf,
     cell: (r) =>
       r.backend !== undefined ? (
         <Badge variant="info" data>{r.backend}</Badge>
@@ -460,7 +470,7 @@ export function ToolsPage() {
       // Tooltip above carries the full identifier.
       width: "120px",
       minWidth: "120px",
-      sortValue: (r) => r.tool,
+      sortValue: toolNameOf,
       cell: (r) => (
         <span className={styles.cellTool}>
           <Tooltip text={r.tool}>
@@ -487,7 +497,7 @@ export function ToolsPage() {
       // first, never the chip.
       width: "220px",
       minWidth: "96px",
-      sortValue: (r) => r.version,
+      sortValue: toolVersionOf,
       sortVersion: true,
       cell: (r) => (
         <span className={styles.versionCell}>
@@ -523,7 +533,7 @@ export function ToolsPage() {
       key: "requested",
       header: t(I18N_KEYS.tools.columns.requested),
       width: "130px",
-      sortValue: (r) => r.requested,
+      sortValue: toolRequestedOf,
       cell: (r) =>
         // An orphan row (no Config file requests this tool) shows its
         // missing request as a dim "—" plus an orphan badge; the Tooltip
@@ -550,7 +560,7 @@ export function ToolsPage() {
       // `.config` directory segment survives head-elision and stays
       // separable from a project config — see `paths.ts`.
       width: "216px",
-      sortValue: (r) => r.source,
+      sortValue: toolSourceOf,
       // The file name identifies the source, so elide the head of long
       // paths (issue #216); the tooltip keeps the full value. The budget
       // matches the 216px column — see `SOURCE_CELL_CHARS`.

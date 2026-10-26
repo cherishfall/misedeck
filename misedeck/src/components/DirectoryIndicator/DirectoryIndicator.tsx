@@ -18,7 +18,7 @@
 // owns primary and the picker drops to secondary (issue #228). The
 // shared pick handler lives in `directory/pickDirectory.ts`.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { I18N_KEYS } from "../../i18n/keys";
@@ -27,20 +27,15 @@ import { pickDirectory } from "../../directory/pickDirectory";
 import { probeDirectory } from "../../api/directory";
 import type { DirectoryProbe } from "../../utils/directoryAvailability";
 import { usePageRefresh } from "../PageShell/pageRefresh";
-import {
-  useActivation,
-  type OpenTerminalOutcome,
-} from "../../state/activationContext";
+import { useActivation } from "../../state/activationContext";
 
 import { Button } from "../Button/Button";
 import { IconButton } from "../IconButton/IconButton";
 import { FloatingMenu } from "../FloatingMenu";
 import { Tooltip } from "../Tooltip/Tooltip";
 
+import { useOpenOutcomeHint, type OutcomeHintFormatter } from "./useOpenOutcomeHint";
 import styles from "./DirectoryIndicator.module.css";
-
-/** How long the strip's hint line stays on screen. */
-const HINT_DISMISS_MS = 4000;
 
 interface DirectoryIndicatorProps {
   /** Explicit render mode. Passed by the parent from the directory
@@ -62,50 +57,27 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
   // The strip's single transient acknowledgement line (issue #228): the
   // open-in-terminal outcome and a failed directory pick both read
   // through it, so there is one hint channel instead of one per action.
-  const [hint, setHint] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
-  const hintTimer = useRef<number | null>(null);
-  const clearHintTimer = () => {
-    if (hintTimer.current !== null) {
-      window.clearTimeout(hintTimer.current);
-      hintTimer.current = null;
-    }
-  };
-  const showHint = useCallback((kind: "ok" | "error", text: string) => {
-    clearHintTimer();
-    setHint({ kind, text });
-    hintTimer.current = window.setTimeout(() => {
-      setHint(null);
-      hintTimer.current = null;
-    }, HINT_DISMISS_MS);
-  }, []);
-
-  const lastOutcomeRef = useRef<OpenTerminalOutcome | null>(null);
-  useEffect(() => {
-    if (!openOutcome) return;
-    if (lastOutcomeRef.current === openOutcome) return;
-    lastOutcomeRef.current = openOutcome;
-    consumeOpenOutcome();
-    if (openOutcome.kind === "ok") {
-      const o = openOutcome.outcome;
-      showHint(
-        "ok",
-        t(I18N_KEYS.activation.openInTerminalSuccess, {
+  // The outcome-driven half lives in `useOpenOutcomeHint` so its 4 s
+  // dismiss lifecycle is testable (issue #290).
+  const formatOutcome = useCallback<OutcomeHintFormatter>((outcome) => {
+    if (outcome.kind === "ok") {
+      const o = outcome.outcome;
+      return {
+        kind: "ok",
+        text: t(I18N_KEYS.activation.openInTerminalSuccess, {
           terminal: o.terminalApp,
           path: o.path,
         }),
-      );
-    } else {
-      const path = openOutcome.path ?? "";
-      showHint(
-        "error",
-        t(I18N_KEYS.activation.openInTerminalError, { path }),
-      );
+      };
     }
-    // Unmount (or a new outcome) must not leave the dismiss timer
-    // holding a stale setState (issue #209) — same cleanup contract as
-    // CopyButton / Tooltip.
-    return clearHintTimer;
-  }, [openOutcome, consumeOpenOutcome, t, showHint]);
+    const path = outcome.path ?? "";
+    return { kind: "error", text: t(I18N_KEYS.activation.openInTerminalError, { path }) };
+  }, [t]);
+  const { hint, show: showHint, dismiss: dismissHint } = useOpenOutcomeHint(
+    openOutcome,
+    consumeOpenOutcome,
+    formatOutcome,
+  );
 
   // A failed directory dialog reads through the hint line below; a
   // cancel stays silent (nothing happened to explain) and a confirmed
@@ -114,8 +86,7 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
     void pickDirectory(
       t,
       (picked) => {
-        clearHintTimer();
-        setHint(null);
+        dismissHint();
         setDirectory(picked);
       },
       { onError: (message) => showHint("error", message) },

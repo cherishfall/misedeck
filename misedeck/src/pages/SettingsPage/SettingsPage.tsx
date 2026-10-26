@@ -86,6 +86,17 @@ function miseSettingsUnsetArgs(key: string, cwd: string | null): string[] {
 
 // ---------- Page ----------
 
+// Sort and filter keys live at module scope so their identity is
+// stable: the shared Table's sort memo and `useTableFilter`'s memo key
+// on these functions, and an inline arrow rebuilt every render made both
+// recompute on every frame (issue #290).
+const settingKeyOf = (r: SettingsItem) => r.key;
+const settingValueOf = (r: SettingsItem) => formatValue(r.value);
+const settingTypeOf = (r: SettingsItem) => r.type ?? "";
+const settingSourceOf = (r: SettingsItem) => r.source ?? "";
+const settingSearchText = (r: SettingsItem) =>
+  [r.key, formatValue(r.value), r.type ?? "", r.source ?? ""].join("\n");
+
 export function SettingsPage() {
   const { t } = useTranslation();
   const { cwd } = useDirectory();
@@ -179,9 +190,7 @@ export function SettingsPage() {
 
   // Text filter over the full row set (issue #106), shared with the
   // tools / env / tasks tables via `useTableFilter`.
-  const filter = useTableFilter(settings.data ?? [], (r) =>
-    [r.key, formatValue(r.value), r.type ?? "", r.source ?? ""].join("\n"),
-  );
+  const filter = useTableFilter(settings.data ?? [], settingSearchText);
 
   // Empty-state copy (issue #218): an active filter explains itself; the
   // default (--all off) view points at the switch, because mise's
@@ -239,7 +248,7 @@ export function SettingsPage() {
       header: t(I18N_KEYS.settings.columns.key),
       width: "240px",
       minWidth: "160px",
-      sortValue: (r) => r.key,
+      sortValue: settingKeyOf,
       cell: (r) => <Tooltip text={r.key}><span className={styles.cellKey}>{r.key}</span></Tooltip>,
     },
     {
@@ -249,7 +258,7 @@ export function SettingsPage() {
       // column the leftover space — zero at 900×600, hiding every value.
       width: "200px",
       minWidth: "140px",
-      sortValue: (r) => formatValue(r.value),
+      sortValue: settingValueOf,
       cell: (r) => (
         <Tooltip text={formatValue(r.value)}>
           <span className={styles.cellValue}>{formatValue(r.value)}</span>
@@ -260,14 +269,14 @@ export function SettingsPage() {
       key: "type",
       header: t(I18N_KEYS.settings.columns.type),
       width: "84px",
-      sortValue: (r) => r.type ?? "",
+      sortValue: settingTypeOf,
       cell: (r) => (r.type ? <Badge variant="info" data>{r.type}</Badge> : <span className={styles.dim}>—</span>),
     },
     {
       key: "source",
       header: t(I18N_KEYS.settings.columns.source),
       width: "160px",
-      sortValue: (r) => r.source ?? "",
+      sortValue: settingSourceOf,
       // Elide the head of long paths so the file name stays visible
       // (issue #216); the tooltip carries the full value. The budget
       // matches the 160px column — see `SOURCE_CELL_CHARS`.

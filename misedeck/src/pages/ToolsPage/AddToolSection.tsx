@@ -48,7 +48,15 @@
 // `temurin-jre-21.0.0+35.0.LTS`) where the old segment comparator
 // returned 0 for everything (beta12 2-c Q3).
 
-import { useEffect, useMemo, useRef, useState, useId, type KeyboardEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useId,
+  type KeyboardEvent,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
@@ -77,6 +85,7 @@ import { compareToolVersions, hasUpgradeTarget } from "../../utils/versions";
 import tableStyles from "../../components/Table/Table.module.css";
 
 import { buildAvailableRows, type AvailableRow } from "./availableRows";
+import { dispatchOnce } from "./lsRemoteInFlight";
 import styles from "./AddToolSection.module.css";
 
 /** Suggestions shown at once under the registry search box. */
@@ -159,13 +168,13 @@ export function AddToolSection({
   const readIntoCache = useReadIntoCache();
   const remote = useParsedLsRemote(selectedTool ?? "");
 
-  const selectTool = (tool: string) => {
+  const selectTool = useCallback((tool: string) => {
     setQuery(tool);
     setSelectedTool(tool);
     setVersionQuery("");
     setInstalledPage(1);
     setAvailablePage(1);
-  };
+  }, []);
 
   // The main table's "Manage versions" button reaches this region only
   // through the `focusTool` prop (#189). The `seq` bump is the trigger —
@@ -184,7 +193,7 @@ export function AddToolSection({
     requestAnimationFrame(() => {
       sectionRef.current?.scrollIntoView({ block: "start" });
     });
-  }, [focusTool]);
+  }, [focusTool, selectTool]);
 
   // One cached `ls-remote` per (directory, tool): dispatch only when a
   // tool is picked and the cache has nothing yet. The read runs in the
@@ -202,10 +211,18 @@ export function AddToolSection({
   useEffect(() => {
     if (selectedTool === null) return;
     if (queryClient.getQueryData(remoteKey) !== undefined) return;
-    void readIntoCache(remoteKey, cwd, ["ls-remote", "--json", selectedTool], {
-      background: true,
-      readOnly: true,
-    });
+    // The cache answers "has a read finished", not "is one running": a
+    // deselect / reselect inside the read's window used to fire the same
+    // `ls-remote` again (issue #290). The per-key in-flight map closes
+    // that gap, so the command still runs once per (directory, tool).
+    void dispatchOnce(
+      `${cwd ?? "global"}\u0000${selectedTool}`,
+      () =>
+        readIntoCache(remoteKey, cwd, ["ls-remote", "--json", selectedTool], {
+          background: true,
+          readOnly: true,
+        }),
+    );
   }, [
     remoteKey,
     cwd,

@@ -8,7 +8,7 @@
 // issue #105); version columns set `sortVersion` for segment-wise
 // numeric comparison.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   HTMLAttributes,
   PointerEvent as ReactPointerEvent,
@@ -18,46 +18,12 @@ import type {
 } from "react";
 
 import styles from "./Table.module.css";
-import { compareVersions } from "../../utils/versions";
 import { loadPersistent, savePersistent } from "../../hooks/usePersistentState";
+import { sortRowsBy, type SortSpec, type SortState } from "./sortRows";
 
-/** Column sort state (issue #105): which column, which direction. */
-export interface SortState {
-  key: string;
-  direction: "asc" | "desc";
-}
-
-/**
- * Sort `rows` by the column named in `sort` (issue #105). Returns a new
- * array; a missing/unsortable column leaves the order untouched. The
- * comparator is stable (Array.prototype.sort), so callers that paginate
- * can sort the full set first and slice afterwards — and the Table
- * re-sorting its already-sorted window is a no-op.
- */
-export function sortRows<T>(
-  rows: ReadonlyArray<T>,
-  columns: ReadonlyArray<TableColumn<T>>,
-  sort: SortState | null,
-): T[] {
-  if (sort === null) return [...rows];
-  const column = columns.find((c) => c.key === sort.key);
-  if (column?.sortValue === undefined) return [...rows];
-  const extract = column.sortValue;
-  const sign = sort.direction === "asc" ? 1 : -1;
-  return [...rows].sort((a, b) => {
-    const av = extract(a);
-    const bv = extract(b);
-    let cmp: number;
-    if (column.sortVersion) {
-      cmp = compareVersions(String(av), String(bv));
-    } else if (typeof av === "number" && typeof bv === "number") {
-      cmp = av - bv;
-    } else {
-      cmp = String(av).localeCompare(String(bv));
-    }
-    return cmp * sign;
-  });
-}
+// Re-exported so `src/components/index.ts` and existing callers keep one
+// import site for the table API.
+export { sortRows, sortRowsBy, type SortSpec, type SortState } from "./sortRows";
 
 /** localStorage namespace for persisted column widths (issue #104). */
 const WIDTHS_STORAGE_PREFIX = "misedeck.tableWidths.";
@@ -164,6 +130,18 @@ export function Table<T>({
   const [overrides, setOverrides] = useState<Record<string, number>>(() =>
     storageKey !== null ? loadWidths(storageKey) : {},
   );
+  // The drag reads and writes widths through this ref, not through a
+  // state updater (issue #290): persisting from inside `setOverrides`
+  // ran a side effect in an updater, which StrictMode invokes twice.
+  const overridesRef = useRef<Record<string, number>>(overrides);
+  /** Merge one column's width into the latest map and reflect it. */
+  const applyWidth = (key: string, next: number) => {
+    const current = overridesRef.current;
+    if (current[key] === next) return;
+    const merged = { ...current, [key]: next };
+    overridesRef.current = merged;
+    setOverrides(merged);
+  };
 
   // Sort state (issue #105): controlled when the caller passes
   // `onSortChange` (it needs the same order before paginating), otherwise
@@ -179,9 +157,32 @@ export function Table<T>({
     if (onSortChange !== undefined) onSortChange(next);
     else setInternalSort(next);
   };
-  const sortedRows = useMemo(
-    () => sortRows(rows, columns, activeSort),
-    [rows, columns, activeSort],
+  // The memo keys on values, never on the page's `columns` array (issue
+  // #290): the array is rebuilt every render, so depending on it made the
+  // sort recompute on every frame. `extract` is the column's module-level
+  // `sortValue`, so the spec is reference-stable until the sort changes.
+  const sortColumn =
+    activeSort === null ? undefined : columns.find((c) => c.key === activeSort.key);
+  const sortExtract = sortColumn?.sortValue;
+  const sortByVersion = sortColumn?.sortVersion === true;
+  const sortDirection = activeSort?.direction;
+  const sortSpec = useMemo<SortSpec<T> | null>(
+    () =>
+      sortExtract === undefined || sortDirection === undefined
+        ? null
+        : { direction: sortDirection, extract: sortExtract, byVersion: sortByVersion },
+    [sortExtract, sortDirection, sortByVersion],
+  );
+  const sortedRows = useMemo(() => sortRowsBy(rows, sortSpec), [rows, sortSpec]);
+
+  // Unmount cleanup for the column drag (issue #290): the window
+  // listeners otherwise only come off on pointerup / pointercancel.
+  const endGestureRef = useRef<(() => void) | null>(null);
+  useEffect(
+    () => () => {
+      endGestureRef.current?.();
+    },
+    [],
   );
 
   const beginResize = (e: ReactPointerEvent<HTMLSpanElement>, column: TableColumn<T>) => {
@@ -196,7 +197,7 @@ export function Table<T>({
     document.body.style.userSelect = "none";
     const onMove = (ev: PointerEvent) => {
       const next = Math.max(min, Math.round(startWidth + ev.clientX - startX));
-      setOverrides((prev) => (prev[column.key] === next ? prev : { ...prev, [column.key]: next }));
+      applyWidth(column.key, next);
     };
     // `pointerup` and `pointercancel` both end the gesture (#209): a
     // cancelled drag never fires `pointerup`, which used to leave the
@@ -206,13 +207,11 @@ export function Table<T>({
       window.removeEventListener("pointerup", onEnd);
       window.removeEventListener("pointercancel", onEnd);
       document.body.style.userSelect = previousUserSelect;
-      setOverrides((prev) => {
-        if (storageKey !== null) {
-          savePersistent(storageKey, prev);
-        }
-        return prev;
-      });
+      endGestureRef.current = null;
+      // Persist once, from the latest map — never inside a state updater.
+      if (storageKey !== null) savePersistent(storageKey, overridesRef.current);
     };
+    endGestureRef.current = onEnd;
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onEnd);
     window.addEventListener("pointercancel", onEnd);
