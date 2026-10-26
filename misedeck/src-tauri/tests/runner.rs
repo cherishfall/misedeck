@@ -192,6 +192,44 @@ fn missing_binary_returns_not_found() {
     assert!(err.stderr.is_empty());
 }
 
+/// Issue #283 (audit P1-R4): a mise that exists but lost its execute bit
+/// is not a working mise. The runner must report `MISE_NOT_FOUND` — the
+/// guided-install path, and the trigger for the command boundary's
+/// re-probe — so the user never sees `COMMAND_FAILED "failed to spawn
+/// mise"` for it. unix-only: the missing execute bit is what fails the
+/// spawn, and Windows has no such bit.
+#[cfg(unix)]
+#[test]
+#[serial]
+fn non_executable_binary_returns_not_found() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = std::env::temp_dir().join(format!(
+        "misedeck-non-executable-mise-{}",
+        std::process::id()
+    ));
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let binary = dir.join("mise");
+    std::fs::write(&binary, b"#!/bin/sh\nexit 0\n").expect("write candidate");
+    std::fs::set_permissions(&binary, std::fs::Permissions::from_mode(0o644))
+        .expect("drop the execute bit");
+
+    let req = RunRequest::new(vec!["version".to_string()]);
+    let err = run_mise(&binary, &req, |_| {}).expect_err("a non-executable file must not run");
+    assert_eq!(
+        err.code,
+        code::MISE_NOT_FOUND,
+        "install guidance, not a spawn error: {err:?}"
+    );
+    assert!(
+        !err.message.contains("spawn"),
+        "the surface must not leak a spawn error: {:?}",
+        err.message
+    );
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 #[test]
 #[serial]
 fn streaming_emits_stdout_stderr_and_exit_in_order() {

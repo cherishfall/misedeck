@@ -209,14 +209,48 @@ fn probe_paths() -> Vec<PathBuf> {
 }
 
 /// Probe for a working mise binary: the well-known locations first, then
-/// every `PATH` entry (issue #229).
+/// every `PATH` entry (issue #229). A candidate that exists but cannot
+/// be executed is skipped — see `is_executable_candidate`.
 pub fn locate_mise() -> Result<PathBuf, AppError> {
-    for p in probe_paths() {
-        if p.is_file() {
-            return Ok(p);
+    first_executable(probe_paths()).ok_or_else(AppError::not_found)
+}
+
+/// The first candidate that can actually be launched, in probe order.
+fn first_executable(paths: impl IntoIterator<Item = PathBuf>) -> Option<PathBuf> {
+    paths.into_iter().find(|p| is_executable_candidate(p))
+}
+
+/// Can `path` plausibly be spawned as the mise binary?
+///
+/// On unix a regular file with no execute bit cannot be launched: the
+/// OS refuses with `EACCES`, which used to surface as the cryptic
+/// `COMMAND_FAILED "failed to spawn mise"` and neither tried the next
+/// candidate nor offered install guidance (audit P1-R4). A mise that a
+/// backup/sync tool stripped of its mode bits now falls through to the
+/// next candidate, and the run itself maps `PermissionDenied` to
+/// `MISE_NOT_FOUND` (see `mise_drive_error`) so a race between the
+/// probe and the spawn still ends in the guided-install flow.
+///
+/// `metadata()` follows symlinks (a symlinked `~/.local/bin/mise` is
+/// normal) and any of the three execute bits is enough: the kernel's
+/// full access decision (owner, group, ACLs) is deliberately not
+/// re-implemented here. Windows has no execute bit — `is_file` is the
+/// whole check there.
+fn is_executable_candidate(path: &Path) -> bool {
+    let Ok(meta) = std::fs::metadata(path) else {
+        return false;
+    };
+    if !meta.is_file() {
+        return false;
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if meta.permissions().mode() & 0o111 == 0 {
+            return false;
         }
     }
-    Err(AppError::not_found())
+    true
 }
 
 /// Extract the `YYYY.MM.DD` date prefix from a mise version string like
@@ -1112,6 +1146,17 @@ fn mise_command(mise_path: &Path, req: &RunRequest, safe_mode: bool) -> Result<C
 fn mise_drive_error(e: DriveError) -> AppError {
     match e {
         DriveError::Spawn(e) if e.kind() == std::io::ErrorKind::NotFound => AppError::not_found(),
+        // A candidate that exists but cannot be executed is not a working
+        // mise (audit P1-R4): report `MISE_NOT_FOUND` so
+        // `run_with_mise_binary` re-probes — `locate_mise` skips
+        // non-executable files — and the UI lands on install guidance
+        // instead of `COMMAND_FAILED "failed to spawn mise"`. unix-only
+        // because the execute bit this compensates for does not exist on
+        // Windows, where a spawn failure is a real access error.
+        #[cfg(unix)]
+        DriveError::Spawn(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+            AppError::not_found()
+        }
         DriveError::Spawn(e) => {
             AppError::command_failed(format!("failed to spawn mise: {e}"), String::new())
         }
@@ -1188,12 +1233,14 @@ fn run_mise_capture(
     Ok(driven.into_run_outcome())
 }
 
-/// Streaming entry point for the execution panel. Keeps the 30-minute
-/// `STREAMING_TIMEOUT` ceiling so a long install / run / self-update is
-/// reaped if the user does not cancel it first. Read-only queries must
-/// not use this — they route through `run_mise_json` /
-/// `run_mise_capture(..., READ_TIMEOUT)` so a hung process is reaped far
-/// sooner and never blocks the window (issue #46).
+/// Streaming entry point for the execution panel. Mutations and
+/// `mise run` keep the 30-minute `STREAMING_TIMEOUT` ceiling so a long
+/// install / run / self-update is reaped if the user does not cancel it
+/// first. Read-only queries must not use it — they are views the tables
+/// load and refresh on their own, have no cancel affordance, and route
+/// through `tracked_timeout(true)` → `READ_TIMEOUT` (or through
+/// `run_mise_json` / `run_mise_capture`, same ceiling) so a hung
+/// process is reaped far sooner (issue #46).
 ///
 /// This variant is not cancellable by id; the execution panel uses
 /// `run_mise_tracked`.
@@ -1202,6 +1249,19 @@ where
     F: FnMut(RunEvent) + Send + 'static,
 {
     run_mise_tracked(mise_path, req, None, on_event)
+}
+
+/// The ceiling for a panel run. One rule, one place: `run_mise_tracked`
+/// and `run_mise_tracked_read_only` differ *only* in the safe-mode and
+/// timeout pair, so pairing them here makes a read-only path keep
+/// `MISE_SAFE=1` and a read-sized deadline (audit P1-R1) impossible to
+/// get half-right.
+fn tracked_timeout(read_only: bool) -> Duration {
+    if read_only {
+        READ_TIMEOUT
+    } else {
+        STREAMING_TIMEOUT
+    }
 }
 
 /// Streaming run that `cancel_run(run_id)` can stop (issue #223). The
@@ -1220,7 +1280,14 @@ where
     // Streaming surface: mutations, `mise run`, install and trust.
     // These are already gated by the trust check in the UI layer, so
     // they must NOT run with MISE_SAFE (issue #230).
-    run_mise_timed(mise_path, req, on_event, STREAMING_TIMEOUT, run_id, false)
+    run_mise_timed(
+        mise_path,
+        req,
+        on_event,
+        tracked_timeout(false),
+        run_id,
+        false,
+    )
 }
 
 /// A read dispatched through the panel, with the same read-only
@@ -1232,6 +1299,11 @@ where
 /// exactly like the dedicated read commands do. Mutations and
 /// `mise run` keep [`run_mise_tracked`]'s unsafe mode because they
 /// evaluate the directory's config.
+///
+/// They also carry the read ceiling (`tracked_timeout(true)`), not the
+/// 30-minute streaming one: a stale NFS entry or a hung mise on a table
+/// load used to leave a zombie process and a permanent spinner with no
+/// cancel button (audit P1-R1).
 pub fn run_mise_tracked_read_only<F>(
     mise_path: &Path,
     req: &RunRequest,
@@ -1241,7 +1313,14 @@ pub fn run_mise_tracked_read_only<F>(
 where
     F: FnMut(RunEvent) + Send + 'static,
 {
-    run_mise_timed(mise_path, req, on_event, STREAMING_TIMEOUT, run_id, true)
+    run_mise_timed(
+        mise_path,
+        req,
+        on_event,
+        tracked_timeout(true),
+        run_id,
+        true,
+    )
 }
 
 /// The timed core with an explicit deadline, exposed for tests that
@@ -2872,6 +2951,114 @@ mod tests {
         // process cwd (issue #179).
         assert!(path_candidates("").is_empty());
         assert!(path_candidates("bin:relative").is_empty());
+    }
+
+    /// Issue #283 (audit P1-R4): a candidate with no execute bit cannot
+    /// be spawned, so it must be skipped instead of being chosen and
+    /// failing later as `COMMAND_FAILED "failed to spawn mise"`. A
+    /// missing file and a non-executable file both fall through to the
+    /// next candidate; when nothing is usable the probe is empty, which
+    /// `locate_mise` turns into `MISE_NOT_FOUND`.
+    #[cfg(unix)]
+    #[test]
+    fn first_executable_skips_missing_and_non_executable_candidates() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir =
+            std::env::temp_dir().join(format!("misedeck-locate-mise-283-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        let missing = dir.join("missing-mise");
+        let stripped = dir.join("stripped-mise");
+        let usable = dir.join("usable-mise");
+        for p in [&stripped, &usable] {
+            std::fs::write(p, b"#!/bin/sh\nexit 0\n").expect("write candidate");
+        }
+        std::fs::set_permissions(&stripped, std::fs::Permissions::from_mode(0o644))
+            .expect("drop the execute bit");
+        std::fs::set_permissions(&usable, std::fs::Permissions::from_mode(0o755))
+            .expect("chmod +x");
+
+        assert_eq!(
+            first_executable(vec![missing.clone(), stripped.clone(), usable.clone()]),
+            Some(usable),
+            "the probe must fall through to the first launchable candidate"
+        );
+        assert_eq!(
+            first_executable(vec![missing, stripped]),
+            None,
+            "nothing launchable is not found, never a spawn target"
+        );
+        assert_eq!(first_executable(Vec::new()), None);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Windows has no execute bit: `is_file` is the whole check, so the
+    /// filter must never reject a regular `.exe` there.
+    #[cfg(windows)]
+    #[test]
+    fn first_executable_accepts_a_regular_file_on_windows() {
+        let dir =
+            std::env::temp_dir().join(format!("misedeck-locate-mise-283-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        let missing = dir.join("missing-mise.exe");
+        let usable = dir.join("usable-mise.exe");
+        std::fs::write(&usable, b"not really an exe").expect("write candidate");
+
+        assert_eq!(
+            first_executable(vec![missing, usable.clone()]),
+            Some(usable)
+        );
+        assert_eq!(first_executable(Vec::new()), None);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Issue #283 (audit P1-R4): EACCES from spawn means the candidate
+    /// is not launchable. Reporting it as `MISE_NOT_FOUND` keeps the
+    /// guided-install surface and lets the command boundary re-probe
+    /// (skipping the file), instead of a cryptic `COMMAND_FAILED`.
+    #[cfg(unix)]
+    #[test]
+    fn spawn_permission_denied_reports_mise_not_found() {
+        let err = mise_drive_error(DriveError::Spawn(std::io::Error::from(
+            std::io::ErrorKind::PermissionDenied,
+        )));
+        assert_eq!(err.code, code::MISE_NOT_FOUND);
+        assert!(err.stderr.is_empty());
+    }
+
+    /// ... and Windows keeps its spawn failures as `COMMAND_FAILED`:
+    /// there is no execute bit to compensate for, so an access error is
+    /// a real one.
+    #[cfg(not(unix))]
+    #[test]
+    fn spawn_permission_denied_stays_command_failed_off_unix() {
+        let err = mise_drive_error(DriveError::Spawn(std::io::Error::from(
+            std::io::ErrorKind::PermissionDenied,
+        )));
+        assert_eq!(err.code, code::COMMAND_FAILED);
+        assert!(err.message.contains("failed to spawn mise"));
+    }
+
+    /// Issue #283 (audit P1-R1): reads dispatched through the panel are
+    /// views the tables load on their own, with no cancel affordance, so
+    /// they take the read ceiling — the same 2 minutes the captured read
+    /// commands already use — while mutations keep the 30-minute
+    /// streaming ceiling. Both public wrappers take their deadline from
+    /// this one helper.
+    #[test]
+    fn tracked_timeout_uses_the_read_ceiling_only_for_reads() {
+        assert_eq!(tracked_timeout(true), READ_TIMEOUT);
+        assert_eq!(tracked_timeout(false), STREAMING_TIMEOUT);
+        assert!(
+            tracked_timeout(true) < tracked_timeout(false),
+            "a read must be reaped well before a mutation's ceiling"
+        );
+        assert!(
+            READ_TIMEOUT < STREAMING_TIMEOUT,
+            "the read ceiling is only meaningful below the streaming one"
+        );
     }
 
     #[test]

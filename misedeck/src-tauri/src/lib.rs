@@ -402,6 +402,44 @@ fn invalidate_mise_binary() {
     *MISE_BINARY.lock().expect("mise path mutex poisoned") = None;
 }
 
+/// Warm the `MISE_BINARY` cache with one probe, off the caller's thread
+/// and never holding the mutex across the probe.
+///
+/// `locate_mise` stats every well-known candidate and every `PATH`
+/// entry; on a stale network mount a single stat can block for seconds,
+/// so the startup probe runs on the blocking pool (see `run`'s setup
+/// hook) instead of stalling window creation (audit P1-R3). Re-locking
+/// after the probe keeps a slow scan from queueing every command's
+/// resolution behind the same mutex.
+///
+/// This is a warm-up, not a gate: a cold cache is already a normal
+/// state — every command resolves on the blocking pool and probes when
+/// the cache is empty — so a failed or late probe changes no behaviour,
+/// only the first command's timing. An existing value always wins: it
+/// came from a real resolution (or a previous warm-up).
+fn warm_mise_cache(probe: impl FnOnce() -> Result<PathBuf, AppError>) {
+    // Cheap early exit: a command may have filled the cache between the
+    // spawn and this call. A poisoned mutex is treated the same way —
+    // there is nothing safe to warm, and commands re-probe per call.
+    if MISE_BINARY
+        .lock()
+        .map(|cache| cache.is_some())
+        .unwrap_or(true)
+    {
+        return;
+    }
+    let probed = probe();
+    let Ok(mut cache) = MISE_BINARY.lock() else {
+        return;
+    };
+    let Ok(path) = probed else {
+        return;
+    };
+    if cache.is_none() {
+        *cache = Some(path);
+    }
+}
+
 /// Run `run` against the cached mise binary, re-probing once when the
 /// runner reports `MISE_NOT_FOUND` (issue #210).
 ///
@@ -971,12 +1009,20 @@ pub fn run() {
             open_external
         ])
         .setup(|_app| {
-            let mut guard = MISE_BINARY.lock().expect("mise path mutex poisoned");
-            if guard.is_none() {
-                if let Ok(p) = locate_mise() {
-                    *guard = Some(p);
-                }
-            }
+            // Probe off the main thread (audit P1-R3): the scan stats
+            // every well-known candidate and every `PATH` entry, and on
+            // a stale network mount each stat can block for seconds —
+            // window creation used to wait for the whole scan. The cache
+            // is concurrency-safe and a cold cache is already handled by
+            // every command's blocking-pool resolve, so this changes
+            // only *when* the warm path is filled, never launch gating
+            // or the `MISE_NOT_FOUND` surface.
+            // Fire and forget: dropping the handle detaches the task, so
+            // setup returns immediately while the probe keeps running on
+            // the pool.
+            drop(tauri::async_runtime::spawn_blocking(|| {
+                warm_mise_cache(locate_mise)
+            }));
             Ok(())
         })
         .build(tauri::generate_context!())
@@ -1126,5 +1172,47 @@ mod tests {
         std::fs::write(&file, b"x").unwrap();
         assert!(!path_is_directory(file.to_str().unwrap()));
         std::fs::remove_file(&file).unwrap();
+    }
+
+    /// Issue #283 (audit P1-R3): the startup probe became a background
+    /// cache warm-up. What is testable without a Tauri app is the
+    /// warm-up's contract: it fills a cold cache, never overwrites a
+    /// value a resolution already produced (the setup hook must not
+    /// race a command's probe into a different path), and a failed
+    /// probe leaves the cache cold so the next command re-probes.
+    ///
+    /// Not covered here: that the setup hook actually runs this on
+    /// `spawn_blocking` (there is no app in a unit test) — that is
+    /// asserted by inspection, not by a test.
+    ///
+    /// One test on purpose: `MISE_BINARY` is process-global and the lib
+    /// test binary never builds an app, so the cases must not interleave.
+    #[test]
+    fn warm_mise_cache_fills_only_a_cold_cache() {
+        use std::cell::Cell;
+
+        let probed = PathBuf::from("/probed/mise");
+        *MISE_BINARY.lock().unwrap() = None;
+
+        warm_mise_cache(|| Ok(probed.clone()));
+        assert_eq!(*MISE_BINARY.lock().unwrap(), Some(probed.clone()));
+
+        // An existing value wins, and the probe is not even attempted.
+        let calls = Cell::new(0);
+        warm_mise_cache(|| {
+            calls.set(calls.get() + 1);
+            Ok(PathBuf::from("/second/mise"))
+        });
+        assert_eq!(
+            *MISE_BINARY.lock().unwrap(),
+            Some(probed),
+            "a warm cache must not be rewritten by the startup probe"
+        );
+        assert_eq!(calls.get(), 0, "a warm cache skips the filesystem scan");
+
+        // A failed probe leaves the cache cold: the next command probes.
+        *MISE_BINARY.lock().unwrap() = None;
+        warm_mise_cache(|| Err(AppError::not_found()));
+        assert_eq!(*MISE_BINARY.lock().unwrap(), None);
     }
 }
