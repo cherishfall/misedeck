@@ -200,6 +200,13 @@ the bare version (`0.2.0`, no leading `v`). The template is the
 recommended path for routine releases; the annotation is the path for
 one-off hotfix messages.
 
+**When the notes are a file, pass `--cleanup=verbatim`.** `git tag -F
+notes.md` defaults to `--cleanup=strip`, which deletes every line that
+starts with `#` — a bilingual notes file loses its `## English` /
+`## 简体中文` headings (v1.0.2's did; the published body was restored
+with `gh release edit --notes-file`). Annotations written inline with
+`-m` are unaffected because their first line is prose.
+
 The resolver is `scripts/resolve-release-notes.sh`; it only reads
 `%(contents)` when `git cat-file -t "$TAG"` reports `tag`, because a
 lightweight tag returns its commit message otherwise. It runs

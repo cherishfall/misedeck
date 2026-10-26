@@ -165,6 +165,12 @@ commit 上看到的运行列出来。它**不**重跑整套检查：那会在每
 （`0.2.0`，不带前缀 `v`）。
 常规发版推荐走模板路径；紧急修复的消息则适合用附注。
 
+**附注正文来自文件时，要加 `--cleanup=verbatim`。** `git tag -F notes.md`
+默认使用 `--cleanup=strip`，会删掉所有以 `#` 开头的行——双语的
+`## English` / `## 简体中文` 标题会整个消失（v1.0.2 就撞上了；发布的
+正文后来用 `gh release edit --notes-file` 恢复）。用 `-m` 内联写的附注
+不受影响，因为首行是正文。
+
 解析逻辑在 `scripts/resolve-release-notes.sh`：只有
 `git cat-file -t "$TAG"` 返回 `tag` 时才读取 `%(contents)`，因为轻量
 tag 会返回 commit 消息。脚本会先跑一次 `git fetch --tags --force origin`
