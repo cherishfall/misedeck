@@ -24,6 +24,13 @@ fixture —— 安装包只有 262 KB，装出来的应用打印 `no fixture for
 也没法用 `-- --bin misedeck` 控制（试过，结果一样），所以干脆让 fixture 在
 release 构建里不存在。不带这个 flag 时，集成测试会直接 panic 并打印它需要的命令。
 
+**当包里有多个 bin 目标时，裸 `cargo run` 启动哪个由 `[package].default-run`
+决定——而且它必须指向应用。** Cargo 在选择时把受 feature 门控的 fixture 也算进去，
+所以没有这个键，`cargo run` 会报 "could not determine which binary to run"，
+`npm run tauri dev` 也无法判断该监视哪个进程（#286 发现，#287 修好）。
+`scripts/check-default-run.ts`——即 `npm run ci` 里的 `npm run lint:default-run`——
+在包中有多个二进制、而 `default-run` 缺失或没有指向应用时失败。
+
 `release.yml` 的 Linux 用 `ubuntu-22.04`，不是 `ubuntu-latest`
 （issue #247）：二进制链接的是构建机的 glibc，24.04 上构建的包在
 Ubuntu 22.04 / Debian 12 上无法启动。`ci.yml` 保持 `ubuntu-latest` ——
@@ -80,8 +87,8 @@ host triple，两个 job 的条目互不覆盖）。macOS 专属代码里的 war
 这是 Windows 代码路径在 CI 中真正执行的地方——但截至 2026-10-22，它已
 不再是**唯一**的地方：Windows 代码路径如今已在真实 Windows 硬件上跑过，
 正是那次实机运行暴露了 `#222` / `#223` 的 fixture 在 Windows 上根本不可用。
-它跑的前端检查与两条 `frontend` 腿相同——`npm run ci`，即完整的 18 步
-脚本（见「前端检查只有一份清单」）——外加完整的 Rust 测试套件
+它跑的前端检查与两条 `frontend` 腿相同——`npm run ci`，也就是完整的检查清单
+（见「前端检查只有一份清单」）——外加完整的 Rust 测试套件
 （`cargo test --all-targets --features fixtures --no-fail-fast`），
 其中包含 `#[cfg(windows)]` 的进程树 teardown 测试：每一条都启动
 PowerShell，由 PowerShell 再启动一个隐藏的 `ping` 作为孙进程，并用

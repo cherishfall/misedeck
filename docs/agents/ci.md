@@ -28,6 +28,15 @@ already set) or from `-- --bin misedeck` (tried, same result), so the
 fixtures are simply absent from a release build. Without the flag the
 integration tests panic with the command they need.
 
+**With more than one bin target, `[package].default-run` decides what a
+bare `cargo run` starts — and it has to name the app.** Cargo counts the
+feature-gated fixtures when it picks, so without the key `cargo run`
+refuses with "could not determine which binary to run", and `npm run tauri
+dev` cannot work out which process to watch (#286 found it, #287 fixed
+it). `scripts/check-default-run.ts` — `npm run lint:default-run`, part of
+`npm run ci` — fails when the package builds more than one binary and
+`default-run` is unset or does not name the app.
+
 `release.yml` builds Linux on `ubuntu-22.04`, not `ubuntu-latest`
 (issue #247): the binary links the build host's glibc, and 24.04 builds
 refuse to start on Ubuntu 22.04 / Debian 12. `ci.yml` keeps
@@ -95,7 +104,7 @@ in CI — and as of 2026-10-22 it is no longer the *only* place: the
 Windows code paths have now been run on real Windows hardware, which is
 how the `#222` / `#223` fixtures were found to be unusable there. It runs
 the same frontend check as the `frontend` legs — `npm run ci`, the whole
-18-step script (see "One list of frontend checks") — plus the full Rust
+check list (see "One list of frontend checks") — plus the full Rust
 suite (`cargo test --all-targets --features fixtures --no-fail-fast`),
 which includes the `#[cfg(windows)]` process-tree teardown tests: each
 spawns PowerShell, which starts a hidden `ping` as a grandchild, and

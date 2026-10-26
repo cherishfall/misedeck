@@ -37,7 +37,9 @@ npm run ci             # 完整的前端闸门：类型检查、测试、全部 
 15. `npm run lint:nested-interactive` —— 交互控件不得嵌套在另一个交互控件内。
 16. `npm run lint:page-layout` —— 页面的 padding、宽度与居中留在 `PageShell`。
 17. `npm run lint:invoke-wrapper` —— 所有 Tauri `invoke` 都经由 `src/api/invoke.ts`，命令被拒绝时默认会进入全局失败提示。
-18. `npm run build` —— `tsc --noEmit && vite build`。
+18. `npm run lint:csp-inline` —— release 构建实际执行的解析型 CSP 路径上不得出现内联 script/style/属性。
+19. `npm run lint:default-run` —— 包里有多个 bin 目标时，`default-run` 始终指向应用，裸 `cargo run` / `npm run tauri dev` 能直接启动它。
+20. `npm run build` —— `tsc --noEmit && vite build`。
 
 这里只覆盖前端。Rust 检查（`cargo check`、`cargo test`）在 `ci.yml` 中运行；完整闸门见 [docs/agents/ci.md](../../docs/agents/ci.md)。
 

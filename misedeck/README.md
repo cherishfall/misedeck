@@ -37,7 +37,9 @@ npm run ci             # the full frontend gate: typecheck, tests, every lint gu
 15. `npm run lint:nested-interactive` — no interactive control nested inside another.
 16. `npm run lint:page-layout` — page padding, width and centring stay in `PageShell`.
 17. `npm run lint:invoke-wrapper` — every Tauri `invoke` goes through `src/api/invoke.ts`, so a rejected command reaches the global failure notice by default.
-18. `npm run build` — `tsc --noEmit && vite build`.
+18. `npm run lint:csp-inline` — no inline script/style/attribute on the parsed-CSP path the release build enforces.
+19. `npm run lint:default-run` — with several bin targets in the package, `default-run` stays pointed at the app, so a bare `cargo run` / `npm run tauri dev` starts it.
+20. `npm run build` — `tsc --noEmit && vite build`.
 
 This is the frontend half only. The Rust checks (`cargo check`, `cargo test`) run in `ci.yml`; see [docs/agents/ci.md](../docs/agents/ci.md) for the full gate.
 
