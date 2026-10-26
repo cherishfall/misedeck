@@ -18,13 +18,13 @@ use misedeck_lib::mise::RunEvent;
 // same way: an unused import is a clippy error, and clippy runs with
 // `-D warnings`.
 #[cfg(not(target_os = "windows"))]
-use std::process::Command;
-#[cfg(not(target_os = "windows"))]
-use std::time::Duration;
-#[cfg(not(target_os = "windows"))]
 use misedeck_lib::install::run_install_command;
 #[cfg(not(target_os = "windows"))]
 use misedeck_lib::mise::code;
+#[cfg(not(target_os = "windows"))]
+use std::process::Command;
+#[cfg(not(target_os = "windows"))]
+use std::time::Duration;
 mod common;
 
 fn fixture_script() -> PathBuf {
@@ -69,8 +69,10 @@ fn run_self_update_streams_to_exit_and_probes_version() {
     }
     let events: Arc<Mutex<Vec<RunEvent>>> = Arc::new(Mutex::new(Vec::new()));
     let events_for_cb = events.clone();
-    let outcome = run_self_update(&script, None, move |e| events_for_cb.lock().unwrap().push(e))
-        .expect("self-update fixture should yield Ok");
+    let outcome = run_self_update(&script, None, move |e| {
+        events_for_cb.lock().unwrap().push(e)
+    })
+    .expect("self-update fixture should yield Ok");
     unsafe {
         std::env::remove_var("FIXTURE_MISE_ENV_LOG");
     }
@@ -139,7 +141,11 @@ fn run_install_command_streams_and_aggregates_a_clean_exit() {
     assert!(!outcome.timed_out);
     assert_eq!(outcome.stdout, "downloading\ninstalled mise\n");
     assert!(outcome.stderr.is_empty());
-    assert!(outcome.duration_ms < 5_000, "duration = {}", outcome.duration_ms);
+    assert!(
+        outcome.duration_ms < 5_000,
+        "duration = {}",
+        outcome.duration_ms
+    );
 
     let events = events.lock().unwrap();
     let lines: Vec<&str> = events

@@ -86,10 +86,7 @@ fn mise_install_argv_empty_version_means_latest() {
     // the config requests — not necessarily latest. An empty version in
     // the app means latest, so the argv names it explicitly (#254).
     let argv = mise_install_argv("node", "");
-    assert_eq!(
-        argv,
-        vec!["install".to_string(), "node@latest".to_string()]
-    );
+    assert_eq!(argv, vec!["install".to_string(), "node@latest".to_string()]);
 }
 
 #[test]
@@ -121,10 +118,7 @@ fn mise_unuse_argv_carries_the_global_flag() {
 #[test]
 fn mise_use_argv_builds_use_command() {
     let argv = mise_use_argv("node", "22.11.0", false);
-    assert_eq!(
-        argv,
-        vec!["use".to_string(), "node@22.11.0".to_string()]
-    );
+    assert_eq!(argv, vec!["use".to_string(), "node@22.11.0".to_string()]);
 }
 
 #[test]
@@ -175,22 +169,13 @@ fn mise_link_argv_omits_force_flag() {
 #[test]
 fn mise_upgrade_argv_builds_upgrade_all_command() {
     let argv = mise_upgrade_argv(None);
-    assert_eq!(
-        argv,
-        vec!["upgrade".to_string()]
-    );
+    assert_eq!(argv, vec!["upgrade".to_string()]);
 }
 
 #[test]
 fn mise_upgrade_argv_builds_upgrade_single_command() {
     let argv = mise_upgrade_argv(Some("go"));
-    assert_eq!(
-        argv,
-        vec![
-            "upgrade".to_string(),
-            "go".to_string(),
-        ]
-    );
+    assert_eq!(argv, vec!["upgrade".to_string(), "go".to_string(),]);
 }
 
 // ---------- Streaming surface (fixture-backed) ----------
@@ -211,28 +196,34 @@ fn run_mise_with_install_argv_streams_to_exit() {
         assert_eq!(outcome.exit_code, 0, "outcome = {outcome:?}");
         let evs = events.lock().unwrap();
         assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));
-        assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
+        assert!(matches!(
+            evs.last(),
+            Some(RunEvent::Exit { exit_code: 0, .. })
+        ));
     });
 }
 
 #[test]
 #[serial]
 fn run_mise_with_uninstall_argv_streams_to_exit() {
-  let script = fixture_script();
-  with_slug("uninstall---node@22.11.0", || {
-    let events: std::sync::Arc<std::sync::Mutex<Vec<RunEvent>>> =
-      std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
-    let events2 = std::sync::Arc::clone(&events);
-    let req = RunRequest::new(mise_uninstall_argv("node", "22.11.0"));
-    let outcome = run_mise(&script, &req, move |e| {
-      events2.lock().unwrap().push(e);
-    })
-    .expect("uninstall fixture should yield Ok");
-    assert_eq!(outcome.exit_code, 0, "outcome = {outcome:?}");
-    let evs = events.lock().unwrap();
-    assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));
-    assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
-  });
+    let script = fixture_script();
+    with_slug("uninstall---node@22.11.0", || {
+        let events: std::sync::Arc<std::sync::Mutex<Vec<RunEvent>>> =
+            std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let events2 = std::sync::Arc::clone(&events);
+        let req = RunRequest::new(mise_uninstall_argv("node", "22.11.0"));
+        let outcome = run_mise(&script, &req, move |e| {
+            events2.lock().unwrap().push(e);
+        })
+        .expect("uninstall fixture should yield Ok");
+        assert_eq!(outcome.exit_code, 0, "outcome = {outcome:?}");
+        let evs = events.lock().unwrap();
+        assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));
+        assert!(matches!(
+            evs.last(),
+            Some(RunEvent::Exit { exit_code: 0, .. })
+        ));
+    });
 }
 
 #[test]
@@ -251,31 +242,37 @@ fn run_mise_with_unuse_argv_streams_to_exit() {
         assert_eq!(outcome.exit_code, 0, "outcome = {outcome:?}");
         let evs = events.lock().unwrap();
         assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));
-        assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
+        assert!(matches!(
+            evs.last(),
+            Some(RunEvent::Exit { exit_code: 0, .. })
+        ));
     });
 }
 
 #[test]
 #[serial]
 fn run_mise_with_link_argv_streams_to_exit() {
-  let script = fixture_script();
-  // The path is a fixture slug token (`localdir`); the fixture script
-  // echoes recorded output regardless of whether the path exists — the
-  // streaming surface is what this test exercises, not real linking.
-  with_slug("link---node@22.11.0---localdir", || {
-    let events: std::sync::Arc<std::sync::Mutex<Vec<RunEvent>>> =
-      std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
-    let events2 = std::sync::Arc::clone(&events);
-    let req = RunRequest::new(mise_link_argv("node", "22.11.0", "localdir"));
-    let outcome = run_mise(&script, &req, move |e| {
-      events2.lock().unwrap().push(e);
-    })
-    .expect("link fixture should yield Ok");
-    assert_eq!(outcome.exit_code, 0, "outcome = {outcome:?}");
-    let evs = events.lock().unwrap();
-    assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));
-    assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
-  });
+    let script = fixture_script();
+    // The path is a fixture slug token (`localdir`); the fixture script
+    // echoes recorded output regardless of whether the path exists — the
+    // streaming surface is what this test exercises, not real linking.
+    with_slug("link---node@22.11.0---localdir", || {
+        let events: std::sync::Arc<std::sync::Mutex<Vec<RunEvent>>> =
+            std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let events2 = std::sync::Arc::clone(&events);
+        let req = RunRequest::new(mise_link_argv("node", "22.11.0", "localdir"));
+        let outcome = run_mise(&script, &req, move |e| {
+            events2.lock().unwrap().push(e);
+        })
+        .expect("link fixture should yield Ok");
+        assert_eq!(outcome.exit_code, 0, "outcome = {outcome:?}");
+        let evs = events.lock().unwrap();
+        assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));
+        assert!(matches!(
+            evs.last(),
+            Some(RunEvent::Exit { exit_code: 0, .. })
+        ));
+    });
 }
 
 #[test]
@@ -294,7 +291,10 @@ fn run_mise_with_upgrade_all_argv_streams_to_exit() {
         assert_eq!(outcome.exit_code, 0, "outcome = {outcome:?}");
         let evs = events.lock().unwrap();
         assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));
-        assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
+        assert!(matches!(
+            evs.last(),
+            Some(RunEvent::Exit { exit_code: 0, .. })
+        ));
     });
 }
 
@@ -314,6 +314,9 @@ fn run_mise_with_upgrade_single_argv_streams_to_exit() {
         assert_eq!(outcome.exit_code, 0, "outcome = {outcome:?}");
         let evs = events.lock().unwrap();
         assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));
-        assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
+        assert!(matches!(
+            evs.last(),
+            Some(RunEvent::Exit { exit_code: 0, .. })
+        ));
     });
 }

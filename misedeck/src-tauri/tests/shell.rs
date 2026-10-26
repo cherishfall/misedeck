@@ -36,12 +36,12 @@ use std::path::PathBuf;
 #[cfg(unix)]
 use std::sync::Mutex;
 
+#[cfg(unix)]
+use misedeck_lib::shell::detect_user_shell;
 use misedeck_lib::shell::{
     check_shell_activation_for_in, classify_shell, detect_user_shell_from, rc_path_for,
     rc_path_for_in, ActivationStatus, ShellKind,
 };
-#[cfg(unix)]
-use misedeck_lib::shell::detect_user_shell;
 
 // Serializes the environment writes in this test binary.
 #[cfg(unix)]
@@ -186,10 +186,19 @@ fn rc_path_for_uses_temp_home() {
     );
     assert_eq!(
         rc_path_for_in(&tmp, &ShellKind::Fish),
-        tmp.join(".config").join("fish").join("config.fish").to_string_lossy()
+        tmp.join(".config")
+            .join("fish")
+            .join("config.fish")
+            .to_string_lossy()
     );
     // Unknown shells have no specific rc — empty string.
-    assert!(rc_path_for_in(&tmp, &ShellKind::Unknown { name: "x".to_string() }).is_empty());
+    assert!(rc_path_for_in(
+        &tmp,
+        &ShellKind::Unknown {
+            name: "x".to_string()
+        }
+    )
+    .is_empty());
 }
 
 /// The production resolver anchors at `dirs::home_dir()`, never at
@@ -201,7 +210,12 @@ fn rc_path_for_uses_temp_home() {
 fn rc_path_for_anchors_at_the_platform_home() {
     let home = dirs::home_dir().expect("test environment has a home dir");
     let home = home.to_string_lossy().to_string();
-    for shell in [ShellKind::Zsh, ShellKind::Bash, ShellKind::Fish, ShellKind::PowerShell] {
+    for shell in [
+        ShellKind::Zsh,
+        ShellKind::Bash,
+        ShellKind::Fish,
+        ShellKind::PowerShell,
+    ] {
         let rc = rc_path_for(&shell);
         assert!(
             rc.starts_with(&home),
@@ -209,7 +223,10 @@ fn rc_path_for_anchors_at_the_platform_home() {
         );
     }
     // Unknown shells have no rc to probe — not a path under home.
-    assert!(rc_path_for(&ShellKind::Unknown { name: "nu".to_string() }).is_empty());
+    assert!(rc_path_for(&ShellKind::Unknown {
+        name: "nu".to_string()
+    })
+    .is_empty());
 }
 
 // The activation probe — the user-facing path. Three shells,
@@ -269,7 +286,11 @@ fn activation_fish_with_line_reports_activated() {
     let tmp = tempdir();
     let fish_dir = tmp.join(".config").join("fish");
     std::fs::create_dir_all(&fish_dir).unwrap();
-    std::fs::write(fish_dir.join("config.fish"), "mise activate fish | source\n").unwrap();
+    std::fs::write(
+        fish_dir.join("config.fish"),
+        "mise activate fish | source\n",
+    )
+    .unwrap();
 
     let status = check_shell_activation_for_in(&tmp, &ShellKind::Fish).expect("probe");
     assert_eq!(status.activated, Some(true));
@@ -352,7 +373,10 @@ fn activation_status_serializes_with_camel_case_keys() {
     };
     let v = serde_json::to_value(&status).unwrap();
     assert!(v.get("shell").is_some(), "must have `shell`, got {v:?}");
-    assert!(v.get("rcPath").is_some(), "must have `rcPath` (camelCase), got {v:?}");
+    assert!(
+        v.get("rcPath").is_some(),
+        "must have `rcPath` (camelCase), got {v:?}"
+    );
     assert!(
         v.get("rcContents").is_none(),
         "rc file text must not cross IPC (issue #254), got {v:?}"

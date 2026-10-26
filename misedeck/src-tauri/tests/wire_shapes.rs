@@ -114,7 +114,10 @@ fn install_command_result_ok_nests_outcome() {
         })
     );
     // No flattened leakage at the top level.
-    assert!(v.get("exitCode").is_none(), "outcome must not flatten: {v:?}");
+    assert!(
+        v.get("exitCode").is_none(),
+        "outcome must not flatten: {v:?}"
+    );
 }
 
 #[test]
@@ -411,7 +414,10 @@ fn app_update_result_current() {
         version: "1.0.0-beta.17".to_string(),
     })
     .unwrap();
-    assert_eq!(v, json!({ "status": "current", "version": "1.0.0-beta.17" }));
+    assert_eq!(
+        v,
+        json!({ "status": "current", "version": "1.0.0-beta.17" })
+    );
 }
 
 #[test]

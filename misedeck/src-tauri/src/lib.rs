@@ -21,26 +21,27 @@ pub mod process_tree;
 pub mod shell;
 pub mod update;
 
-use install::{run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome};
-use update::AppUpdateResult;
+use install::{
+    run_install as run_install_script, run_self_update, InstallOutcome, SelfUpdateOutcome,
+};
 use mise::{
     check_trust, detect_mise as run_mise_probe, locate_mise, mise_config_files, mise_doctor,
-    mise_env, mise_env_extended, mise_outdated, mise_plugins_ls,
-    mise_registry, mise_tasks_ls, read_mise_lockfile,
-    require_success, run_mise_tracked, run_mise_tracked_read_only, run_trust, validate_run_args,
-    AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
+    mise_env, mise_env_extended, mise_outdated, mise_plugins_ls, mise_registry, mise_tasks_ls,
+    read_mise_lockfile, require_success, run_mise_tracked, run_mise_tracked_read_only, run_trust,
+    validate_run_args, AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
 };
 use shell::{check_shell_activation, open_in_terminal as open_in_terminal_inner};
+use update::AppUpdateResult;
 
 // Re-export `JsonResult` from the lib root so integration tests can
 // import it via `misedeck_lib::JsonResult` (mirrors the
 // `DetectMiseResult` re-export pattern).
-pub use self::json_result::JsonResult;
-pub use self::tasks_edit_result::TasksEditPathResult;
 pub use self::config_files_result::ConfigFilesResult;
-pub use self::trust_result::TrustResult;
+pub use self::json_result::JsonResult;
 pub use self::shell_activation_result::ShellActivationResult;
+pub use self::tasks_edit_result::TasksEditPathResult;
 pub use self::terminal_open_result::TerminalOpenResult;
+pub use self::trust_result::TrustResult;
 
 mod json_result {
     use serde::Serialize;
@@ -120,8 +121,8 @@ mod config_files_result {
 mod shell_activation_result {
     use serde::Serialize;
 
-    use super::shell::ActivationStatus;
     use super::mise::AppError;
+    use super::shell::ActivationStatus;
 
     /// Discriminated union for the `shell_activation_check` Tauri
     /// command (issue #28). On success, the structured
@@ -139,8 +140,8 @@ mod shell_activation_result {
 mod terminal_open_result {
     use serde::Serialize;
 
-    use super::shell::TerminalOpenOutcome;
     use super::mise::AppError;
+    use super::shell::TerminalOpenOutcome;
 
     /// Discriminated union for the `open_in_terminal` Tauri command
     /// (issue #28). On success, the structured `TerminalOpenOutcome`
@@ -193,14 +194,20 @@ pub enum RunCommandResult {
 /// optional post-update version (issue #129: an earlier `#[serde(flatten)]`
 /// here broke that contract and rendered successful runs as failures).
 #[derive(Debug, Serialize)]
-#[serde(tag = "kind", rename_all = "snake_case", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "kind",
+    rename_all = "snake_case",
+    rename_all_fields = "camelCase"
+)]
 pub enum InstallCommandResult {
     Ok {
         outcome: InstallOutcome,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         new_version: Option<String>,
     },
-    Err { err: AppError },
+    Err {
+        err: AppError,
+    },
 }
 
 /// Probe for the mise binary, run `mise version --json`, and return the
@@ -276,7 +283,8 @@ async fn run_mise_command(
                 run_mise_tracked(path, &req, run_id.as_deref(), emit)
             }
         })
-    }).await;
+    })
+    .await;
     match res {
         Ok(Ok(outcome)) => match require_success(outcome) {
             Ok(outcome) => RunCommandResult::Ok { outcome },
@@ -311,7 +319,8 @@ async fn install_mise(
         run_install_script(run_id.as_deref(), move |evt| {
             let _ = on_event.send(evt);
         })
-    }).await;
+    })
+    .await;
     match res {
         Ok(Ok(outcome)) => InstallCommandResult::Ok {
             outcome,
@@ -319,10 +328,7 @@ async fn install_mise(
         },
         Ok(Err(e)) => InstallCommandResult::Err { err: e },
         Err(_) => InstallCommandResult::Err {
-            err: AppError::command_failed(
-                "install_mise: background task failed",
-                String::new(),
-            ),
+            err: AppError::command_failed("install_mise: background task failed", String::new()),
         },
     }
 }
@@ -346,9 +352,13 @@ async fn mise_self_update(
                 let _ = channel.send(evt);
             })
         })
-    }).await;
+    })
+    .await;
     match res {
-        Ok(Ok(SelfUpdateOutcome { outcome, new_version })) => InstallCommandResult::Ok {
+        Ok(Ok(SelfUpdateOutcome {
+            outcome,
+            new_version,
+        })) => InstallCommandResult::Ok {
             outcome,
             new_version,
         },
@@ -482,10 +492,9 @@ async fn validated_cwd(cwd: Option<String>) -> Result<Option<PathBuf>, AppError>
 fn validate_cwd(cwd: Option<&str>) -> Result<Option<PathBuf>, AppError> {
     match cwd {
         None => Ok(None),
-        Some(raw) if raw.trim().is_empty() => Err(AppError::command_failed(
-            "cwd is empty",
-            String::new(),
-        )),
+        Some(raw) if raw.trim().is_empty() => {
+            Err(AppError::command_failed("cwd is empty", String::new()))
+        }
         Some(raw) => {
             let path = PathBuf::from(raw);
             if !path.is_dir() {
@@ -535,7 +544,9 @@ async fn tools_outdated(cwd: Option<String>) -> JsonResult {
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
         run_with_mise_binary(|path| mise_outdated(path, cwd))
-    }).await {
+    })
+    .await
+    {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
     }
@@ -558,7 +569,9 @@ async fn tools_env(cwd: Option<String>) -> JsonResult {
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
         run_with_mise_binary(|path| mise_env(path, cwd))
-    }).await {
+    })
+    .await
+    {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
     }
@@ -580,7 +593,9 @@ async fn env_ls(cwd: Option<String>) -> JsonResult {
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
         run_with_mise_binary(|path| mise_env_extended(path, cwd))
-    }).await {
+    })
+    .await
+    {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
     }
@@ -622,7 +637,9 @@ async fn config_files(cwd: Option<String>) -> ConfigFilesResult {
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
         run_with_mise_binary(|path| mise_config_files(path, cwd))
-    }).await {
+    })
+    .await
+    {
         Ok(files) => ConfigFilesResult::Ok { files },
         Err(err) => ConfigFilesResult::Err { err },
     }
@@ -645,7 +662,9 @@ async fn trust_check(cwd: Option<String>) -> TrustResult {
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
         run_with_mise_binary(|path| check_trust(path, cwd))
-    }).await {
+    })
+    .await
+    {
         Ok(ok) => TrustResult::Ok { ok },
         Err(err) => TrustResult::Err { err },
     }
@@ -680,15 +699,13 @@ async fn mise_trust(
                 let _ = channel.send(evt);
             })
         })
-    }).await;
+    })
+    .await;
     match res {
         Ok(Ok(outcome)) => RunCommandResult::Ok { outcome },
         Ok(Err(e)) => RunCommandResult::Err { err: e },
         Err(_) => RunCommandResult::Err {
-            err: AppError::command_failed(
-                "mise_trust: background task failed",
-                String::new(),
-            ),
+            err: AppError::command_failed("mise_trust: background task failed", String::new()),
         },
     }
 }
@@ -710,7 +727,9 @@ async fn tasks_ls(cwd: Option<String>) -> JsonResult {
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
         run_with_mise_binary(|path| mise_tasks_ls(path, cwd))
-    }).await {
+    })
+    .await
+    {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
     }
@@ -734,7 +753,9 @@ async fn doctor(cwd: Option<String>) -> JsonResult {
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
         run_with_mise_binary(|path| mise_doctor(path, cwd))
-    }).await {
+    })
+    .await
+    {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
     }
@@ -756,7 +777,9 @@ async fn registry(cwd: Option<String>) -> JsonResult {
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
         run_with_mise_binary(|path| mise_registry(path, cwd))
-    }).await {
+    })
+    .await
+    {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
     }
@@ -779,7 +802,9 @@ async fn plugins_ls(cwd: Option<String>) -> JsonResult {
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
         run_with_mise_binary(|path| mise_plugins_ls(path, cwd))
-    }).await {
+    })
+    .await
+    {
         Ok(value) => JsonResult::Ok { value },
         Err(err) => JsonResult::Err { err },
     }
@@ -794,12 +819,11 @@ async fn plugins_ls(cwd: Option<String>) -> JsonResult {
 async fn shell_activation_check() -> ShellActivationResult {
     match spawn_run(move || {
         check_shell_activation().map_err(|e| {
-            AppError::command_failed(
-                format!("failed to read shell rc file: {e}"),
-                String::new(),
-            )
+            AppError::command_failed(format!("failed to read shell rc file: {e}"), String::new())
         })
-    }).await {
+    })
+    .await
+    {
         Ok(ok) => ShellActivationResult::Ok { ok },
         Err(err) => ShellActivationResult::Err { err },
     }

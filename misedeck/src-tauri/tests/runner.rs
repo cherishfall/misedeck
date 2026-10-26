@@ -229,10 +229,7 @@ fn streaming_emits_stdout_stderr_and_exit_in_order() {
 #[test]
 fn exited_child_whose_grandchild_holds_stdout_still_returns() {
     let script = process_tree_fixture();
-    let req = RunRequest::new(vec![
-        "hold-stdout".to_string(),
-        "10".to_string(),
-    ]);
+    let req = RunRequest::new(vec!["hold-stdout".to_string(), "10".to_string()]);
     let started = Instant::now();
     let outcome = run_mise(&script, &req, |_| {}).expect("runner must return Ok");
     let elapsed = started.elapsed();
@@ -309,10 +306,8 @@ fn invalid_utf8_output_does_not_truncate_the_transcript() {
 #[serial]
 fn read_json_sets_mise_safe_and_streaming_does_not() {
     let script = fixture_script();
-    let env_log = std::env::temp_dir().join(format!(
-        "misedeck-mise-safe-{}.log",
-        std::process::id()
-    ));
+    let env_log =
+        std::env::temp_dir().join(format!("misedeck-mise-safe-{}.log", std::process::id()));
     let _ = std::fs::remove_file(&env_log);
     unsafe {
         std::env::set_var("FIXTURE_MISE_ENV_LOG", &env_log);

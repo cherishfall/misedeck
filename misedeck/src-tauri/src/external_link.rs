@@ -67,10 +67,7 @@ pub fn validate(raw: &str) -> Result<&str, AppError> {
 
     // An authority is mandatory: `https://` alone, or `https:///path`,
     // would ask the OS to open nothing in particular.
-    let authority = rest
-        .split(['/', '?', '#'])
-        .next()
-        .unwrap_or_default();
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
     if authority.is_empty() {
         return Err(reject("url has no host"));
     }
@@ -152,7 +149,10 @@ mod tests {
             assert!(validate(url).is_err(), "{url} must be refused");
         }
         // …while a host with no path is fine.
-        assert_eq!(validate("https://example.com").unwrap(), "https://example.com");
+        assert_eq!(
+            validate("https://example.com").unwrap(),
+            "https://example.com"
+        );
     }
 
     #[test]

@@ -67,7 +67,9 @@ pub enum ShellKind {
     /// nushell, xonsh, …). `name` is the raw value from `$SHELL`
     /// or the Windows registry so the UI can show it back to the
     /// user in the banner body.
-    Unknown { name: String },
+    Unknown {
+        name: String,
+    },
 }
 
 impl ShellKind {
@@ -325,9 +327,8 @@ fn passwd_login_shell() -> Option<String> {
     let mut result: *mut libc::passwd = std::ptr::null_mut();
     // SAFETY: `buf` is `buf.len()` bytes, which is the length passed, and
     // it outlives every read of the strings `passwd` points into.
-    let rc = unsafe {
-        libc::getpwuid_r(uid, &mut passwd, buf.as_mut_ptr(), buf.len(), &mut result)
-    };
+    let rc =
+        unsafe { libc::getpwuid_r(uid, &mut passwd, buf.as_mut_ptr(), buf.len(), &mut result) };
     if rc != 0 || result.is_null() || passwd.pw_shell.is_null() {
         return None;
     }
@@ -356,7 +357,9 @@ pub fn classify_shell(basename: &str, raw: &str) -> ShellKind {
         "bash" => ShellKind::Bash,
         "fish" => ShellKind::Fish,
         "pwsh" | "powershell" => ShellKind::PowerShell,
-        _ => ShellKind::Unknown { name: raw.to_string() },
+        _ => ShellKind::Unknown {
+            name: raw.to_string(),
+        },
     }
 }
 
@@ -1099,10 +1102,7 @@ pub fn open_in_terminal(path: Option<&str>) -> Result<TerminalOpenOutcome, AppEr
             pb
         }
         _ => dirs::home_dir().ok_or_else(|| {
-            AppError::command_failed(
-                "open_in_terminal: no home directory to open",
-                String::new(),
-            )
+            AppError::command_failed("open_in_terminal: no home directory to open", String::new())
         })?,
     };
     let path_str = resolved.to_string_lossy().to_string();
@@ -1310,7 +1310,10 @@ mod tests {
         assert_eq!(classify_shell("zsh", "/bin/zsh"), ShellKind::Zsh);
         assert_eq!(classify_shell("bash", "/bin/bash"), ShellKind::Bash);
         assert_eq!(classify_shell("fish", "/usr/bin/fish"), ShellKind::Fish);
-        assert_eq!(classify_shell("pwsh.exe", "C:\\Program Files\\PowerShell\\7\\pwsh.exe"), ShellKind::PowerShell);
+        assert_eq!(
+            classify_shell("pwsh.exe", "C:\\Program Files\\PowerShell\\7\\pwsh.exe"),
+            ShellKind::PowerShell
+        );
     }
 
     #[test]
@@ -1324,27 +1327,23 @@ mod tests {
 
     #[test]
     fn rc_has_mise_activate_matches_known_lines() {
-        assert!(rc_has_mise_activate(
-            r#"eval "$(mise activate zsh)""#
-        ));
+        assert!(rc_has_mise_activate(r#"eval "$(mise activate zsh)""#));
         assert!(rc_has_mise_activate(
             "if command -v mise &> /dev/null; then eval \"$(mise activate bash)\"; fi"
         ));
         assert!(rc_has_mise_activate("mise activate fish | source"));
         // Sourced snippets count too.
-        assert!(rc_has_mise_activate("source ~/.local/share/mise/bin/mise activate bash"));
+        assert!(rc_has_mise_activate(
+            "source ~/.local/share/mise/bin/mise activate bash"
+        ));
     }
 
     #[test]
     fn rc_has_mise_activate_ignores_comments() {
         // POSIX comment.
-        assert!(!rc_has_mise_activate(
-            "# eval \"$(mise activate zsh)\""
-        ));
+        assert!(!rc_has_mise_activate("# eval \"$(mise activate zsh)\""));
         // Fish comment.
-        assert!(!rc_has_mise_activate(
-            "# mise activate fish | source"
-        ));
+        assert!(!rc_has_mise_activate("# mise activate fish | source"));
         // The actual line is blank/no mise-activate, so the file
         // does not count as activated even though it has lines.
         assert!(!rc_has_mise_activate(
@@ -1445,13 +1444,19 @@ mod tests {
             (true, "PowerShell", "WindowsPowerShell"),
             (false, "WindowsPowerShell", "PowerShell"),
         ] {
-            let primary = PathBuf::from(rc_path_for_in_with(home, &ShellKind::PowerShell, has_pwsh));
+            let primary =
+                PathBuf::from(rc_path_for_in_with(home, &ShellKind::PowerShell, has_pwsh));
             assert_eq!(
                 primary.file_name().unwrap().to_string_lossy(),
                 "Microsoft.PowerShell_profile.ps1"
             );
             assert_eq!(
-                primary.parent().unwrap().file_name().unwrap().to_string_lossy(),
+                primary
+                    .parent()
+                    .unwrap()
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy(),
                 primary_dir,
                 "primary profile for has_pwsh={has_pwsh}"
             );
@@ -1471,7 +1476,12 @@ mod tests {
             assert_eq!(siblings.len(), 1);
             let sibling = Path::new(&siblings[0]);
             assert_eq!(
-                sibling.parent().unwrap().file_name().unwrap().to_string_lossy(),
+                sibling
+                    .parent()
+                    .unwrap()
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy(),
                 sibling_dir,
                 "sibling profile for has_pwsh={has_pwsh}"
             );
@@ -1493,14 +1503,25 @@ mod tests {
             check_shell_activation_for_in_with(&home, &ShellKind::PowerShell, false).unwrap();
         assert_eq!(five_one.activated, Some(false));
         assert_eq!(
-            Path::new(&five_one.rc_path).parent().unwrap().file_name().unwrap().to_string_lossy(),
+            Path::new(&five_one.rc_path)
+                .parent()
+                .unwrap()
+                .file_name()
+                .unwrap()
+                .to_string_lossy(),
             "WindowsPowerShell"
         );
 
-        let seven = check_shell_activation_for_in_with(&home, &ShellKind::PowerShell, true).unwrap();
+        let seven =
+            check_shell_activation_for_in_with(&home, &ShellKind::PowerShell, true).unwrap();
         assert_eq!(seven.activated, Some(false));
         assert_eq!(
-            Path::new(&seven.rc_path).parent().unwrap().file_name().unwrap().to_string_lossy(),
+            Path::new(&seven.rc_path)
+                .parent()
+                .unwrap()
+                .file_name()
+                .unwrap()
+                .to_string_lossy(),
             "PowerShell"
         );
 
@@ -1509,10 +1530,18 @@ mod tests {
 
     #[test]
     fn activation_line_matches_shell() {
-        assert!(ShellKind::Zsh.activation_line().contains("mise activate zsh"));
-        assert!(ShellKind::Bash.activation_line().contains("mise activate bash"));
-        assert!(ShellKind::Fish.activation_line().contains("mise activate fish"));
-        assert!(ShellKind::PowerShell.activation_line().contains("mise activate pwsh"));
+        assert!(ShellKind::Zsh
+            .activation_line()
+            .contains("mise activate zsh"));
+        assert!(ShellKind::Bash
+            .activation_line()
+            .contains("mise activate bash"));
+        assert!(ShellKind::Fish
+            .activation_line()
+            .contains("mise activate fish"));
+        assert!(ShellKind::PowerShell
+            .activation_line()
+            .contains("mise activate pwsh"));
     }
 
     #[test]
@@ -1532,7 +1561,13 @@ mod tests {
         let plan = windows_cmd_start_plan();
         assert_eq!(
             plan.argv,
-            vec![cmd.clone(), "/c".to_string(), "start".to_string(), String::new(), cmd]
+            vec![
+                cmd.clone(),
+                "/c".to_string(),
+                "start".to_string(),
+                String::new(),
+                cmd
+            ]
         );
         for dir in [
             r"C:\A & B",
@@ -1626,8 +1661,14 @@ mod tests {
     /// PowerShell — it only names the fallback shell.
     #[test]
     fn windows_shell_falls_back_to_powershell() {
-        assert_eq!(detect_windows_shell(None, true, false), ShellKind::PowerShell);
-        assert_eq!(detect_windows_shell(None, false, true), ShellKind::PowerShell);
+        assert_eq!(
+            detect_windows_shell(None, true, false),
+            ShellKind::PowerShell
+        );
+        assert_eq!(
+            detect_windows_shell(None, false, true),
+            ShellKind::PowerShell
+        );
         assert_eq!(
             detect_windows_shell(Some("   "), true, true),
             ShellKind::PowerShell
@@ -1767,11 +1808,17 @@ mod tests {
                 rc.starts_with(&home),
                 "{shell:?} rc path {rc:?} must start with home {home:?}"
             );
-            assert!(rc.ends_with(suffix), "{shell:?} rc path {rc:?} ends with {suffix}");
+            assert!(
+                rc.ends_with(suffix),
+                "{shell:?} rc path {rc:?} ends with {suffix}"
+            );
             assert!(!rc.is_empty());
         }
         // Unknown shells have no rc to probe — not a path under home.
-        assert!(rc_path_for(&ShellKind::Unknown { name: "nu".to_string() }).is_empty());
+        assert!(rc_path_for(&ShellKind::Unknown {
+            name: "nu".to_string()
+        })
+        .is_empty());
     }
 
     /// Issue #245: the probe order and each emulator's cwd flag shape.
@@ -1833,7 +1880,13 @@ mod tests {
             .expect("spec");
         for path in ["/tmp/a b", "/tmp/$(rm -rf /)", "/tmp/x&y"] {
             let argv = linux_terminal_argv(spec, path);
-            assert_eq!(argv, vec!["gnome-terminal".to_string(), format!("--working-directory={path}")]);
+            assert_eq!(
+                argv,
+                vec![
+                    "gnome-terminal".to_string(),
+                    format!("--working-directory={path}")
+                ]
+            );
         }
     }
 

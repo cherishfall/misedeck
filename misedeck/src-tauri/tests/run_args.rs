@@ -19,7 +19,13 @@ fn argv(tokens: &[&str]) -> Vec<String> {
 #[test]
 fn run_command_with_double_ampersand_is_accepted() {
     // The exact shape TasksPage saves: run is a single token after `--`.
-    let args = argv(&["tasks", "add", "build", "--", "npm run build && npm run test"]);
+    let args = argv(&[
+        "tasks",
+        "add",
+        "build",
+        "--",
+        "npm run build && npm run test",
+    ]);
     assert!(validate_run_args(&args).is_ok());
 }
 
@@ -70,7 +76,8 @@ fn flag_token_with_semicolon_is_rejected() {
     let err = validate_run_args(&args).expect_err("flag with ; should be rejected");
     assert_eq!(err.code, code::COMMAND_FAILED);
     assert!(
-        err.message.contains("flag arg contains shell metacharacter"),
+        err.message
+            .contains("flag arg contains shell metacharacter"),
         "message should name the flag-region rule, got {:?}",
         err.message
     );

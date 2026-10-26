@@ -38,9 +38,18 @@ fn config_files_preserve_mise_precedence_order() {
         // mise emits the array highest-precedence-first; the runner
         // must preserve that order verbatim.
         assert_eq!(files.len(), 2, "files = {files:?}");
-        assert_eq!(files[0].path, "/nonexistent/misedeck-test/src/app/mise.toml");
-        assert_eq!(files[1].path, "/nonexistent/misedeck-test/.config/mise/config.toml");
-        assert_eq!(files[0].tools, vec!["node".to_string(), "python".to_string()]);
+        assert_eq!(
+            files[0].path,
+            "/nonexistent/misedeck-test/src/app/mise.toml"
+        );
+        assert_eq!(
+            files[1].path,
+            "/nonexistent/misedeck-test/.config/mise/config.toml"
+        );
+        assert_eq!(
+            files[0].tools,
+            vec!["node".to_string(), "python".to_string()]
+        );
         assert_eq!(files[1].tools, vec!["go".to_string()]);
         // `override` distinguishes global override files, which mise
         // ranks above every project config (issue #259).

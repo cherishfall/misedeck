@@ -46,8 +46,14 @@ fn tools_ls_returns_raw_json_value() {
         let v = mise_ls(&script, None).expect("ls --json should yield Ok");
         // Top-level is an object with one key per tool.
         let obj = v.as_object().expect("ls payload must be a JSON object");
-        assert!(obj.contains_key("go"), "expected `go` in payload, got {v:?}");
-        assert!(obj.contains_key("node"), "expected `node` in payload, got {v:?}");
+        assert!(
+            obj.contains_key("go"),
+            "expected `go` in payload, got {v:?}"
+        );
+        assert!(
+            obj.contains_key("node"),
+            "expected `node` in payload, got {v:?}"
+        );
         // Each tool has at least one installed item with an active flag.
         let go_items = obj["go"].as_array().expect("`go` must be an array");
         assert!(!go_items.is_empty(), "expected at least one go item");
@@ -92,7 +98,9 @@ fn tools_ls_tool_returns_array_of_installed_versions() {
     let script = fixture_script();
     with_slug("ls---json-java", || {
         let v = mise_ls_tool(&script, None, "java").expect("ls --json java should yield Ok");
-        let arr = v.as_array().expect("single-tool ls payload must be a JSON array");
+        let arr = v
+            .as_array()
+            .expect("single-tool ls payload must be a JSON array");
         assert_eq!(arr.len(), 11, "expected every installed version, got {v:?}");
         assert_eq!(arr[0]["version"], "oracle-8");
         assert_eq!(arr[0]["active"], false);
@@ -109,8 +117,8 @@ fn tools_ls_tool_rejects_empty_tool() {
     // rejected before invoking mise so the runner never sees a
     // half-formed argv.
     let script = fixture_script();
-    let err = mise_ls_tool(&script, None, "")
-        .expect_err("empty tool should yield Err before spawning");
+    let err =
+        mise_ls_tool(&script, None, "").expect_err("empty tool should yield Err before spawning");
     assert_eq!(err.code, code::COMMAND_FAILED);
     assert!(
         err.message.contains("tool"),
@@ -131,8 +139,13 @@ fn tools_outdated_reports_only_in_range_targets() {
     let script = fixture_script();
     with_slug("outdated---json", || {
         let v = mise_outdated(&script, None).expect("outdated --json should yield Ok");
-        let obj = v.as_object().expect("outdated payload must be a JSON object");
-        assert!(obj.contains_key("rust"), "expected `rust` in payload, got {v:?}");
+        let obj = v
+            .as_object()
+            .expect("outdated payload must be a JSON object");
+        assert!(
+            obj.contains_key("rust"),
+            "expected `rust` in payload, got {v:?}"
+        );
         assert_eq!(obj["rust"]["latest"], "stable");
         assert!(
             !obj.contains_key("go"),
@@ -147,7 +160,9 @@ fn tools_outdated_empty_returns_empty_object() {
     let script = fixture_script();
     with_slug("outdated---json-empty", || {
         let v = mise_outdated(&script, None).expect("empty outdated should yield Ok");
-        let obj = v.as_object().expect("outdated payload must be a JSON object");
+        let obj = v
+            .as_object()
+            .expect("outdated payload must be a JSON object");
         assert!(obj.is_empty(), "expected empty map, got {v:?}");
     });
 }
@@ -169,10 +184,18 @@ fn tools_ls_remote_returns_array() {
     let script = fixture_script();
     with_slug("ls-remote---json-go", || {
         let v = mise_ls_remote(&script, None, "go").expect("ls-remote go should yield Ok");
-        let arr = v.as_array().expect("ls-remote payload must be a JSON array");
-        assert!(!arr.is_empty(), "expected at least one go version, got {v:?}");
+        let arr = v
+            .as_array()
+            .expect("ls-remote payload must be a JSON array");
+        assert!(
+            !arr.is_empty(),
+            "expected at least one go version, got {v:?}"
+        );
         let first = &arr[0];
-        assert!(first["version"].is_string(), "expected string version, got {first:?}");
+        assert!(
+            first["version"].is_string(),
+            "expected string version, got {first:?}"
+        );
     });
 }
 
@@ -223,8 +246,7 @@ fn tools_ls_remote_parses_a_single_line_payload_past_the_per_line_cap() {
 fn tools_ls_remote_command_failed_keeps_stderr() {
     let script = fixture_script();
     with_slug("ls-remote---json-go-command-failed", || {
-        let err = mise_ls_remote(&script, None, "go")
-            .expect_err("non-zero exit should yield Err");
+        let err = mise_ls_remote(&script, None, "go").expect_err("non-zero exit should yield Err");
         assert_eq!(err.code, code::COMMAND_FAILED);
         assert!(err.stderr.contains("ERROR"));
     });
@@ -235,8 +257,8 @@ fn tools_ls_remote_rejects_empty_tool() {
     // The Rust boundary rejects an empty tool before invoking mise so
     // the runner never sees a half-formed argv.
     let script = fixture_script();
-    let err = mise_ls_remote(&script, None, "")
-        .expect_err("empty tool should yield Err before spawning");
+    let err =
+        mise_ls_remote(&script, None, "").expect_err("empty tool should yield Err before spawning");
     assert_eq!(err.code, code::COMMAND_FAILED);
     assert!(
         err.message.contains("tool"),
@@ -255,7 +277,10 @@ fn json_result_serializes_with_kind_tag() {
     };
     let v = serde_json::to_value(&ok).unwrap();
     assert_eq!(v["kind"], "ok");
-    assert!(v.get("value").is_some(), "must have `value` payload, got {v:?}");
+    assert!(
+        v.get("value").is_some(),
+        "must have `value` payload, got {v:?}"
+    );
     assert!(v.get("err").is_none());
 
     let err = JsonResult::Err {

@@ -274,15 +274,25 @@ pub enum OutputStream {
 /// the lines). Uses camelCase on the wire to match `RunOutcome` and the
 /// frontend's channel parser.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum RunEvent {
-    Stdout { line: String },
-    Stderr { line: String },
+    Stdout {
+        line: String,
+    },
+    Stderr {
+        line: String,
+    },
     /// A per-line or aggregate cap withheld output. Typed instead of a
     /// marker line inside the stream, so the panel renders localized copy
     /// and the raw output stays byte-faithful (issue #277). Emitted at
     /// most once per stream and run; the stream itself keeps draining.
-    OutputTruncated { stream: OutputStream },
+    OutputTruncated {
+        stream: OutputStream,
+    },
     Exit {
         exit_code: i32,
         duration_ms: u64,
@@ -319,8 +329,13 @@ impl RunRequest {
 /// data — a value token containing them (a task's `run` command, an
 /// env value) must pass through untouched (issue #160).
 fn contains_shell_metachar(s: &str) -> bool {
-    s.contains(';') || s.contains('|') || s.contains('&') || s.contains('`')
-        || s.contains('$') || s.contains('\n') || s.contains('\r')
+    s.contains(';')
+        || s.contains('|')
+        || s.contains('&')
+        || s.contains('`')
+        || s.contains('$')
+        || s.contains('\n')
+        || s.contains('\r')
 }
 
 /// Validate the argv for `run_mise_command` before it reaches the
@@ -1341,10 +1356,7 @@ pub struct MiseLsRemoteItem {
 /// * non-zero exit → `COMMAND_FAILED` with stderr preserved verbatim
 /// * malformed JSON → `PARSE_FAILED` with the raw payload logged
 /// * timeout → `TIMEOUT`
-pub fn run_mise_json(
-    mise_path: &Path,
-    req: &RunRequest,
-) -> Result<serde_json::Value, AppError> {
+pub fn run_mise_json(mise_path: &Path, req: &RunRequest) -> Result<serde_json::Value, AppError> {
     // Every read in the app funnels through here (`mise ls`, `env`,
     // `config ls`, `tasks ls`, `plugins ls`, `outdated`, `doctor`,
     // `registry`, `trust --show`, `tasks edit --path`, version
@@ -1359,8 +1371,8 @@ pub fn run_mise_json(
             outcome.stderr,
         ));
     }
-    let value: serde_json::Value = serde_json::from_slice(outcome.stdout.as_bytes())
-        .map_err(|e| {
+    let value: serde_json::Value =
+        serde_json::from_slice(outcome.stdout.as_bytes()).map_err(|e| {
             AppError::parse_failed(
                 format!("invalid mise JSON output: {e}"),
                 outcome.stderr.clone(),
@@ -1372,10 +1384,7 @@ pub fn run_mise_json(
 /// `mise ls --json` — the global tools list. Returns the raw JSON
 /// object mise emits (`{tool: [items...]}`); the typed `MiseLsItem`
 /// shape above documents the expected fields.
-pub fn mise_ls(
-    mise_path: &Path,
-    cwd: Option<&Path>,
-) -> Result<serde_json::Value, AppError> {
+pub fn mise_ls(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json::Value, AppError> {
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(vec!["ls".to_string(), "--json".to_string()], c),
         None => RunRequest::new(vec!["ls".to_string(), "--json".to_string()]),
@@ -1400,11 +1409,7 @@ pub fn mise_ls_tool(
             String::new(),
         ));
     }
-    let args = vec![
-        "ls".to_string(),
-        "--json".to_string(),
-        tool.to_string(),
-    ];
+    let args = vec!["ls".to_string(), "--json".to_string(), tool.to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
@@ -1419,10 +1424,7 @@ pub fn mise_ls_tool(
 /// `mise upgrade <tool>` reaches (ui-ux-rules, beta13 Q9). With
 /// `--bump` mise reports the newest published version regardless of
 /// the request, which the UI would advertise and then fail to install.
-pub fn mise_outdated(
-    mise_path: &Path,
-    cwd: Option<&Path>,
-) -> Result<serde_json::Value, AppError> {
+pub fn mise_outdated(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json::Value, AppError> {
     let args = vec!["outdated".to_string(), "--json".to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
@@ -1438,10 +1440,7 @@ pub fn mise_outdated(
 /// tools. Like the tools commands, the runner accepts `cwd` so the
 /// result reflects the directory-scoped resolution (the project's
 /// `[env]` table is merged into the env map).
-pub fn mise_env(
-    mise_path: &Path,
-    cwd: Option<&Path>,
-) -> Result<serde_json::Value, AppError> {
+pub fn mise_env(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json::Value, AppError> {
     let args = vec!["env".to_string(), "--json".to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
@@ -1698,15 +1697,8 @@ pub struct MiseTask {
 /// (`[MiseTask, ...]`); the typed `MiseTask` shape above documents
 /// the expected fields. The parser on the JS side walks the raw
 /// value and tolerates drift (see the rationale on `run_mise_json`).
-pub fn mise_tasks_ls(
-    mise_path: &Path,
-    cwd: Option<&Path>,
-) -> Result<serde_json::Value, AppError> {
-    let args = vec![
-        "tasks".to_string(),
-        "ls".to_string(),
-        "--json".to_string(),
-    ];
+pub fn mise_tasks_ls(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json::Value, AppError> {
+    let args = vec!["tasks".to_string(), "ls".to_string(), "--json".to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
@@ -2142,10 +2134,7 @@ fn doctor_text_payload(
 /// non-zero exit is a `COMMAND_FAILED` (issue #233), not a reason to
 /// try again (issues #230, #254). A timeout or a missing binary is
 /// propagated as-is, never retried.
-pub fn mise_doctor(
-    mise_path: &Path,
-    cwd: Option<&Path>,
-) -> Result<serde_json::Value, AppError> {
+pub fn mise_doctor(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json::Value, AppError> {
     let args = vec!["doctor".to_string(), "--json".to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
@@ -2194,10 +2183,7 @@ fn registry_table_fallback(
 /// does not support `--json` (or the output is not valid JSON), the
 /// runner falls back to parsing the plain-text registry table into a
 /// JSON array.
-pub fn mise_registry(
-    mise_path: &Path,
-    cwd: Option<&Path>,
-) -> Result<serde_json::Value, AppError> {
+pub fn mise_registry(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json::Value, AppError> {
     let args = vec!["registry".to_string(), "--json".to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
@@ -2340,7 +2326,11 @@ pub fn mise_plugins_ls(
 /// config requests for it, which is *not* latest when the config pins
 /// one (issue #254).
 pub fn mise_install_argv(tool: &str, version: &str) -> Vec<String> {
-    let version = if version.is_empty() { "latest" } else { version };
+    let version = if version.is_empty() {
+        "latest"
+    } else {
+        version
+    };
     vec!["install".to_string(), format!("{tool}@{version}")]
 }
 
@@ -2535,12 +2525,13 @@ pub fn mise_version(mise_path: &Path) -> Result<(serde_json::Value, String), App
         ));
     }
 
-    let raw: serde_json::Value = serde_json::from_slice(outcome.stdout.as_bytes()).map_err(|e| {
-        AppError::parse_failed(
-            format!("invalid mise version --json output: {e}"),
-            outcome.stderr.clone(),
-        )
-    })?;
+    let raw: serde_json::Value =
+        serde_json::from_slice(outcome.stdout.as_bytes()).map_err(|e| {
+            AppError::parse_failed(
+                format!("invalid mise version --json output: {e}"),
+                outcome.stderr.clone(),
+            )
+        })?;
     let version = raw
         .get("version")
         .and_then(|v| v.as_str())
@@ -2559,11 +2550,9 @@ pub fn mise_version(mise_path: &Path) -> Result<(serde_json::Value, String), App
 pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
     let (raw_value, version) = mise_version(mise_path)?;
 
-    let version_date = extract_date(&version)
-        .map(|(d, _)| d)
-        .ok_or_else(|| {
-            AppError::parse_failed("version did not start with YYYY.MM.DD", String::new())
-        })?;
+    let version_date = extract_date(&version).map(|(d, _)| d).ok_or_else(|| {
+        AppError::parse_failed("version did not start with YYYY.MM.DD", String::new())
+    })?;
 
     if !meets_minimum(&version_date, MIN_MISE_VERSION) {
         return Err(AppError::too_old(&version_date, MIN_MISE_VERSION));
@@ -2737,13 +2726,7 @@ mod tests {
 
         let mut stdout = CappedStream::default();
         let mut stderr = CappedStream::default();
-        finish_streams(
-            &out_rx,
-            &err_rx,
-            &mut |_event| {},
-            &mut stdout,
-            &mut stderr,
-        );
+        finish_streams(&out_rx, &err_rx, &mut |_event| {}, &mut stdout, &mut stderr);
         producer.join().expect("the producer must finish");
 
         assert_eq!(stdout.text(), "line\n".repeat(20));
@@ -2817,7 +2800,9 @@ mod tests {
         );
         // Every Windows probe target must be the launchable `.exe`, never
         // the extensionless unix name.
-        assert!(paths.iter().all(|p| p.to_string_lossy().ends_with("mise.exe")));
+        assert!(paths
+            .iter()
+            .all(|p| p.to_string_lossy().ends_with("mise.exe")));
     }
 
     #[cfg(unix)]
@@ -2867,11 +2852,15 @@ mod tests {
             ("/opt/mise", "/usr/bin", ":")
         };
         let candidates = path_candidates(&format!("{dir_a}{separator}{dir_b}"));
-        let expected: Vec<PathBuf> =
-            vec![PathBuf::from(dir_a).join(MISE_BIN), PathBuf::from(dir_b).join(MISE_BIN)];
+        let expected: Vec<PathBuf> = vec![
+            PathBuf::from(dir_a).join(MISE_BIN),
+            PathBuf::from(dir_b).join(MISE_BIN),
+        ];
         assert_eq!(candidates, expected, "candidates = {candidates:?}");
         assert!(
-            candidates.iter().all(|p| p.to_string_lossy().ends_with(MISE_BIN)),
+            candidates
+                .iter()
+                .all(|p| p.to_string_lossy().ends_with(MISE_BIN)),
             "every PATH probe must use {MISE_BIN}"
         );
     }
@@ -2994,10 +2983,8 @@ mod tests {
         // The preview page's read-only content view (issue #42)
         // ships the file's raw text; a missing file yields None
         // instead of failing the section.
-        let dir = std::env::temp_dir().join(format!(
-            "misedeck-config-content-{}",
-            std::process::id()
-        ));
+        let dir =
+            std::env::temp_dir().join(format!("misedeck-config-content-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let file = dir.join("mise.toml");
         std::fs::write(&file, "[tools]\nnode = \"22\"\n").unwrap();

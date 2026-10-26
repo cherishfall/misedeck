@@ -62,7 +62,10 @@ fn missing_binary_returns_mise_not_found() {
     let bogus = Path::new("/this/path/does/not/exist/mise-xyz");
     let err = detect_mise(bogus).expect_err("missing binary should yield Err");
     assert_eq!(err.code, code::MISE_NOT_FOUND);
-    assert!(err.stderr.is_empty(), "stderr should be empty for not-found");
+    assert!(
+        err.stderr.is_empty(),
+        "stderr should be empty for not-found"
+    );
 }
 
 #[test]
@@ -119,8 +122,14 @@ fn app_error_serializes_with_camel_case_keys() {
     let err = misedeck_lib::mise::AppError::not_found();
     let v = serde_json::to_value(&err).unwrap();
     assert!(v.get("code").is_some(), "must have `code` key, got {v:?}");
-    assert!(v.get("message").is_some(), "must have `message` key, got {v:?}");
-    assert!(v.get("stderr").is_some(), "must have `stderr` key, got {v:?}");
+    assert!(
+        v.get("message").is_some(),
+        "must have `message` key, got {v:?}"
+    );
+    assert!(
+        v.get("stderr").is_some(),
+        "must have `stderr` key, got {v:?}"
+    );
     assert_eq!(v["code"], "MISE_NOT_FOUND");
     // Make sure no snake_case leaked through.
     assert!(v.get("binary_path").is_none());

@@ -42,10 +42,7 @@ use std::process::ExitCode;
 /// is the crate root, so `tests/fixtures/mise` sits next to the recorded
 /// payloads. The binary itself lives under `target/<profile>/`, far away
 /// from them, so the current-exe path cannot be used as the anchor.
-const PAYLOAD_DIR: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/tests/fixtures/mise"
-);
+const PAYLOAD_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/mise");
 
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().skip(1).collect();

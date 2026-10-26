@@ -18,8 +18,8 @@
 use std::path::PathBuf;
 
 use misedeck_lib::mise::{
-    code, mise_run_task_argv, mise_tasks_add_argv, mise_tasks_edit_path, mise_tasks_ls,
-    run_mise, RunEvent, RunRequest,
+    code, mise_run_task_argv, mise_tasks_add_argv, mise_tasks_edit_path, mise_tasks_ls, run_mise,
+    RunEvent, RunRequest,
 };
 use misedeck_lib::JsonResult;
 use misedeck_lib::TasksEditPathResult;
@@ -234,8 +234,11 @@ fn mise_tasks_add_argv_passes_every_named_field() {
 fn tasks_ls_returns_array_with_three_tasks() {
     let script = fixture_script();
     with_slug("tasks---ls---json", || {
-        let v = mise_tasks_ls(&script, Some(std::path::Path::new("/Users/example/project")))
-            .expect("tasks ls --json should yield Ok");
+        let v = mise_tasks_ls(
+            &script,
+            Some(std::path::Path::new("/Users/example/project")),
+        )
+        .expect("tasks ls --json should yield Ok");
         let arr = v.as_array().expect("tasks ls payload must be a JSON array");
         assert_eq!(arr.len(), 3, "expected 3 tasks, got {v:?}");
         let names: Vec<String> = arr
@@ -337,7 +340,10 @@ fn run_mise_with_run_task_argv_streams_to_exit() {
         assert_eq!(outcome.exit_code, 0, "outcome = {outcome:?}");
         let evs = events.lock().unwrap();
         assert!(evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })));
-        assert!(matches!(evs.last(), Some(RunEvent::Exit { exit_code: 0, .. })));
+        assert!(matches!(
+            evs.last(),
+            Some(RunEvent::Exit { exit_code: 0, .. })
+        ));
     });
 }
 
@@ -354,7 +360,10 @@ fn tasks_ls_json_result_serializes_with_kind_tag() {
     };
     let v = serde_json::to_value(&ok).unwrap();
     assert_eq!(v["kind"], "ok");
-    assert!(v.get("value").is_some(), "must have `value` payload, got {v:?}");
+    assert!(
+        v.get("value").is_some(),
+        "must have `value` payload, got {v:?}"
+    );
 
     let err = JsonResult::Err {
         err: misedeck_lib::mise::AppError::not_found(),

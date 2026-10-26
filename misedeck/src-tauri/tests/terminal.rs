@@ -110,7 +110,10 @@ fn open_in_terminal_resolves_existing_directory_on_macos() {
         .expect("open_in_terminal should succeed on macOS for an existing dir");
     assert_eq!(outcome.platform, "macOS");
     assert_eq!(outcome.terminal_app, "Terminal.app");
-    assert!(!outcome.argv.is_empty(), "argv must be populated, got {outcome:?}");
+    assert!(
+        !outcome.argv.is_empty(),
+        "argv must be populated, got {outcome:?}"
+    );
     assert_eq!(outcome.argv[0], "open");
     assert!(outcome.argv.contains(&"-a".to_string()));
     assert!(outcome.argv.contains(&"Terminal".to_string()));

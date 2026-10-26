@@ -33,8 +33,7 @@ use serde::Serialize;
 use crate::mise::AppError;
 
 /// Every MiseDeck release, newest first, prereleases included.
-pub const RELEASES_FEED_URL: &str =
-    "https://github.com/cherishfall/misedeck/releases.atom";
+pub const RELEASES_FEED_URL: &str = "https://github.com/cherishfall/misedeck/releases.atom";
 
 /// How long the whole request may take. A check the user asked for should
 /// answer or give up; it must never sit in the background for a minute on
@@ -114,10 +113,7 @@ where
 /// feed with nothing newer) and "we never read a feed" must not collapse
 /// into the same answer. So the body has to look like an Atom feed with
 /// at least one complete entry; only then does `Ok(None)` mean "current".
-pub fn check_from_body(
-    current_version: &str,
-    body: &str,
-) -> Result<Option<ReleaseTag>, AppError> {
+pub fn check_from_body(current_version: &str, body: &str) -> Result<Option<ReleaseTag>, AppError> {
     if !body.contains("<feed") {
         return Err(feed_shape_error("the response is not an Atom feed"));
     }
@@ -344,7 +340,10 @@ mod tests {
             tags[0].url,
             "https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.17"
         );
-        assert_eq!(tags[0].published_at.as_deref(), Some("2026-11-02T09:14:00Z"));
+        assert_eq!(
+            tags[0].published_at.as_deref(),
+            Some("2026-11-02T09:14:00Z")
+        );
         assert_eq!(tags[1].version, "1.0.0-beta.16");
     }
 
@@ -421,8 +420,8 @@ mod tests {
     /// Reporting "up to date" here is the false claim the ticket is about.
     #[test]
     fn an_empty_200_is_a_failed_check_not_an_up_to_date_claim() {
-        let err = check_from_body("1.0.0-beta.17", "")
-            .expect_err("an empty body must fail the check");
+        let err =
+            check_from_body("1.0.0-beta.17", "").expect_err("an empty body must fail the check");
         assert_eq!(err.code, CHECK_FAILED_CODE);
         // The fixed six-code set (conventions.md): a failed update check
         // is a failed command, never a seventh code (#254).
@@ -473,11 +472,7 @@ mod tests {
         assert_eq!(err.code, CHECK_FAILED_CODE);
         // A truncated JSON body and a DNS error look the same way: neither
         // is a feed.
-        assert!(check_from_body(
-            "1.0.0-beta.17",
-            r#"{"message":"rate limited"}"#
-        )
-        .is_err());
+        assert!(check_from_body("1.0.0-beta.17", r#"{"message":"rate limited"}"#).is_err());
     }
 
     /// A real feed root with no entries is a broken response — the release
@@ -535,10 +530,7 @@ mod tests {
 
     #[test]
     fn an_entry_cut_off_mid_response_is_dropped() {
-        let mid = FEED
-            .find("</entry>")
-            .expect("fixture has a closed entry")
-            - 40;
+        let mid = FEED.find("</entry>").expect("fixture has a closed entry") - 40;
         let tags = parse_release_tags(&FEED[..mid]);
         assert!(
             tags.is_empty(),

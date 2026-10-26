@@ -53,10 +53,16 @@ fn tools_env_returns_flat_map() {
             Some("/Users/example/.local/share/mise/installs/go/1.26.7")
         );
         // A project [env] table value passes through too.
-        assert_eq!(obj.get("NODE_ENV").and_then(|x| x.as_str()), Some("preview"));
+        assert_eq!(
+            obj.get("NODE_ENV").and_then(|x| x.as_str()),
+            Some("preview")
+        );
         // Every value is a string (mise env --json is a flat map).
         for (k, val) in obj {
-            assert!(val.is_string(), "env value for {k:?} must be a string, got {val:?}");
+            assert!(
+                val.is_string(),
+                "env value for {k:?} must be a string, got {val:?}"
+            );
         }
     });
 }
@@ -109,18 +115,27 @@ fn mise_env_extended_returns_source_annotations() {
     let script = fixture_script();
     with_slug("env---json-extended", || {
         let v = mise_env_extended(&script, None).expect("env --json-extended should yield Ok");
-        let obj = v.as_object().expect("extended env payload must be a JSON object");
+        let obj = v
+            .as_object()
+            .expect("extended env payload must be a JSON object");
         // Tool-derived vars carry a `tool` field.
-        let java = obj["JAVA_HOME"].as_object().expect("JAVA_HOME must be an object");
+        let java = obj["JAVA_HOME"]
+            .as_object()
+            .expect("JAVA_HOME must be an object");
         assert_eq!(
             java["value"].as_str(),
             Some("/Users/example/.local/share/mise/installs/java/oracle-17")
         );
         assert_eq!(java["tool"].as_str(), Some("java"));
         // Project-set vars carry a `source` path.
-        let node_env = obj["NODE_ENV"].as_object().expect("NODE_ENV must be an object");
+        let node_env = obj["NODE_ENV"]
+            .as_object()
+            .expect("NODE_ENV must be an object");
         assert_eq!(node_env["value"].as_str(), Some("preview"));
-        assert_eq!(node_env["source"].as_str(), Some("/Users/example/project/mise.toml"));
+        assert_eq!(
+            node_env["source"].as_str(),
+            Some("/Users/example/project/mise.toml")
+        );
     });
 }
 
@@ -156,7 +171,9 @@ fn mise_env_extended_passes_cwd_via_dash_c() {
     with_slug("env---json-extended", || {
         let v = mise_env_extended(&script, Some(std::path::Path::new("/tmp/some-cwd")))
             .expect("env --json-extended with cwd should yield Ok");
-        let obj = v.as_object().expect("extended env payload must be a JSON object");
+        let obj = v
+            .as_object()
+            .expect("extended env payload must be a JSON object");
         assert!(obj.contains_key("JAVA_HOME"));
     });
 }
@@ -167,14 +184,20 @@ fn mise_env_extended_passes_cwd_via_dash_c() {
 fn read_mise_lockfile_returns_none_when_no_cwd() {
     // The global context has no associated lockfile.
     let result = read_mise_lockfile(None).expect("read_mise_lockfile(None) should yield Ok");
-    assert!(result.is_none(), "expected None for global context, got {result:?}");
+    assert!(
+        result.is_none(),
+        "expected None for global context, got {result:?}"
+    );
 }
 
 #[test]
 fn read_mise_lockfile_returns_none_when_file_absent() {
     let dir = TempDir::new().expect("tempdir");
     let result = read_mise_lockfile(Some(dir.path())).expect("missing file should yield Ok(None)");
-    assert!(result.is_none(), "expected None for missing file, got {result:?}");
+    assert!(
+        result.is_none(),
+        "expected None for missing file, got {result:?}"
+    );
 }
 
 #[test]
@@ -194,7 +217,10 @@ fn read_mise_lockfile_ignores_unrelated_files() {
     let dir = TempDir::new().expect("tempdir");
     std::fs::write(dir.path().join("mise.lock.bak"), "noise").expect("write");
     let result = read_mise_lockfile(Some(dir.path())).expect("missing lockfile should yield Ok");
-    assert!(result.is_none(), "expected None for sibling file, got {result:?}");
+    assert!(
+        result.is_none(),
+        "expected None for sibling file, got {result:?}"
+    );
 }
 
 #[test]

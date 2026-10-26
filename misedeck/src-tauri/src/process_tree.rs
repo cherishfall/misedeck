@@ -710,7 +710,9 @@ mod tests {
                 resolved.display()
             );
             assert_eq!(
-                resolved.file_name().map(|n| n.to_string_lossy().to_string()),
+                resolved
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string()),
                 Some(name.to_string())
             );
         }
@@ -718,7 +720,9 @@ mod tests {
         let powershell = PathBuf::from(windows_powershell());
         assert!(powershell.is_absolute(), "got {}", powershell.display());
         assert_eq!(
-            powershell.file_name().map(|n| n.to_string_lossy().to_string()),
+            powershell
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string()),
             Some("powershell.exe".to_string())
         );
         assert_eq!(

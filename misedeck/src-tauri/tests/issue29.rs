@@ -111,7 +111,9 @@ fn settings_ls_all_lists_unset_keys_with_defaults() {
         // The fixture slug proves `--all` reached the CLI; the payload
         // includes an unset key (no `source`) carrying its default.
         let v = mise_settings_ls(&script, None, true).expect("settings ls --all should yield Ok");
-        let obj = v.as_object().expect("settings --all payload must be an object");
+        let obj = v
+            .as_object()
+            .expect("settings --all payload must be an object");
         let legacy = &obj["legacy_version_file"];
         assert_eq!(legacy["value"], true);
         assert!(legacy.get("source").is_none());
@@ -125,8 +127,12 @@ fn settings_ls_adds_local_flag_for_project_context() {
     with_slug("settings---ls---json-extended", || {
         // The fixture is the same; the test only verifies the call
         // completes when a cwd is supplied (the runner prepends `-C`).
-        let v = mise_settings_ls(&script, Some(std::path::Path::new("/Users/example/project")), false)
-            .expect("project settings ls should yield Ok");
+        let v = mise_settings_ls(
+            &script,
+            Some(std::path::Path::new("/Users/example/project")),
+            false,
+        )
+        .expect("project settings ls should yield Ok");
         assert!(v.as_object().unwrap().contains_key("jobs"));
     });
 }
@@ -136,7 +142,8 @@ fn settings_ls_adds_local_flag_for_project_context() {
 fn settings_ls_command_failed_keeps_stderr() {
     let script = fixture_script();
     with_slug("settings---ls---json-extended-command-failed", || {
-        let err = mise_settings_ls(&script, None, false).expect_err("non-zero exit should yield Err");
+        let err =
+            mise_settings_ls(&script, None, false).expect_err("non-zero exit should yield Err");
         assert_eq!(err.code, code::COMMAND_FAILED);
         assert!(err.stderr.contains("ERROR"));
     });
@@ -176,10 +183,8 @@ fn doctor_parses_a_nonzero_exit_as_the_structured_report() {
     // text, and ran `mise doctor` a second time — on exactly the broken
     // install the page exists for. Parse first, and prove one call.
     let script = fixture_script();
-    let log = std::env::temp_dir().join(format!(
-        "misedeck-doctor-calls-{}.log",
-        std::process::id()
-    ));
+    let log =
+        std::env::temp_dir().join(format!("misedeck-doctor-calls-{}.log", std::process::id()));
     let _ = std::fs::remove_file(&log);
     unsafe {
         std::env::set_var("FIXTURE_MISE_SLUG", "doctor---json-errors");
@@ -298,7 +303,10 @@ fn registry_returns_json_array() {
         let arr = v.as_array().expect("registry payload must be an array");
         assert_eq!(arr.len(), 2);
         assert_eq!(arr[0]["short"], "node");
-        assert!(arr[0]["backends"].as_array().unwrap().contains(&serde_json::json!("core:node")));
+        assert!(arr[0]["backends"]
+            .as_array()
+            .unwrap()
+            .contains(&serde_json::json!("core:node")));
     });
 }
 

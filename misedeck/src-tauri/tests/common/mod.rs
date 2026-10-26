@@ -32,7 +32,11 @@ pub const FIXTURES_HINT: &str = "the fixture binaries are behind the `fixtures` 
 
 /// Path to the fixture the tests should spawn.
 pub fn fixture_script() -> PathBuf {
-    fixture_binary("CARGO_BIN_EXE_fixture-mise", option_env!("CARGO_BIN_EXE_fixture-mise"), "fixture-mise")
+    fixture_binary(
+        "CARGO_BIN_EXE_fixture-mise",
+        option_env!("CARGO_BIN_EXE_fixture-mise"),
+        "fixture-mise",
+    )
 }
 
 /// Resolve one of the harness binaries, failing with the command that

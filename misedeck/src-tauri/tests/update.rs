@@ -38,7 +38,9 @@ fn check_reports_a_newer_prerelease_from_a_recorded_feed() {
     );
     assert_eq!(newest.published_at.as_deref(), Some("2026-11-02T09:14:00Z"));
     assert!(
-        newest.url.starts_with(RELEASES_FEED_URL.trim_end_matches("/releases.atom")),
+        newest
+            .url
+            .starts_with(RELEASES_FEED_URL.trim_end_matches("/releases.atom")),
         "the link must stay on the releases host, got {:?}",
         newest.url
     );
