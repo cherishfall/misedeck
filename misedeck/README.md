@@ -22,7 +22,7 @@ npm run ci             # the full frontend gate: typecheck, tests, every lint gu
 
 1. `npm run typecheck` — `tsc --noEmit`.
 2. `npm run lint:eslint` — the React Hooks rules only (`rules-of-hooks`, `exhaustive-deps`), with zero warnings allowed.
-3. `npm run test` — unit tests (`tsx --test "src/**/*.test.ts"`).
+3. `npm run test` — the test baseline: pure-function suites (`test:unit`, `tsx --test "src/**/*.test.ts"`) plus the render-level wiring suites (`test:ui`, node:test over jsdom).
 4. `npm run lint:i18n` — `en.json` and `zh-CN.json` must have the same key set, and every `t("…")` call site must name a known key.
 5. `npm run lint:i18n-concat` — a translated string is never concatenated with another string; the whole phrase lives in the resource file.
 6. `npm run lint:css-tokens` — every `var(--*)` reference must resolve to a defined token, and every defined token must be referenced somewhere in `src/`.

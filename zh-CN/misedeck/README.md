@@ -22,7 +22,7 @@ npm run ci             # 完整的前端闸门：类型检查、测试、全部 
 
 1. `npm run typecheck` —— `tsc --noEmit`。
 2. `npm run lint:eslint` —— 仅启用 React Hooks 两条规则（`rules-of-hooks`、`exhaustive-deps`），且要求零警告。
-3. `npm run test` —— 单元测试（`tsx --test "src/**/*.test.ts"`）。
+3. `npm run test` —— 测试基线：纯函数套件（`test:unit`，`tsx --test "src/**/*.test.ts"`）加渲染层接线套件（`test:ui`，node:test 跑在 jsdom 上）。
 4. `npm run lint:i18n` —— `en.json` 与 `zh-CN.json` 必须有相同的键集合，且每个 `t("…")` 调用点都必须指向已知键。
 5. `npm run lint:i18n-concat` —— 译文不得与其他字符串拼接；完整句子放在资源文件里。
 6. `npm run lint:css-tokens` —— 每个 `var(--*)` 引用必须能解析到已定义的 token，且每个已定义的 token 必须在 `src/` 中被引用。
