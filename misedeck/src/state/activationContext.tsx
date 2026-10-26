@@ -45,25 +45,19 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 
-import {
-  openInTerminal as invokeOpenInTerminal,
-  shellActivationCheck,
-} from "../api/mise";
+import { openInTerminal as invokeOpenInTerminal } from "../api/mise";
 import type {
   ActivationStatus,
   AppError,
   TerminalOpenOutcome,
 } from "../types/tauri";
 import { resolveAppErrorMessage } from "../utils/appError";
+import { probeShellActivation, type ActivationState } from "./activationProbe";
 
-/** The UI's view of the activation probe. Mirrors the
- *  `TrustState` shape (issue #25) so the banner code reads the
- *  same way. */
-export type ActivationState =
-  | { kind: "unknown" }
-  | { kind: "loading" }
-  | { kind: "ok"; status: ActivationStatus }
-  | { kind: "error"; message: string };
+/** The UI's view of the activation probe lives with its execution half
+ *  (`activationProbe.ts`, issue #286); re-exported here because this
+ *  module is the context's public surface. */
+export type { ActivationState } from "./activationProbe";
 
 /** One-shot outcome of an `openInTerminal` call. The provider
  *  holds the latest one and clears it when the caller re-reads
@@ -188,39 +182,44 @@ function shellDisplayName(s: ActivationStatus["shell"]): string {
 
 export function ActivationProvider({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
-  const [state, setState] = useState<ActivationState>({ kind: "loading" });
+  // The raw probe result. An error message stays key-shaped here and is
+  // resolved at render below — the provider never resolves it (issue
+  // #286).
+  const [rawState, setRawState] = useState<ActivationState>({ kind: "loading" });
   const [dismissedMap, setDismissedMap] = useState<DismissedMap>(() => loadDismissed());
   const [openOutcome, setOpenOutcome] = useState<OpenTerminalOutcome | null>(null);
   // Mirror of `openOutcome` so the consumer can read+clear in
   // one synchronous step without racing the React setState.
   const openOutcomeRef = useRef<OpenTerminalOutcome | null>(null);
 
+  // Deliberately depends on nothing (issue #286). It used to depend on
+  // `t`, so every locale switch re-sent `shell_activation_check` and
+  // flashed the banner back to loading. Error copy is resolved during
+  // render instead, so `t` has no business inside the probe.
   const runProbe = useCallback(async () => {
-    setState({ kind: "loading" });
-    try {
-      const result = await shellActivationCheck();
-      if (result.kind === "ok") {
-        setState({ kind: "ok", status: result.ok });
-      } else {
-        // `err.message` can be key-shaped (`errors.*` + params per the
-        // AppError contract) — resolve it so a raw key never reaches
-        // the screen (issue #118).
-        setState({
-          kind: "error",
-          message: resolveAppErrorMessage(result.err.message, t),
-        });
-      }
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      setState({ kind: "error", message });
-    }
-  }, [t]);
+    setRawState({ kind: "loading" });
+    setRawState(await probeShellActivation());
+  }, []);
 
   // Probe once on mount. The "once" is per app start — the
   // provider is at the root of the tree (see `main.tsx`).
   useEffect(() => {
     void runProbe();
   }, [runProbe]);
+
+  // Resolve key-shaped error copy against the active locale at render
+  // time (same shape as `trustContext`): a locale switch re-renders the
+  // banner's message and nothing else.
+  const state = useMemo<ActivationState>(
+    () =>
+      rawState.kind === "error"
+        ? {
+            kind: "error",
+            message: resolveAppErrorMessage(rawState.message, t),
+          }
+        : rawState,
+    [rawState, t],
+  );
 
   // The dismissed flag for the active shell family. When the
   // shell changes (e.g. user moves to a new machine), the

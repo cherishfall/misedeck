@@ -285,6 +285,92 @@ test("truncated: a finished run never grows a notice", () => {
   assert.equal(next, state);
 });
 
+// Issue #286: the invoke call's own outcome is the authoritative
+// fallback when the channel's Exit event never arrives. Before it, such
+// a run stayed "running" forever and the running protection kept it
+// unremovable — a zombie chip with no recovery path.
+
+test("complete: an invoke result without an Exit event settles the run", () => {
+  let state = startRun(emptyState(), "a");
+  state = executionReducer(state, {
+    type: "complete",
+    id: "a",
+    newVersion: null,
+    exitCode: 0,
+    durationMs: 1234,
+  });
+  const entry = state.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "ok");
+  assert.equal(entry.exitCode, 0);
+  assert.equal(entry.durationMs, 1234);
+  // Terminal, so the running protection no longer applies.
+  const next = executionReducer(state, { type: "removeRun", id: "a" });
+  assert.deepEqual(next.runs, []);
+  assert.equal(next.activeRunId, null);
+});
+
+test("complete: a non-zero invoke outcome settles as failed and opens a closed panel", () => {
+  let state = startRun(emptyState(), "a");
+  state = executionReducer(state, { type: "close" });
+  state = executionReducer(state, {
+    type: "complete",
+    id: "a",
+    newVersion: null,
+    exitCode: 2,
+    durationMs: 50,
+  });
+  const entry = state.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "failed");
+  assert.equal(entry.exitCode, 2);
+  assert.equal(state.isOpen, true);
+  const next = executionReducer(state, { type: "removeRun", id: "a" });
+  assert.deepEqual(next.runs, []);
+});
+
+test("complete: an Exit event's outcome is authoritative when it arrived", () => {
+  let state = finishRun(startRun(emptyState(), "a"), "a", 7);
+  state = executionReducer(state, {
+    type: "complete",
+    id: "a",
+    newVersion: null,
+    exitCode: 0,
+    durationMs: 999,
+  });
+  const entry = state.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "failed");
+  assert.equal(entry.exitCode, 7);
+  assert.equal(entry.durationMs, 10);
+});
+
+test("complete: a cancelled run keeps its cancelled status", () => {
+  let state = startRun(emptyState(), "a");
+  state = executionReducer(state, { type: "cancel", id: "a" });
+  state = executionReducer(state, {
+    type: "complete",
+    id: "a",
+    newVersion: null,
+    exitCode: 0,
+    durationMs: 20,
+  });
+  const entry = state.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "cancelled");
+  assert.equal(entry.exitCode, null);
+});
+
+test("complete: the self-update version lands on the settling run", () => {
+  let state = startRun(emptyState(), "a");
+  state = executionReducer(state, {
+    type: "complete",
+    id: "a",
+    newVersion: "2.0.0",
+    exitCode: 0,
+    durationMs: 90,
+  });
+  const entry = state.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "ok");
+  assert.equal(entry.newVersion, "2.0.0");
+});
+
 // Issue #197: dismiss (close) is a panel fixture, usable in any state —
 // including the empty state the panel used to get stuck in.
 

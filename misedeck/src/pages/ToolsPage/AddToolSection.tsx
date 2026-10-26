@@ -28,7 +28,9 @@
 //     Install (secondary), both confirmed. A `latest` row is pinned
 //     to ③'s top, annotated with the concrete version the comparator
 //     resolves it to (`latest → 27.0.0`); it renders only when that
-//     version is not already on disk, so the sections never overlap.
+//     version is not already on disk, and it IS that version's row —
+//     the newest version appears once, never as a second identical
+//     action (issue #286).
 //     Section order is constant: in use → installed → not installed.
 //
 // Every section action merely OPENS the page's confirm dialog — the
@@ -74,6 +76,7 @@ import { shortenPathTail } from "../../utils/paths";
 import { compareToolVersions, hasUpgradeTarget } from "../../utils/versions";
 import tableStyles from "../../components/Table/Table.module.css";
 
+import { buildAvailableRows, type AvailableRow } from "./availableRows";
 import styles from "./AddToolSection.module.css";
 
 /** Suggestions shown at once under the registry search box. */
@@ -87,11 +90,9 @@ const MIN_PAGE_SIZE = 10;
  *  over. */
 const PAGE_SIZE_STORAGE_KEY = "misedeck.pageSize.tools.remote";
 
-/** A row of the not-installed section: the pinned `latest` alias or a
- *  concrete remote version. */
-type AvailableRow =
-  | { kind: "latest"; version: string }
-  | { kind: "version"; version: string; createdAt?: string };
+/** A row of the not-installed section — the pinned `latest` alias or a
+ *  concrete remote version — and its builder live in `availableRows.ts`
+ *  so the dedupe rule is unit-tested (issue #286). */
 
 interface AddToolSectionProps {
   /** Opens the page's Use confirmation (exact command shown). */
@@ -315,27 +316,12 @@ export function AddToolSection({
 
   // ③ Not installed: remote minus the on-disk set, newest first, with
   // the `latest` alias pinned on top annotated by its resolved version.
-  const newestRemote = useMemo(() => {
-    const sorted = [...(remote.data ?? [])].sort((a, b) =>
-      compareToolVersions(b.version, a.version),
-    );
-    return sorted[0]?.version;
-  }, [remote.data]);
-
-  const availableRows = useMemo<AvailableRow[]>(() => {
-    const rows: AvailableRow[] = [];
-    if (newestRemote !== undefined && !installedSet.has(newestRemote)) {
-      rows.push({ kind: "latest", version: newestRemote });
-    }
-    const sorted = [...(remote.data ?? [])].sort((a, b) =>
-      compareToolVersions(b.version, a.version),
-    );
-    for (const item of sorted) {
-      if (installedSet.has(item.version)) continue;
-      rows.push({ kind: "version", version: item.version, createdAt: item.createdAt });
-    }
-    return rows;
-  }, [remote.data, installedSet, newestRemote]);
+  // The pinned row replaces the newest remote row — one row per version
+  // (issue #286; the builder is unit-tested next to this file).
+  const availableRows = useMemo<AvailableRow[]>(
+    () => buildAvailableRows(remote.data ?? [], installedSet),
+    [remote.data, installedSet],
+  );
 
   // One version filter over ② and ③ (① is the anchor — it stays whole).
   const filteredInstalledRows = useMemo(() => {

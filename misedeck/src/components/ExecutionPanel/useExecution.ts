@@ -76,9 +76,11 @@ export interface ExecutionState {
   kind: ExecutionKind;
   request: RunRequest | null;
   lines: LogLine[];
-  /** Exit code reported by this run's Exit stream event; `null` until the
-   *  process actually exits, so a failure that never produced one (spawn
-   *  error, IPC validation failure) cannot display a stale code (#129). */
+  /** Exit code reported by this run's Exit stream event, or — when that
+   *  event never arrived — the invoke result's outcome (issue #286);
+   *  `null` until the run settles, so a failure that never produced one
+   *  (spawn error, IPC validation failure) cannot display a stale code
+   *  (#129). */
   exitCode: number | null;
   durationMs: number;
   error: AppError | null;
@@ -315,12 +317,17 @@ export function useExecution() {
         }
         if (background || cancelled) return result;
         if (result.kind === "ok") {
-          // The Exit event from the channel already updated state.
-          // For self-update, surface the post-update version.
+          // The Exit event from the channel normally already updated
+          // state; the invoke result is the authoritative fallback when
+          // that event never arrived, so the run always reaches a
+          // terminal state (issue #286). For self-update, surface the
+          // post-update version as well.
           dispatch({
             type: "complete",
             id,
             newVersion: typeof result.newVersion === "string" ? result.newVersion : null,
+            exitCode: result.outcome.exitCode,
+            durationMs: result.outcome.durationMs,
           });
         } else {
           dispatch({ type: "fail", id, error: result.err });

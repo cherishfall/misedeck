@@ -89,7 +89,19 @@ export type Action =
   | { type: "line"; id: string; stream: "stdout" | "stderr"; text: string }
   | { type: "truncated"; id: string; stream: "stdout" | "stderr" }
   | { type: "exit"; id: string; exitCode: number; durationMs: number }
-  | { type: "complete"; id: string; newVersion: string | null }
+  /** The invoke call resolved. Its `outcome` is the authoritative
+   *  fallback for a run whose channel Exit event never arrived
+   *  (issue #286): without it the run stayed "running" forever and the
+   *  running protection kept it unremovable. When the Exit event did
+   *  arrive, the run is already terminal and only `newVersion` is
+   *  applied — the event's own exitCode/durationMs stay. */
+  | {
+      type: "complete";
+      id: string;
+      newVersion: string | null;
+      exitCode: number;
+      durationMs: number;
+    }
   | { type: "fail"; id: string; error: AppError }
   | { type: "cancel"; id: string }
   | { type: "cancelFailed"; id: string; error: AppError }
@@ -211,13 +223,36 @@ export function executionReducer(state: ExecState, action: Action): ExecState {
         isOpen: action.exitCode === 0 ? state.isOpen : true,
       };
     }
-    case "complete":
+    case "complete": {
+      // The invoke result settles a run whose Exit event was lost
+      // (issue #286): the process is already gone, so leaving it
+      // "running" is a zombie that the running protection keeps
+      // unremovable. Only a still-running run is settled — a cancelled
+      // run stays terminal (#223), and a run the Exit event already
+      // finished keeps that event's own outcome.
+      const target = state.runs.find((r) => r.id === action.id);
+      if (!target) return state;
+      const settle = target.status === "running";
       return {
         ...state,
-        runs: state.runs.map((r) =>
-          r.id === action.id ? { ...r, newVersion: action.newVersion } : r,
-        ),
+        runs: state.runs.map((r) => {
+          if (r.id !== action.id) return r;
+          if (!settle) return { ...r, newVersion: action.newVersion };
+          return {
+            ...r,
+            status: action.exitCode === 0 ? "ok" : "failed",
+            exitCode: action.exitCode,
+            durationMs: action.durationMs,
+            newVersion: action.newVersion,
+            cancelError: null,
+          };
+        }),
+        // Same failure exception as `exit`: a run that settles failed
+        // while the panel is closed opens it once so the logs are
+        // visible. `complete` arrives at most once per run.
+        isOpen: settle && action.exitCode !== 0 ? true : state.isOpen,
       };
+    }
     case "fail":
       return {
         ...state,
