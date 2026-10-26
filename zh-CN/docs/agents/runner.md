@@ -29,9 +29,9 @@ Runner 用后台读线程（每个 pipe 一个）按行切分，通过有界 `mp
 - **终止**：Unix `killpg(pgid, SIGKILL)`；Windows `taskkill /F /T /PID`。组信号用不上时（进程离开了自己的组、`taskkill` 不存在、两者都没有的平台）保留 `child.kill()` 作为直接子进程的兜底。这才让 `sh -c "curl … | sh"` 真的停下：只杀 `sh` 时 `curl` 与安装脚本会继续写 shim，`mise run` 则会留下任务 shell。
 - **取消**在产品语义上仍是*软取消*：面板立即标记为 cancelled 并释放按钮，不等进程。但 #223 之后取消会到达 Rust——`cancel_run(runId)`——由持有该子进程的 runner 在一个轮询切片内（≤ 50 ms）拆掉进程组。kill 永远在持有 `Child` handle 的线程上执行，绝不在取消调用里执行，因此取消不可能误伤应用没有启动的 pid。
 - **退出**：Tauri 的 `RunEvent::ExitRequested` 与 `RunEvent::Exit` 会终止进程级注册表里仍然存活的每个进程组，所以安装途中关窗口不会留下后台下载。
-- **pid 复用**：注册表只保存本进程启动且尚未回收的子进程。条目在被回收的同一步删除——回收后的 pid 可被复用——而 `terminate_all` 在持有注册表锁时发信号，保证 owner 不能抢在查找与 kill 之间完成回收。
+- **pid 复用**：注册表只保存本进程启动且尚未回收的子进程。条目在被回收的同一步删除——回收后的 pid 可被复用——而 `try_wait` 在注册表锁内完成「回收 + 注销」两步，所以存活的条目永远指向本应用仍拥有的 pid。`terminate_all` 在锁内只取 group id 快照，释放锁之后才 kill（issue #284）：Windows 的 kill 要等 `taskkill`，它会遍历子树，每棵树可达数秒；如果在锁内等，所有 runner 线程的 `try_wait` 轮询都会在整个清扫期间停摆，关窗口就成了全应用卡死。
 
-平台说明：Windows 的进程树终止没有运行时测试（评审回路里没有 Windows 机器；`windows-latest` CI job 只做编译与单元测试）。Unix 由 fixture 测试覆盖：断言子进程启动的孙进程在取消后、超时后都已死亡（`tests/runner.rs`，`#[cfg(unix)]`）。
+平台说明：Windows 由 `windows-latest` CI job 做运行时覆盖，它跑的是完整套件（`cargo test --all-targets --features fixtures --no-fail-fast`）。有四条行为测试真正走 `taskkill /F /T` 路径：取消与超时杀掉孙进程（`tests/runner.rs`；fixture 改为 Rust 二进制后跨平台），以及退出清扫 `terminate_all` 与 `terminate_tree`（`process_tree.rs` 的单元测试，只有它能碰到 crate 私有的清扫函数）——后两条都由 PowerShell 子进程启动一个隐藏的 `ping` 孙进程，再用 `tasklist` 断言两个进程都已消失（#278、#284）。Unix 用同一套 `terminate_all` 测试，fixture 是 `sh` + `sleep`。
 
 ## Captured 模式
 

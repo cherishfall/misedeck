@@ -47,10 +47,10 @@ Ubuntu 22.04 / Debian 12 上无法启动。`ci.yml` 保持 `ubuntu-latest` —�
 `rust` job 还会跑 `cargo clippy --all-targets --features fixtures -- -D warnings`，
 任何 lint（包括 `unexpected_cfgs`）都会让 CI 失败，而不是留在
 `master` 上。Windows job 跑的是同一套完整测试——单元测试**和**集成测试
-——其中包含 `#[cfg(windows)]` 的进程树 teardown 测试：它启动
-PowerShell，由 PowerShell 再启动 `ping` 作为孙进程，调用真实的
-`terminate_tree`，再用 `tasklist` 断言两个进程都已消失
-（issue #278）。
+——其中包含 `#[cfg(windows)]` 的进程树 teardown 测试：每一条都启动
+PowerShell，由 PowerShell 再启动一个隐藏的 `ping` 作为孙进程，并用
+`tasklist` 断言两个进程都已消失——`terminate_tree`（issue #278），以及
+退出清扫 `terminate_all` 自己的 Windows 覆盖（issue #284）。
 
 ### Windows job
 

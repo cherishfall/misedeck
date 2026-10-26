@@ -55,9 +55,10 @@ The `rust` job also runs `cargo clippy --all-targets --features fixtures -- -D w
 so a lint (including `unexpected_cfgs`) fails CI instead of lingering
 on `master`. The Windows job runs the same full suite — unit **and**
 integration tests — which includes the `#[cfg(windows)]` process-tree
-teardown test: it spawns PowerShell, which starts `ping` as a
-grandchild, calls the real `terminate_tree`, and asserts both
-processes are gone through `tasklist` (issue #278).
+teardown tests: each spawns PowerShell, which starts a hidden `ping` as
+a grandchild, and asserts through `tasklist` that both processes are
+gone — `terminate_tree` (issue #278) and the app-exit sweep
+`terminate_all` on its own Windows leg (issue #284).
 
 ### The Windows job
 

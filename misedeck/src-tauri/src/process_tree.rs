@@ -24,9 +24,13 @@
 // the child. The kill itself always runs on the thread holding the
 // `Child` handle, which is what keeps a recycled pid from ever being
 // signalled: an entry is removed from the registry the moment its
-// child is reaped (a reaped pid is free for reuse), and `terminate_all`
-// signals while holding the registry lock so no owner can reap between
-// the lookup and the kill.
+// child is reaped (a reaped pid is free for reuse), and `try_wait`
+// reaps and unregisters under the registry lock in one step, so a live
+// entry always means "this pid is still ours". `terminate_all`
+// snapshots the groups under that lock and kills after releasing it
+// (issue #284): the Windows kill waits for `taskkill`, and holding the
+// lock across it would stall every runner's `try_wait` for the whole
+// sweep.
 
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::io;
@@ -300,14 +304,35 @@ pub(crate) fn take_cancel(run_id: &str) -> bool {
 /// install or a `mise run` must not leave `curl`/`sh` writing shims in
 /// the background.
 ///
-/// The signals are sent while the registry lock is held so an owner
-/// cannot reap (and free the pid for reuse) between the lookup and the
-/// kill. Owners reap afterwards in their own threads; this function
-/// never waits.
+/// The groups are snapshotted under the registry lock and killed only
+/// after it is released (issue #284). The kill is cheap on unix
+/// (`killpg` is one signal) but not on Windows: there `kill_group`
+/// waits for `taskkill`, which walks the child's subtree and can take
+/// seconds per tree. Holding the registry lock across that wait stalled
+/// every runner thread — each one takes the same lock on its `try_wait`
+/// poll — so closing the window froze the app's bookkeeping for as long
+/// as the sweep ran, instead of just ending the app.
+///
+/// The pid-reuse promise survives without the lock: a pid becomes
+/// reusable only when its owner reaps it, and `try_wait` still reaps
+/// and unregisters under the lock in one atomic step, so the snapshot
+/// cannot name a pid that is already free. The residual gap is a child
+/// that exits between the snapshot and its own kill, whose pid would
+/// then have to be recycled before `taskkill` opens it — a window of
+/// one process creation, on the exit path, against an allocator that
+/// hands out a fresh pid rather than the one just freed.
+///
+/// Owners reap their own children afterwards in their own threads; the
+/// sweep waits for nothing but its own `taskkill` helper.
 pub(crate) fn terminate_all() {
-    let state = registry();
-    for group in state.children.values() {
-        kill_group(*group);
+    // The lock is released before the first kill: `groups` is a plain
+    // snapshot, not a borrow of the registry.
+    let groups: Vec<u32> = {
+        let state = registry();
+        state.children.values().copied().collect()
+    };
+    for group in groups {
+        kill_group(group);
     }
 }
 
@@ -435,55 +460,98 @@ mod tests {
         predicate()
     }
 
+    /// The two-process fixture both teardown tests drive: a child that
+    /// starts one long-lived grandchild, writes the grandchild's pid to
+    /// `pid_file`, and then waits, so the tree is alive until the
+    /// teardown under test runs.
+    ///
+    /// Unix drives `sh` + `sleep`; Windows drives PowerShell + `ping`,
+    /// which is the shape the audit asked for (issue #284): a
+    /// PowerShell child whose grandchild is a real descendant, so
+    /// `taskkill /T` has a parent/child edge to walk.
+    #[cfg(unix)]
+    fn grandchild_fixture(pid_file: &Path) -> Command {
+        let script = format!("sleep 60 & echo $! > {}; wait", pid_file.display());
+        let mut cmd = Command::new("sh");
+        cmd.args(["-c", &script]);
+        cmd
+    }
+
+    #[cfg(windows)]
+    fn grandchild_fixture(pid_file: &Path) -> Command {
+        // `ping -n 30` runs for ~30 s, so only an explicit tree kill can
+        // end it; `-WindowStyle Hidden` keeps the test suite quiet.
+        let script = format!(
+            "$p = Start-Process -FilePath '{}' -ArgumentList '-n','30','127.0.0.1' \
+             -PassThru -WindowStyle Hidden; \
+             Set-Content -LiteralPath '{}' -Value $p.Id; Wait-Process -Id $p.Id",
+            system32("ping.exe"),
+            pid_file.display()
+        );
+        let mut cmd = Command::new(windows_powershell());
+        cmd.args(["-NoProfile", "-NonInteractive", "-Command", &script]);
+        cmd
+    }
+
+    /// Spawn the fixture through `ChildGuard` and return the guard plus
+    /// the pid of the grandchild it started, already asserted alive.
+    #[cfg(any(unix, windows))]
+    fn spawned_tree(pid_file: &Path) -> (ChildGuard, u32) {
+        let mut cmd = grandchild_fixture(pid_file);
+        let guard = ChildGuard::spawn(&mut cmd, None).expect("spawn fixture");
+
+        // PowerShell starts slowly on a cold Windows runner; the write
+        // is the last step of the script, so waiting this long is not a
+        // workaround but the fixture's own startup budget.
+        let written = wait_until(Duration::from_secs(20), || {
+            std::fs::read_to_string(pid_file)
+                .ok()
+                .and_then(|s| s.trim().parse::<u32>().ok())
+                .is_some()
+        });
+        assert!(written, "fixture did not report its grandchild pid");
+        let grandchild: u32 = std::fs::read_to_string(pid_file)
+            .expect("pid file")
+            .trim()
+            .parse()
+            .expect("pid");
+        assert!(
+            process_alive(grandchild),
+            "grandchild {grandchild} must be running before the teardown"
+        );
+        (guard, grandchild)
+    }
+
     /// App-exit cleanup (issue #223): a registered child that started a
     /// grandchild is gone — both processes — after `terminate_all`.
     ///
-    /// Unix-only: it relies on `sh` and on signalling the group, and
-    /// the Windows CI job runs `cargo test --lib` but has no fixture
-    /// shell to drive.
+    /// Cross-platform since issue #284: unix drives `sh` + `sleep`,
+    /// Windows drives PowerShell + `ping` (`grandchild_fixture`), so the
+    /// sweep's `killpg` and `taskkill /F /T` halves are both observed
+    /// through the OS, not just through the reaped `Child` handle.
     ///
     /// `#[serial]` here is load-bearing, not tidy-up. The registry is a
     /// process-global map, so `terminate_all` kills **every** tracked
     /// child in the test binary — including the one a neighbouring test
     /// is in the middle of waiting for. Without the gate this test
-    /// SIGKILLs its neighbours at random depending on scheduling, which
-    /// is exactly how `install::tests::run_install_caps_a_huge_line_and_notifies`
+    /// kills its neighbours at random depending on scheduling, which is
+    /// exactly how `install::tests::run_install_caps_a_huge_line_and_notifies`
     /// failed on the ubuntu leg with `install script exited with status
     /// -1` (no `code()`, because the child died of a signal) and empty
     /// stderr. Every test that spawns through `ChildGuard` carries the
     /// same gate for the same reason.
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[test]
     #[serial_test::serial]
     fn terminate_all_kills_a_registered_tree() {
         let dir = tempfile::tempdir().expect("tempdir");
         let pid_file = dir.path().join("grandchild.pid");
-        let script = format!("sleep 60 & echo $! > {}; wait", pid_file.display());
-        let mut cmd = Command::new("sh");
-        cmd.args(["-c", &script]);
-        let mut guard = ChildGuard::spawn(&mut cmd, None).expect("spawn");
-
-        let pid = wait_until(Duration::from_secs(5), || {
-            std::fs::read_to_string(&pid_file)
-                .ok()
-                .and_then(|s| s.trim().parse::<i32>().ok())
-                .is_some()
-        });
-        assert!(pid, "fixture did not report its grandchild pid");
-        let grandchild: i32 = std::fs::read_to_string(&pid_file)
-            .unwrap()
-            .trim()
-            .parse()
-            .unwrap();
-        assert!(
-            alive(grandchild),
-            "grandchild {grandchild} must be running before the teardown"
-        );
+        let (mut guard, grandchild) = spawned_tree(&pid_file);
 
         terminate_all();
 
         assert!(
-            wait_until(Duration::from_secs(5), || !alive(grandchild)),
+            wait_until(Duration::from_secs(5), || !process_alive(grandchild)),
             "grandchild {grandchild} survived terminate_all"
         );
         // The owner still reaps its own child: the registry kills, it
@@ -542,66 +610,48 @@ mod tests {
     }
 
     /// Issue #278: the same teardown, driven natively on Windows. The
-    /// unix test above proves `killpg` reaches a grandchild; this one
-    /// proves the Windows half — `taskkill /F /T` — reaches the
+    /// #223 tests above prove the sweep (`terminate_all`); this one
+    /// proves `terminate_tree` on its own — `taskkill /F /T` reaches the
     /// grandchild of a child spawned through `ChildGuard`.
     ///
-    /// PowerShell records the pid of the `ping` it starts (which runs
-    /// for ~30 s) and waits on it, so the guard owns a live two-process
-    /// tree. One `terminate_tree` must end both; the pid check runs
-    /// through `tasklist` so it observes the OS, not just the reaped
-    /// direct child.
+    /// One `terminate_tree` must end both processes, and the pid check
+    /// runs through `tasklist` so it observes the OS, not just the
+    /// reaped direct child.
     ///
     /// Serialized for the same reason as the test above: this guard is
-    /// visible to `terminate_all`, and the Windows half of that test
-    /// (when it exists) will be in this same binary.
+    /// visible to `terminate_all`, and the Windows half of that test is
+    /// in this same binary.
     #[cfg(windows)]
     #[test]
     #[serial_test::serial]
     fn terminate_tree_kills_a_windows_grandchild() {
         let dir = tempfile::tempdir().expect("tempdir");
         let pid_file = dir.path().join("grandchild.pid");
-        let script = format!(
-            "$p = Start-Process -FilePath '{}' -ArgumentList '-n','30','127.0.0.1' \
-             -PassThru -WindowStyle Hidden; \
-             Set-Content -LiteralPath '{}' -Value $p.Id; Wait-Process -Id $p.Id",
-            system32("ping.exe"),
-            pid_file.display()
-        );
-        let mut cmd = Command::new(windows_powershell());
-        cmd.args(["-NoProfile", "-NonInteractive", "-Command", &script]);
-        let mut guard = ChildGuard::spawn(&mut cmd, None).expect("spawn");
-
-        let written = wait_until(Duration::from_secs(20), || {
-            std::fs::read_to_string(&pid_file)
-                .ok()
-                .and_then(|s| s.trim().parse::<u32>().ok())
-                .is_some()
-        });
-        assert!(written, "fixture did not report its grandchild pid");
-        let grandchild: u32 = std::fs::read_to_string(&pid_file)
-            .unwrap()
-            .trim()
-            .parse()
-            .unwrap();
-        assert!(
-            process_exists(grandchild),
-            "grandchild {grandchild} must be running before the teardown"
-        );
+        let (mut guard, grandchild) = spawned_tree(&pid_file);
 
         guard.terminate_tree();
 
         assert!(
-            wait_until(Duration::from_secs(5), || !process_exists(grandchild)),
+            wait_until(Duration::from_secs(5), || !process_alive(grandchild)),
             "grandchild {grandchild} survived terminate_tree"
         );
     }
 
-    /// Whether Windows still reports `pid` in its task list. `tasklist`
-    /// with CSV output is the cheapest OS-level check that needs no
-    /// extra crate (there is no `OpenProcess` binding without one).
+    /// Whether the OS still reports `pid` as a live process.
+    ///
+    /// Unix: `kill(pid, 0)` — "the process exists and we may signal it".
+    /// Windows: no such signal exists, and there is no `OpenProcess`
+    /// binding without an extra crate, so `tasklist` with CSV output is
+    /// the cheapest OS-level check. Its output carries the pid in
+    /// quotes, which is what the match looks for.
+    #[cfg(unix)]
+    fn process_alive(pid: u32) -> bool {
+        // SAFETY: signal 0 only checks for existence/ownership.
+        unsafe { libc::kill(pid as libc::pid_t, 0) == 0 }
+    }
+
     #[cfg(windows)]
-    fn process_exists(pid: u32) -> bool {
+    fn process_alive(pid: u32) -> bool {
         let filter = format!("PID eq {pid}");
         let output = Command::new(system32("tasklist.exe"))
             .args(["/FI", &filter, "/NH", "/FO", "CSV"])
@@ -610,12 +660,6 @@ mod tests {
             Ok(output) => String::from_utf8_lossy(&output.stdout).contains(&format!("\"{pid}\"")),
             Err(_) => false,
         }
-    }
-
-    #[cfg(unix)]
-    fn alive(pid: i32) -> bool {
-        // SAFETY: signal 0 only checks for existence/ownership.
-        unsafe { libc::kill(pid, 0) == 0 }
     }
 
     /// Issue #253: system binaries are addressed under `System32`, never
