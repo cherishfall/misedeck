@@ -23,7 +23,7 @@ React UI (src/)
 - **lockfile 解析**（issue #230）：mise 通过*配置文件*管一个目录，并把 lockfile 放在配置旁边，因此概览页向上逐级查找最近的 `mise.lock`——只读 `<cwd>/mise.lock` 会让项目子目录误报「没有 lockfile」。
 - **能力清单**（issue #230）：主窗口只保留实际用到的权限 —— `clipboard-manager:allow-write-text`、`dialog:allow-open`、`opener:allow-open-path`。打开 URL 的入口只有一个：所有链接都经 `ExternalLink` 渲染，再由 `src/api/externalLink.ts` 调用 `open_external` 命令，由 `src-tauri/src/external_link.rs` 先校验 URL（仅 `http`/`https`、长度有上限、不含空白或控制字符），之后才交给 opener 插件。宽泛的 `opener:default` —— 会让任意调用点打开 URL —— 被刻意移除，从而让这条经过校验的命令成为唯一出口。路径打开器不做路径限定，因为目录上下文是用户自选的目录；唯一消费者打开的是 mise 自己报出的路径（`mise tasks edit --path` / `mise config ls`）。
 - **i18n**：UI 文案存放在 en + zh-CN 资源文件中，按字符串 ID 索引；组件消费这些键。
-- **前端状态**：服务端状态（mise 数据）按目录上下文获取，并按 (context, query) 缓存；UI 状态（选中的标签页、面板开合）保持本地。除最近目录列表和用户偏好外不做持久化。
+- **前端状态**：服务端状态（mise 数据）按目录上下文获取，并按 (context, query) 缓存；UI 状态（选中的标签页、面板开合）保持本地。除最近目录列表和用户偏好外不做持久化。写命令绝不只失效自己页面渲染的那份列表：每个改写 mise 状态的命令都在成功分支调用 `invalidateConfigDependents`（`misedeck/src/hooks/configDependents.ts`），失效全部由配置派生的 key 家族 —— 配置文本、lockfile、工具列表、解析后的 env、带来源的 env 列表、任务、插件 —— 覆盖当前上下文及其 Global 变体。该助手的 key 集合就是契约，由其单测钉住；走网络的读（`tools/outdated`、`tools/ls-remote`）仍留在能改变它们的页面里失效。由配置派生的读一律 `staleTime: 0`，挂载即重取，不信任一个连 GUI 外 CLI 改动都会推翻的缓存（issue #285）。
 - **Chrome 级 context**（issue #130）：每个页面都在自身内部渲染 `PageShell`，因此由 `PageShell` 持有的 React context 位于渲染它的页面组件*之下*，该页面永远消费不到它。面向页面注册能力的 provider（如工具栏刷新按钮的 `PageRefreshProvider`）放在应用根部、路由之上；`PageShell` 及其 chrome 只消费 context，绝不持有它。
 
 ## Data shapes

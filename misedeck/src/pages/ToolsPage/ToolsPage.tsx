@@ -54,6 +54,7 @@ import {
   useParsedToolsList,
 } from "../../hooks/useToolsList";
 import { useTableFilter } from "../../hooks/useTableFilter";
+import { invalidateConfigDependents } from "../../hooks/configDependents";
 import { AddToolSection } from "./AddToolSection";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -255,7 +256,14 @@ export function ToolsPage() {
       if (runner.isRunning) return;
       const res = await runner.run({ cwd, args: builder(cwd) });
       if (res.kind === "ok") {
-        void queryClient.invalidateQueries({ queryKey: ["tools", "ls", cwd] });
+        // `use` / `unuse` / `link` rewrite the config, `install` /
+        // `uninstall` / `upgrade` change the installed set — every view
+        // derived from either is now stale, not just this page's table
+        // (issue #285).
+        invalidateConfigDependents(queryClient, cwd);
+        // `mise outdated` derives from the config too, but it hits the
+        // network, so it is invalidated only here, where a write that can
+        // change it happened (#199).
         void queryClient.invalidateQueries({ queryKey: ["tools", "outdated", cwd] });
         // Success closes the loop in-page (issue #144); the exact
         // command stays in the execution panel's transcript. The tick

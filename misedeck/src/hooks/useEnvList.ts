@@ -10,6 +10,7 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { envLs } from "../api/mise";
 import { readEnvExtendedPayload, type EnvEntry } from "../api/miseTools";
 import { useDirectory } from "../state/directoryContext";
+import { CONFIG_DEPENDENT_STALE_TIME } from "./configDependents";
 import type { JsonResult } from "../types/tauri";
 
 /**
@@ -33,6 +34,7 @@ export function useEnvList(): UseQueryResult<JsonResult> {
   return useQuery({
     queryKey: ["env", "ls", cwd],
     queryFn: () => envLs(cwd),
+    staleTime: CONFIG_DEPENDENT_STALE_TIME,
     refetchOnWindowFocus: false,
     retry: false,
   });

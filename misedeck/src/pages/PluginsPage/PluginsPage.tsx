@@ -37,6 +37,7 @@ import {
   useRegisterPageRefresh,
 } from "../../components";
 import { useParsedPluginsList } from "../../hooks/useIssue29";
+import { invalidateConfigDependents } from "../../hooks/configDependents";
 import type { InstalledPlugin } from "../../types/tauri";
 import { readErrorBody } from "../../utils/readErrorBody";
 
@@ -98,7 +99,10 @@ export function PluginsPage() {
       if (installBusy) return "err";
       const res = await runInstall({ cwd, args: misePluginsInstallArgs(name, gitUrl) });
       if (res.kind === "ok") {
-        void queryClient.invalidateQueries({ queryKey: ["plugins", "ls", cwd] });
+        // A new backend changes the tool set mise resolves in every
+        // config-derived view, so invalidate them all, not just this
+        // page's list (issue #285).
+        invalidateConfigDependents(queryClient, cwd);
         setSuccessMessage(t(I18N_KEYS.plugins.success.installed, { name }));
         setSuccessTick((n) => n + 1);
         return "ok";
@@ -117,7 +121,9 @@ export function PluginsPage() {
       if (uninstallBusy) return;
       const res = await runUninstall({ cwd, args: misePluginsUninstallArgs(name) });
       if (res.kind === "ok") {
-        void queryClient.invalidateQueries({ queryKey: ["plugins", "ls", cwd] });
+        // Same scope as install: the backend's tools are gone from every
+        // config-derived view (issue #285).
+        invalidateConfigDependents(queryClient, cwd);
         setSuccessMessage(t(I18N_KEYS.plugins.success.uninstalled, { name }));
         setSuccessTick((n) => n + 1);
       }

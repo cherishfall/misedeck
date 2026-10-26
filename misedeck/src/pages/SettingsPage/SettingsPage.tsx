@@ -50,6 +50,7 @@ import {
 } from "../../components";
 import { useParsedSettingsList } from "../../hooks/useIssue29";
 import { useTableFilter } from "../../hooks/useTableFilter";
+import { invalidateConfigDependents } from "../../hooks/configDependents";
 import {
   SOURCE_CELL_CHARS,
   shortenPathTail,
@@ -161,6 +162,10 @@ export function SettingsPage() {
       const res = await runSettingsWrite({ cwd, args: builder(cwd) });
       if (res.kind === "ok") {
         void queryClient.invalidateQueries({ queryKey: ["settings", "ls", cwd] });
+        // `mise settings set` / `unset` rewrite the config file, so the
+        // file's text, the resolved env, and every other config-derived
+        // view changed — not just the settings list (issue #285).
+        invalidateConfigDependents(queryClient, cwd);
         if (successMessage !== undefined) {
           setSuccessMessage(successMessage);
           setSuccessTick((n) => n + 1);

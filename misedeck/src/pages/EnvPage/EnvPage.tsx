@@ -42,6 +42,7 @@ import {
 } from "../../components";
 import { useParsedEnvList } from "../../hooks/useEnvList";
 import { useTableFilter } from "../../hooks/useTableFilter";
+import { invalidateConfigDependents } from "../../hooks/configDependents";
 import { isEnvWriteScopeMismatch, type EnvSource } from "../../api/miseTools";
 
 import { ENV_VALUE_CELL_CHARS, shortenPathTail } from "../../utils/paths";
@@ -131,11 +132,11 @@ export function EnvPage() {
   // deliberate: concurrent `mise set` / `mise unset` processes race
   // their read-modify-write on the same TOML and silently lose a key
   // (beta11 4.3-B1). The flag is true only while the command *this*
-  // callback dispatched is running. On this run's own success, refresh
-  // both the active and global env queries (so switching contexts shows
-  // fresh data) plus the preview page's env query; active queries
-  // refetch immediately so the table updates visibly (issue #41). The
-  // optional `successMessage` closes the loop in-page (issue #145) —
+  // callback dispatched is running. On this run's own success, every
+  // config-derived view is invalidated through the shared helper (issue
+  // #285); active queries refetch immediately so this page's table
+  // updates visibly (issue #41). The optional `successMessage` closes
+  // the loop in-page (issue #145) —
   // `successTick` bumps with it so a repeated identical message still
   // re-arms the bar's timer (issue #172). Resolves to "ok" only when
   // the command ran and succeeded, so callers can chain form cleanup
@@ -149,12 +150,11 @@ export function EnvPage() {
       if (envWriteBusy) return "err";
       const res = await runEnvWrite({ cwd, args: builder(cwd) });
       if (res.kind === "ok") {
-        void queryClient.invalidateQueries({ queryKey: ["env", "ls", cwd] });
-        void queryClient.invalidateQueries({ queryKey: ["env", "ls", null] });
-        void queryClient.invalidateQueries({ queryKey: ["tools", "env", cwd] });
-        void queryClient.invalidateQueries({ queryKey: ["tools", "env", null] });
-        void queryClient.refetchQueries({ queryKey: ["env", "ls", cwd], type: "active" });
-        void queryClient.refetchQueries({ queryKey: ["env", "ls", null], type: "active" });
+        // `mise set` / `unset` rewrite the config, so every config-derived
+        // view is stale (issue #285). Invalidation refetches the active
+        // queries — the env table updates visibly right away (issue #41) —
+        // and marks the Global cross-check entries for the next mount.
+        invalidateConfigDependents(queryClient, cwd);
         if (successMessage !== undefined) {
           setSuccessMessage(successMessage);
           setSuccessTick((n) => n + 1);

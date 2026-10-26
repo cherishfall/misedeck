@@ -79,6 +79,7 @@ import {
 } from "../../components";
 import { useParsedTasksList } from "../../hooks/useTasksList";
 import { useTableFilter } from "../../hooks/useTableFilter";
+import { invalidateConfigDependents } from "../../hooks/configDependents";
 
 import type { ConfigFile, MiseTask } from "../../types/tauri";
 import { readErrorBody } from "../../utils/readErrorBody";
@@ -336,7 +337,9 @@ export function TasksPage() {
       }
       const res = await runSaveCommand({ cwd, args: miseTasksAddArgs(name, description, depends, runWords) });
       if (res.kind !== "ok") return false;
-      void queryClient.invalidateQueries({ queryKey: ["tasks", "ls", cwd] });
+      // `mise tasks add` rewrites the config file, so every config-derived
+      // view is stale — not just this page's task list (issue #285).
+      invalidateConfigDependents(queryClient, cwd);
       return true;
     },
     [guard.allowed, focusTrustBanner, saveRunBusy, runSaveCommand, cwd, queryClient],

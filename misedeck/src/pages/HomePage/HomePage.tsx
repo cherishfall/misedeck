@@ -21,6 +21,7 @@ import { parseAppErrorMessage } from "../../utils/appError";
 import { formatErrorSummary } from "../../utils/errorSummary";
 import { readErrorBody } from "../../utils/readErrorBody";
 import { compareVersions } from "../../utils/versions";
+import { invalidateConfigDependents } from "../../hooks/configDependents";
 
 import {
   Button,
@@ -127,6 +128,12 @@ export function HomePage() {
   // that has now resolved).
   const onSelfUpdateOk = () => {
     void queryClient.invalidateQueries({ queryKey: ["mise", "detect"] });
+    // A new mise binary can resolve config differently, so the cached
+    // config-derived views describe the old binary. `self-update` and the
+    // guided install are Global operations, so the Global variants are
+    // the ones that exist; per-directory caches refetch on mount
+    // (`staleTime: 0`, issue #285).
+    invalidateConfigDependents(queryClient, null);
   };
 
   // Guided install (issue #166): run-locked so a double click cannot
@@ -145,6 +152,9 @@ export function HomePage() {
       .then((res) => {
         if (res.kind === "ok") {
           void queryClient.invalidateQueries({ queryKey: ["mise", "detect"] });
+          // The reads that ran while mise was missing cached their
+          // failure; drop them the same way a self-update does (#285).
+          invalidateConfigDependents(queryClient, null);
         }
       })
       .finally(() => setInstallRunning(false));

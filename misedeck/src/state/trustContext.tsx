@@ -51,6 +51,7 @@ import { trustCheck } from "../api/mise";
 import { useExecutionContext } from "../components/ExecutionPanel";
 import type { RunCommandResult } from "../components/ExecutionPanel/useExecution";
 import { I18N_KEYS } from "../i18n/keys";
+import { invalidateConfigDependents } from "../hooks/configDependents";
 import { useDirectory } from "./directoryContext";
 import type { TrustSource, TrustStatus } from "../types/tauri";
 import { resolveAppErrorMessage } from "../utils/appError";
@@ -253,6 +254,10 @@ export function useTrustAction(): TrustAction {
     setLastError(null);
     // Re-probe trust so the banner re-evaluates.
     void queryClient.invalidateQueries({ queryKey: ["mise", "trust", cwd] });
+    // Trusting changes what the config contributes to every read: the
+    // safe-mode reads a page ran while the file was untrusted no longer
+    // describe this directory (issue #285).
+    invalidateConfigDependents(queryClient, cwd);
   }, [runTrust, cwd, queryClient, t]);
 
   return {

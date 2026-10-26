@@ -23,6 +23,7 @@ import {
 } from "../api/miseTools";
 import { toJsonResult, useExecutionContext } from "../components/ExecutionPanel";
 import { useDirectory } from "../state/directoryContext";
+import { CONFIG_DEPENDENT_STALE_TIME } from "./configDependents";
 import type {
   DoctorPayload,
   InstalledPlugin,
@@ -143,6 +144,7 @@ function usePluginsList(): UseQueryResult<JsonResult> {
   return useQuery({
     queryKey: ["plugins", "ls", cwd],
     queryFn: () => pluginsLs(cwd),
+    staleTime: CONFIG_DEPENDENT_STALE_TIME,
     refetchOnWindowFocus: false,
     retry: false,
   });

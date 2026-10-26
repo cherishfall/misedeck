@@ -36,6 +36,7 @@ import {
   type EnvEntry,
 } from "../api/miseTools";
 import { useDirectory } from "../state/directoryContext";
+import { CONFIG_DEPENDENT_STALE_TIME } from "./configDependents";
 import type {
   ConfigFilesResult,
   JsonResult,
@@ -91,7 +92,9 @@ export function useReadIntoCache(): (
 /**
  * Read-only mise tool list (`mise ls --json`). Cache key is
  * `["tools", "ls", cwd]` so the per-context cache survives
- * component remounts.
+ * component remounts, and staleTime 0 so a remount refetches instead of
+ * showing data a write (or a CLI run outside the GUI) has already
+ * changed (issue #285 — see `configDependents.ts`).
  *
  * The table loads itself, so this read is dispatched in the background:
  * the same runner, but it must not replace the transcript the user is
@@ -104,6 +107,7 @@ export function useToolsList(): UseQueryResult<JsonResult> {
   return useQuery({
     queryKey: ["tools", "ls", cwd],
     queryFn: () => read(cwd, ["ls", "--json"], { background: true, readOnly: true }),
+    staleTime: CONFIG_DEPENDENT_STALE_TIME,
     refetchOnWindowFocus: false,
     retry: false,
   });
@@ -243,6 +247,7 @@ function useEnv(): UseQueryResult<JsonResult> {
   return useQuery({
     queryKey: ["tools", "env", cwd],
     queryFn: () => toolsEnv(cwd),
+    staleTime: CONFIG_DEPENDENT_STALE_TIME,
     refetchOnWindowFocus: false,
     retry: false,
   });
@@ -277,6 +282,7 @@ function useGlobalEnv(): UseQueryResult<JsonResult> {
     queryKey: ["tools", "env", null],
     queryFn: () => toolsEnv(null),
     enabled: cwd !== null,
+    staleTime: CONFIG_DEPENDENT_STALE_TIME,
     refetchOnWindowFocus: false,
     retry: false,
   });
@@ -305,6 +311,7 @@ export function useLockfile(): UseQueryResult<LockfileResult> {
   return useQuery({
     queryKey: ["tools", "lockfile", cwd],
     queryFn: () => readMiseLockfile(cwd),
+    staleTime: CONFIG_DEPENDENT_STALE_TIME,
     refetchOnWindowFocus: false,
     retry: false,
   });
@@ -323,6 +330,7 @@ export function useConfigFiles(): UseQueryResult<ConfigFilesResult> {
   return useQuery({
     queryKey: ["tools", "config", cwd],
     queryFn: () => configFiles(cwd),
+    staleTime: CONFIG_DEPENDENT_STALE_TIME,
     refetchOnWindowFocus: false,
     retry: false,
   });

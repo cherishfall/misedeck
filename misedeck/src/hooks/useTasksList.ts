@@ -15,6 +15,7 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { tasksLs } from "../api/mise";
 import { readTasksLsPayload } from "../api/miseTools";
 import { useDirectory } from "../state/directoryContext";
+import { CONFIG_DEPENDENT_STALE_TIME } from "./configDependents";
 import type { JsonResult, MiseTask } from "../types/tauri";
 
 /**
@@ -28,6 +29,7 @@ export function useTasksList(): UseQueryResult<JsonResult> {
   return useQuery({
     queryKey: ["tasks", "ls", cwd],
     queryFn: () => tasksLs(cwd),
+    staleTime: CONFIG_DEPENDENT_STALE_TIME,
     refetchOnWindowFocus: false,
     retry: false,
   });
