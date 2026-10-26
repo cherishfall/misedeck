@@ -1,6 +1,6 @@
 [package]
 name = "misedeck"
-version = "1.0.1"
+version = "1.0.2"
 description = "MiseDeck — a faithful GUI for mise"
 authors = ["cherishfall"]
 license = "MIT"

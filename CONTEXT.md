@@ -73,7 +73,7 @@ A Tool that is installed but requested by no Config file (e.g. from a manual CLI
 _Avoid_: stray, unused tool
 
 **App version**:
-The MiseDeck build's own version (`1.0.1`), read from the Tauri context and shown in the sidebar footer. Distinct from a Tool version and from mise's own version — both of those belong to mise. In UI copy MiseDeck is always the subject when its own build is meant; the number never carries a bare "Version" caption.
+The MiseDeck build's own version (`1.0.2`), read from the Tauri context and shown in the sidebar footer. Distinct from a Tool version and from mise's own version — both of those belong to mise. In UI copy MiseDeck is always the subject when its own build is meant; the number never carries a bare "Version" caption.
 _Avoid_: build number, current release (unqualified)
 
 **Update check**:

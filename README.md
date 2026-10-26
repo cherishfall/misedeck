@@ -4,7 +4,7 @@
 
 **A desktop GUI for [mise](https://mise.jdx.dev), the polyglot tool version manager.** It is built from mise's own concepts, not an invented layer on top: each page mirrors a part of the CLI, and every change it makes runs a real `mise` command, shown verbatim — command, logs, exit code — in the execution panel. MiseDeck is an independent community project, not affiliated with mise or its maintainer.
 
-> **Status: 1.0.1** — a patch on the first stable release (`v1.0.0`, 2026-10-21). Three of its fixes came straight out of installing 1.0.0 on a real Windows 11 machine: a release build can no longer package a test fixture instead of the app, the activation prompt names the PowerShell that is actually installed, and the Home page's update dialog no longer prints `-C $HOME`. The rest is a batch of correctness and keyboard fixes the post-GA audit found. macOS on Apple Silicon is the polished target; Windows x64 runs, has been exercised end-to-end on one real Windows 11 machine, and its NSIS installer has been installed there; Linux is packaged but not verified on real hardware.
+> **Status: 1.0.2** — a patch on 1.0.1 (2026-10-24). It closes the post-1.0.1 audit: the Tools remote-version list is no longer truncated, Windows process teardown no longer waits for `taskkill` under a lock, every config-dependent view refreshes after a write, the execution panel settles a run from the command's real outcome, reads and the launch probe are bounded, the release CSP no longer meets inline code, and `npm run tauri dev` starts again. macOS on Apple Silicon is the polished target; Windows x64 runs, has been exercised end-to-end on one real Windows 11 machine, and its NSIS installer has been installed there; Linux is packaged but not verified on real hardware.
 
 ## Why
 
@@ -123,7 +123,7 @@ npm run tauri build
 
 Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on macOS, `nsis/` on Windows, `deb/`, `rpm/`, `appimage/` on Linux. macOS builds come out unsigned, exactly like the released ones.
 
-`npm run ci` is the full frontend gate — CI's Windows job runs it verbatim. Its 18 steps, in order: `typecheck`, `lint:eslint` (React Hooks rules), `test`, fourteen lint guards (i18n parity and concatenation, CSS tokens/type/spacing/tracking, ellipsis, command hints, install-echo parity, tool-argv parity, modal focus, nested interactives, page layout, invoke wrapper), and `build`. The Rust checks are separate: `cargo check --all-targets --features fixtures`, `cargo clippy --all-targets --features fixtures -- -D warnings` and `cargo test --all-targets --features fixtures` on Ubuntu, and `cargo test --all-targets --features fixtures` plus a `cargo build` compile smoke on Windows — the same suite on both, not a Windows-only subset.
+`npm run ci` is the full frontend gate — CI's Windows job runs it verbatim. Its 20 steps, in order: `typecheck`, `lint:eslint` (React Hooks rules), `test`, sixteen lint guards (i18n parity and concatenation, CSS tokens/type/spacing/tracking, ellipsis, command hints, install-echo parity, tool-argv parity, modal focus, nested interactives, page layout, invoke wrapper, CSP inline, default-run), and `build`. The Rust checks are separate: `cargo check --all-targets --features fixtures`, `cargo clippy --all-targets --features fixtures -- -D warnings` and `cargo test --all-targets --features fixtures` on Ubuntu, and `cargo test --all-targets --features fixtures` plus a `cargo build` compile smoke on Windows — the same suite on both, not a Windows-only subset.
 
 ## Known limitations
 

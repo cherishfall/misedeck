@@ -73,7 +73,7 @@ _Avoid_: remove, delete（版本级）
 _Avoid_: stray, unused tool
 
 **App version**（应用版本）:
-MiseDeck 自身构建的版本号（`1.0.1`），从 Tauri 上下文读取，显示在侧栏页脚。与 Tool 的版本、与 mise 自身的版本都不同——后两者归 mise。指的是应用自己的构建时，UI 文案一律以 MiseDeck 作主语；版本号永远不带裸的 "Version" 说明。
+MiseDeck 自身构建的版本号（`1.0.2`），从 Tauri 上下文读取，显示在侧栏页脚。与 Tool 的版本、与 mise 自身的版本都不同——后两者归 mise。指的是应用自己的构建时，UI 文案一律以 MiseDeck 作主语；版本号永远不带裸的 "Version" 说明。
 _Avoid_: build number、当前发布（无限定语）
 
 **Update check**（更新检查）:

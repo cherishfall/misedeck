@@ -4,7 +4,7 @@
 
 **[mise](https://mise.jdx.dev)（多语言工具版本管理器）的桌面 GUI。** 它用 mise 自己的概念构建，而不是在上面另造一层：每个页面镜像 CLI 的一部分，每次改动都真实执行一条 `mise` 命令，命令行、日志与退出码都原样留在执行面板里。MiseDeck 是独立的社区项目，与 mise 及其维护者没有隶属关系。
 
-> **状态：1.0.1**——在首个稳定版（`v1.0.0`，2026-10-21）之上的补丁版本。其中三项修复直接来自「在一台真实 Windows 11 机器上安装 1.0.0」：打包时不会再把测试 fixture 当成应用、激活提示指向你真正装着的那个 PowerShell、首页更新弹窗不再打印 `-C $HOME`。其余是发版后审计发现的正确性与键盘操作修复。macOS（Apple Silicon）是打磨过的目标平台；Windows x64 能跑起来，已在一台真实 Windows 11 机器上完整走通，其 NSIS 安装包也已在该机器上安装过；Linux 有包但未在真机上验证。
+> **状态：1.0.2**——在 1.0.1（2026-10-24）之上的补丁版本。它收尾了 1.0.1 之后的审计批：工具页的远程版本列表不再被截断、Windows 进程树清理不再持锁等待 `taskkill`、所有依赖配置的视图在写操作后都会刷新、执行面板按命令的真实结果结束运行、读取命令与启动探测都有上限、release 的 CSP 不再撞上内联代码，`npm run tauri dev` 也恢复可启动。macOS（Apple Silicon）是打磨过的目标平台；Windows x64 能跑起来，已在一台真实 Windows 11 机器上完整走通，其 NSIS 安装包也已在该机器上安装过；Linux 有包但未在真机上验证。
 
 ## 为什么
 
@@ -123,7 +123,7 @@ npm run tauri build
 
 产物在 `src-tauri/target/release/bundle/`——macOS 是 `dmg/` 与 `macos/`，Windows 是 `nsis/`，Linux 是 `deb/`、`rpm/`、`appimage/`。macOS 构建和正式发布的一样，都是未签名的。
 
-`npm run ci` 是完整的前端闸门——CI 的 Windows 任务原样运行它。共 18 步，按顺序为：`typecheck`、`lint:eslint`（React Hooks 规则）、`test`、14 个 lint 守卫（i18n 键一致性与拼接、CSS token/字号/间距/字距、省略号、命令提示、安装回显一致性、工具参数一致性、模态焦点、嵌套交互、页面布局、invoke 包装）和 `build`。Rust 检查是另一套：Ubuntu 上跑 `cargo check --all-targets --features fixtures`、`cargo clippy --all-targets --features fixtures -- -D warnings` 与 `cargo test --all-targets --features fixtures`，Windows 上跑 `cargo test --all-targets --features fixtures` 加一个 `cargo build` 编译冒烟——两边跑的是同一套测试，不是 Windows 专属子集。
+`npm run ci` 是完整的前端闸门——CI 的 Windows 任务原样运行它。共 20 步，按顺序为：`typecheck`、`lint:eslint`（React Hooks 规则）、`test`、16 个 lint 守卫（i18n 键一致性与拼接、CSS token/字号/间距/字距、省略号、命令提示、安装回显一致性、工具参数一致性、模态焦点、嵌套交互、页面布局、invoke 包装、CSP 内联、default-run）和 `build`。Rust 检查是另一套：Ubuntu 上跑 `cargo check --all-targets --features fixtures`、`cargo clippy --all-targets --features fixtures -- -D warnings` 与 `cargo test --all-targets --features fixtures`，Windows 上跑 `cargo test --all-targets --features fixtures` 加一个 `cargo build` 编译冒烟——两边跑的是同一套测试，不是 Windows 专属子集。
 
 ## 已知限制
 
