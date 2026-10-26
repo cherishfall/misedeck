@@ -176,6 +176,48 @@ fn tools_ls_remote_returns_array() {
     });
 }
 
+/// Issue #282: real mise emits `ls-remote --json` as ONE compact JSON
+/// line — the recorded go payload below is 17 KB on a single line — so
+/// the reader's 8 KiB per-line cap cut it in half and every real tool's
+/// version list failed with `PARSE_FAILED`. A captured read now takes
+/// the payload as raw bytes to EOF, so the whole array arrives.
+///
+/// The assertion compares the runner's value to the fixture parsed
+/// independently: a prefix would not be equal, so nothing can be
+/// silently dropped and still pass.
+#[test]
+#[serial]
+fn tools_ls_remote_parses_a_single_line_payload_past_the_per_line_cap() {
+    let payload = std::fs::read_to_string(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/mise/ls-remote---json-go/stdout"),
+    )
+    .expect("the recorded go payload");
+    // The premise of the regression. `MAX_LINE_BYTES` is crate-private,
+    // so the old cap is restated here as the literal it is.
+    assert_eq!(payload.lines().count(), 1, "the payload must be one line");
+    assert!(
+        payload.len() > 8 * 1024,
+        "the payload must exceed the old 8 KiB per-line cap, got {} bytes",
+        payload.len()
+    );
+    let recorded: serde_json::Value =
+        serde_json::from_str(&payload).expect("the fixture must be valid JSON");
+    let recorded_len = recorded.as_array().expect("an array").len();
+
+    let script = fixture_script();
+    with_slug("ls-remote---json-go", || {
+        let v = mise_ls_remote(&script, None, "go")
+            .expect("a single-line payload past the per-line cap must parse whole");
+        assert_eq!(
+            v.as_array().map(Vec::len),
+            Some(recorded_len),
+            "every recorded version must survive the read"
+        );
+        assert_eq!(v, recorded, "the captured payload must arrive unaltered");
+    });
+}
+
 #[test]
 #[serial]
 fn tools_ls_remote_command_failed_keeps_stderr() {

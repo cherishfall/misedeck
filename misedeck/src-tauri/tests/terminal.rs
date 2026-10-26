@@ -33,13 +33,16 @@ use misedeck_lib::mise::code;
 use misedeck_lib::shell::{open_in_terminal, TerminalOpenOutcome};
 
 // The `TERMINAL_NOT_FOUND` probe test is Linux-only (the probe looks for
-// `gnome-terminal` / `konsole` / `xfce4-terminal`), so the imports it
-// needs must be gated the same way — an unused import is a clippy error,
-// and clippy runs with `-D warnings`.
-#[cfg(all(unix, not(target_os = "macos")))]
+// `gnome-terminal` / `konsole` / `xfce4-terminal`) and the macOS resolve
+// test below opens a temp directory, so the helper is gated `unix` for
+// both — a `not(macos)` gate left the macOS test calling a function that
+// did not exist there (the macOS leg only ever built this file at release
+// time). An unused import is a clippy error, and clippy runs with
+// `-D warnings`.
+#[cfg(unix)]
 use tempfile::TempDir;
 
-#[cfg(all(unix, not(target_os = "macos")))]
+#[cfg(unix)]
 fn tempdir() -> TempDir {
     tempfile::tempdir().expect("tempdir")
 }

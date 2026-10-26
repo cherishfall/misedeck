@@ -15,18 +15,15 @@
 // panel is the same component as the execution panel.
 
 use std::path::Path;
-use std::process::{Command, Stdio};
-use std::sync::mpsc::{sync_channel, RecvTimeoutError};
-use std::time::{Duration, Instant};
+use std::process::Command;
+use std::time::Duration;
 
 use serde::Serialize;
 
 use crate::mise::{
-    deliver_line, drain_streams, extract_date, finish_streams, join_readers_bounded, meets_minimum,
-    mise_version, run_mise_tracked, spawn_line_reader, AppError, CappedStream, OutputLine,
-    OutputStream, RunEvent, RunRequest, LINE_CHANNEL_CAPACITY, MIN_MISE_VERSION,
+    drive_child, extract_date, meets_minimum, mise_version, run_mise_tracked, AppError, DriveEnd,
+    DriveError, PipeMode, RunEvent, RunRequest, MIN_MISE_VERSION,
 };
-use crate::process_tree::{self, ChildGuard};
 
 /// Maximum wall-clock time the official install script is allowed to
 /// take. The script downloads mise + a few shim files, so 5 minutes
@@ -149,127 +146,43 @@ pub fn run_install_command<F>(
 where
     F: FnMut(RunEvent) + Send + 'static,
 {
-    cmd.stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-
-    let mut guard = match ChildGuard::spawn(&mut cmd, run_id) {
-        Ok(c) => c,
-        Err(e) => {
-            return Err(AppError::command_failed(
+    // The loop is the runner's, not this module's (issue #282): cancel,
+    // deadline, exit and reader shutdown have one implementation, shared
+    // with `run_mise_timed`.
+    let driven = drive_child(&mut cmd, timeout, run_id, PipeMode::Lines, &mut on_event).map_err(
+        |e| match e {
+            DriveError::Spawn(e) => AppError::command_failed(
                 format!("failed to spawn install command: {e}"),
                 String::new(),
-            ));
-        }
-    };
-
-    let stdout = guard.child().stdout.take().expect("piped");
-    let stderr = guard.child().stderr.take().expect("piped");
-
-    let (out_tx, out_rx) = sync_channel::<OutputLine>(LINE_CHANNEL_CAPACITY);
-    let (err_tx, err_rx) = sync_channel::<OutputLine>(LINE_CHANNEL_CAPACITY);
-
-    let out_thread = spawn_line_reader(stdout, out_tx);
-    let err_thread = spawn_line_reader(stderr, err_tx);
-
-    let started = Instant::now();
-    let deadline = timeout;
-    let mut stdout_buf = CappedStream::default();
-    let mut stderr_buf = CappedStream::default();
-
-    loop {
-        // Cancel (issue #223): same contract as `run_mise` — the panel
-        // already shows "cancelled", so the outcome is discarded; what
-        // matters is that `curl` and the installer die with `sh`.
-        if let Some(id) = run_id {
-            if process_tree::take_cancel(id) {
-                guard.terminate_tree();
-                finish_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
-                join_readers_bounded(vec![out_thread, err_thread], Duration::ZERO);
-                on_event(RunEvent::Exit {
-                    exit_code: -1,
-                    duration_ms: started.elapsed().as_millis() as u64,
-                    timed_out: false,
-                });
+            ),
+            DriveError::Wait(e) => {
+                AppError::command_failed(format!("error waiting for install: {e}"), String::new())
+            }
+        },
+    )?;
+    match driven.end {
+        // The panel already shows "cancelled", so the outcome is
+        // discarded; what matters is that `curl` and the installer died
+        // with `sh` (issue #223).
+        DriveEnd::Cancelled => Err(AppError::command_failed("install cancelled", String::new())),
+        DriveEnd::TimedOut => Err(AppError::timeout()),
+        DriveEnd::Exited => {
+            // A non-zero exit is a failure, not an outcome — returning Ok
+            // would let the next caller treat a failed install as success
+            // (issue #172).
+            if driven.exit_code != 0 {
                 return Err(AppError::command_failed(
-                    "install cancelled",
-                    String::new(),
+                    format!("install script exited with status {}", driven.exit_code),
+                    driven.stderr.clone(),
                 ));
             }
-        }
-        match guard.try_wait() {
-            Ok(Some(status)) => {
-                // Reaped; the guard unregistered its group.
-                // Drain before joining: the bounded channel may have a
-                // reader blocked in `send`. `finish_streams` drains until
-                // both close and is bounded — a grandchild that inherited
-                // the pipe keeps it open, and waiting forever would swallow
-                // the exit event (issue #222). `run_mise` uses the same
-                // helper and bound so both runners share one shutdown
-                // contract.
-                finish_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
-                join_readers_bounded(vec![out_thread, err_thread], Duration::ZERO);
-                let duration_ms = started.elapsed().as_millis() as u64;
-                let exit_code = status.code().unwrap_or(-1);
-                on_event(RunEvent::Exit {
-                    exit_code,
-                    duration_ms,
-                    timed_out: false,
-                });
-                // Same contract as `run_self_update` below: a non-zero
-                // exit is a failure, not an outcome — returning Ok would
-                // let the next caller treat a failed install as success
-                // (issue #172).
-                if exit_code != 0 {
-                    return Err(AppError::command_failed(
-                        format!("install script exited with status {exit_code}"),
-                        stderr_buf.text().to_string(),
-                    ));
-                }
-                return Ok(InstallOutcome {
-                    stdout: stdout_buf.into_text(),
-                    stderr: stderr_buf.into_text(),
-                    exit_code,
-                    duration_ms,
-                    timed_out: false,
-                });
-            }
-            Ok(None) => {
-                drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
-                if started.elapsed() > deadline {
-                    // A timeout kills the tree for the same reason a
-                    // cancel does: `sh` dying alone leaves `curl` and
-                    // the installer running (issue #223).
-                    guard.terminate_tree();
-                    // Same drain-then-join order as the exit branch —
-                    // still bounded, because the pipes may be held by
-                    // something that outlived the group (issue #222).
-                    finish_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
-                    join_readers_bounded(vec![out_thread, err_thread], Duration::ZERO);
-                    let duration_ms = started.elapsed().as_millis() as u64;
-                    on_event(RunEvent::Exit {
-                        exit_code: -1,
-                        duration_ms,
-                        timed_out: true,
-                    });
-                    return Err(AppError::timeout());
-                }
-                let remaining = deadline.saturating_sub(started.elapsed());
-                let slice = remaining.min(Duration::from_millis(50));
-                match out_rx.recv_timeout(slice) {
-                    Ok(line) => {
-                        deliver_line(line, OutputStream::Stdout, &mut stdout_buf, &mut on_event);
-                    }
-                    Err(RecvTimeoutError::Timeout) => {}
-                    Err(RecvTimeoutError::Disconnected) => {}
-                }
-            }
-            Err(e) => {
-                return Err(AppError::command_failed(
-                    format!("error waiting for install: {e}"),
-                    String::new(),
-                ));
-            }
+            Ok(InstallOutcome {
+                stdout: driven.stdout,
+                stderr: driven.stderr,
+                exit_code: driven.exit_code,
+                duration_ms: driven.duration_ms,
+                timed_out: false,
+            })
         }
     }
 }

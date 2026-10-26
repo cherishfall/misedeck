@@ -9,8 +9,8 @@
 
 use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
-use std::sync::mpsc::{sync_channel, Receiver, RecvTimeoutError, SyncSender, TryRecvError};
+use std::process::{ChildStderr, ChildStdout, Command, Stdio};
+use std::sync::mpsc::{sync_channel, Receiver, SyncSender, TryRecvError};
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
@@ -393,17 +393,24 @@ pub fn resolve_cwd_anchor(cwd: Option<&Path>) -> Result<PathBuf, AppError> {
 /// issue #223's job, not this bound's.
 pub(crate) const READER_SHUTDOWN_BOUND: Duration = Duration::from_secs(1);
 
-/// Largest payload retained from a single line (8 KiB). A newline-free
-/// writer (`yes`, a minified JSON blob, a progress bar with no `\n`)
-/// otherwise grew the reader's buffer for as long as the child ran.
-/// Bytes past the cap are consumed and dropped, never left in the pipe
-/// (issue #277).
+/// Largest payload retained from a single line (8 KiB) **in the
+/// streaming transcript**. A newline-free writer (`yes`, a progress bar
+/// with no `\n`) otherwise grew the reader's buffer for as long as the
+/// child ran. Bytes past the cap are consumed and dropped, never left in
+/// the pipe (issue #277).
+///
+/// Captured reads are not streamed and never go through this cap: real
+/// mise emits `ls-remote --json <tool>` as one compact line (51,741
+/// bytes for node), which the per-line cap cut in half (issue #282).
 pub(crate) const MAX_LINE_BYTES: usize = 8 * 1024;
 
 /// Largest aggregate retained per stream (2 MiB), shared by the streamed
-/// transcript and the `RunOutcome` buffers. Past this bound lines are
-/// dropped from both while the reader keeps draining the pipe, so a
-/// chatty 30-minute task cannot grow the app's memory (issue #277).
+/// transcript and the `RunOutcome` buffers — and the only bound a
+/// captured payload is subject to. Past this bound lines (or capture
+/// bytes) are dropped while the reader keeps draining the pipe, so a
+/// chatty 30-minute task cannot grow the app's memory (issues #277,
+/// #282). Two orders of magnitude above the largest real `ls-remote`
+/// payload, so a live read fits whole.
 pub(crate) const MAX_STREAM_BYTES: usize = 2 * 1024 * 1024;
 
 /// Lines a reader may queue ahead of the main loop. The channel was
@@ -551,6 +558,77 @@ pub(crate) fn join_readers_bounded(handles: Vec<JoinHandle<()>>, bound: Duration
     }
 }
 
+/// A whole pipe payload, read to EOF without line splitting (issue
+/// #282). Captured reads are payloads, not transcripts: real mise emits
+/// `ls-remote --json <tool>` as one compact JSON line, so the line
+/// reader's 8 KiB per-line cap cut the payload in half and every parse
+/// ended in `PARSE_FAILED`.
+#[derive(Debug, Default)]
+pub(crate) struct RawCapture {
+    text: String,
+    /// Bytes the aggregate cap withheld (0 when the payload fit).
+    dropped: u64,
+}
+
+/// Read one pipe to EOF, retaining at most `MAX_STREAM_BYTES`.
+///
+/// The pipe is drained to EOF even after the cap is reached: a reader
+/// that stopped would leave the child blocked in `write` on a full pipe,
+/// the same deadlock the line reader's drain guarantee rules out (issue
+/// #277). `EINTR` is retried for the same reason as `read_line_capped` —
+/// one interrupted syscall is not EOF. Decoding happens once over the
+/// whole payload, so a multi-byte character split across two reads is
+/// never replaced.
+fn read_pipe_to_eof(mut pipe: impl Read) -> RawCapture {
+    const CHUNK: usize = 16 * 1024;
+    let mut chunk = [0u8; CHUNK];
+    let mut buf: Vec<u8> = Vec::new();
+    let mut dropped = 0u64;
+    loop {
+        match pipe.read(&mut chunk) {
+            Ok(0) => break,
+            Ok(n) => {
+                let room = MAX_STREAM_BYTES.saturating_sub(buf.len());
+                if n > room {
+                    buf.extend_from_slice(&chunk[..room]);
+                    dropped += (n - room) as u64;
+                } else {
+                    buf.extend_from_slice(&chunk[..n]);
+                }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(_) => break,
+        }
+    }
+    RawCapture {
+        text: String::from_utf8_lossy(&buf).into_owned(),
+        dropped,
+    }
+}
+
+/// Spawn a reader thread that takes one pipe as a single payload.
+fn spawn_raw_reader(pipe: impl Read + Send + 'static) -> JoinHandle<RawCapture> {
+    thread::spawn(move || read_pipe_to_eof(pipe))
+}
+
+/// Wait for one raw reader under a shared deadline and take its payload.
+/// A reader still blocked at the deadline is abandoned — dropping the
+/// handle detaches the thread, which exits once the pipe closes — and
+/// `None` is returned: a grandchild that inherited the pipe keeps it
+/// open forever and must not swallow the run's end (issue #222).
+fn join_capture_bounded(handle: JoinHandle<RawCapture>, deadline: Instant) -> Option<RawCapture> {
+    loop {
+        if handle.is_finished() {
+            return handle.join().ok();
+        }
+        let now = Instant::now();
+        if now >= deadline {
+            return None;
+        }
+        thread::sleep((deadline - now).min(Duration::from_millis(5)));
+    }
+}
+
 /// Result of offering one line to an aggregate buffer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct PushOutcome {
@@ -572,6 +650,9 @@ pub(crate) struct CappedStream {
 }
 
 impl CappedStream {
+    /// The retained text without consuming the buffer. Production paths
+    /// consume it with `into_text`; only the cap tests inspect it.
+    #[cfg(test)]
     pub(crate) fn text(&self) -> &str {
         &self.text
     }
@@ -709,28 +790,290 @@ pub(crate) fn finish_streams<F>(
     }
 }
 
-/// Spawn the mise binary and capture its output, enforcing a finite
-/// `timeout`. This is the low-level entry point the runner routes every
-/// call through.
+/// How a run's two pipes are read.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum PipeMode {
+    /// Split into lines, cap each line, forward to `on_event`: the
+    /// execution panel's transcript (issue #277).
+    Lines,
+    /// Read to EOF as one payload, aggregate cap only: a captured read,
+    /// where a line is not the unit of anything (issue #282).
+    Raw,
+}
+
+/// One run's pipes, already being read by background threads.
 ///
-/// `run_id` links the run to the execution panel so `cancel_run` can
-/// stop its process tree; `None` is a run nobody can cancel (read-only
-/// queries, fixture tests).
+/// The loop that drives the child lives in `drive_child` and is
+/// identical for both modes; this type only answers "what does a byte
+/// become".
+enum Pipes {
+    Lines {
+        out_rx: Receiver<OutputLine>,
+        err_rx: Receiver<OutputLine>,
+        stdout: CappedStream,
+        stderr: CappedStream,
+        out_thread: JoinHandle<()>,
+        err_thread: JoinHandle<()>,
+    },
+    Raw {
+        out_thread: JoinHandle<RawCapture>,
+        err_thread: JoinHandle<RawCapture>,
+    },
+}
+
+impl Pipes {
+    fn spawn(stdout: ChildStdout, stderr: ChildStderr, mode: PipeMode) -> Self {
+        match mode {
+            PipeMode::Lines => {
+                let (out_tx, out_rx) = sync_channel(LINE_CHANNEL_CAPACITY);
+                let (err_tx, err_rx) = sync_channel(LINE_CHANNEL_CAPACITY);
+                Self::Lines {
+                    out_rx,
+                    err_rx,
+                    stdout: CappedStream::default(),
+                    stderr: CappedStream::default(),
+                    out_thread: spawn_line_reader(stdout, out_tx),
+                    err_thread: spawn_line_reader(stderr, err_tx),
+                }
+            }
+            PipeMode::Raw => Self::Raw {
+                out_thread: spawn_raw_reader(stdout),
+                err_thread: spawn_raw_reader(stderr),
+            },
+        }
+    }
+
+    /// Move what the readers have already queued in, without blocking.
+    fn poll<F: FnMut(RunEvent)>(&mut self, on_event: &mut F) {
+        if let Self::Lines {
+            out_rx,
+            err_rx,
+            stdout,
+            stderr,
+            ..
+        } = self
+        {
+            drain_streams(out_rx, err_rx, on_event, stdout, stderr);
+        }
+    }
+
+    /// Block up to `slice` for output so the poll loop does not spin.
+    fn wait<F: FnMut(RunEvent)>(&mut self, slice: Duration, on_event: &mut F) {
+        match self {
+            Self::Lines { out_rx, stdout, .. } => {
+                if let Ok(line) = out_rx.recv_timeout(slice) {
+                    deliver_line(line, OutputStream::Stdout, stdout, on_event);
+                }
+            }
+            // A raw payload arrives once, at EOF; until the child is gone
+            // there is nothing to collect, so this is the loop's sleep.
+            Self::Raw { .. } => thread::sleep(slice),
+        }
+    }
+
+    /// End-of-run shutdown, shared by every exit path: take the tail
+    /// first (a bounded channel may hold a reader blocked in `send`),
+    /// then join the readers under `READER_SHUTDOWN_BOUND` — a
+    /// grandchild that inherited a pipe keeps it open forever and must
+    /// not swallow the exit (issues #222, #277).
+    fn finish<F: FnMut(RunEvent)>(self, on_event: &mut F) -> CapturedOutput {
+        match self {
+            Self::Lines {
+                out_rx,
+                err_rx,
+                mut stdout,
+                mut stderr,
+                out_thread,
+                err_thread,
+            } => {
+                finish_streams(&out_rx, &err_rx, on_event, &mut stdout, &mut stderr);
+                join_readers_bounded(vec![out_thread, err_thread], Duration::ZERO);
+                CapturedOutput {
+                    stdout: stdout.into_text(),
+                    stderr: stderr.into_text(),
+                    stdout_truncated: false,
+                }
+            }
+            Self::Raw {
+                out_thread,
+                err_thread,
+            } => {
+                let deadline = Instant::now() + READER_SHUTDOWN_BOUND;
+                let stdout = join_capture_bounded(out_thread, deadline).unwrap_or_default();
+                let stderr = join_capture_bounded(err_thread, deadline).unwrap_or_default();
+                CapturedOutput {
+                    stdout: stdout.text,
+                    stderr: stderr.text,
+                    stdout_truncated: stdout.dropped > 0,
+                }
+            }
+        }
+    }
+}
+
+/// What a run's pipes yielded by the time it ended.
+struct CapturedOutput {
+    stdout: String,
+    stderr: String,
+    /// Raw mode only: the aggregate cap withheld bytes from stdout.
+    stdout_truncated: bool,
+}
+
+impl CapturedOutput {
+    fn into_drive_outcome(self, exit_code: i32, duration_ms: u64, end: DriveEnd) -> DriveOutcome {
+        DriveOutcome {
+            stdout: self.stdout,
+            stderr: self.stderr,
+            exit_code,
+            duration_ms,
+            end,
+            stdout_truncated: self.stdout_truncated,
+        }
+    }
+}
+
+/// Why a driven child stopped.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DriveEnd {
+    /// The child exited on its own; `exit_code` is its status.
+    Exited,
+    /// The tree was killed at the deadline.
+    TimedOut,
+    /// `cancel_run` asked for the tree to die.
+    Cancelled,
+}
+
+/// A child driven to its end.
+pub(crate) struct DriveOutcome {
+    pub stdout: String,
+    pub stderr: String,
+    pub exit_code: i32,
+    pub duration_ms: u64,
+    pub end: DriveEnd,
+    /// Raw mode only: the aggregate cap withheld stdout bytes.
+    pub stdout_truncated: bool,
+}
+
+impl DriveOutcome {
+    /// The runner's own report to its callers. Deliberately not a
+    /// verdict: a non-zero exit stays `Ok` here — the boundary that
+    /// knows whether an exit code is a failure (the IPC command, the
+    /// install script) is the one that decides.
+    pub(crate) fn into_run_outcome(self) -> RunOutcome {
+        RunOutcome {
+            stdout: self.stdout,
+            stderr: self.stderr,
+            exit_code: self.exit_code,
+            duration_ms: self.duration_ms,
+            timed_out: self.end == DriveEnd::TimedOut,
+        }
+    }
+}
+
+/// A child that never started or could not be waited on. The wording of
+/// the resulting `AppError` belongs to the caller — it differs per
+/// surface ("spawn mise" / "spawn install command") — so the loop
+/// reports the `io::Error` instead of building one.
+pub(crate) enum DriveError {
+    Spawn(std::io::Error),
+    Wait(std::io::Error),
+}
+
+/// Spawn `cmd`, read its output in `mode`, and drive it to its end:
+/// cancel, deadline, exit, and the reader shutdown every path shares.
 ///
-/// `on_event` is called for each line and once at the end with `Exit`.
-/// The callback runs on a background thread; keep it cheap (the Tauri
-/// command's `Channel::send` is cheap by design).
-fn run_mise_timed<F>(
-    mise_path: &Path,
-    req: &RunRequest,
-    mut on_event: F,
+/// This is the one loop both runners use — `run_mise_timed` for mise and
+/// `run_install_command` for the install script — because it used to
+/// exist twice, and a fix on one side (issue #282's capture mode among
+/// them) would silently miss the other (audit P2, 2026-10-26).
+///
+/// Every path emits exactly one `RunEvent::Exit` before returning, so a
+/// panel run always reaches a terminal state.
+pub(crate) fn drive_child<F>(
+    cmd: &mut Command,
     timeout: Duration,
     run_id: Option<&str>,
-    safe_mode: bool,
-) -> Result<RunOutcome, AppError>
+    mode: PipeMode,
+    on_event: &mut F,
+) -> Result<DriveOutcome, DriveError>
 where
-    F: FnMut(RunEvent) + Send + 'static,
+    F: FnMut(RunEvent),
 {
+    cmd.stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    let mut guard = ChildGuard::spawn(cmd, run_id).map_err(DriveError::Spawn)?;
+    let stdout = guard.child().stdout.take().expect("piped");
+    let stderr = guard.child().stderr.take().expect("piped");
+    let mut pipes = Pipes::spawn(stdout, stderr, mode);
+
+    let started = Instant::now();
+    loop {
+        // Cancel (issue #223): the panel has already flipped the run to
+        // "cancelled", so the outcome is discarded by the caller — what
+        // matters is that the whole group dies instead of only the
+        // direct child. Checked every slice, so the tree is gone within
+        // ~50 ms.
+        if let Some(id) = run_id {
+            if process_tree::take_cancel(id) {
+                guard.terminate_tree();
+                let captured = pipes.finish(on_event);
+                let duration_ms = started.elapsed().as_millis() as u64;
+                on_event(RunEvent::Exit {
+                    exit_code: -1,
+                    duration_ms,
+                    timed_out: false,
+                });
+                return Ok(captured.into_drive_outcome(-1, duration_ms, DriveEnd::Cancelled));
+            }
+        }
+        match guard.try_wait() {
+            Ok(Some(status)) => {
+                // The process has been reaped; the guard unregistered
+                // its group, so nothing can signal it again. `finish`
+                // drains before joining: a bounded channel may have
+                // blocked a reader in `send`, and joining first would
+                // wait out the bound with the tail still queued.
+                let captured = pipes.finish(on_event);
+                let duration_ms = started.elapsed().as_millis() as u64;
+                let exit_code = status.code().unwrap_or(-1);
+                on_event(RunEvent::Exit {
+                    exit_code,
+                    duration_ms,
+                    timed_out: false,
+                });
+                return Ok(captured.into_drive_outcome(exit_code, duration_ms, DriveEnd::Exited));
+            }
+            Ok(None) => {
+                // Non-blocking drain so the panel sees output in real time.
+                pipes.poll(on_event);
+                if started.elapsed() > timeout {
+                    // Timeout is a cancel with a deadline: the whole
+                    // group dies, not just the direct child (issue #223)
+                    // — a `mise run` task shell must not outlive its
+                    // ceiling.
+                    guard.terminate_tree();
+                    let captured = pipes.finish(on_event);
+                    let duration_ms = started.elapsed().as_millis() as u64;
+                    on_event(RunEvent::Exit {
+                        exit_code: -1,
+                        duration_ms,
+                        timed_out: true,
+                    });
+                    return Ok(captured.into_drive_outcome(-1, duration_ms, DriveEnd::TimedOut));
+                }
+                let remaining = timeout.saturating_sub(started.elapsed());
+                pipes.wait(remaining.min(Duration::from_millis(50)), on_event);
+            }
+            Err(e) => return Err(DriveError::Wait(e)),
+        }
+    }
+}
+
+/// Build the mise argv + environment for one run. The output pipes are
+/// wired by `drive_child`, the single place a run is spawned.
+fn mise_command(mise_path: &Path, req: &RunRequest, safe_mode: bool) -> Result<Command, AppError> {
     let mut cmd = Command::new(mise_path);
     let anchor = resolve_cwd_anchor(req.cwd.as_deref())?;
     cmd.arg("-C").arg(anchor);
@@ -748,135 +1091,93 @@ where
     if safe_mode {
         cmd.env("MISE_SAFE", "1");
     }
-    cmd.stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+    Ok(cmd)
+}
 
-    let mut guard = match ChildGuard::spawn(&mut cmd, run_id) {
-        Ok(c) => c,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-            return Err(AppError::not_found());
+fn mise_drive_error(e: DriveError) -> AppError {
+    match e {
+        DriveError::Spawn(e) if e.kind() == std::io::ErrorKind::NotFound => AppError::not_found(),
+        DriveError::Spawn(e) => {
+            AppError::command_failed(format!("failed to spawn mise: {e}"), String::new())
         }
-        Err(e) => {
-            return Err(AppError::command_failed(
-                format!("failed to spawn mise: {e}"),
-                String::new(),
-            ));
-        }
-    };
-
-    let stdout = guard.child().stdout.take().expect("piped");
-    let stderr = guard.child().stderr.take().expect("piped");
-
-    let (out_tx, out_rx) = sync_channel::<OutputLine>(LINE_CHANNEL_CAPACITY);
-    let (err_tx, err_rx) = sync_channel::<OutputLine>(LINE_CHANNEL_CAPACITY);
-
-    let out_thread = spawn_line_reader(stdout, out_tx);
-    let err_thread = spawn_line_reader(stderr, err_tx);
-
-    let started = Instant::now();
-    let deadline = timeout;
-    let mut stdout_buf = CappedStream::default();
-    let mut stderr_buf = CappedStream::default();
-
-    loop {
-        // Cancel (issue #223): the panel has already flipped the run to
-        // "cancelled", so this outcome is discarded by the caller — what
-        // matters is that the whole group dies instead of only mise.
-        // Checked every slice, so the tree is gone within ~50 ms.
-        if let Some(id) = run_id {
-            if process_tree::take_cancel(id) {
-                guard.terminate_tree();
-                finish_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
-                join_readers_bounded(vec![out_thread, err_thread], Duration::ZERO);
-                on_event(RunEvent::Exit {
-                    exit_code: -1,
-                    duration_ms: started.elapsed().as_millis() as u64,
-                    timed_out: false,
-                });
-                return Err(AppError::command_failed("mise run cancelled", String::new()));
-            }
-        }
-        match guard.try_wait() {
-            Ok(Some(status)) => {
-                // The process has been reaped; the guard unregistered
-                // its group, so nothing can signal it again.
-                // Drain BEFORE joining: a bounded channel may have blocked
-                // a reader in `send`, and joining first would wait out the
-                // bound with the tail still queued. `finish_streams`
-                // drains until both readers close, so their last lines are
-                // visible; it is bounded because a grandchild that
-                // inherited the pipe keeps it open (issue #222).
-                finish_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
-                join_readers_bounded(vec![out_thread, err_thread], Duration::ZERO);
-
-                let duration_ms = started.elapsed().as_millis() as u64;
-                let exit_code = status.code().unwrap_or(-1);
-                let timed_out = false;
-                on_event(RunEvent::Exit {
-                    exit_code,
-                    duration_ms,
-                    timed_out,
-                });
-                let outcome = RunOutcome {
-                    stdout: stdout_buf.into_text(),
-                    stderr: stderr_buf.into_text(),
-                    exit_code,
-                    duration_ms,
-                    timed_out,
-                };
-                return Ok(outcome);
-            }
-            Ok(None) => {
-                // Non-blocking drain of pending lines so the UI sees output in real time.
-                drain_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
-                if started.elapsed() > deadline {
-                    // Timeout is a cancel with a deadline: the whole
-                    // group dies, not just mise (issue #223) — a `mise
-                    // run` task shell must not outlive its 30-minute
-                    // ceiling.
-                    guard.terminate_tree();
-                    // Same drain-then-join order as the exit branch: the
-                    // bounded channel may hold a blocked reader. Both are
-                    // bounded because something that outlived the group may
-                    // still hold the pipes (issue #222).
-                    finish_streams(&out_rx, &err_rx, &mut on_event, &mut stdout_buf, &mut stderr_buf);
-                    join_readers_bounded(vec![out_thread, err_thread], Duration::ZERO);
-                    on_event(RunEvent::Exit {
-                        exit_code: -1,
-                        duration_ms: started.elapsed().as_millis() as u64,
-                        timed_out: true,
-                    });
-                    return Err(AppError::timeout());
-                }
-                // Brief sleep so we don't spin.
-                let remaining = deadline.saturating_sub(started.elapsed());
-                let slice = remaining.min(Duration::from_millis(50));
-                match out_rx.recv_timeout(slice) {
-                    Ok(line) => {
-                        deliver_line(line, OutputStream::Stdout, &mut stdout_buf, &mut on_event);
-                    }
-                    Err(RecvTimeoutError::Timeout) => {}
-                    Err(RecvTimeoutError::Disconnected) => {
-                        // stdout closed; loop again to check exit
-                    }
-                }
-            }
-            Err(e) => {
-                return Err(AppError::command_failed(
-                    format!("error waiting for mise: {e}"),
-                    String::new(),
-                ));
-            }
+        DriveError::Wait(e) => {
+            AppError::command_failed(format!("error waiting for mise: {e}"), String::new())
         }
     }
+}
+
+/// Spawn the mise binary and stream its output, enforcing a finite
+/// `timeout`. This is the low-level entry point the streaming surface
+/// routes every call through; captured reads use `run_mise_capture`.
+///
+/// `run_id` links the run to the execution panel so `cancel_run` can
+/// stop its process tree; `None` is a run nobody can cancel (fixture
+/// tests).
+///
+/// `on_event` is called for each line and once at the end with `Exit`.
+/// The callback runs on the caller's thread; keep it cheap (the Tauri
+/// command's `Channel::send` is cheap by design).
+fn run_mise_timed<F>(
+    mise_path: &Path,
+    req: &RunRequest,
+    mut on_event: F,
+    timeout: Duration,
+    run_id: Option<&str>,
+    safe_mode: bool,
+) -> Result<RunOutcome, AppError>
+where
+    F: FnMut(RunEvent) + Send + 'static,
+{
+    let mut cmd = mise_command(mise_path, req, safe_mode)?;
+    let driven = drive_child(&mut cmd, timeout, run_id, PipeMode::Lines, &mut on_event)
+        .map_err(mise_drive_error)?;
+    match driven.end {
+        DriveEnd::Cancelled => Err(AppError::command_failed(
+            "mise run cancelled",
+            String::new(),
+        )),
+        DriveEnd::TimedOut => Err(AppError::timeout()),
+        DriveEnd::Exited => Ok(driven.into_run_outcome()),
+    }
+}
+
+/// Captured read entry point (issue #282): stdout is taken as raw bytes
+/// to EOF — no line split, no per-line cap — so a single-line payload
+/// larger than `MAX_LINE_BYTES` arrives whole. Real mise emits
+/// `ls-remote --json node` as one 51,741-byte line; the streaming line
+/// cap cut that to 8 KiB and every parse failed.
+///
+/// The only bound is the aggregate `MAX_STREAM_BYTES`, and a payload
+/// that exceeds it is an explicit `PARSE_FAILED` instead of a silent
+/// prefix. A captured run carries no run id, so `cancel_run` has nothing
+/// to tear down (a read that needs cancel streams through the panel).
+fn run_mise_capture(
+    mise_path: &Path,
+    req: &RunRequest,
+    timeout: Duration,
+) -> Result<RunOutcome, AppError> {
+    let mut cmd = mise_command(mise_path, req, true)?;
+    let driven = drive_child(&mut cmd, timeout, None, PipeMode::Raw, &mut |_| {})
+        .map_err(mise_drive_error)?;
+    if driven.end == DriveEnd::TimedOut {
+        return Err(AppError::timeout());
+    }
+    // `DriveEnd::Cancelled` cannot arise here (no run id); were it to,
+    // the `-1` exit code below still fails every caller's exit check.
+    if driven.stdout_truncated {
+        return Err(AppError::parse_failed(
+            format!("mise output exceeded the {MAX_STREAM_BYTES}-byte capture cap"),
+            driven.stderr,
+        ));
+    }
+    Ok(driven.into_run_outcome())
 }
 
 /// Streaming entry point for the execution panel. Keeps the 30-minute
 /// `STREAMING_TIMEOUT` ceiling so a long install / run / self-update is
 /// reaped if the user does not cancel it first. Read-only queries must
 /// not use this — they route through `run_mise_json` /
-/// `run_mise_timed(..., READ_TIMEOUT)` so a hung process is reaped far
+/// `run_mise_capture(..., READ_TIMEOUT)` so a hung process is reaped far
 /// sooner and never blocks the window (issue #46).
 ///
 /// This variant is not cancellable by id; the execution panel uses
@@ -1048,8 +1349,10 @@ pub fn run_mise_json(
     // `config ls`, `tasks ls`, `plugins ls`, `outdated`, `doctor`,
     // `registry`, `trust --show`, `tasks edit --path`, version
     // detection), so this is the one place the read-only MISE_SAFE
-    // contract is enforced (issue #230).
-    let outcome = run_mise_timed(mise_path, req, |_| {}, READ_TIMEOUT, None, true)?;
+    // contract is enforced (issue #230). It reads the payload as raw
+    // bytes (issue #282): `ls-remote --json` is one line, not a
+    // transcript.
+    let outcome = run_mise_capture(mise_path, req, READ_TIMEOUT)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise exited with status {}", outcome.exit_code),
@@ -1438,7 +1741,7 @@ pub fn mise_tasks_edit_path(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
+    let outcome = run_mise_capture(mise_path, &req, READ_TIMEOUT)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!(
@@ -1520,7 +1823,7 @@ pub fn check_trust(mise_path: &Path, cwd: Option<&Path>) -> Result<TrustStatus, 
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
+    let outcome = run_mise_capture(mise_path, &req, READ_TIMEOUT)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise trust --show exited with status {}", outcome.exit_code),
@@ -1850,7 +2153,7 @@ pub fn mise_doctor(
     };
     // Same read-only contract as `run_mise_json` (MISE_SAFE), but the
     // exit code cannot short-circuit the parse — see the doc comment.
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
+    let outcome = run_mise_capture(mise_path, &req, READ_TIMEOUT)?;
     if let Ok(value) = serde_json::from_str::<serde_json::Value>(outcome.stdout.trim()) {
         return Ok(value);
     }
@@ -1866,7 +2169,7 @@ fn registry_table_fallback(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
+    let outcome = run_mise_capture(mise_path, &req, READ_TIMEOUT)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise registry exited with status {}", outcome.exit_code),
@@ -1982,7 +2285,7 @@ pub fn mise_plugins_ls(
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
     };
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, READ_TIMEOUT, None, true)?;
+    let outcome = run_mise_capture(mise_path, &req, READ_TIMEOUT)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise plugins ls exited with status {}", outcome.exit_code),
@@ -2224,7 +2527,7 @@ pub fn mise_tasks_add_argv(
 /// disagree on which contract a version read follows.
 pub fn mise_version(mise_path: &Path) -> Result<(serde_json::Value, String), AppError> {
     let req = RunRequest::new(vec!["version".to_string(), "--json".to_string()]);
-    let outcome = run_mise_timed(mise_path, &req, |_| {}, DETECT_TIMEOUT, None, true)?;
+    let outcome = run_mise_capture(mise_path, &req, DETECT_TIMEOUT)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
             format!("mise exited with status {}", outcome.exit_code),
@@ -2307,6 +2610,18 @@ mod tests {
         let third = rx.recv().expect("the unterminated tail");
         assert_eq!(third.text, "tail-without-newline");
         assert!(rx.recv().is_err());
+    }
+
+    /// Issue #282: a captured read has no per-line cap — the aggregate
+    /// bound is the only one — and bytes past it are dropped but still
+    /// read to EOF, so a child can never block on a full pipe.
+    #[test]
+    fn raw_reader_keeps_the_aggregate_cap_and_reads_to_eof() {
+        let mut data = vec![b'x'; MAX_STREAM_BYTES];
+        data.extend_from_slice(b"dropped");
+        let capture = read_pipe_to_eof(Cursor::new(data));
+        assert_eq!(capture.text.len(), MAX_STREAM_BYTES);
+        assert_eq!(capture.dropped, 7);
     }
 
     /// The aggregate cap stops retaining (and emitting) lines, emits the
