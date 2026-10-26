@@ -28,7 +28,7 @@
 ## 不可妥协项
 
 - 维护者是产品角色，不是代码审查者；Definition of done 和验收循环归 `docs/agents/conventions.md` 所有——验收静态优先，代理侧不做视觉验证（启动应用、截图、点验），除非维护者主动要求（beta9）。没看过渲染结果的 UI 标注「未经视觉验证」。
-- 每一次 mise 调用都走执行面板（ADR-0005）；其行为规则归 `docs/design/ui-ux-rules.md` → 执行面板。
+- mise 调用路由归 ADR-0005 所有，包括非 `ls` 家族读命令的豁免清单；执行面板的行为规则归 `docs/design/ui-ux-rules.md` → 执行面板。
 - 所有 UI 文案走 i18n（en + zh-CN）；禁止硬编码文案。行为规则：`docs/design/ui-ux-rules.md` → 文案；工程细节：`docs/agents/i18n.md`。
 - 一处一规则：每条规则只有一个权威文档；其他文档——包括本文件——只链接不复述。新规则写进其归属文档；复述的规则就是等待发生的漂移（beta9）。
 - 从第一天起跨平台：路径与进程创建只走 Tauri/Rust 的 API。

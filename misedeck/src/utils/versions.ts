@@ -97,7 +97,7 @@ function toolVersionKey(v: string): ToolVersionKey {
  * row must never count as outdated (issue #269). This is the one
  * predicate behind every upgrade surface: the Tools table's Version-cell
  * chip, the "N tools outdated" count, and the version-management
- * section's in-use hint all derive from it, so they can never disagree.
+ * section's active hint all derive from it, so they can never disagree.
  */
 export function hasUpgradeTarget(item: MiseOutdatedItem): boolean {
   // `current` may arrive as JSON null for a missing request; the parser

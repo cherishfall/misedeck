@@ -2,7 +2,31 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-10-24 — **1.0.1 cut; the Windows installer has now been installed on real hardware**)
+## CURRENT STATE (2026-10-26 — **post-1.0.1 audit batch: #282, #284–#288 closed; #283 still open; #239 closed; #281 is the only owner-gated issue left**)
+
+v1.0.1 is live (tag `v1.0.1`; the release-notes resolver fix that followed the tag is `c546f75`). **#239** (the beta17 cross-platform spec) was closed on 2026-10-23, and the items its hardware could not answer were split into **#281**. #281 is open, **deliberately unlabeled**, and owner-gated: it needs a Linux desktop, a macOS visual re-check, and one clean-machine NSIS install. It is not agent-workable, `ready-for-agent` would be a lie (no agent can produce that evidence), and the repo has no owner-gated label — creating one for a single issue would be a taxonomy with one member, so it stays unlabeled by decision, recorded on the issue itself.
+
+The 2026-10-26 full audit (`docs/feedback/full-audit-2026-10-26.md`, committed `d3a5c1a`) filed seven tickets (#282–#288). Six were code/CI work — five of them landed, #283 is still open — and the seventh (#288) is documentation governance:
+
+| Issue | Commit(s) | Scope |
+| --- | --- | --- |
+| #282 | `9248681` | `ls-remote --json` is no longer truncated by the 8 KiB line cap; the streaming loop is shared with the runner instead of duplicated. |
+| #283 | — | **Still open** (blocked only by #282, now closed, so startable): read commands inherit the 30-minute streaming ceiling, the launch probe blocks the main thread, `locate_mise` does not check the executable bit. |
+| #284 | `4b83751` | Windows process-tree kill no longer waits for `taskkill` while holding the registry lock; a behaviour test pins it. |
+| #285 | `fe979c3` | Every config-dependent view is invalidated after a write command. |
+| #286 | `38413e3` | The panel run settles from the invoke outcome; the latest tool row is not duplicated; a locale change no longer re-probes the shell. |
+| #287 | `06f05cc` + `a538ab6` | CI gaps: `cargo fmt` gate, macOS Rust code compiled before release, one frontend check set. |
+| #288 | this commit | Docs governance: AGENTS.md links to ADR-0005 instead of restating it, and ADR-0005's exemption list is complete (`doctor`, `registry`, `trust --show`, plus the `mise version` gate probe); the "use" vocabulary is unified on mise's **active / 已激活**; HANDOFF refreshed; `.DS_Store` ignored repo-wide; the `uninstall --all` pointer names `CONTEXT.md`, which is where that ban actually lives. |
+
+**Vocabulary decision (#288), do not re-litigate:** the action is **Use / 使用**; the state it produces is **Active / 已激活** — mise's own terms (`mise ls --help`: "List installed and active tool versions"; `mise ls --json` carries `"active": true`). `enable` / `activate` / "in use" are retired as alternate *state* words; CONTEXT.md → Use is the one home. Shell activation (`mise activate`, Doctor's 已激活/未激活) is a different concept and keeps its wording.
+
+**One premise in the ticket did not match the repo:** `docs/.DS_Store` and `docs/screenshots/.DS_Store` were on disk but **never tracked** (`git log --all --diff-filter=A -- '*.DS_Store'` is empty; they were hidden by the machine's global gitignore). They are deleted, and the repo now ignores `.DS_Store` at any depth so the state does not depend on a machine's global config. No other junk of that class is tracked (`.vscode/extensions.json` is a deliberate recommendation file).
+
+**Gates:** `npm run ci` green after the copy edits (typecheck, eslint, node tests, every lint guard including i18n parity and the dead-key guard, production build). These are copy and pointer edits only — no behaviour changed, and per the beta9 rule the changed strings are **not visually verified**.
+
+**Next move:** the frontier is #283, #289, #290 and #291 — all `ready-for-agent` and unblocked (#282 and #286 are closed). #281 stays owner-gated and unlabeled. Do not reintroduce a second state word: CONTEXT.md → Use is the one home.
+
+## PREVIOUS STATE (2026-10-24 — **1.0.1 cut; the Windows installer has now been installed on real hardware**)
 
 The gap between 1.0.0 and 1.0.1 was mostly the post-GA audit batch plus what a **real install** on the owner's Windows 11 box turned up. 1.0.1 is that batch, version-bumped in all six places and tagged with release notes (annotated tag, so the body is the annotation, not `release-template.md`).
 

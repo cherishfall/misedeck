@@ -89,7 +89,7 @@
   },
   "tools": {
     "title": "Tools",
-    "hint": "Tools installed and active for the current directory — add one with the search below; Use installs and activates in one step.",
+    "hint": "Tools installed and active for the current directory — add one with the search below; Use installs and records the request in one step.",
     "commandHint": "mise outdated · mise ls · mise registry · mise upgrade · mise unuse · mise uninstall · mise use · mise ls-remote · mise install · mise link",
     "columns": {
       "tool": "Tool",
@@ -138,7 +138,7 @@
       "searchPlaceholder": "Search tools (e.g. node)",
       "noMatches": "No matches — a full backend:name (e.g. npm:prettier) still works.",
       "moreMatches": "More matches — keep typing to narrow down.",
-      "inUseTitle": "In use",
+      "inUseTitle": "Active",
       "installedTitle": "Installed",
       "notInstalledTitle": "Not installed",
       "activeBadge": "active",
@@ -148,9 +148,9 @@
       "notInstalledUninstallTooltip": "This version is not installed — there is nothing to delete",
       "upgradeAvailable": "New version {{latest}} available",
       "globalAlsoActive": "Also active through the global config: {{versions}}. Using a version here adds a request for the current directory; both stay active, and this directory's version wins here.",
-      "emptyInUse": "No version is in use.",
+      "emptyInUse": "No version is active.",
       "emptyInstalledTitle": "No installed versions",
-      "emptyInstalledBody": "mise ls {{tool}} reports no installed versions of {{tool}} besides the one in use.",
+      "emptyInstalledBody": "mise ls {{tool}} reports no installed versions of {{tool}} besides the active one.",
       "emptyInstalledBodyNoActive": "mise ls {{tool}} reports no installed versions of {{tool}}.",
       "emptyAvailableTitle": "No available versions",
       "emptyAvailableBody": "mise ls-remote {{tool}} returned no versions."
@@ -181,8 +181,8 @@
     "confirm": {
       "use": {
         "title": "Use {{tool}}@{{version}}?",
-        "bodyGlobal": "Makes this version the one in use and records it in the global mise config (config.toml); it is installed first if missing.",
-        "bodyDirectory": "Makes this version the one in use and records it in the nearest mise config (mise.toml); it is installed first if missing."
+        "bodyGlobal": "Makes this version the active one and records it in the global mise config (config.toml); it is installed first if missing.",
+        "bodyDirectory": "Makes this version the active one and records it in the nearest mise config (mise.toml); it is installed first if missing."
       },
       "install": {
         "title": "Install {{tool}}@{{version}}?",
@@ -190,8 +190,8 @@
       },
       "uninstall": {
         "title": "Uninstall {{tool}}@{{version}}?",
-        "body": "Deletes this version's installation files; the config file stays unchanged. If it is the version in use, it is reinstalled automatically the next time.",
-        "bodyActive": "This version is currently in use. Uninstalling deletes its installation files; the config file keeps requesting it, so commands that need it fail until it is reinstalled."
+        "body": "Deletes this version's installation files; the config file stays unchanged. If it is the active version, it is reinstalled automatically the next time.",
+        "bodyActive": "This version is currently active. Uninstalling deletes its installation files; the config file keeps requesting it, so commands that need it fail until it is reinstalled."
       },
       "unuse": {
         "title": "Unuse {{tool}}?",
@@ -209,14 +209,14 @@
       "untrustedBody": "Trust this directory before mutating its tools."
     },
     "success": {
-      "used": "{{tool}}@{{version}} installed and activated",
+      "used": "{{tool}}@{{version}} installed and active",
       "installed": "{{tool}}@{{version}} installed",
       "upgraded": "{{tool}} upgraded",
       "uninstalled": "{{tool}}@{{version}} uninstalled",
       "unused": "{{tool}} unused",
       "linked": "{{tool}}@{{version}} linked"
     },
-    "hintGlobal": "Tools installed and active in Global mode — add one with the search below; Use installs and activates in one step."
+    "hintGlobal": "Tools installed and active in Global mode — add one with the search below; Use installs and records the request in one step."
   },
   "preview": {
     "titleGlobal": "Global overview",

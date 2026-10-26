@@ -38,7 +38,7 @@ export function miseUninstallArgs(tool: string, version: string): string[] {
 
 // Tool-level removal (ADR-0008, issue #131): `mise unuse <tool>` drops
 // the tool from the Config file and prunes its installations. Only the
-// version-management section's in-use rows reach this — a row there
+// version-management section's active rows reach this — a row there
 // always carries a config request, so no orphan branch exists (#189:
 // `mise uninstall --all` does not enter the GUI, the beta13
 // batch-operation ban).

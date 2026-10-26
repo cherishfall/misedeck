@@ -52,8 +52,8 @@ _Avoid_: project, workspace, scope switcher
 _Avoid_: symlinks, wrappers
 
 **Use**:
-`mise use <tool>@<version>` — activate a Tool version: installs it if missing and writes the request to the Config file. The primary mutation; installing without using is the exception. UI copy: "Use" / 使用.
-_Avoid_: enable, activate, set as default
+`mise use <tool>@<version>` — install the Tool version if missing and write the request to the Config file. The primary mutation; installing without using is the exception. UI copy: the action is "Use" / 使用; the state it produces is "Active" / 已激活 — mise's own term (`mise ls` lists "installed and active tool versions"; `mise ls --json` marks the requested version `"active": true`).
+_Avoid_: enable, activate, set as default; any second state word ("in use", "enabled", …)
 
 **Unuse**:
 `mise unuse <tool>` — remove a Tool from the Config file and prune installations no longer referenced. The real tool-level removal; `mise uninstall` only deletes files. See ADR-0008. UI copy: "Unuse" / 取消使用.

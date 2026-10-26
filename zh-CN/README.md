@@ -8,7 +8,7 @@
 
 ## 为什么
 
-- **展示解析结果，不靠猜**：已装工具、生效版本、可升级项、按目录的覆盖——每一行都标出来自哪个配置文件。
+- **展示解析结果，不靠猜**：已安装工具、已激活版本、可升级项、按目录的覆盖——每一行都标出来自哪个配置文件。
 - **不藏黑箱**：写操作走 CLI，执行面板保留实际执行的命令和它的输出。
 - **目录级配置，无需终端**：把应用指向一个目录，就能看到 mise 在该目录下解析出的结果。
 
@@ -19,7 +19,7 @@
 | 页面 | 可以做什么 | 背后的命令 |
 | --- | --- | --- |
 | **首页** | 版本检查；mise 缺失时引导安装；一键自我更新 | `mise version`、`mise self-update` |
-| **工具** | 已装与生效的工具；registry 搜索；按版本安装、启用、卸载；切换版本；升级过时项；链接本地构建；过滤与翻页 | `mise ls`、`mise registry`、`mise ls-remote`、`mise install`、`mise use`、`mise uninstall`、`mise upgrade`、`mise unuse`、`mise outdated`、`mise link` |
+| **工具** | 已安装并激活的工具；registry 搜索；按版本安装、使用、卸载；切换版本；升级过时项；链接本地构建；过滤与翻页 | `mise ls`、`mise registry`、`mise ls-remote`、`mise install`、`mise use`、`mise uninstall`、`mise upgrade`、`mise unuse`、`mise outdated`、`mise link` |
 | **概览** | 解析出的工具与环境变量、按优先级排列并可查看内容的配置文件、`mise.lock`——每行标注来源 | `mise ls`、`mise env`、`mise config ls` |
 | **环境变量** | 新增、编辑、重命名、取消设置；来源标记；变量定义在写入作用域之外时给出警告 | `mise env`、`mise set`、`mise unset` |
 | **任务** | 列出、过滤、带实时输出运行、新建与编辑、在编辑器中打开配置 | `mise tasks ls`、`mise run`、`mise tasks add`、`mise tasks edit` |

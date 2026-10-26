@@ -28,7 +28,7 @@ An open-source desktop GUI client for [mise](https://mise.jdx.dev). Tauri 2 + Re
 ## Non-negotiables
 
 - The maintainer is a product owner, not a code reviewer; the Definition of done and verification loop live in `docs/agents/conventions.md` — verification is static-first, and agent-side visual verification (launching the app, screenshots, click-throughs) is off the table unless the owner asks (beta9). Unviewed UI is marked "not visually verified".
-- Every mise invocation goes through the execution panel (ADR-0005); its behavior rules live in `docs/design/ui-ux-rules.md` → Execution panel.
+- mise invocation routing is owned by ADR-0005, including its exemption list for non-`ls`-family reads; the execution panel's behavior rules live in `docs/design/ui-ux-rules.md` → Execution panel.
 - All UI strings go through i18n (en + zh-CN); no hardcoded copy. Behavior rules: `docs/design/ui-ux-rules.md` → Copy; engineering: `docs/agents/i18n.md`.
 - One rule, one home: every rule has exactly one canonical doc; other docs — this file included — link instead of restating. New rules go into their home doc; a restated rule is drift waiting to happen (beta9).
 - Cross-platform from day one: paths and process spawning via Tauri/Rust APIs only.

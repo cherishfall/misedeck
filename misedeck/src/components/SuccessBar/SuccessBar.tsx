@@ -1,7 +1,7 @@
 // SuccessBar — the short-lived in-page success confirmation (issue #144,
 // beta11 feedback 3-c). A mutation that succeeds closes the loop where
 // the user acted: the bar names what happened (e.g. "node@22.11.0
-// installed and activated") and auto-dismisses after a few seconds.
+// installed and active") and auto-dismisses after a few seconds.
 // Failures are not its job — they still auto-open the execution panel.
 // The message is passed by the caller, already translated; the bar
 // renders no copy of its own and never echoes the command — the exact

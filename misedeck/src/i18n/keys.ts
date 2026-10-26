@@ -324,14 +324,14 @@ export const I18N_KEYS = {
       /** The `latest` alias row's tooltip: mise's alias resolved to the
           concrete version it selects (item 3 of #258). */
       latestAlias: "tools.addTool.latestAlias",
-      /** Why the in-use row's Uninstall is disabled: the requested
+      /** Why the active row's Uninstall is disabled: the requested
           version has no files on disk yet (beta13). */
       notInstalledUninstallTooltip: "tools.addTool.notInstalledUninstallTooltip",
-      /** Directory mode's in-use header note (issue #213): the tool is
+      /** Directory mode's active header note (issue #213): the tool is
           also active through the global config, so the two requests
           coexist after a directory-level Use. */
       globalAlsoActive: "tools.addTool.globalAlsoActive",
-      /** The in-use section header hint naming the upgrade target
+      /** The active section header hint naming the upgrade target
           version from `mise outdated` (beta13). */
       upgradeAvailable: "tools.addTool.upgradeAvailable",
       /** In-use empty state: explanatory copy only, no action
@@ -339,8 +339,8 @@ export const I18N_KEYS = {
       emptyInUse: "tools.addTool.emptyInUse",
       emptyInstalledTitle: "tools.addTool.emptyInstalledTitle",
       emptyInstalledBody: "tools.addTool.emptyInstalledBody",
-      /** Same section when nothing is in use at all — the default
-       *  body's "besides the one in use" would be false (#269). */
+      /** Same section when nothing is active at all — the default
+       *  body's "besides the active one" would be false (#269). */
       emptyInstalledBodyNoActive: "tools.addTool.emptyInstalledBodyNoActive",
       emptyAvailableTitle: "tools.addTool.emptyAvailableTitle",
       emptyAvailableBody: "tools.addTool.emptyAvailableBody",

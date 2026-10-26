@@ -62,7 +62,7 @@ test("compareToolVersions: garbage input never throws and stays deterministic", 
 
 // `hasUpgradeTarget` is the one predicate behind every upgrade surface
 // (issue #224): the Tools table's chip, the "N tools outdated" count,
-// and the version-management section's in-use hint. External behaviour
+// and the version-management section's active hint. External behaviour
 // only — an outdated row's state in, an upgrade-offered decision out.
 test("hasUpgradeTarget: a latest newer than current is an update", () => {
   assert.equal(hasUpgradeTarget({ name: "node", current: "20.11.0", latest: "20.18.1" }), true);
@@ -71,7 +71,7 @@ test("hasUpgradeTarget: a latest newer than current is an update", () => {
 test("hasUpgradeTarget: latest equal to current is not an update", () => {
   // The audited rust row: requested `latest`, mise reports both
   // `current` and `latest` as "stable" — the badge would promise an
-  // update to the version already in use.
+  // update to the version already active.
   assert.equal(
     hasUpgradeTarget({ name: "rust", requested: "latest", current: "stable", latest: "stable" }),
     false,
@@ -103,7 +103,7 @@ test("hasUpgradeTarget: a missing-request list never contributes an outdated cou
 // Row selection (issue #269): active → newest installed → missing request.
 // The real `mise ls` probe returns the missing request alongside an
 // installed version; picking `items[0]` showed the uninstalled version
-// as if it were in use.
+// as if it were active.
 test("selectToolVersion: the active version wins", () => {
   const picked = selectToolVersion([
     { version: "22.0.0", installed: false, active: false },

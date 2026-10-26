@@ -52,8 +52,8 @@ _Avoid_: project, workspace, scope switcher
 _Avoid_: symlinks, wrappers
 
 **Use**（使用）:
-`mise use <tool>@<version>` —— 使用一个 Tool 版本：缺失则自动安装，并把请求写入 Config file。首要的写操作；只安装不使用是例外。UI 文案："Use" / 使用。
-_Avoid_: enable, activate, set as default
+`mise use <tool>@<version>` —— 缺失则自动安装该 Tool 版本，并把请求写入 Config file。首要的写操作；只安装不使用是例外。UI 文案：动作是 "Use" / 使用；它产生的状态是 "Active" / 已激活 —— mise 自己的术语（`mise ls` 的说明写 "installed and active tool versions"，`mise ls --json` 用 `"active": true` 标记被请求的版本）。
+_Avoid_: enable、activate、set as default；状态的第二种说法（"in use" / 在用 等）
 
 **Unuse**（取消使用）:
 `mise unuse <tool>` —— 将 Tool 从 Config file 移除，并清理不再被引用的安装。这是真正的工具级移除；`mise uninstall` 只删文件。见 ADR-0008。UI 文案："Unuse" / 取消使用。

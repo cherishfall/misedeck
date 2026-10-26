@@ -89,7 +89,7 @@
   },
   "tools": {
     "title": "工具",
-    "hint": "当前目录中已安装并正在使用的工具——在下方搜索添加，「使用」一步完成安装并启用。",
+    "hint": "当前目录中已安装并激活的工具——在下方搜索添加，「使用」一步完成安装并写入配置。",
     "commandHint": "mise outdated · mise ls · mise registry · mise upgrade · mise unuse · mise uninstall · mise use · mise ls-remote · mise install · mise link",
     "columns": {
       "tool": "工具",
@@ -138,19 +138,19 @@
       "searchPlaceholder": "搜索工具（如 node）",
       "noMatches": "没有匹配项——仍可直接输入 backend:name（如 npm:prettier）。",
       "moreMatches": "还有更多匹配——继续输入以缩小范围。",
-      "inUseTitle": "在用",
+      "inUseTitle": "已激活",
       "installedTitle": "已安装",
       "notInstalledTitle": "未安装",
-      "activeBadge": "使用中",
+      "activeBadge": "已激活",
       "created": "发布时间",
       "filterPlaceholder": "过滤版本…",
       "latestAlias": "latest：{{version}}",
       "notInstalledUninstallTooltip": "该版本尚未安装，没有可删除的安装文件",
       "upgradeAvailable": "新版本 {{latest}} 可用",
       "globalAlsoActive": "该工具也由全局配置激活：{{versions}}。在此使用版本会为当前目录叠加一条请求——两者并存，当前目录中以此处的版本为准。",
-      "emptyInUse": "没有正在使用的版本。",
+      "emptyInUse": "没有已激活的版本。",
       "emptyInstalledTitle": "没有已安装版本",
-      "emptyInstalledBody": "除在用版本外，mise ls {{tool}} 没有报告 {{tool}} 的其他已安装版本。",
+      "emptyInstalledBody": "除已激活版本外，mise ls {{tool}} 没有报告 {{tool}} 的其他已安装版本。",
       "emptyInstalledBodyNoActive": "mise ls {{tool}} 没有报告 {{tool}} 的任何已安装版本。",
       "emptyAvailableTitle": "没有可安装版本",
       "emptyAvailableBody": "mise ls-remote {{tool}} 没有返回任何版本。"
@@ -181,8 +181,8 @@
     "confirm": {
       "use": {
         "title": "使用 {{tool}}@{{version}}？",
-        "bodyGlobal": "让该版本成为当前使用的版本，并写入全局 mise 配置（config.toml）；未安装时会先安装。",
-        "bodyDirectory": "让该版本成为当前使用的版本，并写入就近的 mise 配置（mise.toml）；未安装时会先安装。"
+        "bodyGlobal": "让该版本成为已激活版本，并写入全局 mise 配置（config.toml）；未安装时会先安装。",
+        "bodyDirectory": "让该版本成为已激活版本，并写入就近的 mise 配置（mise.toml）；未安装时会先安装。"
       },
       "install": {
         "title": "安装 {{tool}}@{{version}}？",
@@ -190,8 +190,8 @@
       },
       "uninstall": {
         "title": "卸载 {{tool}}@{{version}}？",
-        "body": "删除该版本的安装文件，配置文件不变；正在使用时，下次会自动重新安装。",
-        "bodyActive": "该版本当前正在使用。卸载会删除其安装文件，但配置文件仍保留该请求，依赖它的命令会失败，直到重新安装。"
+        "body": "删除该版本的安装文件，配置文件不变；若它是已激活版本，下次会自动重新安装。",
+        "bodyActive": "该版本当前已激活。卸载会删除其安装文件，但配置文件仍保留该请求，依赖它的命令会失败，直到重新安装。"
       },
       "unuse": {
         "title": "取消使用 {{tool}}？",
@@ -209,14 +209,14 @@
       "untrustedBody": "在修改此目录的工具之前，请先信任它。"
     },
     "success": {
-      "used": "{{tool}}@{{version}} 已安装并启用",
+      "used": "{{tool}}@{{version}} 已安装并激活",
       "installed": "{{tool}}@{{version}} 已安装",
       "upgraded": "{{tool}} 已升级",
       "uninstalled": "{{tool}}@{{version}} 已卸载",
       "unused": "{{tool}} 已取消使用",
       "linked": "{{tool}}@{{version}} 已链接"
     },
-    "hintGlobal": "全局模式下已安装并正在使用的工具——在下方搜索添加，「使用」一步完成安装并启用。"
+    "hintGlobal": "全局模式下已安装并激活的工具——在下方搜索添加，「使用」一步完成安装并写入配置。"
   },
   "preview": {
     "titleGlobal": "全局概览",

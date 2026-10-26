@@ -82,3 +82,7 @@ scripts-capture-exec.mjs
 # `src-tauri/.cargo/config.toml` hard-codes absolute paths into the
 # machine-local toolchain above, so it must never be committed.
 misedeck/src-tauri/.cargo/
+
+# macOS Finder metadata — machine-local, appears in any directory, so the
+# bare pattern (no leading slash) must stay to match at every depth.
+.DS_Store

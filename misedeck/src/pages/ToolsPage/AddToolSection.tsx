@@ -12,26 +12,26 @@
 //     (ADR-0005); cold calls take seconds, so a loading row renders
 //     while pending. A failed read caches its error; the retry button
 //     drops it and re-dispatches (issue #172).
-//   * Three version sections in a fixed order: ① in use — the active
-//     rows from the page's `mise ls --json` read, topmost and never
-//     re-sorted. In directory mode a globally-requested tool's active
-//     row is excluded (source.path filter) so "in use here" is not
+//   * Three version sections in a fixed order: ① active — the rows a
+//     config requests, from the page's `mise ls --json` read, topmost and
+//     never re-sorted. In directory mode a globally-requested tool's active
+//     row is excluded (source.path filter) so "active here" is not
 //     polluted by the global config mixing into `mise ls` (beta12 2-c).
 //     The section header carries the upgrade affordance: when `mise
 //     outdated` reports a newer version within the config's range and
-//     an in-use request exists, a hint names the target version and a
+//     an active request exists, a hint names the target version and a
 //     secondary Upgrade button opens the page's confirm dialog
 //     (`mise upgrade <tool>`, no `--bump` — beta13 Q9). ② installed —
 //     the other on-disk versions: Use (switch) and Uninstall, both
 //     confirmed by the page's dialog. ③ not installed — remote minus
-//     the on-disk set: Use (primary — installs and activates) and
+//     the on-disk set: Use (primary — installs and records the request) and
 //     Install (secondary), both confirmed. A `latest` row is pinned
 //     to ③'s top, annotated with the concrete version the comparator
 //     resolves it to (`latest → 27.0.0`); it renders only when that
 //     version is not already on disk, and it IS that version's row —
 //     the newest version appears once, never as a second identical
 //     action (issue #286).
-//     Section order is constant: in use → installed → not installed.
+//     Section order is constant: active → installed → not installed.
 //
 // Every section action merely OPENS the page's confirm dialog — the
 // dialog shows the exact command and dispatches the mutation, so the
@@ -100,8 +100,8 @@ interface AddToolSectionProps {
   /** Opens the page's Install confirmation (exact command shown). */
   onInstall: (tool: string, version: string) => void;
   /** Opens the page's removal confirmation (exact command shown). The
-   *  `active` flag lets the dialog disclose that this version is the one
-   *  in use (issue #213). */
+   *  `active` flag lets the dialog disclose that this version is the
+   *  active one (issue #213). */
   onUninstall: (tool: string, version: string, active: boolean) => void;
   /** Opens the page's Unuse confirmation (exact command shown). */
   onUnuse: (tool: string) => void;
@@ -233,9 +233,9 @@ export function AddToolSection({
     [tools.data, selectedTool],
   );
 
-  // ① In use: the active rows. In directory mode `mise ls --json`
+  // ① Active: the rows a config requests. In directory mode `mise ls --json`
   // mixes globally-requested tools into the result, so a row sourced
-  // from the global config is not "in use here" (beta12 2-c); the
+  // from the global config is not "active here" (beta12 2-c); the
   // version number on the active row is the match key — never the
   // requested string, which may be an alias like `latest`.
   const activeRows = useMemo(
@@ -251,7 +251,7 @@ export function AddToolSection({
   // Directory mode's counterpart (issue #213): `mise ls` still reports the
   // globally-requested active row, and it is filtered out of ① above. A
   // later directory-level Use layers a second request on top, leaving both
-  // active — the in-use header names the global rows so the coexistence is
+  // active — the active header names the global rows so the coexistence is
   // never silent.
   const globalActiveRows = useMemo(
     () =>
@@ -290,10 +290,10 @@ export function AddToolSection({
   // request.
   const orphanTool = toolItems.length > 0 && toolItems.every((it) => it.requestedVersion == null);
 
-  // The in-use section header carries the upgrade affordance (beta13
+  // The active section header carries the upgrade affordance (beta13
   // Q9): `mise outdated` reports the newest version within the config's
   // range — exactly what `mise upgrade <tool>` (no `--bump`) reaches.
-  // The hint renders only while an in-use request exists in this scope:
+  // The hint renders only while an active request exists in this scope:
   // upgrade acts on a request, so an orphan or elsewhere-requested tool
   // has nothing to upgrade here.
   const outdated = useParsedOutdatedTools();
@@ -303,7 +303,7 @@ export function AddToolSection({
     // One rule for every upgrade surface (issue #224): a target that
     // equals the current version is not an update — mise reports
     // `current: "stable", latest: "stable"` for rust requested as
-    // `latest`. The in-use row's version is the second same-value
+    // `latest`. The active row's version is the second same-value
     // guard (a stale outdated read right after an upgrade). Same
     // predicate as the main table's chip and the outdated count.
     if (entry !== undefined && !hasUpgradeTarget(entry)) return null;
@@ -408,7 +408,7 @@ export function AddToolSection({
     </span>
   );
 
-  // ① In use: Unuse is the tool-level way out (danger — destructive,
+  // ① Active: Unuse is the tool-level way out (danger — destructive,
   // ADR-0008); Uninstall deletes this version's files and is ENABLED
   // here (beta13 — the old hardcoded disable is gone). The exception is
   // a requested-but-not-installed row: no files exist on disk, so its
@@ -557,7 +557,7 @@ export function AddToolSection({
     },
     {
       // No fixed width: the Created column is this table's flex column,
-      // mirroring the Source column of the in-use/installed tables so
+      // mirroring the Source column of the active/installed tables so
       // all three Actions columns land on the same x (beta13).
       key: "created",
       header: t(I18N_KEYS.tools.addTool.created),

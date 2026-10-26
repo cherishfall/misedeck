@@ -14,7 +14,7 @@
 //   * mise unuse             → remove a tool (config request + installs);
 //                              version-management section only (#189)
 //   * mise uninstall         → delete one version's files (#188: offered
-//                              on in-use rows too, except not-installed)
+//                              on active rows too, except not-installed)
 //   * mise upgrade           → upgrade an outdated tool within its
 //                              config range (no `--bump`, beta13 Q9)
 //   * mise registry --json   → the version-management section's search
@@ -24,7 +24,7 @@
 //
 // The "Manage versions" section sits below the tools table (issue
 // #178, redesign #188, beta12 2-c): search the registry, pick a tool,
-// and its versions render in three sections — in use, installed, not
+// and its versions render in three sections — active, installed, not
 // installed — newest first with client-side filter and pagination.
 // Searching never installs anything; every action (Use / Install /
 // Uninstall / Unuse / Upgrade) opens an explanatory confirm dialog
@@ -123,7 +123,7 @@ interface ToolRow {
   /** True when no Config file requests this tool (an orphan
    *  installation, e.g. from a manual CLI `mise install`) — its row
    *  carries the orphan badge and a dim "—" request. Tool-level removal
-   *  stays in the version-management section's in-use rows (#189). */
+   *  stays in the version-management section's active rows (#189). */
   orphan: boolean;
   /** True when the shown version is requested by the config but not
    *  installed (issue #269) — the row carries a "not installed" badge
@@ -136,7 +136,7 @@ interface ToolRow {
 /** The pending action behind the confirmation dialog (ADR-0008, issue
  *  #131; #188 extends it to every version-management action; #189
  *  removes the main table's actions, so `unuse` now comes only from the
- *  version-management section's in-use rows — where a config request
+ *  version-management section's active rows — where a config request
  *  always exists, so there is no orphan branch and no `uninstall --all`
  *  path anywhere). `uninstall` is the per-version file deletion; `use` /
  *  `install` / `upgrade` are the version-management section's remaining
@@ -236,7 +236,7 @@ export function ToolsPage() {
   // or the link form. The families are the mise commands: use, install,
   // upgrade, link, and removal (unuse/uninstall, dispatched only by the
   // confirm dialog). A successful mutation refreshes the tools +
-  // outdated reads (the version-management section's in-use and
+  // outdated reads (the version-management section's active and
   // installed sections derive from the same read).
   const useRun = useOwnRun();
   const installRun = useOwnRun();
@@ -477,7 +477,7 @@ export function ToolsPage() {
       // instead of repeating the value (beta11 2-d/3-f). An outdated row
       // additionally carries the upgrade chip — pure information naming
       // the newest version (`mise outdated`), not a control (#189: the
-      // upgrade action lives in the version-management section's in-use
+      // upgrade action lives in the version-management section's active
       // header; the main table's action column only navigates there).
       key: "version",
       header: t(I18N_KEYS.tools.columns.version),
@@ -683,7 +683,7 @@ export function ToolsPage() {
 
         {/* The "Manage versions" section below the table (issue #178,
             redesign #188, beta12 2-c): registry search → three version
-            sections (in use → installed → not installed). Searching
+            sections (active → installed → not installed). Searching
             never installs — the browse step is mandatory between search
             and any action, and every action opens the confirm dialog
             above. The toggle and the Clear button are browsing and

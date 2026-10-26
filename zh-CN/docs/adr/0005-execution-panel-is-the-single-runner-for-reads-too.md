@@ -24,7 +24,7 @@ ADR-0004 让执行面板成为**变更操作**的唯一路径：每次写入都�
 - 读查询继承的是流式 runner 的 30 分钟上限，而不是 120 秒的读超时。可以接受：用户能看见这次运行并取消它，而这在静默读查询时代从不成立。
 - 切换目录上下文时，已提交的版本查询会被清空，而不是静默重新取数：没有 fetcher 的查询无法重新取数，而一个永远转不完的 loading 就是在撒谎。输入框里的工具名保留，所以针对新目录重跑只需一次点击。
 - `tools_ls`、`tools_ls_tool`、`tools_ls_remote` 的 Tauri 命令与前端封装已在 #96 删除；保留下来的是 Rust runner 函数及其 fixture 测试，作为钉死的 argv 契约。UI 通过面板 runner 以 background 模式派发这三个读查询。
-- 不属于 `ls` 家族的读（`outdated`、`env`、`config ls`、lockfile、任务、插件）仍走各自的命令。它们并非在原则上获得豁免 —— 本 ticket 的范围是 owner 撞上的那三个查询。新增的读面应当经由 runner。
+- 不属于 `ls` 家族的读仍走各自的命令：`outdated`、`env`、`config ls`、lockfile、任务、插件、`doctor`（`doctor` 命令运行 `mise doctor --json`）、`registry`（`registry` 命令运行 `mise registry --json`）、`trust --show`（`trust_check` 命令）——清单补齐时已逐项对照 `src-tauri/src/lib.rs` 与 `src/api/mise.ts` 核实（#288）。`detect_mise` 背后的 `mise version --json` 门禁探测同样早于面板：它是启动门禁，不是读面。它们并非在原则上获得豁免 —— 本 ticket 的范围是 owner 撞上的那三个查询。新增的读面应当经由 runner。
 - `settings ls` 在 #162 加入了经 runner 的读（beta11 审查发现设置页仍在调用自己的 `settings_ls` Tauri 命令——「新增读面」这条还没覆盖到它）。设置页现在通过 runner 以 background 模式派发 `mise settings ls --json-extended`；专用的 Tauri 命令与前端封装在没有调用方后被移除，与 tools `ls` 家族殊途同归。Rust runner 函数及其 fixture 测试保留，作为钉死的 argv 契约。
 
 ## 修订 —— 单飞是意外引入的全局锁（issue #138）
