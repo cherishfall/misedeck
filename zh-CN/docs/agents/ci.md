@@ -9,8 +9,8 @@
 
 | Workflow      | 触发时机                                    | 做了什么                                                                                                                                  | 墙钟预算   |
 | ------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `tsc --noEmit` · `npm run lint:eslint` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run lint:install-echo-parity` · `npm run lint:argv-parity` · `npm run build` · `cargo check` · `cargo clippy --all-targets --features fixtures -- -D warnings` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu；另有独立 Windows job 跑 `npm run ci` + `cargo test --all-targets --features fixtures` + `cargo build`（见下文）。 | < 5 分钟    |
-| `release.yml` | 推送 `v*.*.*` tag，或 `workflow_dispatch`   | 在 `macos-latest`、`windows-latest`、`ubuntu-22.04` 上并行构建 Tauri bundle；上传各平台 artifact；真实 tag 推送时计算一份覆盖全版本的 `SHA256SUMS` 并发布 GitHub Release。       | 由矩阵决定 |
+| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `npm run ci`（typecheck、eslint、测试、全部 lint 守卫、生产构建）· `cargo fmt --all -- --check` · `cargo check` · `cargo clippy --all-targets --features fixtures -- -D warnings` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu（完整套件）与 macOS（仅 `cargo check`）；另有独立 Windows job 跑 `npm run ci` + `cargo test --all-targets --features fixtures` + `cargo build`（见下文）。 | < 5 分钟    |
+| `release.yml` | 推送 `v*.*.*` tag，或 `workflow_dispatch`   | `preflight` 先要求被 tag 的 commit 有一次绿色的 `ci.yml` 运行；然后在 `macos-latest`、`windows-latest`、`ubuntu-22.04` 上并行构建 Tauri bundle；上传各平台 artifact；真实 tag 推送时计算一份覆盖全版本的 `SHA256SUMS` 并发布 GitHub Release。       | 由矩阵决定 |
 
 `ci.yml` 是保证 `master` 绿色的闸门。`release.yml` 才是真正产出
 artifact 的那个。
@@ -44,13 +44,35 @@ Ubuntu 22.04 / Debian 12 上无法启动。`ci.yml` 保持 `ubuntu-latest` —�
   重新解析 tag，并在同一次改动里更新两个 workflow（以及本表的
   版本注释）。
 
-`rust` job 还会跑 `cargo clippy --all-targets --features fixtures -- -D warnings`，
-任何 lint（包括 `unexpected_cfgs`）都会让 CI 失败，而不是留在
-`master` 上。Windows job 跑的是同一套完整测试——单元测试**和**集成测试
-——其中包含 `#[cfg(windows)]` 的进程树 teardown 测试：每一条都启动
-PowerShell，由 PowerShell 再启动一个隐藏的 `ping` 作为孙进程，并用
-`tasklist` 断言两个进程都已消失——`terminate_tree`（issue #278），以及
-退出清扫 `terminate_all` 自己的 Windows 覆盖（issue #284）。
+`rust` job 在编译任何东西之前先跑 `cargo fmt --all -- --check`（issue
+#287），随后是 `cargo clippy --all-targets --features fixtures -- -D warnings`：
+格式或 lint 漂移（包括 `unexpected_cfgs`）都会让 CI 失败，而不是留在
+`master` 上。fmt 关卡刻意放在 apt 安装**之前**：格式错误几秒内就能报出来，
+不必先下载 Linux 依赖。本地修复方式：在 `misedeck/src-tauri` 下跑
+`cargo fmt --all`。
+
+### 前端检查只有一份清单
+
+两条前端腿——`frontend (ubuntu-latest)` 与 `frontend (windows-latest)`——
+以及 Windows 的 Rust job，跑的都是同一条命令：在 `misedeck/` 下
+`npm run ci`，而这就是检查清单唯一存在的地方（issue #287）。此前 ubuntu
+腿手抄了这份脚本的一个子集，于是 `lint:modal-focus`、
+`lint:nested-interactive`、`lint:page-layout`、`lint:invoke-wrapper` 只在
+Windows 上跑过，新增一个守卫得改两个地方才能全平台生效。
+**新守卫一律加进 `misedeck/package.json` 的 `scripts.ci`，不要加进 workflow 文件。**
+
+### macOS `cargo check` job
+
+`ci.yml` 有一个 `macos:` job，只做一件事：在 `macos-latest` 上
+`cargo check --all-targets --features fixtures`（issue #287）。
+macOS 是本产品优先打磨的平台，而它的 Rust 代码对 ubuntu 那条腿是不存在的：
+`src/lib.rs` 里的 objc 无障碍桥和 `src/shell.rs` 的 macOS 半边都在
+`#[cfg(target_os = "macos")]` 之下，写错一个字符过去**只**会在
+`release.yml` 里、也就是发版途中才碰到编译器。这个 job 刻意只做 check，
+不跑测试也不打包：它守的是「macOS 专属代码能编译」，耗时是分钟级而不是
+几十分钟，并与 ubuntu 腿共用 `Swatinem/rust-cache` 的设置（缓存键包含
+host triple，两个 job 的条目互不覆盖）。macOS 专属代码里的 warning 仍
+不受闸门约束——`clippy -D warnings` 只在 ubuntu 上跑。
 
 ### Windows job
 
@@ -58,10 +80,13 @@ PowerShell，由 PowerShell 再启动一个隐藏的 `ping` 作为孙进程，�
 这是 Windows 代码路径在 CI 中真正执行的地方——但截至 2026-10-22，它已
 不再是**唯一**的地方：Windows 代码路径如今已在真实 Windows 硬件上跑过，
 正是那次实机运行暴露了 `#222` / `#223` 的 fixture 在 Windows 上根本不可用。
-它跑完整的前端检查（`npm run ci`，即完整的 18 步脚本 —— 见
-`misedeck/README.md`，其中包含 `frontend` job 没有逐步执行的
-`modal-focus`、`nested-interactive`、`page-layout`、`invoke-wrapper` 四个守门）、
-完整 Rust 测试套件（`cargo test --all-targets --features fixtures --no-fail-fast`），以及
+它跑的前端检查与两条 `frontend` 腿相同——`npm run ci`，即完整的 18 步
+脚本（见「前端检查只有一份清单」）——外加完整的 Rust 测试套件
+（`cargo test --all-targets --features fixtures --no-fail-fast`），
+其中包含 `#[cfg(windows)]` 的进程树 teardown 测试：每一条都启动
+PowerShell，由 PowerShell 再启动一个隐藏的 `ping` 作为孙进程，并用
+`tasklist` 断言两个进程都已消失——`terminate_tree`（issue #278），以及
+退出清扫 `terminate_all` 自己的 Windows 覆盖（issue #284）——最后是
 `cargo build` 编译冒烟（`dist/` 由 `npm run ci` 产出，所以顺序有讲究）。
 有一件事是刻意不做的：
 
@@ -80,6 +105,18 @@ Windows job 绿 = 编译级与测试级正确；它**不能**替代在真实 Win
 这个替代仍然该被拒绝——正是那次实机运行找出了这个 job 抓不到的两个缺陷
 （bash 脚本 fixture；以及在会忽略 `$HOME` 的平台上、测试伪造 `$HOME` 时会
 静默失效的 home 解析接缝）。
+
+### 发版前置检查
+
+`release.yml` 以一个 `preflight` job 开头，`build` 依赖它（issue #287
+第 5 项）。在 tag 推送时它只问一个问题——被 tag 的这个 commit 有没有一次
+成功的 `ci.yml` 推送运行？——通过 Actions 的运行记录 API（`actions: read`，
+仍然不给写权限）查询；答案为否时它在构建任何东西之前就失败，并把该
+commit 上看到的运行列出来。它**不**重跑整套检查：那会在每条腿重复
+`ci.yml`，而且仍然要等 bundle 产出之后才会失败。`workflow_dispatch`
+下这一步被跳过，所以从分支手动演练矩阵不受影响。对发版仪式的后果是：
+推 tag 之前先等该 commit 的 `ci.yml` 运行变绿，被取消的运行用
+`gh run rerun <id>` 重跑。
 
 ## 发版流程
 
@@ -106,7 +143,10 @@ Windows job 绿 = 编译级与测试级正确；它**不能**替代在真实 Win
    git push origin v0.2.0
    ```
    推送 tag 才会触发 `release.yml`。推送非 tag commit **不会**触发发版构建。
-6. 在 Actions 标签页观察运行情况。矩阵有三段；三段都成功后 `release` job 才会跑。
+   被 tag 的 commit 必须已经有绿色的 `ci.yml` 运行（即上面的前置检查 job）；
+   在那次运行结束前推 tag，发版会停在 `preflight` 并把看到的运行写进日志。
+6. 在 Actions 标签页观察运行情况。前置检查 job 最先跑，然后是矩阵的三段；
+   三段都成功后 `release` job 才会跑。
 7. Release 发布后，下载 `SHA256SUMS` 文件，对至少一个平台的 hash
    做一次抽样校验，然后通告用户。
 
@@ -224,7 +264,8 @@ CI 矩阵使用按 SHA 固定的 `dtolnay/rust-toolchain` 的 `stable`
   `node_modules`，键为 `misedeck/package-lock.json`。
 
 `release.yml` 用 `shared-key: ${{ matrix.os }}` 让三个平台缓存不互窜；
-`ci.yml` 的 `rust` job 只在单一 OS 上跑，无需这个维度。
+`ci.yml` 现在有两个 Rust job（ubuntu 与 macOS），同样不需要这个维度——
+`rust-cache` 的键包含 host triple，两个条目不设 `shared-key` 也不会互窜。
 
 ## 构建失败时
 

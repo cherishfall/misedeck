@@ -4,7 +4,8 @@ name: ci
 # The full tag-triggered build lives in release.yml — this workflow
 # keeps master green without paying for a Tauri bundle on every commit.
 # Target wall-clock: under 5 minutes on a warm cache for the Ubuntu
-# legs; the Windows smoke job runs a cold Rust build and is slower.
+# legs and for the macOS `cargo check` leg; the Windows smoke job runs
+# a cold Rust build and is slower.
 
 on:
   push:
@@ -48,66 +49,16 @@ jobs:
         working-directory: misedeck
         run: npm ci
 
-      - name: TypeScript typecheck
+      # One script, one list of checks (#287). This job used to spell out
+      # a hand-copied subset of `npm run ci` while the windows job ran the
+      # script, so `lint:modal-focus`, `lint:nested-interactive`,
+      # `lint:page-layout` and `lint:invoke-wrapper` only ever ran on
+      # Windows, and every new guard had to be remembered in two places.
+      # `misedeck/package.json` → `scripts.ci` is the single source of
+      # truth for both jobs; adding a guard there adds it everywhere.
+      - name: Frontend checks (npm run ci)
         working-directory: misedeck
-        run: npx tsc --noEmit
-
-      - name: React Hooks lint (zero warnings)
-        working-directory: misedeck
-        run: npm run lint:eslint
-
-      - name: Frontend tests
-        working-directory: misedeck
-        run: npm run test
-
-      - name: i18n parity + call-site guard
-        working-directory: misedeck
-        run: npm run lint:i18n
-
-      - name: i18n string-concatenation guard
-        working-directory: misedeck
-        run: npm run lint:i18n-concat
-
-      - name: CSS design-token reference check
-        working-directory: misedeck
-        run: npm run lint:css-tokens
-
-      - name: CSS font-size token check
-        working-directory: misedeck
-        run: npm run lint:css-font-size
-
-      - name: CSS spacing token check
-        working-directory: misedeck
-        run: npm run lint:css-spacing
-
-      - name: CSS letter-spacing token check
-        working-directory: misedeck
-        run: npm run lint:css-tracking
-
-      - name: i18n ellipsis guard
-        working-directory: misedeck
-        run: npm run lint:i18n-ellipsis
-
-      - name: Command-hint guard
-        working-directory: misedeck
-        run: npm run lint:command-hint
-
-      # The guided-install echo (TS) and the command the Rust executor
-      # spawns must be the same per-platform line (issue #229).
-      - name: Install-echo parity guard
-        working-directory: misedeck
-        run: npm run lint:install-echo-parity
-
-      # The tools-page argv is dispatched from TS and mirrored by the
-      # Rust builders; both halves are pinned to one case table, with
-      # the Rust half in `cargo test` (issue #255).
-      - name: Tools-page argv parity guard
-        working-directory: misedeck
-        run: npm run lint:argv-parity
-
-      - name: Frontend production build
-        working-directory: misedeck
-        run: npm run build
+        run: npm run ci
 
       # Release-note resolution is shell logic that runs only on a tag
       # push; exercise it here so a regression fails on master (#266).
@@ -125,7 +76,18 @@ jobs:
       - name: Install Rust toolchain (stable)
         uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
-          components: clippy
+          # rustfmt is the gate below; clippy is the lint gate (#287).
+          components: clippy, rustfmt
+
+      # `cargo clippy -D warnings` does not look at formatting, and the
+      # tree had drifted from rustfmt's opinion in 24 files (#287). This
+      # is the cheapest gate in the job — no apt install, no build — so
+      # it runs before both: a formatting error reports in seconds
+      # instead of after a Linux dependency download and a compile.
+      # `cargo fmt --all` locally is the fix.
+      - name: cargo fmt (check only)
+        working-directory: misedeck/src-tauri
+        run: cargo fmt --all -- --check
 
       - name: Install Linux system dependencies
         run: |
@@ -215,6 +177,39 @@ jobs:
           digest=${digest//$'\r'/}
           digest=${digest//$'\n'/'%0A'}
           echo "::error title=Failing tests::${digest}"
+
+  # macOS is the platform the product is polished for first (AGENTS.md),
+  # yet until #287 it was the one platform whose Rust code was never
+  # compiled until a release tag: the objc accessibility bridge
+  # (`src/lib.rs`, `#[cfg(target_os = "macos")]`) and the macOS half of
+  # `src/shell.rs` first met a compiler inside `release.yml`. A typo in
+  # a `#[cfg]` block could only be found while cutting a release.
+  #
+  # Deliberately a `cargo check`, not a full test or bundle run: the
+  # point is "the macOS-only code compiles", and a check is ~3 minutes
+  # on a warm cache against a bundler's 15+. Tests stay on the ubuntu
+  # and windows legs; the macOS test surface is the same crate.
+  macos:
+    name: rust (macos-latest)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+
+      # Same cache as the ubuntu leg; Swatinem/rust-cache keys on the
+      # host triple, so the two jobs do not evict each other's entries.
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: misedeck/src-tauri -> target
+          cache-on-failure: true
+
+      - name: cargo check
+        working-directory: misedeck/src-tauri
+        run: cargo check --all-targets --features fixtures
 
   # Windows is a beta target (issue #208). This job is the place the
   # Windows code paths actually execute: the `frontend` job above covers

@@ -24,8 +24,54 @@ permissions:
   contents: read
 
 jobs:
+  # Issue #287, item 5: the release path used to rest entirely on the
+  # discipline "only tag a green master" — `tauri build` runs no tests.
+  # Re-running the whole suite inside this workflow would duplicate
+  # `ci.yml` (minutes per leg) and only fail *after* the bundles were
+  # built, so instead this job asks the cheap question up front: does
+  # the tag's commit have a green `ci.yml` run? No green run, no build —
+  # the matrix never starts, and the fix costs one API call.
+  #
+  # Only meaningful for a tag push; a `workflow_dispatch` matrix test
+  # from a branch deliberately runs without it.
+  preflight:
+    name: preflight
+    runs-on: ubuntu-latest
+    # `actions: read` is what the runs endpoint needs; still no writes.
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Require a green ci run for the tagged commit
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Block scalars on purpose: see the ci.yml note about `: ` in a
+          # one-line value silently invalidating the workflow file.
+          api="repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&per_page=100"
+          # Any successful push-triggered run for this exact commit is
+          # enough: a cancelled run (superseded by a newer push on the
+          # same ref) followed by a manual re-run still counts, and the
+          # SHA pins the tree, so a green run of another commit cannot
+          # stand in.
+          green=$(gh api "$api" --jq '[.workflow_runs[] | select(.event == "push" and .conclusion == "success")] | length')
+          if [ "$green" -gt 0 ]; then
+            echo "ci.yml is green for $GITHUB_SHA"
+            exit 0
+          fi
+          echo "::error title=No green ci run::No successful ci.yml push run found for $GITHUB_SHA"
+          echo "runs seen for this commit:"
+          gh api "$api" --jq '.workflow_runs[] | select(.event == "push") | "  \(.id)  \(.status)/\(.conclusion // "in progress")  \(.html_url)"' || true
+          echo
+          echo "Tag a commit whose ci.yml run is success, wait for the run to finish, or re-run it: gh run rerun <id>"
+          exit 1
+
   build:
     name: build (${{ matrix.os }})
+    needs: preflight
     runs-on: ${{ matrix.os }}
     strategy:
       # Continue other legs when one fails so a Windows or Linux breakage

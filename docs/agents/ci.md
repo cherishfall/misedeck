@@ -10,8 +10,8 @@ maintainer cuts a release.
 
 | Workflow    | Trigger                                  | What it does                                                                                                                                       | Wall-clock budget |
 | ----------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `ci.yml`    | push to `master`, every PR               | `npm ci` · `tsc --noEmit` · `npm run lint:eslint` · `npm run test` · `npm run lint:i18n` · `npm run lint:i18n-concat` · `npm run lint:css-tokens` · `npm run lint:css-font-size` · `npm run lint:css-spacing` · `npm run lint:css-tracking` · `npm run lint:i18n-ellipsis` · `npm run lint:command-hint` · `npm run lint:install-echo-parity` · `npm run lint:argv-parity` · `npm run build` · `cargo check` · `cargo clippy --all-targets --features fixtures -- -D warnings` · `cargo test`. Frontend runs on Ubuntu + Windows, Rust on Ubuntu; a separate Windows job runs `npm run ci` + `cargo test --all-targets --features fixtures` + `cargo build` (see below). | < 5 min            |
-| `release.yml` | push of a `v*.*.*` tag, or `workflow_dispatch` | Builds Tauri bundles for `macos-latest`, `windows-latest`, `ubuntu-22.04` in parallel; uploads per-platform artifacts; on a real tag push, computes one release-wide `SHA256SUMS` and publishes a GitHub Release. | matrix-driven     |
+| `ci.yml`    | push to `master`, every PR               | `npm ci` · `npm run ci` (typecheck, eslint, tests, every lint guard, production build) · `cargo fmt --all -- --check` · `cargo check` · `cargo clippy --all-targets --features fixtures -- -D warnings` · `cargo test`. Frontend runs on Ubuntu + Windows; Rust on Ubuntu (full suite) and macOS (`cargo check` only); a separate Windows job runs `npm run ci` + `cargo test --all-targets --features fixtures` + `cargo build` (see below). | < 5 min            |
+| `release.yml` | push of a `v*.*.*` tag, or `workflow_dispatch` | `preflight` requires a green `ci.yml` run for the tagged commit; then builds Tauri bundles for `macos-latest`, `windows-latest`, `ubuntu-22.04` in parallel; uploads per-platform artifacts; on a real tag push, computes one release-wide `SHA256SUMS` and publishes a GitHub Release. | matrix-driven     |
 
 The `ci.yml` workflow is the gate that keeps `master` green. The
 `release.yml` workflow is the one that ships artifacts.
@@ -51,14 +51,41 @@ Both workflows run with least privilege (issue #278):
   resolving the tag again with `gh api` and updating both workflows
   (and this table's version comment) in one change.
 
-The `rust` job also runs `cargo clippy --all-targets --features fixtures -- -D warnings`,
-so a lint (including `unexpected_cfgs`) fails CI instead of lingering
-on `master`. The Windows job runs the same full suite — unit **and**
-integration tests — which includes the `#[cfg(windows)]` process-tree
-teardown tests: each spawns PowerShell, which starts a hidden `ping` as
-a grandchild, and asserts through `tasklist` that both processes are
-gone — `terminate_tree` (issue #278) and the app-exit sweep
-`terminate_all` on its own Windows leg (issue #284).
+The `rust` job also runs `cargo fmt --all -- --check` before anything is
+compiled (issue #287), and `cargo clippy --all-targets --features fixtures -- -D warnings`,
+so a formatting or lint drift (including `unexpected_cfgs`) fails CI instead of lingering
+on `master`. The fmt gate lives above the apt install on purpose: a
+formatting error reports in seconds, without downloading Linux
+dependencies. Fix locally with `cargo fmt --all` from
+`misedeck/src-tauri`.
+
+### One list of frontend checks
+
+Both frontend legs — `frontend (ubuntu-latest)` and `frontend
+(windows-latest)` — and the Windows Rust job run the same command,
+`npm run ci` from `misedeck/`, and that is the only place the list of
+checks lives (issue #287). Before that the ubuntu leg spelled out a
+hand-copied subset, so `lint:modal-focus`, `lint:nested-interactive`,
+`lint:page-layout` and `lint:invoke-wrapper` only ever ran on Windows,
+and a new guard had to be added in two places to run everywhere.
+**A new guard is added to `scripts.ci` in `misedeck/package.json`,
+never to a workflow file.**
+
+### The macOS `cargo check` job
+
+`ci.yml` runs a `macos:` job that does one thing: `cargo check
+--all-targets --features fixtures` on `macos-latest` (issue #287).
+macOS is the polished-first platform, and its Rust code is invisible to
+the ubuntu leg: the objc accessibility bridge in `src/lib.rs` and the
+macOS half of `src/shell.rs` sit behind `#[cfg(target_os = "macos")]`,
+so a typo in either used to reach a compiler *only* inside
+`release.yml` — during a release. Deliberately a check, not a test run
+or a bundle: the gate is "the macOS-only code compiles", it takes
+minutes rather than tens of minutes, and it shares the
+`Swatinem/rust-cache` setup with the ubuntu leg (the cache keys on the
+host triple, so the two jobs keep separate entries). Warnings in
+macOS-only code are not gated — `clippy -D warnings` still runs on
+ubuntu only.
 
 ### The Windows job
 
@@ -67,13 +94,16 @@ gone — `terminate_tree` (issue #278) and the app-exit sweep
 in CI — and as of 2026-10-22 it is no longer the *only* place: the
 Windows code paths have now been run on real Windows hardware, which is
 how the `#222` / `#223` fixtures were found to be unusable there. It runs
-the full frontend
-check (`npm run ci`, the whole 18-step script — see `misedeck/README.md`,
-which adds the `modal-focus`, `nested-interactive`, `page-layout` and
-`invoke-wrapper` guards the `frontend` job does not run step-by-step), the
-full Rust suite (`cargo test --all-targets --features fixtures --no-fail-fast`), and a
-`cargo build` compile smoke (`dist/` comes from `npm run ci`, so the
-order matters). One thing is deliberately left out:
+the same frontend check as the `frontend` legs — `npm run ci`, the whole
+18-step script (see "One list of frontend checks") — plus the full Rust
+suite (`cargo test --all-targets --features fixtures --no-fail-fast`),
+which includes the `#[cfg(windows)]` process-tree teardown tests: each
+spawns PowerShell, which starts a hidden `ping` as a grandchild, and
+asserts through `tasklist` that both processes are gone —
+`terminate_tree` (issue #278) and the app-exit sweep `terminate_all` on
+its own Windows leg (issue #284) — and a `cargo build` compile smoke
+(`dist/` comes from `npm run ci`, so the order matters). One thing is
+deliberately left out:
 
 - The Tauri bundler (`npm run tauri build`) — Windows bundling pulls
   NSIS/WiX, and packaging is a release-time decision.
@@ -94,6 +124,20 @@ substitution is still worth refusing — the run on real hardware is what
 turned up the two defects this job could not have caught (bash fixtures,
 and a home-resolution seam that silently no-ops when a test fakes `$HOME`
 on a platform that ignores it).
+
+### The release pre-flight
+
+`release.yml` starts with a `preflight` job that `build` needs (issue
+#287, item 5). On a tag push it asks one question — does the tagged
+commit have a successful `ci.yml` push run? — via the Actions runs API
+(`actions: read`, still no writes) and fails before anything is built if
+the answer is no, printing the runs it saw for that commit. It does not
+re-run the suite: that would duplicate `ci.yml` on every leg and would
+still fail only *after* the bundles existed. The check is skipped for
+`workflow_dispatch`, so a manual matrix test from a branch is unaffected.
+Consequence for the release ritual: wait for the commit's `ci.yml` run
+to finish green before pushing the tag, or re-run a cancelled run with
+`gh run rerun <id>`.
 
 ## Cutting a release
 
@@ -126,9 +170,13 @@ To cut a release:
    git push origin v0.2.0
    ```
    Pushing the tag is what triggers `release.yml`. Pushing a non-tag
-   commit does **not** trigger the release build.
-6. Watch the run from the Actions tab. The matrix has three legs; all
-   three must succeed before the `release` job runs.
+   commit does **not** trigger the release build. The tag's commit must
+   already have a green `ci.yml` run (the pre-flight job above); a tag
+   pushed before that run finishes starts a release that stops at
+   `preflight` with the run it saw in the log.
+6. Watch the run from the Actions tab. The pre-flight job comes first,
+   then the matrix has three legs; all three must succeed before the
+   `release` job runs.
 7. Once the Release is published, download the `SHA256SUMS` file,
    spot-check at least one platform's hash against a freshly
    downloaded binary, and announce.
@@ -263,8 +311,9 @@ and Node 22; the exact lockfile is `misedeck/src-tauri/Cargo.lock` and
   for `node_modules`, keyed on `misedeck/package-lock.json`.
 
 `release.yml` uses `shared-key: ${{ matrix.os }}` so the three
-platform caches don't collide; `ci.yml` runs on a single OS per
-`rust` job so it doesn't need the dimension.
+platform caches don't collide; `ci.yml` has two Rust jobs now (ubuntu
+and macOS) and does not need the dimension — `rust-cache` keys on the
+host triple, so the two keep separate entries without a `shared-key`.
 
 ## When a build fails
 

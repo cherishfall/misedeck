@@ -7,6 +7,14 @@ license = "MIT"
 repository = "https://github.com/cherishfall/misedeck"
 homepage = "https://github.com/cherishfall/misedeck#readme"
 edition = "2021"
+# The package ships more than one binary: the app plus the two fixture
+# harnesses below. Those are gated behind `--features fixtures`, but the
+# moment a feature or a build enables them, a bare `cargo run` has three
+# candidates and refuses with "could not determine which binary to run";
+# the Tauri CLI then cannot work out which process to watch, and
+# `npm run tauri dev` stopped starting (flagged on #286, fixed in #287).
+# Pin the app: `cargo run` / `cargo build` with no `--bin` mean the app.
+default-run = "misedeck"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
