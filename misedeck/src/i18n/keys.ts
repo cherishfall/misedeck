@@ -411,6 +411,15 @@ export const I18N_KEYS = {
       title: "preview.missing.title",
       body: "preview.missing.body",
     },
+    /** The resolved-tools table's empty card (issue #296): the
+        Manage-versions search the generic copy pointed at exists only
+        on /tools, so the card carries its own action navigating there
+        (issue #226; the Plugins page's Search-tools precedent). */
+    toolsEmpty: {
+      title: "preview.toolsEmpty.title",
+      body: "preview.toolsEmpty.body",
+      action: "preview.toolsEmpty.action",
+    },
     sections: {
       tools: "preview.sections.tools",
       env: "preview.sections.env",

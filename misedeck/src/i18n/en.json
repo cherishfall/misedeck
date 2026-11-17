@@ -239,6 +239,11 @@
       "title": "Overview unavailable",
       "body": "MiseDeck needs the mise CLI to resolve this directory's tools and env. Go back and install mise, then return to this page."
     },
+    "toolsEmpty": {
+      "title": "No tools resolved here",
+      "body": "Install one on the Tools page.",
+      "action": "Open Tools"
+    },
     "sections": {
       "tools": "Resolved tools",
       "env": "Resolved env",

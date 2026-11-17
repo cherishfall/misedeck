@@ -33,6 +33,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router";
 import { useCallback, useMemo, useState } from "react";
 
 import { I18N_KEYS } from "../../i18n/keys";
@@ -126,6 +127,7 @@ const previewEnvSourceOf = (r: EnvRow) => `${r.source} ${r.sourceDetail ?? ""}`.
 
 export function DirectoryPreview() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { cwd, setDirectory } = useDirectory();
   const queryClient = useQueryClient();
 
@@ -471,9 +473,24 @@ export function DirectoryPreview() {
               resizeKey="directory-preview.tools"
               className={styles.toolsTable}
               empty={
+                // Preview-specific empty state (issue #296): the
+                // Manage-versions search the generic copy points at
+                // exists only on /tools, so the card carries its own
+                // in-card action navigating there (the Plugins page's
+                // Search-tools empty state is the precedent).
                 <EmptyState
-                  title={t(I18N_KEYS.tools.empty.title)}
-                  body={t(I18N_KEYS.tools.empty.body)}
+                  title={t(I18N_KEYS.preview.toolsEmpty.title)}
+                  body={t(I18N_KEYS.preview.toolsEmpty.body)}
+                  action={
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => navigate("/tools")}
+                      data-testid="preview-tools-empty-open-tools"
+                    >
+                      {t(I18N_KEYS.preview.toolsEmpty.action)}
+                    </Button>
+                  }
                 />
               }
             />
