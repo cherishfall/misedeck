@@ -236,3 +236,61 @@ test("a resize drag still in flight is torn down when the panel unmounts", async
     "the window listeners and the body lock do not outlive the panel (issue #290)",
   );
 });
+
+test("a cancellation rejection racing the cancel round trip settles the run as cancelled, not failed (#301)", async (t) => {
+  t.after(cleanup);
+  ctx = null;
+  localStorage.clear();
+
+  renderPanel();
+  await act(async () => {
+    ctl().openPanel();
+  });
+
+  // The run's invoke and the cancel_run round trip are both held pending,
+  // so the test controls the race ordering: the run settles FIRST, while
+  // the cancel is still in flight.
+  const runInvoke = deferred<RunCommandResult>();
+  const cancelAck = deferred<null>();
+  scripts.push(() => runInvoke.promise, () => cancelAck.promise as Promise<unknown>);
+
+  let run!: Promise<RunCommandResult>;
+  await act(async () => {
+    run = ctl().run({ cwd: null, args: ["ls"] });
+  });
+  assert.equal(ctl().state.status, "running", "starts running");
+
+  // The user requests a cancel: `cancelRequested` is now true and the
+  // cancel_run IPC is in flight (its deferred never resolves yet).
+  await act(async () => {
+    ctl().cancel();
+  });
+
+  // The run's invoke resolves with the runner's cancellation rejection
+  // while the cancel acknowledgment is still pending — the race ordering.
+  await act(async () => {
+    runInvoke.resolve({
+      kind: "err",
+      err: { code: "COMMAND_FAILED", message: "mise run cancelled", stderr: "" },
+    });
+  });
+  await act(async () => {
+    await run;
+  });
+  assert.equal(
+    ctl().state.status,
+    "cancelled",
+    "the run settles cancelled, not failed",
+  );
+
+  // The late cancel acknowledgment is a no-op: the terminal state holds.
+  await act(async () => {
+    cancelAck.resolve(null);
+  });
+  await act(async () => {});
+  assert.equal(
+    ctl().state.status,
+    "cancelled",
+    "the late acknowledgment does not flip the settled run",
+  );
+});

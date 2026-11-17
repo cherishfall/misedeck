@@ -1423,6 +1423,10 @@ where
     let driven =
         drive_child(&mut cmd, timeout, run_id, mode, &mut on_event).map_err(mise_drive_error)?;
     match driven.end {
+        // The message is a cross-language contract: the panel's
+        // `useExecution.ts` matches it verbatim (`isCancellationRejection`)
+        // to settle a cancel-racing rejection as cancelled, not failed
+        // (issue #301). Change both sides together.
         DriveEnd::Cancelled => Err(AppError::command_failed(
             "mise run cancelled",
             String::new(),

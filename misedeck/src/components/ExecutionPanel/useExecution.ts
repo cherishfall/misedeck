@@ -356,7 +356,14 @@ export function useExecution() {
             durationMs: result.outcome.durationMs,
           });
         } else {
-          dispatch({ type: "fail", id, error: result.err });
+          // Route through `fail` rather than dispatching directly: the
+          // panel commands RESOLVE with `RunCommandResult::Err` (they
+          // never reject), so the runner's cancellation rejection —
+          // `command_failed("mise run cancelled", …)` for
+          // `DriveEnd::Cancelled` — arrives HERE, not in the catch. When
+          // it races a requested cancel (#301), `fail` settles the run
+          // as cancelled; a genuine failure dispatches unchanged.
+          return fail(result.err);
         }
         return result;
       } catch (e) {
