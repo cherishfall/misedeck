@@ -59,3 +59,36 @@ export function resolveDirectoryAvailability(
       return { kind: "unknown", path };
   }
 }
+
+/** The backend's answer for one directory path (issue #305):
+ *  `canonical` is the resolved form of `path`, or `null` when the
+ *  resolution failed (fail soft). */
+export interface DirectoryCanonicalRecord {
+  path: string;
+  canonical: string | null;
+}
+
+/** The directory the write-scope classifier compares against (issue
+ *  #305): the canonical form of the active directory, because mise
+ *  reports config source paths canonically (`/private/tmp/x`) while
+ *  the context holds the user-visible path (`/tmp/x`) — a raw-vs-
+ *  canonical prefix compare classed the active directory's own config
+ *  as a parent config. Falls back to the raw path while the resolution
+ *  is in flight or when it failed: the raw comparison is the pre-#305
+ *  behavior, never a misread of Directory mode as Global. A record for
+ *  another path is stale and must not describe the current one. Global
+ *  mode has no directory and stays `null`. */
+export function resolveCanonicalCwd(
+  context: DirectoryContextLike,
+  resolved: DirectoryCanonicalRecord | null,
+): string | null {
+  if (context.kind !== "dir" || context.path === undefined) return null;
+  if (
+    resolved !== null &&
+    resolved.path === context.path &&
+    resolved.canonical !== null
+  ) {
+    return resolved.canonical;
+  }
+  return context.path;
+}

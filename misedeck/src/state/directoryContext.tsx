@@ -26,9 +26,11 @@ import {
   type ReactNode,
 } from "react";
 
-import { probeDirectory } from "../api/directory";
+import { canonicalizeDirectory, probeDirectory } from "../api/directory";
 import {
+  resolveCanonicalCwd,
   resolveDirectoryAvailability,
+  type DirectoryCanonicalRecord,
   type DirectoryProbeRecord,
 } from "../utils/directoryAvailability";
 
@@ -101,6 +103,17 @@ function persistRecents(recents: string[]) {
 interface DirectoryContextValue {
   context: DirContext;
   cwd: string | null;
+  /**
+   * The canonical form of `cwd` (issue #305): the backend-resolved
+   * real path of the active directory, which is the form mise reports
+   * config source paths in. Write-scope classification (Env page,
+   * Directory preview, Settings unset) must compare canonical against
+   * canonical — a `/tmp/x` context against a `/private/tmp/x` source
+   * classed the active directory's own config as a parent config.
+   * Falls back to the raw `cwd` while the resolution is in flight or
+   * when it failed; null in Global mode, like `cwd`.
+   */
+  canonicalCwd: string | null;
   recents: string[];
   /** The path a probe found missing, surfaced once by the banner;
    *  cleared when the user picks a directory or dismisses the notice. */
@@ -118,6 +131,10 @@ export function DirectoryProvider({ children }: { children: ReactNode }) {
   const [context, setContextState] = useState<DirContext>(() => loadContext());
   const [recents, setRecents] = useState<string[]>(() => loadRecents());
   const [probe, setProbe] = useState<DirectoryProbeRecord | null>(null);
+  // The canonical path resolved for the current context (issue #305).
+  // Kept as a {path, canonical} record so an in-flight resolution for a
+  // previous directory can never describe the new one.
+  const [canonical, setCanonical] = useState<DirectoryCanonicalRecord | null>(null);
   const [unavailablePath, setUnavailablePath] = useState<string | null>(null);
   // Gating only applies to the first probe: a restored directory must
   // resolve before any page mounts, while later switches keep the shell
@@ -145,11 +162,18 @@ export function DirectoryProvider({ children }: { children: ReactNode }) {
     if (context.kind === "global") {
       setProbe(null);
       setRestoring(false);
+      setCanonical(null);
       return;
     }
     const path = context.path;
     let cancelled = false;
     setProbe({ path, result: "probing" });
+    // Canonical resolution (issue #305) runs alongside the probe: one
+    // filesystem call each, both fail soft into the raw path.
+    void canonicalizeDirectory(path).then((result) => {
+      if (cancelled) return;
+      setCanonical({ path, canonical: result });
+    });
     void probeDirectory(path).then((result) => {
       if (cancelled) return;
       setProbe({ path, result });
@@ -191,11 +215,13 @@ export function DirectoryProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const availability = resolveDirectoryAvailability(context, probe);
+  const canonicalCwd = resolveCanonicalCwd(context, canonical);
 
   const value = useMemo<DirectoryContextValue>(
     () => ({
       context,
       cwd: dirContextToCwd(context),
+      canonicalCwd,
       recents,
       unavailablePath,
       setContext,
@@ -206,6 +232,7 @@ export function DirectoryProvider({ children }: { children: ReactNode }) {
     }),
     [
       context,
+      canonicalCwd,
       recents,
       unavailablePath,
       setContext,

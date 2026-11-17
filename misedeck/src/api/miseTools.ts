@@ -307,6 +307,12 @@ export type ConfigScope = "project" | "parent" | "global";
  * active directory there is no parent to speak of, so non-global
  * paths keep the old `project` tag (the Env page renders it as
  * Global in that context).
+ *
+ * `cwd` must be the canonical form of the directory context (resolved
+ * through the backend's `canonicalize_cwd`, issue #305): mise reports
+ * source paths canonically, and a raw-vs-canonical prefix compare
+ * classed the active directory's own config as a parent config on a
+ * symlinked prefix (macOS `/tmp` → `/private/tmp`).
  */
 export function configScopeForPath(
   sourcePath: string | undefined,
@@ -332,6 +338,12 @@ export function configScopeForPath(
  * child config while the parent's value stays active, and `mise set`
  * only shadows it. A row sourced from anywhere outside the active
  * directory therefore gets the confirm warning, and Unset is disabled.
+ *
+ * `cwd` must be the canonical form of the directory context (resolved
+ * through the backend's `canonicalize_cwd`, issue #305): mise reports
+ * source paths canonically, and a raw-vs-canonical prefix compare
+ * classed the active directory's own config as out of scope on a
+ * symlinked prefix (macOS `/tmp` → `/private/tmp`).
  */
 export function isEnvWriteScopeMismatch(sourcePath: string, cwd: string | null): boolean {
   if (cwd === null) return !isGlobalConfigPath(sourcePath);
@@ -914,7 +926,8 @@ export function readEnvPayload(value: unknown) {
 
 /** `mise env --json-extended` is an object keyed by variable name.
  *  `cwd` lets a non-global source outside the active directory be
- *  tagged `parent` instead of `project` (issue #274). */
+ *  tagged `parent` instead of `project` (issue #274); pass the
+ *  canonical form of the directory context (issue #305). */
 export function readEnvExtendedPayload(value: unknown, cwd: string | null = null) {
   return parseReadPayload(
     value,

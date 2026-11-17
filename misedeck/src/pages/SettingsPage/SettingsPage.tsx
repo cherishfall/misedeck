@@ -99,7 +99,7 @@ const settingSearchText = (r: SettingsItem) =>
 
 export function SettingsPage() {
   const { t } = useTranslation();
-  const { cwd } = useDirectory();
+  const { cwd, canonicalCwd } = useDirectory();
   const queryClient = useQueryClient();
   const guard = useTrustGuard();
   // Guard-blocked writes focus the shared trust banner (issues
@@ -309,6 +309,7 @@ export function SettingsPage() {
         <RowActions
           row={r}
           cwd={cwd}
+          scopeCwd={canonicalCwd}
           allView={showAll}
           onWrite={runWrite}
           disabled={writeBusy}
@@ -478,14 +479,16 @@ function isObjectValue(value: unknown): boolean {
  *  so an out-of-scope Unset renders disabled with its reason instead
  *  of silently failing. The rule lives in `settingsUnsetScope` so it is
  *  unit-tested; Global mode applies the same `isGlobalConfigPath`
- *  judgment as the Env page (issue #213). */
-function unsetInScope(row: SettingsItem, cwd: string | null, allView: boolean): boolean {
-  return settingsUnsetInScope(row.source, cwd, allView);
+ *  judgment as the Env page (issue #213). Judged against the canonical
+ *  cwd (issue #305): mise reports source paths canonically. */
+function unsetInScope(row: SettingsItem, scopeCwd: string | null, allView: boolean): boolean {
+  return settingsUnsetInScope(row.source, scopeCwd, allView);
 }
 
 function RowActions({
   row,
   cwd,
+  scopeCwd,
   allView,
   onWrite,
   disabled,
@@ -493,6 +496,14 @@ function RowActions({
   row: SettingsItem;
   /** Active directory context, echoed in the unset confirmation. */
   cwd: string | null;
+  /**
+   * The directory the unset scope is judged against (issue #305): the
+   * canonical form of `cwd`, because mise reports source paths
+   * canonically (`/private/tmp/x` for a context picked as `/tmp/x`) and
+   * the scope rule prefix-compares them. The confirmation echo keeps
+   * the raw `cwd` — the path a terminal user would type.
+   */
+  scopeCwd: string | null;
   /** Whether the row comes from the opt-in `--all` view. */
   allView: boolean;
   onWrite: (
@@ -533,7 +544,7 @@ function RowActions({
     );
   }
 
-  const inScope = unsetInScope(row, cwd, allView);
+  const inScope = unsetInScope(row, scopeCwd, allView);
 
   const dirty = isBool
     ? checked !== (row.value === true)

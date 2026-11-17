@@ -543,6 +543,66 @@ fn path_is_directory(path: &str) -> bool {
     Path::new(path).is_dir()
 }
 
+/// Canonicalize an IPC-supplied directory context (issue #305). The
+/// frontend's directory context holds the user-visible path (`/tmp/x`),
+/// while mise reports config source paths canonically (`/private/tmp/x`
+/// — macOS `/tmp` is a symlink to `/private/tmp`), so the frontend's
+/// write-scope classifier compared a canonical source against a
+/// non-canonical cwd and classed the active directory's own config as
+/// a parent config. This command resolves the context to the same form
+/// mise reports; the frontend resolves it once per directory-context
+/// change and classifies against it.
+///
+/// Pure path resolution — it never spawns mise, so it sits outside the
+/// MISE_SAFE / read-only surface, same class as `directory_exists`.
+/// `None` is Global mode and stays `None`. A directory that fails to
+/// canonicalize (an ancestor denies traversal, a raced deletion after
+/// validation) falls back to the validated raw path: fail soft, so the
+/// frontend degrades to the raw comparison — the pre-#305 behavior —
+/// instead of losing Directory mode.
+#[tauri::command]
+async fn canonicalize_cwd(cwd: Option<String>) -> Result<Option<String>, AppError> {
+    // Off the main thread: canonicalize stats every path component and
+    // can block on a stale network mount (issue #254's reasoning).
+    spawn_run(move || canonical_cwd_path(cwd.as_deref())).await
+}
+
+/// The synchronous canonicalizer: the pure boundary rule, driven
+/// directly by the unit tests and called on the blocking pool by
+/// `canonicalize_cwd`. Reuses `validate_cwd`'s resolution — an empty or
+/// non-directory path is the same caller-side bug it already rejects.
+fn canonical_cwd_path(cwd: Option<&str>) -> Result<Option<String>, AppError> {
+    match validate_cwd(cwd)? {
+        None => Ok(None),
+        Some(path) => Ok(Some(simplified_canonical_path(&path))),
+    }
+}
+
+/// `fs::canonicalize` with one softening: an unresolvable path falls
+/// back to the input, which `validate_cwd` already proved is an
+/// existing directory.
+fn simplified_canonical_path(path: &Path) -> String {
+    let canonical = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+    strip_windows_verbatim(&canonical.to_string_lossy())
+}
+
+/// Strip the verbatim prefix `std::fs::canonicalize` adds on Windows
+/// (`\\?\C:\dir` → `C:\dir`, `\\?\UNC\server\share` → `\\server\share`):
+/// mise reports plain paths, so a verbatim canonical cwd would
+/// prefix-match nothing on Windows and misclassify every source as out
+/// of scope. Unconditionally safe to apply: a canonicalized POSIX path
+/// always starts with `/`, so the prefix can only ever be the Windows
+/// verbatim marker, never literal path text.
+fn strip_windows_verbatim(path: &str) -> String {
+    if let Some(rest) = path.strip_prefix(r"\\?\UNC\") {
+        return format!(r"\\{rest}");
+    }
+    if let Some(rest) = path.strip_prefix(r"\\?\") {
+        return rest.to_string();
+    }
+    path.to_string()
+}
+
 /// Validate an IPC-supplied `cwd` (issue #210). `None` is Global mode.
 /// `Some` must name an existing directory: the runner turns it into
 /// `-C <dir>`, so an empty or stale path is a caller-side bug that would
@@ -1031,6 +1091,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             detect_mise,
             directory_exists,
+            canonicalize_cwd,
             run_mise_command,
             cancel_run,
             install_mise,
@@ -1221,6 +1282,87 @@ mod tests {
         std::fs::write(&file, b"x").unwrap();
         assert!(!path_is_directory(file.to_str().unwrap()));
         std::fs::remove_file(&file).unwrap();
+    }
+
+    #[test]
+    fn canonical_cwd_path_keeps_global_mode_and_resolves_existing_directories() {
+        // None is Global mode and must stay None: the classifier's
+        // `cwd === null` branch decides global-mode write targets.
+        assert!(canonical_cwd_path(None)
+            .expect("None is Global mode")
+            .is_none());
+        let dir = std::env::temp_dir();
+        assert_eq!(
+            canonical_cwd_path(Some(dir.to_str().unwrap())).expect("existing dir"),
+            Some(simplified_canonical_path(&dir)),
+        );
+    }
+
+    #[test]
+    fn canonical_cwd_path_rejects_empty_and_missing_paths_like_validate_cwd() {
+        // The same resolution `validate_cwd` applies, so the same
+        // caller-side bugs get the same structured error.
+        let err = canonical_cwd_path(Some("")).expect_err("empty cwd must be rejected");
+        assert_eq!(err.code, mise::code::COMMAND_FAILED);
+        let missing = std::env::temp_dir().join("misedeck-no-such-dir-305");
+        let err = canonical_cwd_path(Some(missing.to_str().unwrap()))
+            .expect_err("missing cwd must be rejected");
+        assert_eq!(err.code, mise::code::COMMAND_FAILED);
+    }
+
+    #[test]
+    fn simplified_canonical_path_falls_back_to_the_raw_path_when_unresolvable() {
+        // Fail soft (issue #305): a directory that passes `is_dir` but
+        // cannot be canonicalized (traversal denied on an ancestor, a
+        // raced deletion) must not turn Directory mode into null — the
+        // frontend compares raw against raw then, the pre-#305
+        // behavior.
+        let missing = std::env::temp_dir().join("misedeck-no-such-dir-305-fallback");
+        assert_eq!(
+            simplified_canonical_path(&missing),
+            missing.to_string_lossy()
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn canonical_cwd_path_resolves_a_symlinked_directory_to_its_target() {
+        // The issue #305 repro shape: the context holds the symlink
+        // (macOS `/tmp`), mise reports sources under the target
+        // (`/private/tmp`), and only a canonical cwd prefix-matches
+        // them. A self-contained symlink pair, so the test does not
+        // depend on the host's temp directory being itself a symlink.
+        let base = std::env::temp_dir().join("misedeck-canonical-305");
+        std::fs::create_dir_all(&base).unwrap();
+        let target = base.join("target");
+        std::fs::create_dir_all(&target).unwrap();
+        let link = base.join("link");
+        let _ = std::fs::remove_file(&link);
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+
+        let resolved = canonical_cwd_path(Some(link.to_str().unwrap())).expect("symlink resolves");
+        assert_eq!(resolved, Some(simplified_canonical_path(&target)));
+        assert_ne!(
+            resolved,
+            Some(link.to_string_lossy().into_owned()),
+            "the symlink itself must not come back"
+        );
+
+        std::fs::remove_file(&link).unwrap();
+        std::fs::remove_dir_all(&base).unwrap();
+    }
+
+    #[test]
+    fn strip_windows_verbatim_reduces_canonical_paths_to_their_plain_form() {
+        assert_eq!(strip_windows_verbatim(r"\\?\C:\Users\u"), r"C:\Users\u");
+        assert_eq!(
+            strip_windows_verbatim(r"\\?\UNC\server\share"),
+            r"\\server\share"
+        );
+        // Plain paths — POSIX, or Windows output already free of the
+        // prefix — pass through unchanged.
+        assert_eq!(strip_windows_verbatim("/private/tmp/x"), "/private/tmp/x");
+        assert_eq!(strip_windows_verbatim(r"C:\Users\u"), r"C:\Users\u");
     }
 
     /// Issue #283 (audit P1-R3): the startup probe became a background

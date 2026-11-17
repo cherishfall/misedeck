@@ -16,9 +16,11 @@
 // What normalization deliberately does NOT do: resolve symlinks. A
 // webview cannot canonicalize `/tmp/x` to `/private/tmp/x` (the classic
 // macOS alias), so callers must pass paths that are already canonical —
-// the Tauri directory picker and mise both report canonical absolute
-// paths in practice. A symlink mismatch degrades to the "global"
-// fallback, never to a crash.
+// mise reports canonical absolute paths for everything it reads, and
+// the directory-context side resolves itself through the backend's
+// `canonicalize_cwd` command (issue #305) before any comparison
+// against a mise-reported path. A mismatch degrades to the "global" /
+// "parent" fallback, never to a crash.
 
 export interface PathCompareOptions {
   /**

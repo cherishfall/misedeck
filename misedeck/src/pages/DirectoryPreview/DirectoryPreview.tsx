@@ -128,7 +128,7 @@ const previewEnvSourceOf = (r: EnvRow) => `${r.source} ${r.sourceDetail ?? ""}`.
 export function DirectoryPreview() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { cwd, setDirectory } = useDirectory();
+  const { cwd, canonicalCwd, setDirectory } = useDirectory();
   const queryClient = useQueryClient();
 
   // First check: is mise available at all? Same gate the tools page
@@ -210,7 +210,8 @@ export function DirectoryPreview() {
   // Tool rows: pick the active version per tool, badge by source.
   // Directory-scoped only — the Global context renders the
   // "Choose directory" empty state instead (the global tools list
-  // already lives at /tools).
+  // already lives at /tools). Scoped against the canonical cwd
+  // (issue #305): mise reports source paths canonically.
   const toolRows: ToolRow[] = useMemo(() => {
     if (!tools.data || cwd === null) return [];
     const out: ToolRow[] = [];
@@ -222,12 +223,12 @@ export function DirectoryPreview() {
         id: `${tool}@${active.version}`,
         tool,
         version: active.version,
-        source: configScopeForPath(srcPath, cwd),
+        source: configScopeForPath(srcPath, canonicalCwd),
         sourcePath: srcPath,
       });
     }
     return out;
-  }, [tools.data, cwd]);
+  }, [tools.data, canonicalCwd, cwd]);
 
   // Env rows: use the reconciled entries.
   const envRows: EnvRow[] = useMemo(() => {

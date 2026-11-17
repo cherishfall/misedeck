@@ -210,6 +210,30 @@ test("isEnvWriteScopeMismatch: global mode accepts only the global config", () =
   assert.equal(isEnvWriteScopeMismatch("/repo/mise.toml", null), true);
 });
 
+// Issue #305: mise reports source paths canonically (macOS /tmp is a
+// symlink to /private/tmp), while the app's directory context holds the
+// user-visible path. The classifier is prefix-based, so the caller must
+// pass the canonical cwd (resolved through the backend's
+// `canonicalize_cwd`) — these cases pin both sides of that contract.
+test("isEnvWriteScopeMismatch: a raw cwd misclasses the symlinked active directory, the canonical one does not", () => {
+  // The bug, kept as documentation: source /private/tmp/x/mise.toml
+  // against the raw context path /tmp/x prefix-compares false.
+  assert.equal(isEnvWriteScopeMismatch("/private/tmp/x/mise.toml", "/tmp/x"), true);
+  // Canonical against canonical — the active directory's own config is
+  // in scope, so Unset stays enabled and no out-of-scope warning fires.
+  assert.equal(isEnvWriteScopeMismatch("/private/tmp/x/mise.toml", "/private/tmp/x"), false);
+});
+
+test("isEnvWriteScopeMismatch: an exact-match canonical directory is in scope for nested and root configs", () => {
+  // The source's directory IS the cwd exactly — not merely under it.
+  assert.equal(isEnvWriteScopeMismatch("/private/tmp/x/mise.toml", "/private/tmp/x"), false);
+  assert.equal(isEnvWriteScopeMismatch("/private/tmp/x/.mise/config.toml", "/private/tmp/x"), false);
+  // A sibling directory of the same prefix stays out of scope.
+  assert.equal(isEnvWriteScopeMismatch("/private/tmp/other/mise.toml", "/private/tmp/x"), true);
+  // And a genuine parent-directory source through the canonical prefix.
+  assert.equal(isEnvWriteScopeMismatch("/private/tmp/mise.toml", "/private/tmp/x"), true);
+});
+
 // Wire-shape guard for `mise outdated --json` (issue #259). Without
 // `--bump`, mise reports only in-range targets; the retired `bump`
 // field is not part of the row any more. Captured from mise
@@ -460,6 +484,19 @@ test("configScopeForPath: cwd, parent, and global configs classify apart", () =>
     "global",
   );
   assert.equal(configScopeForPath(undefined, cwd), undefined);
+});
+
+// Issue #305: same canonical-cwd contract as `isEnvWriteScopeMismatch`
+// — the raw context path misclasses the active directory's own config
+// as a parent; the backend-resolved canonical cwd classifies it as the
+// current directory.
+test("configScopeForPath: a canonical cwd classifies the symlinked active directory as project", () => {
+  // The bug, kept as documentation: raw cwd vs canonical source.
+  assert.equal(configScopeForPath("/private/tmp/x/mise.toml", "/tmp/x"), "parent");
+  // Canonical against canonical.
+  assert.equal(configScopeForPath("/private/tmp/x/mise.toml", "/private/tmp/x"), "project");
+  // A genuine parent-directory source through the canonical prefix.
+  assert.equal(configScopeForPath("/private/tmp/mise.toml", "/private/tmp/x"), "parent");
 });
 
 test("parseEnvExtendedPayload: Directory mode tags parent config rows as parent", () => {

@@ -7,6 +7,12 @@
 // exit 0 while changing nothing, so the row's Unset renders disabled
 // with a Tooltip instead of silently no-opping.
 //
+// `cwd` must be the canonical form of the directory context (resolved
+// through the backend's `canonicalize_cwd`, issue #305): mise reports
+// source paths canonically, and a raw-vs-canonical prefix compare
+// classed the active directory's own config as out of scope on a
+// symlinked prefix (macOS `/tmp` → `/private/tmp`).
+//
 // Pure so the branches are unit-tested without a DOM. The global-mode
 // test is the same `isGlobalConfigPath` judgment the Env page uses
 // (`isEnvWriteScopeMismatch`) — one definition of "the global config".

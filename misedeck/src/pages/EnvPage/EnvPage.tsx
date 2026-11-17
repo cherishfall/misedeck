@@ -96,7 +96,7 @@ const envSearchText = (r: EnvRow) =>
 
 export function EnvPage() {
   const { t } = useTranslation();
-  const { cwd } = useDirectory();
+  const { cwd, canonicalCwd } = useDirectory();
   const queryClient = useQueryClient();
   const guard = useTrustGuard();
   // Guard-blocked mutations focus the shared trust banner (issues
@@ -298,6 +298,7 @@ export function EnvPage() {
         <EnvRowActions
           row={r}
           cwd={cwd}
+          scopeCwd={canonicalCwd}
           onWrite={runWrite}
           disabled={envWriteBusy}
           existingNames={existingNames}
@@ -485,12 +486,22 @@ function EnvSourceCell({ row }: { row: EnvRow }) {
 function EnvRowActions({
   row,
   cwd,
+  scopeCwd,
   onWrite,
   disabled,
   existingNames,
 }: {
   row: EnvRow;
   cwd: string | null;
+  /**
+   * The directory the write scope is judged against (issue #305): the
+   * canonical form of `cwd`, because mise reports source paths
+   * canonically (`/private/tmp/x` for a context picked as `/tmp/x`) and
+   * `isEnvWriteScopeMismatch` must compare canonical against canonical.
+   * Writes keep the raw `cwd` — the panel echoes the path a terminal
+   * user would type.
+   */
+  scopeCwd: string | null;
   onWrite: (
     builder: (cwd: string | null) => string[],
     successMessage?: string,
@@ -548,9 +559,10 @@ function EnvRowActions({
   // config or a parent directory — would be written to a different
   // file: a shadow entry for set, a no-op for unset. Unset is disabled
   // for such a row, and every other write path carries the
-  // out-of-scope warning below.
+  // out-of-scope warning below. Judged against the canonical cwd
+  // (issue #305): mise reports source paths canonically.
   const outOfScope =
-    row.sourcePath !== undefined && isEnvWriteScopeMismatch(row.sourcePath, cwd);
+    row.sourcePath !== undefined && isEnvWriteScopeMismatch(row.sourcePath, scopeCwd);
 
   const dirty = name !== row.name || value !== row.value;
   const startEdit = () => {

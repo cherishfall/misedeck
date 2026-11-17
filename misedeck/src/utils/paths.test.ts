@@ -83,6 +83,19 @@ test("isPathUnder: empty paths are not under anything", () => {
   assert.equal(isPathUnder("/foo", ""), false);
 });
 
+// Issue #305: normalization never resolves symlinks, so a symlinked
+// prefix (macOS /tmp → /private/tmp) only matches when both sides are
+// canonical — the classifier callers resolve the directory context
+// through the backend's `canonicalize_cwd` first.
+test("isPathUnder: a symlinked prefix matches canonical-against-canonical only", () => {
+  // Raw context path vs canonical mise-reported source: no match —
+  // this is the bug's shape, kept as documentation.
+  assert.equal(isPathUnder("/tmp/x", "/private/tmp/x/mise.toml"), false);
+  assert.equal(isPathUnder("/private/tmp/x", "/tmp/x/mise.toml"), false);
+  // Canonical against canonical: match.
+  assert.equal(isPathUnder("/private/tmp/x", "/private/tmp/x/mise.toml"), true);
+});
+
 test("normalizePathForCompare: unifies separators and collapses duplicates", () => {
   assert.equal(normalizePathForCompare("C:\\\\Users\\\\dev", { caseInsensitive: false }), "C:/Users/dev");
   assert.equal(normalizePathForCompare("//server/share", { caseInsensitive: false }), "/server/share");

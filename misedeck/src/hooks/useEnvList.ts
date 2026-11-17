@@ -40,14 +40,18 @@ export function useEnvList(): UseQueryResult<JsonResult> {
   });
 }
 
-/** Convenience wrapper that parses `useEnvList` into typed entries. */
+/** Convenience wrapper that parses `useEnvList` into typed entries.
+ *  Classified against the canonical cwd (issue #305): mise reports
+ *  source paths canonically, so the raw context path would class the
+ *  active directory's own config as a parent config on a symlinked
+ *  prefix. */
 export function useParsedEnvList(): {
   isPending: boolean;
   data: EnvEntry[] | null;
   error: JsonResult | null;
 } {
   const q = useEnvList();
-  const { cwd } = useDirectory();
+  const { canonicalCwd } = useDirectory();
   if (q.isPending) {
     return { isPending: true, data: null, error: null };
   }
@@ -57,7 +61,7 @@ export function useParsedEnvList(): {
   if (!q.data || q.data.kind === "err") {
     return { isPending: false, data: null, error: q.data ?? null };
   }
-  const parsed = readEnvExtendedPayload(q.data.value, cwd);
+  const parsed = readEnvExtendedPayload(q.data.value, canonicalCwd);
   return { isPending: false, data: parsed.data, error: parsed.error };
 }
 
