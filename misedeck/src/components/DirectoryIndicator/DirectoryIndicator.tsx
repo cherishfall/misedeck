@@ -248,7 +248,7 @@ export function DirectoryIndicator({ mode }: DirectoryIndicatorProps) {
                         tabIndex={-1}
                         onClick={() => removeRecent(recent)}
                       >
-                        ×
+                        {t(I18N_KEYS.common.glyphClose)}
                       </IconButton>
                     </li>
                   );

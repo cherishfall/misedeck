@@ -6,6 +6,7 @@
     "loading": "加载中…",
     "back": "返回",
     "clear": "清除",
+    "glyphClose": "×",
     "copied": "已复制",
     "copyFailed": "复制失败",
     "outdatedCount": "{{count}} 个工具可升级",
@@ -112,7 +113,7 @@
     "missingBadge": "未安装",
     "empty": {
       "title": "尚未安装任何工具",
-      "body": "在下方「版本管理」中搜索并安装你的第一个工具。"
+      "body": "在「版本管理」中搜索并安装你的第一个工具。"
     },
     "missing": {
       "title": "工具列表不可用",
@@ -309,8 +310,9 @@
     },
     "empty": {
       "title": "没有环境变量",
-      "bodyGlobal": "使用下面的表单添加第一个环境变量；写入会进入 mise 的全局配置。",
-      "bodyDirectory": "使用下面的表单添加第一个环境变量；写入会进入当前目录的 mise 配置文件。"
+      "bodyGlobal": "添加第一个环境变量；写入会进入 mise 的全局配置。",
+      "bodyDirectory": "添加第一个环境变量；写入会进入当前目录的 mise 配置文件。",
+      "action": "添加环境变量"
     },
     "error": {
       "title": "加载环境变量失败",
@@ -599,8 +601,9 @@
     },
     "installedEmpty": {
       "title": "未安装插件",
-      "body": "大多数工具根本不需要插件——前往「工具」页搜索即可安装。要添加自定义插件，请使用上方表单：填写名称和插件的 git URL。",
-      "action": "搜索工具"
+      "body": "大多数工具根本不需要插件——前往「工具」页搜索即可安装。要添加自定义插件，请使用安装表单：填写名称和插件的 git URL。",
+      "action": "搜索工具",
+      "installAction": "安装插件"
     },
     "installedError": {
       "title": "加载插件失败",
@@ -727,7 +730,7 @@
     "upToDate": "MiseDeck 已是最新版本",
     "available": "MiseDeck {{version}} 已发布",
     "checkFailed": "无法检查 MiseDeck 更新",
-    "download": "下载 {{version}}",
+    "releaseLink": "MiseDeck {{version}}——发布页",
     "releasePage": "发布页"
   }
 }

@@ -272,7 +272,7 @@ export function AppVersion({ collapsed = false }: AppVersionProps) {
           <div className={styles.actions}>
             {summary.action === "download" && check.kind === "available" ? (
               <ExternalLink className={styles.download} href={check.url}>
-                {t(I18N_KEYS.about.download, { version: check.version })}
+                {t(I18N_KEYS.about.releaseLink, { version: check.version })}
               </ExternalLink>
             ) : (
               <span>

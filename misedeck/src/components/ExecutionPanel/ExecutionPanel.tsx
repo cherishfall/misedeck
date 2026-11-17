@@ -255,7 +255,7 @@ export function ExecutionPanel() {
                       onClick={() => removeRun(r.id)}
                       data-testid="execution-run-close"
                     >
-                      ×
+                      {t(I18N_KEYS.common.glyphClose)}
                     </IconButton>
                   )}
                 </span>

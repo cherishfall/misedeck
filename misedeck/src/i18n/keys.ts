@@ -26,6 +26,12 @@ export const I18N_KEYS = {
     loading: "common.loading",
     back: "common.back",
     clear: "common.clear",
+    /** The close/remove "×" glyph rendered as an icon button's only
+        content (the execution panel's per-run close, the directory
+        recents' per-entry remove). Glyphs go through i18n like every
+        string (ui-ux-rules.md → Copy); one shared key so the same glyph
+        renders the same everywhere (#299). */
+    glyphClose: "common.glyphClose",
     /** The transient "Copied" confirmation shown by every copy
         affordance — one shared key (issue #171); was duplicated as
         `execution.copied` / `tooltip.copied` / `activation.copiedHint`. */
@@ -481,6 +487,10 @@ export const I18N_KEYS = {
           current directory's config file. */
       bodyGlobal: "env.empty.bodyGlobal",
       bodyDirectory: "env.empty.bodyDirectory",
+      /** The empty card's own next step (#299): focuses the Add form's
+          key input — the form the card talks about is reachable from the
+          card itself (issue #226; the Settings page's pattern). */
+      action: "env.empty.action",
     },
     error: {
       title: "env.error.title",
@@ -810,6 +820,10 @@ export const I18N_KEYS = {
       title: "plugins.installedEmpty.title",
       body: "plugins.installedEmpty.body",
       action: "plugins.installedEmpty.action",
+      /** The card's second in-card step (#299): focuses the install
+          form's name input — the custom-plugin form the card talks
+          about is reachable from the card itself (issue #226). */
+      installAction: "plugins.installedEmpty.installAction",
     },
     installedError: {
       title: "plugins.installedError.title",
@@ -909,7 +923,11 @@ export const I18N_KEYS = {
     upToDate: "about.upToDate",
     available: "about.available",
     checkFailed: "about.checkFailed",
-    download: "about.download",
+    /** The available-update link's label (#299): it names the
+        destination — the build's Release page — because the app never
+        downloads a binary (ADR-0009); the old "Download {{version}}"
+        label promised an action the app does not perform. */
+    releaseLink: "about.releaseLink",
     releasePage: "about.releasePage",
   },
 } as const;

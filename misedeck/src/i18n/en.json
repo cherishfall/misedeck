@@ -6,6 +6,7 @@
     "loading": "Loading…",
     "back": "Back",
     "clear": "Clear",
+    "glyphClose": "\u00d7",
     "copied": "Copied",
     "copyFailed": "Copy failed",
     "outdatedCount": "{{count}} tools outdated",
@@ -112,7 +113,7 @@
     "missingBadge": "Not installed",
     "empty": {
       "title": "No tools installed",
-      "body": "Use the Manage versions search below to install your first tool."
+      "body": "Use the Manage versions search to install your first tool."
     },
     "missing": {
       "title": "Tools unavailable",
@@ -309,8 +310,9 @@
     },
     "empty": {
       "title": "No env vars",
-      "bodyGlobal": "Use the form below to add your first env var; writes go to mise's global config.",
-      "bodyDirectory": "Use the form below to add your first env var; writes go to mise's config file for the current directory."
+      "bodyGlobal": "Add your first env var; writes go to mise's global config.",
+      "bodyDirectory": "Add your first env var; writes go to mise's config file for the current directory.",
+      "action": "Add an env var"
     },
     "error": {
       "title": "Failed to load env vars",
@@ -599,8 +601,9 @@
     },
     "installedEmpty": {
       "title": "No plugins installed",
-      "body": "Most tools install with no plugin at all — search the Tools page to install one. To add a custom plugin, use the form above: a name plus its git URL.",
-      "action": "Search tools"
+      "body": "Most tools install with no plugin at all — search the Tools page to install one. To add a custom plugin, use the install form: a name plus its git URL.",
+      "action": "Search tools",
+      "installAction": "Install a plugin"
     },
     "installedError": {
       "title": "Failed to load plugins",
@@ -727,7 +730,7 @@
     "upToDate": "MiseDeck is up to date",
     "available": "MiseDeck {{version}} is available",
     "checkFailed": "Could not check for MiseDeck updates",
-    "download": "Download {{version}}",
+    "releaseLink": "MiseDeck {{version}} — Release page",
     "releasePage": "Release page"
   }
 }
