@@ -137,7 +137,7 @@ One vocabulary, four variants (color/type semantics owned by `visual-language.md
 - Icons and glyphs must match in size, style, and color.
 - The same glyph renders the same everywhere — one span class, one token color; the upgrade-path arrow goes through the shared `UpgradeArrow` component and is always `--flare`.
 - Menu/popover triggers carry no caret glyph — expandability is shown by interaction, not by a `▾` or chevron.
-- Grandfathered: `›` (Pagination "Next ›") and `←` (back-to-Home link) — text glyphs inside labeled buttons/links, inheriting size and color, are allowed.
+- Grandfathered: `›` (Pagination "Next ›"), `‹` (Pagination "‹ Prev"), and `←` (back-to-Home link) — text glyphs inside labeled buttons/links, inheriting size and color, are allowed. A glyph that is an icon-only button's *only* content is a different class: it goes through i18n (`common.glyphClose`), so the same glyph renders the same everywhere (#299).
 - Supersession note: the beta4 decision that the language-switcher chevron must stay as an expand affordance is superseded by beta8's caret removal — do not restore carets citing beta4.
 
 ## Floating layers
@@ -154,8 +154,14 @@ floating layer is a bug.
   the collapsed 55px rail stop clipping the 120px language menu.
 - Position by hand from the trigger's `getBoundingClientRect`; accept a
   `placement` prop (`up` / `down`) and an alignment. No positioning library —
-  the project is zero-UI / zero-positioning-library. No auto-flip beyond the
-  requested placement.
+  the project is zero-UI / zero-positioning-library. The vertical fit-flip is
+  sanctioned (issue #265): when the requested side has no room inside the
+  viewport margin, the layer opens on the other side, and when neither side
+  fits it clamps to the viewport edge and scrolls internally — a menu painted
+  past the window bottom, with items keyboard focus can reach but no eye can
+  see, fails its job. There is still no horizontal auto-flip: alignment stays
+  as requested and the layer only clamps inside the viewport edge (issue #299
+  records the amendment; the behavior shipped in #265).
 - Click-outside is judged against the **trigger ref and the portal container
   ref together**. Once portaled, the menu renders outside its old root;
   testing only the old root misreads an in-menu click as "outside" and closes
