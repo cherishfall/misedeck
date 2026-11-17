@@ -516,10 +516,12 @@ export function TasksPage() {
       return (
         <PageShell>
           <div className={styles.page}>
+            {/* The page's own missing-mise copy (issue #295): it names
+                tasks, not installed tools; the shared eyebrow stays. */}
             <EmptyState
               eyebrow={t(I18N_KEYS.states.notInstalled.title)}
-              title={t(I18N_KEYS.tools.missing.title)}
-              body={t(I18N_KEYS.tools.missing.body)}
+              title={t(I18N_KEYS.tasks.missing.title)}
+              body={t(I18N_KEYS.tasks.missing.body)}
             />
           </div>
         </PageShell>

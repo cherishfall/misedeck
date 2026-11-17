@@ -235,6 +235,10 @@
       "body": "环境变量与配置文件两节已展示全局解析结果；此列表按目录解析。选择一个目录，查看 mise -C <dir> ls 在该目录的结果。",
       "action": "选择目录"
     },
+    "missing": {
+      "title": "概览不可用",
+      "body": "MiseDeck 需要 mise CLI 才能解析此目录的工具与环境变量。请返回首页安装 mise，然后回到此页面。"
+    },
     "sections": {
       "tools": "已解析的工具",
       "env": "已解析的环境变量",
@@ -319,6 +323,10 @@
       "bodyDirectory": "添加第一个环境变量；写入会进入当前目录的 mise 配置文件。",
       "action": "添加环境变量"
     },
+    "missing": {
+      "title": "环境变量不可用",
+      "body": "MiseDeck 需要 mise CLI 才能列出环境变量。请返回首页安装 mise，然后回到此页面。"
+    },
     "error": {
       "title": "加载环境变量失败",
       "body": "mise env 未返回结果。stderr 如下所示。",
@@ -393,6 +401,10 @@
       "body": "mise tasks ls 没有返回任务。任务来自 mise.toml 的 [tasks] 表，或 mise-tasks/ 目录下的可执行文件。",
       "openConfig": "在编辑器中打开配置文件",
       "addTask": "新建任务"
+    },
+    "missing": {
+      "title": "任务不可用",
+      "body": "MiseDeck 需要 mise CLI 才能列出任务。请返回首页安装 mise，然后回到此页面。"
     },
     "runButton": "运行",
     "runFailedBadge": "失败",
@@ -470,6 +482,10 @@
       "titleShowAll": "没有显式设置",
       "bodyShowAll": "mise 的默认值仍然生效——此列表只显示显式设置过的项。",
       "showAllAction": "显示全部（--all）"
+    },
+    "missing": {
+      "title": "设置不可用",
+      "body": "MiseDeck 需要 mise CLI 才能列出设置。请返回首页安装 mise，然后回到此页面。"
     },
     "error": {
       "title": "加载设置失败",
@@ -597,6 +613,10 @@
       "explanation": "按 CLI 的方式添加自定义插件：填写名称和插件的 git URL——对没有内置简写名的工具，这是 asdf 生态的标准做法。",
       "namePlaceholder": "插件名称",
       "urlPlaceholder": "Git URL：github.com/<owner>/<repo>"
+    },
+    "missing": {
+      "title": "插件不可用",
+      "body": "MiseDeck 需要 mise CLI 才能列出插件。请返回首页安装 mise，然后回到此页面。"
     },
     "confirm": {
       "uninstall": {

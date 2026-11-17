@@ -235,6 +235,10 @@
       "body": "The env and config sections already show the global resolution; this list is per-directory. Choose a directory to see what mise -C <dir> ls reports there.",
       "action": "Choose directory"
     },
+    "missing": {
+      "title": "Overview unavailable",
+      "body": "MiseDeck needs the mise CLI to resolve this directory's tools and env. Go back and install mise, then return to this page."
+    },
     "sections": {
       "tools": "Resolved tools",
       "env": "Resolved env",
@@ -319,6 +323,10 @@
       "bodyDirectory": "Add your first env var; writes go to mise's config file for the current directory.",
       "action": "Add an env var"
     },
+    "missing": {
+      "title": "Env vars unavailable",
+      "body": "MiseDeck needs the mise CLI to list env vars. Go back and install mise, then return to this page."
+    },
     "error": {
       "title": "Failed to load env vars",
       "body": "mise env did not return. Stderr is shown below.",
@@ -393,6 +401,10 @@
       "body": "mise tasks ls returned no tasks here. Tasks come from the [tasks] table of a mise.toml, or from executable files under mise-tasks/.",
       "openConfig": "Open config file in editor",
       "addTask": "Create task"
+    },
+    "missing": {
+      "title": "Tasks unavailable",
+      "body": "MiseDeck needs the mise CLI to list tasks. Go back and install mise, then return to this page."
     },
     "runButton": "Run",
     "runFailedBadge": "failed",
@@ -470,6 +482,10 @@
       "titleShowAll": "No settings are explicitly set",
       "bodyShowAll": "mise's defaults still apply — this list shows only what is explicitly set here.",
       "showAllAction": "Show all (--all)"
+    },
+    "missing": {
+      "title": "Settings unavailable",
+      "body": "MiseDeck needs the mise CLI to list settings. Go back and install mise, then return to this page."
     },
     "error": {
       "title": "Failed to load settings",
@@ -597,6 +613,10 @@
       "explanation": "Add a custom plugin the way the CLI does: a name plus the plugin's git URL — the asdf-ecosystem standard for tools with no built-in shorthand.",
       "namePlaceholder": "Plugin name",
       "urlPlaceholder": "Git URL — github.com/<owner>/<repo>"
+    },
+    "missing": {
+      "title": "Plugins unavailable",
+      "body": "MiseDeck needs the mise CLI to list plugins. Go back and install mise, then return to this page."
     },
     "confirm": {
       "uninstall": {

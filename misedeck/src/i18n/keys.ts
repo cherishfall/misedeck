@@ -403,6 +403,14 @@ export const I18N_KEYS = {
       body: "preview.empty.body",
       action: "preview.empty.action",
     },
+    /** The mise-missing empty state (issue #295): names the page's own
+        subject — the directory's resolution — instead of reusing
+        `tools.missing.*`, which promises installed-tool listing. The
+        shared `states.notInstalled` eyebrow stays. */
+    missing: {
+      title: "preview.missing.title",
+      body: "preview.missing.body",
+    },
     sections: {
       tools: "preview.sections.tools",
       env: "preview.sections.env",
@@ -503,6 +511,13 @@ export const I18N_KEYS = {
           card itself (issue #226; the Settings page's pattern). */
       action: "env.empty.action",
     },
+    /** The mise-missing empty state (issue #295): the page names env
+        vars, not installed tools — `tools.missing.*` stays the Tools
+        page's own. The shared `states.notInstalled` eyebrow stays. */
+    missing: {
+      title: "env.missing.title",
+      body: "env.missing.body",
+    },
     error: {
       title: "env.error.title",
       body: "env.error.body",
@@ -584,6 +599,13 @@ export const I18N_KEYS = {
       body: "tasks.empty.body",
       openConfig: "tasks.empty.openConfig",
       addTask: "tasks.empty.addTask",
+    },
+    /** The mise-missing empty state (issue #295): the page names tasks,
+        not installed tools — `tools.missing.*` stays the Tools page's
+        own. The shared `states.notInstalled` eyebrow stays. */
+    missing: {
+      title: "tasks.missing.title",
+      body: "tasks.missing.body",
     },
     runButton: "tasks.runButton",
     /** Transient row-level failure marker after `mise run` fails
@@ -676,6 +698,14 @@ export const I18N_KEYS = {
       /** The default view's next step, inside the card: the switch's own
           action, reachable without hunting for it above (issue #226). */
       showAllAction: "settings.empty.showAllAction",
+    },
+    /** The mise-missing empty state (issue #295): the page names
+        settings, not installed tools — `tools.missing.*` stays the
+        Tools page's own. The shared `states.notInstalled` eyebrow
+        stays. */
+    missing: {
+      title: "settings.missing.title",
+      body: "settings.missing.body",
     },
     error: {
       title: "settings.error.title",
@@ -820,6 +850,14 @@ export const I18N_KEYS = {
       explanation: "plugins.installForm.explanation",
       namePlaceholder: "plugins.installForm.namePlaceholder",
       urlPlaceholder: "plugins.installForm.urlPlaceholder",
+    },
+    /** The mise-missing empty state (issue #295): the page names
+        plugins, not installed tools — `tools.missing.*` stays the
+        Tools page's own. The shared `states.notInstalled` eyebrow
+        stays. */
+    missing: {
+      title: "plugins.missing.title",
+      body: "plugins.missing.body",
     },
     confirm: {
       uninstall: {
