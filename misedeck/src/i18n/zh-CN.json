@@ -146,7 +146,7 @@
       "created": "发布时间",
       "filterPlaceholder": "过滤版本…",
       "latestAlias": "latest：{{version}}",
-      "notInstalledUninstallTooltip": "该版本尚未安装，没有可删除的安装文件",
+      "notInstalledUninstallTooltip": "该版本尚未安装，没有可卸载的安装文件",
       "upgradeAvailable": "新版本 {{latest}} 可用",
       "globalAlsoActive": "该工具也由全局配置激活：{{versions}}。在此使用版本会为当前目录叠加一条请求——两者并存，当前目录中以此处的版本为准。",
       "emptyInUse": "没有已激活的版本。",
@@ -392,7 +392,6 @@
     "count": "{{count}} 个任务",
     "count_one": "{{count}} 个任务",
     "countFiltered": "{{count}} / {{total}} 个任务",
-    "countFiltered_one": "{{count}} / {{total}} 个任务",
     "commandHint": "mise tasks ls · mise run · mise tasks add · mise tasks edit · mise config ls",
     "columns": {
       "name": "名称",
