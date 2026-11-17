@@ -174,10 +174,12 @@
   min-height: 0;
 }
 
+/* --size-data, not --size-label (#299): a hint is a sentence (body copy),
+ * and the 10px label size is reserved for standalone decoration. */
 .openHintOk,
 .openHintError {
   font-family: var(--font-mono);
-  font-size: var(--size-label);
+  font-size: var(--size-data);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

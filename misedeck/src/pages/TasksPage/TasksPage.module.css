@@ -212,9 +212,11 @@
   margin: 0;
 }
 
+/* --size-data, not --size-label (#299): these are sentences (body copy),
+ * and the 10px label size is reserved for standalone decoration. */
 .editFormSub {
   font-family: var(--font-mono);
-  font-size: var(--size-label);
+  font-size: var(--size-data);
   color: var(--dim);
   margin: 0;
 }
@@ -300,7 +302,7 @@
 
 .editFormError {
   font-family: var(--font-mono);
-  font-size: var(--size-label);
+  font-size: var(--size-data);
   color: var(--breach);
   margin: 0;
 }

@@ -23,6 +23,14 @@
   color: var(--ice);
 }
 
+/* zh-CN: CJK has no uppercase and wide tracking scatters Han glyphs
+ * (visual-language.md eyebrow note) — the same reset the toolbar's
+ * mode label carries (DirectoryIndicator.module.css). */
+.eyebrow:lang(zh) {
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 .title {
   font-family: var(--font-display);
   font-weight: 600;
