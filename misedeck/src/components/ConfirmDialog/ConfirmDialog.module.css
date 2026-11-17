@@ -42,13 +42,21 @@
 }
 
 /* 4px small-element radius — the same literal the pages' stderr blocks
- * use (issue #211): the command box is content, not a panel or a control. */
+ * use (issue #211): the command box is content, not a panel or a control.
+ * The left edge defaults to --line; the breach accent is scoped to danger
+ * dialog (#299): non-destructive confirms (Run task, Use/Install/Upgrade,
+ * self-update) must not paint the destructive color — breach is only
+ * destructive actions and real errors (visual-language.md). */
 .commandWrap {
   border: 1px solid var(--line);
-  border-left: 2px solid var(--breach);
+  border-left: 2px solid var(--line);
   border-radius: 4px;
   background: color-mix(in srgb, var(--void) 45%, transparent);
   padding: var(--space-2) var(--space-3);
+}
+
+.commandWrap[data-danger="true"] {
+  border-left-color: var(--breach);
 }
 
 /* The dialog shows exactly the command(s) that will run and they must be

@@ -155,9 +155,11 @@
   flex-shrink: 0;
 }
 
+/* beam (running) does not pulse: visual-language.md permits ambient
+ * motion only on flare/breach dots (the ProgressDot precedent), and
+ * running-ness is carried by the status label. */
 .statusDot[data-tone="beam"] {
   background: var(--beam);
-  animation: dot-pulse var(--motion-pulse) ease-in-out infinite;
 }
 
 .statusDot[data-tone="ok"] {
@@ -170,11 +172,6 @@
 
 .statusDot[data-tone="dim"] {
   background: var(--dim);
-}
-
-@keyframes dot-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
 }
 
 .actionBtn {
@@ -312,9 +309,9 @@
   flex-shrink: 0;
 }
 
+/* Same no-pulse rule as .statusDot above: beam does not breathe. */
 .affordanceDot[data-tone="beam"] {
   background: var(--beam);
-  animation: dot-pulse var(--motion-pulse) ease-in-out infinite;
 }
 
 .affordanceDot[data-tone="ok"] {

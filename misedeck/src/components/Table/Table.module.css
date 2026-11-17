@@ -58,7 +58,9 @@
 
 .table tbody td {
   padding: var(--space-3) var(--space-3);
-  border-bottom: 1px solid color-mix(in srgb, var(--beam) 7%, transparent);
+  /* Neutral divider (#299): --line is the default borders/dividers token;
+   * the beam tint read as an accent edge on every row. */
+  border-bottom: 1px solid var(--line);
   vertical-align: middle;
 }
 
