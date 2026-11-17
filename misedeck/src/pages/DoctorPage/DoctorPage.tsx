@@ -17,8 +17,8 @@ import {
   CommandHint,
   CopyButton,
   EmptyState,
+  ListLoading,
   PageShell,
-  ProgressDot,
   QueryHint,
   Table,
   type TableColumn,
@@ -89,8 +89,18 @@ export function DoctorPage() {
     return composeDoctorReport(header, doctorReportBody(doctor.data, doctor.raw));
   }, [appVersion, doctor.data, doctor.raw, doctorError, t]);
 
-  if (detect.isPending) {
-    return <DoctorLoading />;
+  // The list-level gate (issue #146) covers the `mise doctor` read too
+  // (#299): while either the detect probe or the doctor read is pending —
+  // first load or a directory switch — the shared ListLoading renders
+  // instead of a blank content area behind the toolbar hint. One
+  // implementation, no per-page loading copies.
+  if (detect.isPending || doctor.isPending) {
+    return (
+      <ListLoading
+        title={t(I18N_KEYS.doctor.title)}
+        commandHint={t(I18N_KEYS.doctor.commandHint)}
+      />
+    );
   }
   const detectValue = detect.data;
   if (detectValue && detectValue.kind === "err" && isAppError(detectValue.err)) {
@@ -510,19 +520,5 @@ function UpgradeNotice({
         {t(I18N_KEYS.doctor.updateNotice.updateOnHome)}
       </Button>
     </section>
-  );
-}
-
-function DoctorLoading() {
-  const { t } = useTranslation();
-  return (
-    <PageShell>
-      <div className={styles.page}>
-        <div className={styles.loading}>
-          <ProgressDot tone="dim" />
-          <span>{t(I18N_KEYS.common.loading)}</span>
-        </div>
-      </div>
-    </PageShell>
   );
 }
