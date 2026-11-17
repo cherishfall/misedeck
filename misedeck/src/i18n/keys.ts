@@ -967,6 +967,12 @@ export const I18N_KEYS = {
         the zh banner never renders English detail. Resolved through
         `resolveAppErrorMessage` (see `KNOWN_MESSAGE_KEYS`). */
     exitCode: "errors.exitCode",
+    /** The captured-read aggregate-cap truncation (issue #301's registry
+        guard): `run_mise_capture` authors this key-shaped message
+        (`errors.captureCap|limit=<bytes>`) instead of hardcoded English,
+        so the plugins error card never renders English detail in zh.
+        Resolved through `resolveAppErrorMessage`. */
+    captureCap: "errors.captureCap",
     unknown: "errors.unknown",
   },
   languages: {

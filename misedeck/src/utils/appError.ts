@@ -33,6 +33,10 @@ const KNOWN_MESSAGE_KEYS: ReadonlySet<string> = new Set([
   // Not a Rust emission: `useTrustAction` (trustContext.tsx) authors it
   // at runtime for the trust run's exit-code note (issue #304).
   I18N_KEYS.errors.exitCode,
+  // Rust emission (`run_mise_capture`, issue #301's registry guard): the
+  // aggregate-cap truncation detail, keyed so zh never renders English
+  // MiseDeck-authored copy.
+  I18N_KEYS.errors.captureCap,
   // Also the defensive fallback inside `toTrustState` for a malformed
   // `TrustResult` payload — it emits the key, the hook resolves it.
   I18N_KEYS.errors.unknown,

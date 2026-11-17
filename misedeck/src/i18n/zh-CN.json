@@ -691,6 +691,7 @@
     "terminalNotFound": "未在这个 Linux 系统上找到终端模拟器。",
     "timeout": "mise 未在超时时间内响应。请重试该操作；若反复出现，请在终端中运行该命令查看详情。",
     "exitCode": "mise 以退出码 {{code}} 结束",
+    "captureCap": "mise 输出超过了 {{limit}} 字节的捕获上限。",
     "unknown": "出现了未知错误，详情请见执行面板。"
   },
   "languages": {

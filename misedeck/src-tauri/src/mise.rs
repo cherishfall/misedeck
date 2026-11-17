@@ -1463,8 +1463,11 @@ fn run_mise_capture(
     // `DriveEnd::Cancelled` cannot arise here (no run id); were it to,
     // the `-1` exit code below still fails every caller's exit check.
     if driven.stdout_truncated {
+        // Key-shaped so the frontend localizes it (issue #304's trust-note
+        // precedent): this is MiseDeck-authored copy, not mise stderr.
+        // Resolved by `resolveAppErrorMessage` via `errors.captureCap`.
         return Err(AppError::parse_failed(
-            format!("mise output exceeded the {MAX_STREAM_BYTES}-byte capture cap"),
+            format!("errors.captureCap|limit={MAX_STREAM_BYTES}"),
             driven.stderr,
         )
         .with_cap_truncated());
@@ -3310,7 +3313,7 @@ mod tests {
     #[test]
     fn registry_fallback_never_retries_a_cap_truncated_payload() {
         let truncated = AppError::parse_failed(
-            format!("mise output exceeded the {MAX_STREAM_BYTES}-byte capture cap"),
+            format!("errors.captureCap|limit={MAX_STREAM_BYTES}"),
             "",
         )
         .with_cap_truncated();
