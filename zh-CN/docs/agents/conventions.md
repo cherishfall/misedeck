@@ -75,7 +75,7 @@ MISE_NOT_FOUND  MISE_TOO_OLD  COMMAND_FAILED  PARSE_FAILED  TIMEOUT  TERMINAL_NO
 
 Windows 的 shell 检测（#277）拆成两半：纯判定函数 `detect_windows_shell`（先看 `$SHELL`，再看 PowerShell）在任意宿主上都跑单元测试；探测本身只在 Windows 上执行（用绝对路径的 `where.exe pwsh.exe`；对绝对 System32 Windows PowerShell 做文件存在检查）。这些探测及其产生的激活提示已在真实 Windows 桌面上运行过——在那里 shell 探测给出 `powerShell`，rc 路径指向真实 profile 目录下的 pwsh 配置文件路径。`windows-latest` CI 现在会跑完整套件（单元测试**和**集成测试），因为 fixture 已是跨平台的 Rust 二进制而非 bash 脚本。
 
-那次真实 Windows 运行现已覆盖整个表面，不只是 shell 探测：八个页面、十四个后端命令，以及一条写入闭环（UI → mise → 磁盘 → UI）都在硬件上跑过。它找出两件 CI 抓不到的事——bash 脚本 fixture；以及在会忽略该变量的平台上、测试伪造 `$HOME` 时会静默失效的 home 解析接缝（见下面注入 home 的约定）。
+那次真实 Windows 运行现已覆盖整个表面，不只是 shell 探测：八个页面、22 个后端命令中的 19 个（另外 3 个会改动用户自己的 mise/信任状态，仅由测试刻意覆盖），以及一条写入闭环（UI → mise → 磁盘 → UI）都在硬件上跑过。它找出两件 CI 抓不到的事——bash 脚本 fixture；以及在会忽略该变量的平台上、测试伪造 `$HOME` 时会静默失效的 home 解析接缝（见下面注入 home 的约定）。
 
 - **home 一律用 `dirs::home_dir()`，绝不读 `HOME` 环境变量**（issue #229）：Windows 上没有 `HOME`，每一处 `$HOME` 读取都会得到空值——激活探测因此恒为 `activated: null`，`open_in_terminal` 每次都失败。shell rc 路径和其他任何 home 相对路径同理。
 - **home 相对路径必须由注入的 home 算出，而不是伪造环境变量**：`dirs::home_dir()` 在 unix 上认 `$HOME`，在 Windows 上走 `SHGetKnownFolderPath`、完全无视该环境变量——用 `$HOME` 伪造 home 的测试在 Windows 上读到的是**真实**用户 profile。rc 路径解析与激活探测都把 home 作为参数接收（`rc_path_for_in`、`rc_sibling_paths_in`、`check_shell_activation_for_in`）；生产入口负责用 `dirs::home_dir()` 解析并委托下去。

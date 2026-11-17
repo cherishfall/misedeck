@@ -4,7 +4,7 @@
 
 A stable release of MiseDeck, a faithful desktop GUI for [mise](https://mise.jdx.dev). Cross-platform (macOS polished, Windows / Linux beta).
 
-## What's in v1
+## What's in this release
 
 Eight pages, each one a part of the mise CLI:
 

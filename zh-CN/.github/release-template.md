@@ -4,7 +4,7 @@
 
 MiseDeck 的稳定版本——[mise](https://mise.jdx.dev) 的忠实桌面 GUI。跨平台（macOS 优先打磨，Windows / Linux 为 beta）。
 
-## 本期要点
+## 本版包含什么
 
 八个页面，各自对应 mise CLI 的一部分：
 
@@ -33,7 +33,7 @@ GitHub Releases 是唯一的分发渠道 —— v1 不提供 Homebrew formula �
 > xattr -dr com.apple.quarantine /Applications/MiseDeck.app
 > ```
 >
-> 然后正常启动即可。后续启动不再需要的额外步骤。
+> 然后正常启动即可。后续启动不再需要额外步骤。
 
 ### Windows（beta）
 
