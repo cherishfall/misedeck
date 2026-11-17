@@ -350,6 +350,17 @@ export const I18N_KEYS = {
       emptyInstalledBodyNoActive: "tools.addTool.emptyInstalledBodyNoActive",
       emptyAvailableTitle: "tools.addTool.emptyAvailableTitle",
       emptyAvailableBody: "tools.addTool.emptyAvailableBody",
+      /** The not-installed section's failure card (issue #294): names
+          the command that actually ran (`mise ls-remote --json <tool>`,
+          not the Home version gate's `mise version --json`) and renders
+          the structured error detail plus stderr when the payload
+          carries one. Retry stays the recovery path. */
+      remoteError: {
+        title: "tools.addTool.remoteError.title",
+        body: "tools.addTool.remoteError.body",
+        /** No-stderr variant (V-7, issue #262). */
+        bodyNoStderr: "tools.addTool.remoteError.bodyNoStderr",
+      },
     },
     linkForm: {
       title: "tools.linkForm.title",

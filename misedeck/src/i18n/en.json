@@ -154,7 +154,12 @@
       "emptyInstalledBody": "mise ls {{tool}} reports no installed versions of {{tool}} besides the active one.",
       "emptyInstalledBodyNoActive": "mise ls {{tool}} reports no installed versions of {{tool}}.",
       "emptyAvailableTitle": "No available versions",
-      "emptyAvailableBody": "mise ls-remote {{tool}} returned no versions."
+      "emptyAvailableBody": "mise ls-remote {{tool}} returned no versions.",
+      "remoteError": {
+        "title": "Could not load versions",
+        "body": "mise ls-remote --json {{tool}} did not return a result. Stderr is shown below.",
+        "bodyNoStderr": "mise ls-remote --json {{tool}} did not return a result and wrote no stderr. Retry; if it keeps happening, run the command in a terminal."
+      }
     },
     "linkForm": {
       "title": "Link a tool",

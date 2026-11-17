@@ -81,6 +81,7 @@ import {
   type TableColumn,
 } from "../../components";
 import { shortenPathTail } from "../../utils/paths";
+import { readErrorBody } from "../../utils/readErrorBody";
 import { compareToolVersions, hasUpgradeTarget } from "../../utils/versions";
 import tableStyles from "../../components/Table/Table.module.css";
 
@@ -775,12 +776,28 @@ export function AddToolSection({
                 )}
 
                 {!remote.isPending && remoteError && (
+                  // The not-installed failure card (issue #294): names
+                  // the command that actually ran — `mise ls-remote
+                  // --json <tool>`, not the Home version gate's `mise
+                  // version --json` — and renders the structured error
+                  // detail (a PARSE_FAILED body) plus stderr when the
+                  // payload carries one. Retry stays the recovery path.
                   <div className={styles.errorBlock}>
                     <div className={styles.errorLabel}>
-                      {t(I18N_KEYS.states.commandFailed.title)}
+                      {t(I18N_KEYS.tools.addTool.remoteError.title)}
                     </div>
                     <p className={styles.errorBody}>
-                      {t(I18N_KEYS.states.commandFailed.body)}
+                      {remoteAppErr
+                        ? readErrorBody(
+                            remoteAppErr,
+                            t,
+                            I18N_KEYS.tools.addTool.remoteError.body,
+                            I18N_KEYS.tools.addTool.remoteError.bodyNoStderr,
+                            { tool: selectedTool ?? "" },
+                          )
+                        : t(I18N_KEYS.tools.addTool.remoteError.bodyNoStderr, {
+                            tool: selectedTool ?? "",
+                          })}
                     </p>
                     {remoteAppErr?.stderr ? (
                       <pre className={styles.errorStderr}>{remoteAppErr.stderr}</pre>

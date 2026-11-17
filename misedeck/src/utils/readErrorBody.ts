@@ -15,9 +15,14 @@ export function readErrorBody(
   t: TFunction,
   withStderr: string,
   withoutStderr: string,
+  /** Interpolation params for the stderr-aware body keys (issue #294):
+   *  the not-installed card's copy names the tool its `ls-remote`
+   *  read targeted. The PARSE_FAILED branch ignores it — the message
+   *  is the detail itself. */
+  params?: Record<string, unknown>,
 ): string {
   if (err.code === "PARSE_FAILED") {
     return resolveAppErrorMessage(err.message, t);
   }
-  return t(stderrBodyKey(err.stderr, withStderr, withoutStderr));
+  return t(stderrBodyKey(err.stderr, withStderr, withoutStderr), params);
 }

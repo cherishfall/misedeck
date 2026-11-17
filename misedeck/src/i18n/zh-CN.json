@@ -154,7 +154,12 @@
       "emptyInstalledBody": "除已激活版本外，mise ls {{tool}} 没有报告 {{tool}} 的其他已安装版本。",
       "emptyInstalledBodyNoActive": "mise ls {{tool}} 没有报告 {{tool}} 的任何已安装版本。",
       "emptyAvailableTitle": "没有可安装版本",
-      "emptyAvailableBody": "mise ls-remote {{tool}} 没有返回任何版本。"
+      "emptyAvailableBody": "mise ls-remote {{tool}} 没有返回任何版本。",
+      "remoteError": {
+        "title": "无法加载版本列表",
+        "body": "mise ls-remote --json {{tool}} 未返回结果。stderr 如下所示。",
+        "bodyNoStderr": "mise ls-remote --json {{tool}} 未返回结果，也没有输出 stderr。请重试；若反复出现，请在终端中运行该命令。"
+      }
     },
     "linkForm": {
       "title": "链接工具",
