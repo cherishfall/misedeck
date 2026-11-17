@@ -3312,11 +3312,9 @@ mod tests {
     /// for it, whatever exit code the truncated run reported.
     #[test]
     fn registry_fallback_never_retries_a_cap_truncated_payload() {
-        let truncated = AppError::parse_failed(
-            format!("errors.captureCap|limit={MAX_STREAM_BYTES}"),
-            "",
-        )
-        .with_cap_truncated();
+        let truncated =
+            AppError::parse_failed(format!("errors.captureCap|limit={MAX_STREAM_BYTES}"), "")
+                .with_cap_truncated();
         assert!(!registry_fallback_applies(&truncated, None));
         assert!(!registry_fallback_applies(&truncated, Some(0)));
     }
