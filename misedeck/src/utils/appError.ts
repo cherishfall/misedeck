@@ -30,6 +30,9 @@ const KNOWN_MESSAGE_KEYS: ReadonlySet<string> = new Set([
   I18N_KEYS.errors.miseTooOld,
   I18N_KEYS.errors.terminalNotFound,
   I18N_KEYS.errors.timeout,
+  // Not a Rust emission: `useTrustAction` (trustContext.tsx) authors it
+  // at runtime for the trust run's exit-code note (issue #304).
+  I18N_KEYS.errors.exitCode,
   // Also the defensive fallback inside `toTrustState` for a malformed
   // `TrustResult` payload — it emits the key, the hook resolves it.
   I18N_KEYS.errors.unknown,

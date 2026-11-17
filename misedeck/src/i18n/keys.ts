@@ -17,6 +17,14 @@
 //   2. Add the same path to BOTH `en.json` and `zh-CN.json` in the same
 //      commit — the lint script will fail otherwise.
 //   3. Use `t(I18N_KEYS.foo.bar)` at the call site.
+//
+// Plural suffixes (`_one` / `_other`, …):
+//   i18next picks the suffixed json variant off the base key by CLDR
+//   plural category, so suffixed keys are never referenced by name in
+//   code. zh-CN has no "one" category, which leaves a few unreachable
+//   `_one` entries in zh-CN.json — they are harmless copies, and they
+//   MUST stay identical to their base value (the fallback is the base
+//   key); never translate them differently (issue #304).
 
 export const I18N_KEYS = {
   common: {
@@ -953,6 +961,12 @@ export const I18N_KEYS = {
     miseTooOld: "errors.miseTooOld",
     terminalNotFound: "errors.terminalNotFound",
     timeout: "errors.timeout",
+    /** The trust action's exit-code note (issue #304): `useTrustAction`
+        authors this key-shaped message at runtime
+        (`errors.exitCode|code=<n>`) instead of hardcoded English, so
+        the zh banner never renders English detail. Resolved through
+        `resolveAppErrorMessage` (see `KNOWN_MESSAGE_KEYS`). */
+    exitCode: "errors.exitCode",
     unknown: "errors.unknown",
   },
   languages: {

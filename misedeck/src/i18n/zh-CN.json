@@ -50,8 +50,8 @@
     "releaseNotesLink": "查看发布说明",
     "confirmSelfUpdate": {
       "title": "更新 mise？",
-      "bodyWithLatest": "将运行下面的确切命令，把 mise 从 {{current}} 更新到 {{latest}}，并替换已安装的二进制文件。",
-      "bodyUnknownLatest": "将运行下面的确切命令，把 mise 从 {{current}} 更新到最新版本，并替换已安装的二进制文件。"
+      "bodyWithLatest": "将运行以下确切命令，把 mise 从 {{current}} 更新到 {{latest}}，并替换已安装的二进制文件。",
+      "bodyUnknownLatest": "将运行以下确切命令，把 mise 从 {{current}} 更新到最新版本，并替换已安装的二进制文件。"
     },
     "guidedInstallInstalling": "安装中…"
   },
@@ -95,7 +95,7 @@
     "columns": {
       "tool": "工具",
       "version": "版本",
-      "requested": "声明的版本",
+      "requested": "请求的版本",
       "backend": "后端",
       "source": "来源",
       "actions": "操作"
@@ -201,7 +201,7 @@
       },
       "unuse": {
         "title": "取消使用 {{tool}}？",
-        "body": "让该工具不再被使用：从配置文件移除，其他配置不再使用的安装文件一并删除。"
+        "body": "取消使用后，该工具会从配置文件中移除，其他配置均未使用的安装文件也会一并删除。"
       },
       "upgrade": {
         "title": "升级 {{tool}}？",
@@ -341,7 +341,7 @@
     "addButton": "添加",
     "editButton": "编辑",
     "unsetButton": "移除",
-    "namePlaceholder": "变量名",
+    "namePlaceholder": "名称",
     "valuePlaceholder": "值",
     "guard": {
       "untrustedBody": "在修改此目录的环境变量之前，请先信任它。"
@@ -349,7 +349,7 @@
     "tooltip": {
       "tool": "由 {{tool}} 通过 mise env 注入；在运行时解析，无法通过 mise set 设置。",
       "default": "继承自系统环境；并非由 mise 写入，因此无法通过 mise set 设置。",
-      "configTool": "由配置文件请求、{{tool}} 注入；可通过 mise set 覆盖。",
+      "configTool": "由配置文件请求并由 {{tool}} 注入；可通过 mise set 覆盖。",
       "unsetOutOfScope": "该变量定义在 {{source}}，不在当前目录的配置里——移除不会生效。"
     },
     "confirm": {
@@ -442,7 +442,7 @@
       },
       "run": {
         "title": "运行 {{name}}？",
-        "body": "通过 mise run 运行该任务。参数会拆分为单词并原样传给 -- 之后——mise 直接收到 argv，中间不经过 shell。",
+        "body": "通过 mise run 运行该任务。参数会拆分为单词并原样追加到 -- 之后——mise 直接收到 argv，中间不经过 shell。",
         "argsLabel": "参数（可选）",
         "argsPlaceholder": "例如 --release \"hello world\""
       }
@@ -540,7 +540,7 @@
   },
   "doctor": {
     "title": "诊断",
-    "hint": "mise 健康检查——针对全局安装或所选目录。结构化报告不可用时，原始 doctor 输出会高亮显示警告行。",
+    "hint": "mise 健康检查——针对全局设置或当前目录。结构化报告不可用时，原始 doctor 输出会高亮显示警告行。",
     "commandHint": "mise doctor",
     "statusLabel": "健康检查",
     "status": {
@@ -627,7 +627,7 @@
     "confirm": {
       "uninstall": {
         "title": "卸载 {{name}}？",
-        "body": "这将运行下方所示的命令。该插件将被移除，且无法撤销。通过该插件安装的工具文件将保留在磁盘上。"
+        "body": "将运行以下确切命令。该插件将被移除，且无法撤销。通过该插件安装的工具文件将保留在磁盘上。"
       }
     },
     "installedEmpty": {
@@ -670,7 +670,7 @@
     },
     "parseFailed": {
       "title": "无法解析 mise 响应",
-      "body": "MiseDeck 无法解析 mise version --json。你可能在运行一个 fork 版本。"
+      "body": "MiseDeck 无法解析 mise version --json 的输出。你可能在运行一个 fork 版本。"
     }
   },
   "labels": {
@@ -690,6 +690,7 @@
     "miseTooOld": "检测到 mise {{found}}，但 MiseDeck 要求至少 {{minimum}}。请运行 mise self-update 更新 mise。",
     "terminalNotFound": "未在这个 Linux 系统上找到终端模拟器。",
     "timeout": "mise 未在超时时间内响应。请重试该操作；若反复出现，请在终端中运行该命令查看详情。",
+    "exitCode": "mise 以退出码 {{code}} 结束",
     "unknown": "出现了未知错误，详情请见执行面板。"
   },
   "languages": {
@@ -726,7 +727,7 @@
     "closeRun": "关闭",
     "resizeHandle": "调整执行面板高度",
     "logLabel": "执行日志",
-    "workingDirHome": "运行目录：~（主目录）",
+    "workingDirHome": "工作目录：~（主目录）",
     "outputTruncated": "{{stream}} 输出已截断，命令仍在继续运行。"
   },
   "failureNotice": {
@@ -742,7 +743,7 @@
     "openInTerminalError": "无法在 {{path}} 打开终端。请复制命令后手动执行。",
     "openInTerminalSuccess": "已通过 {{terminal}} 在 {{path}} 打开终端。",
     "bannerLabel": "Shell 激活缺失",
-    "bannerBody": "你的 {{shell}} 配置文件 {{rcPath}} 中没有 mise activate。把下方这一行加到该文件的末尾（文件不存在就新建）并保存，然后重开终端才会生效——它不是一条要在终端里执行的命令。",
+    "bannerBody": "你的 {{shell}} 配置文件 {{rcPath}} 中没有 mise activate。把下方这一行加到该文件的末尾（文件不存在就新建）并保存，然后重开终端——它是写入配置文件的条目，不是一条要在终端里执行的命令。",
     "bannerBodyUnknownShell": "MiseDeck 不知道如何激活 {{name}}。请在其 rc 文件中添加相应的 mise activate 行，以便在交互式 shell 中使用 mise。",
     "bannerLabelUnverified": "Shell 激活状态未知",
     "bannerBodyUnverified": "MiseDeck 无法判断此 shell 是否已激活 mise。请将下方这一行与你的 rc 文件对照，如缺失请添加。",
@@ -754,7 +755,7 @@
   "about": {
     "name": "MiseDeck",
     "triggerLabel": "MiseDeck {{version}}——版本与更新",
-    "triggerLabelUpdate": "MiseDeck {{version}}——有可用更新 {{available}}",
+    "triggerLabelUpdate": "MiseDeck {{version}}——有可用更新：{{available}}",
     "panelLabel": "MiseDeck 版本与更新",
     "check": "检查 MiseDeck 更新",
     "checking": "正在检查 MiseDeck 更新…",

@@ -239,11 +239,15 @@ export function useTrustAction(): TrustAction {
       setLastResult("error");
       // Same message convention as `toJsonResult`: only the run this
       // call owns can produce it, so it can never describe another run.
+      // Both halves are key-shaped so the catalog owns the copy — a
+      // timed-out run resolves `errors.timeout`, an exit-code failure
+      // resolves `errors.exitCode` with its `code` param (issue #304;
+      // hardcoded English here used to render verbatim in the zh UI).
       setLastError(
         resolveAppErrorMessage(
           result.outcome.timedOut
-            ? "mise timed out"
-            : `mise exited with code ${result.outcome.exitCode}`,
+            ? I18N_KEYS.errors.timeout
+            : `${I18N_KEYS.errors.exitCode}|code=${result.outcome.exitCode}`,
           t,
         ),
       );
