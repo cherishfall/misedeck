@@ -332,13 +332,19 @@ fn invalid_utf8_output_does_not_truncate_the_transcript() {
     });
 }
 
-// ---------- MISE_SAFE routing (issue #230, coverage #255) ----------
+// ---------- MISE_SAFE routing (issue #230, coverage #255, gate #293) ----------
 //
-// The trust guarantee lives in one `if` in `run_mise_timed`. The fixture
-// logs the MISE_SAFE value it received, so these assertions pin the
-// contract from the outside: every read (`run_mise_json`) is safe;
-// streaming mutations (`run_mise` / `run_mise_tracked`) deliberately are
-// not. A refactor that drops `cmd.env` fails here.
+// The guard is one `cmd.env` in `mise_command`, driven by the request's
+// trust gate (`req.safe_mode`) AND the surface: `run_mise_timed`
+// structurally excludes mutations. The decision itself lives in the
+// command layer (`mise::safe_mode_for_read`, unit-tested in the runner
+// module); this file pins the runner half. The fixture logs the
+// MISE_SAFE value it received, so the assertions pin the contract from
+// the outside: a read request defaults to the #230 guard; a request the
+// trust gate cleared (`safe_mode: false`, issue #293 — a trusted or
+// Global directory) runs the same read unguarded; streaming mutations
+// (`run_mise` / `run_mise_tracked`) deliberately never run guarded. A
+// refactor that drops `cmd.env` fails here.
 
 #[test]
 #[serial]
@@ -361,7 +367,7 @@ fn read_json_sets_mise_safe_and_streaming_does_not() {
     });
     // A panel-dispatched read (Tools / Settings table) opts into the same
     // contract explicitly (issue #276).
-    with_slug("ls---json", || {
+    with_slug("settings---ls---json-extended", || {
         let req = RunRequest::new(vec![
             "settings".to_string(),
             "ls".to_string(),
@@ -377,6 +383,32 @@ fn read_json_sets_mise_safe_and_streaming_does_not() {
         let req = RunRequest::new(vec!["ls".to_string(), "--json".to_string()]);
         run_mise_tracked(&script, &req, None, |_| {})
             .expect("the unsafe tracked fixture exits cleanly");
+    });
+
+    // Issue #293: the trust gate rides the request. A request the command
+    // layer gated off (trusted or Global directory context) runs the same
+    // read WITHOUT the guard — the pipe mode stays a read's (raw capture,
+    // issue #292), only the env var is gone.
+    with_slug("env---json", || {
+        let req = RunRequest {
+            cwd: None,
+            args: vec!["env".to_string(), "--json".to_string()],
+            safe_mode: false,
+        };
+        run_mise_json(&script, &req).expect("the gated-off read fixture exits cleanly");
+    });
+    with_slug("settings---ls---json-extended", || {
+        let req = RunRequest {
+            cwd: Some(std::env::temp_dir()),
+            args: vec![
+                "settings".to_string(),
+                "ls".to_string(),
+                "--json-extended".to_string(),
+            ],
+            safe_mode: false,
+        };
+        run_mise_tracked_read_only(&script, &req, None, |_| {})
+            .expect("the gated-off panel read fixture exits cleanly");
     });
 
     unsafe {
@@ -416,6 +448,22 @@ fn read_json_sets_mise_safe_and_streaming_does_not() {
     assert!(
         unsafe_call.ends_with("MISE_SAFE=<unset>"),
         "a tracked run without read_only must not run under MISE_SAFE: {unsafe_call:?}"
+    );
+    let gated_off_read = calls
+        .lines()
+        .find(|line| line.contains("env --json MISE_SAFE=<unset>"))
+        .expect("the gated-off read must have invoked the fixture");
+    assert!(
+        gated_off_read.ends_with("MISE_SAFE=<unset>"),
+        "a request the trust gate cleared must run unguarded (issue #293): {gated_off_read:?}"
+    );
+    let gated_off_panel = calls
+        .lines()
+        .find(|line| line.contains("settings ls --json-extended MISE_SAFE=<unset>"))
+        .expect("the gated-off panel read must have invoked the fixture");
+    assert!(
+        gated_off_panel.ends_with("MISE_SAFE=<unset>"),
+        "a gated-off panel read must not run under MISE_SAFE (issue #293): {gated_off_panel:?}"
     );
 }
 

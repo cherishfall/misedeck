@@ -346,22 +346,44 @@ pub enum RunEvent {
 /// mode and becomes `-C $HOME` — mise resolves from the user's home
 /// directory either way, never from the process cwd (issue #179). `args`
 /// is the rest of the argv passed verbatim.
+///
+/// `safe_mode` is the trust gate (issue #293): a read sets `MISE_SAFE=1`
+/// only when it is `true`, and only a read may set it at all — the
+/// streaming surface is excluded structurally in `run_mise_timed`. The
+/// constructors default to `true`, the #230 fail-safe, so an ungated read
+/// call site keeps the guard; the command layer computes the real
+/// decision ([`safe_mode_for_read`]) and clears the flag for Global mode
+/// and trusted or config-less directories.
 #[derive(Debug, Clone)]
 pub struct RunRequest {
     pub cwd: Option<PathBuf>,
     pub args: Vec<String>,
+    pub safe_mode: bool,
 }
 
 impl RunRequest {
     pub fn new(args: Vec<String>) -> Self {
-        Self { cwd: None, args }
+        Self {
+            cwd: None,
+            args,
+            safe_mode: true,
+        }
     }
 
     pub fn with_cwd(args: Vec<String>, cwd: impl Into<PathBuf>) -> Self {
         Self {
             cwd: Some(cwd.into()),
             args,
+            safe_mode: true,
         }
+    }
+
+    /// Apply the command layer's trust-gate decision (issue #293): `true`
+    /// keeps the #230 `MISE_SAFE=1` guard, `false` runs the read
+    /// unguarded. See [`safe_mode_for_read`] for the decision itself.
+    pub fn with_safe_mode(mut self, safe_mode: bool) -> Self {
+        self.safe_mode = safe_mode;
+        self
     }
 }
 
@@ -1294,14 +1316,22 @@ fn mise_command(mise_path: &Path, req: &RunRequest, safe_mode: bool) -> Result<C
     for a in &req.args {
         cmd.arg(a);
     }
-    // Read-only views run with `MISE_SAFE=1` (issue #230) — the
-    // contract `docs/agents/architecture.md` states for reads of
-    // directories the user has not trusted: mise resolves the same
-    // config and emits the same data (verified against `mise ls`,
-    // `env`, `config ls`, `tasks ls`, `plugins ls`, `trust --show`,
-    // `doctor`, `outdated`), while config hooks/plugins stay disabled.
+    // `MISE_SAFE=1` (issue #230) disables config hooks and plugin
+    // execution so a page view cannot run an untrusted directory's code.
+    // The guard is trust-gated (issue #293): the command layer computes
+    // the decision with `safe_mode_for_read` from `mise trust --show`
+    // and rides it on the request (`req.safe_mode`; the constructors
+    // default it to `true`, so an ungated read call site keeps the
+    // fail-safe guard). Guarding a trusted directory is not free: on
+    // real mise 2026.10.17 `MISE_SAFE=1` drops every project `[env]`
+    // variable from `mise env --json[-extended] -C <dir>` and adds a
+    // `MISE_SAFE=1` line to the `mise doctor` report, so the old
+    // "resolves the same config, emits the same data" contract no
+    // longer holds — reads of Global mode and trusted or config-less
+    // directories run unguarded, exactly like the CLI itself runs them.
     // Streaming commands (mutations, `mise run`) must NOT set it: they
-    // are already gated by the trust check in the UI layer.
+    // are already gated by the trust check in the UI layer, and
+    // `run_mise_timed` excludes them structurally.
     if safe_mode {
         cmd.env("MISE_SAFE", "1");
     }
@@ -1335,12 +1365,19 @@ fn mise_drive_error(e: DriveError) -> AppError {
 /// `timeout`. This is the low-level entry point the streaming surface
 /// routes every call through; captured reads use `run_mise_capture`.
 ///
-/// `safe_mode` marks a read (issue #230), and with it the run takes
+/// `read_only` marks a read (issue #230), and with it the run takes
 /// `PipeMode::LinesAndCapture`: the transcript streams exactly like a
 /// mutation's, but the outcome's stdout comes from a raw capture to EOF
 /// so a payload past the per-line cap arrives whole (issue #292). A
 /// mutation keeps plain `Lines` — its stdout is a transcript, never
-/// parsed.
+/// parsed. The pipe mode follows the surface (read vs streaming), NOT
+/// the trust gate: a trusted directory's read still captures raw stdout
+/// even though it runs without `MISE_SAFE` (issue #293).
+///
+/// `MISE_SAFE` itself is the conjunction: only a read may run guarded
+/// at all (mutations evaluate the directory's config, issue #230), and
+/// only a request the command layer's trust gate marked unguarded
+/// stays guarded (`req.safe_mode`, issue #293).
 ///
 /// `run_id` links the run to the execution panel so `cancel_run` can
 /// stop its process tree; `None` is a run nobody can cancel (fixture
@@ -1355,13 +1392,14 @@ fn run_mise_timed<F>(
     mut on_event: F,
     timeout: Duration,
     run_id: Option<&str>,
-    safe_mode: bool,
+    read_only: bool,
 ) -> Result<RunOutcome, AppError>
 where
     F: FnMut(RunEvent) + Send + 'static,
 {
+    let safe_mode = read_only && req.safe_mode;
     let mut cmd = mise_command(mise_path, req, safe_mode)?;
-    let mode = if safe_mode {
+    let mode = if read_only {
         PipeMode::LinesAndCapture
     } else {
         PipeMode::Lines
@@ -1393,7 +1431,7 @@ fn run_mise_capture(
     req: &RunRequest,
     timeout: Duration,
 ) -> Result<RunOutcome, AppError> {
-    let mut cmd = mise_command(mise_path, req, true)?;
+    let mut cmd = mise_command(mise_path, req, req.safe_mode)?;
     let driven = drive_child(&mut cmd, timeout, None, PipeMode::Raw, &mut |_| {})
         .map_err(mise_drive_error)?;
     if driven.end == DriveEnd::TimedOut {
@@ -1429,10 +1467,10 @@ where
 }
 
 /// The ceiling for a panel run. One rule, one place: `run_mise_tracked`
-/// and `run_mise_tracked_read_only` differ *only* in the safe-mode and
-/// timeout pair, so pairing them here makes a read-only path keep
-/// `MISE_SAFE=1` and a read-sized deadline (audit P1-R1) impossible to
-/// get half-right.
+/// and `run_mise_tracked_read_only` differ *only* in the read-surface
+/// (pipe mode + trust gate) and timeout pair, so pairing them here makes
+/// a read-only path keep the read pipes and a read-sized deadline (audit
+/// P1-R1) impossible to get half-right.
 fn tracked_timeout(read_only: bool) -> Duration {
     if read_only {
         READ_TIMEOUT
@@ -1444,7 +1482,9 @@ fn tracked_timeout(read_only: bool) -> Duration {
 /// Streaming run that `cancel_run(run_id)` can stop (issue #223). The
 /// panel's cancel marks the run cancelled and then tears down its whole
 /// process group — `mise run`'s task shell included — instead of waiting
-/// out the 30-minute ceiling.
+/// out the 30-minute ceiling. Mutations and `mise run` always run
+/// unguarded (issue #230) — the streaming surface is excluded from
+/// `MISE_SAFE` structurally, whatever `req.safe_mode` carries.
 pub fn run_mise_tracked<F>(
     mise_path: &Path,
     req: &RunRequest,
@@ -1468,7 +1508,10 @@ where
 }
 
 /// A read dispatched through the panel, with the same read-only
-/// `MISE_SAFE=1` contract as `run_mise_json` (issue #276).
+/// contract as `run_mise_json` (issue #276): `MISE_SAFE=1` only when the
+/// request's trust gate says so (`req.safe_mode`, issue #293) — the
+/// command layer computes it from `mise trust --show`, never from the
+/// frontend's trust state.
 ///
 /// The panel is the single path for every mise invocation (ADR-0005), so
 /// the Tools and Settings table reads still stream through it — but they
@@ -1621,10 +1664,13 @@ pub struct MiseLsRemoteItem {
 ///
 /// Every read in the app funnels through here (`mise ls`, `env`, `config
 /// ls`, `tasks ls`, `plugins ls`, `outdated`, `doctor`, `registry`,
-/// `trust --show`, `tasks edit --path`, version detection), so this is
-/// the one place the read-only MISE_SAFE contract is enforced (issue
-/// #230), and the payload is read as raw bytes (issue #282):
-/// `ls-remote --json` is one line, not a transcript.
+/// `trust --show`, `tasks edit --path`, version detection), so the
+/// read-only `MISE_SAFE` guard is decided here (issues #230, #293): it
+/// rides the request (`req.safe_mode`) — the constructors default it to
+/// `true`, the #230 fail-safe, and the command layer clears it for
+/// Global mode and trusted or config-less directories
+/// ([`safe_mode_for_read`]). The payload is read as raw bytes (issue
+/// #282): `ls-remote --json` is one line, not a transcript.
 pub fn run_mise_json(mise_path: &Path, req: &RunRequest) -> Result<serde_json::Value, AppError> {
     run_mise_json_attempt(mise_path, req).0
 }
@@ -1708,12 +1754,21 @@ pub fn mise_ls_tool(
 /// `mise upgrade <tool>` reaches (ui-ux-rules, beta13 Q9). With
 /// `--bump` mise reports the newest published version regardless of
 /// the request, which the UI would advertise and then fail to install.
-pub fn mise_outdated(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json::Value, AppError> {
+///
+/// `safe_mode` is the command layer's trust-gate decision (issue #293,
+/// see [`safe_mode_for_read`]): `true` keeps the #230 `MISE_SAFE=1`
+/// guard, `false` runs the read unguarded.
+pub fn mise_outdated(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+    safe_mode: bool,
+) -> Result<serde_json::Value, AppError> {
     let args = vec!["outdated".to_string(), "--json".to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
-    };
+    }
+    .with_safe_mode(safe_mode);
     run_mise_json(mise_path, &req)
 }
 
@@ -1724,12 +1779,23 @@ pub fn mise_outdated(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json:
 /// tools. Like the tools commands, the runner accepts `cwd` so the
 /// result reflects the directory-scoped resolution (the project's
 /// `[env]` table is merged into the env map).
-pub fn mise_env(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json::Value, AppError> {
+///
+/// `safe_mode` is the command layer's trust-gate decision (issue #293,
+/// see [`safe_mode_for_read`]): `true` keeps the #230 `MISE_SAFE=1`
+/// guard, `false` runs the read unguarded. This is the read the gate
+/// exists for: guarded, current mise drops every project `[env]`
+/// variable.
+pub fn mise_env(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+    safe_mode: bool,
+) -> Result<serde_json::Value, AppError> {
     let args = vec!["env".to_string(), "--json".to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
-    };
+    }
+    .with_safe_mode(safe_mode);
     run_mise_json(mise_path, &req)
 }
 
@@ -1738,15 +1804,23 @@ pub fn mise_env(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json::Valu
 /// object mise emits (`{VAR: {value, source?, tool?}, ...}`). Used by
 /// the first-class Env page (#41) so each row can show where the var
 /// came from (config file path and/or contributing tool).
+///
+/// `safe_mode` is the command layer's trust-gate decision (issue #293,
+/// see [`safe_mode_for_read`]): `true` keeps the #230 `MISE_SAFE=1`
+/// guard, `false` runs the read unguarded. This is the read the gate
+/// exists for: guarded, current mise drops every project `[env]`
+/// variable.
 pub fn mise_env_extended(
     mise_path: &Path,
     cwd: Option<&Path>,
+    safe_mode: bool,
 ) -> Result<serde_json::Value, AppError> {
     let args = vec!["env".to_string(), "--json-extended".to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
-    };
+    }
+    .with_safe_mode(safe_mode);
     run_mise_json(mise_path, &req)
 }
 
@@ -1839,15 +1913,21 @@ fn read_config_file_content(path: &str) -> Option<String> {
 /// The file paths come from mise itself, never from the UI, so
 /// reading their content here is the same read-only surface
 /// `read_mise_lockfile` already exposes.
+///
+/// `safe_mode` is the command layer's trust-gate decision (issue #293,
+/// see [`safe_mode_for_read`]): `true` keeps the #230 `MISE_SAFE=1`
+/// guard, `false` runs the read unguarded.
 pub fn mise_config_files(
     mise_path: &Path,
     cwd: Option<&Path>,
+    safe_mode: bool,
 ) -> Result<Vec<ConfigFile>, AppError> {
     let args = vec!["config".to_string(), "ls".to_string(), "--json".to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
-    };
+    }
+    .with_safe_mode(safe_mode);
     let value = run_mise_json(mise_path, &req)?;
     let entries = value.as_array().ok_or_else(|| {
         AppError::parse_failed(
@@ -1981,12 +2061,21 @@ pub struct MiseTask {
 /// (`[MiseTask, ...]`); the typed `MiseTask` shape above documents
 /// the expected fields. The parser on the JS side walks the raw
 /// value and tolerates drift (see the rationale on `run_mise_json`).
-pub fn mise_tasks_ls(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json::Value, AppError> {
+///
+/// `safe_mode` is the command layer's trust-gate decision (issue #293,
+/// see [`safe_mode_for_read`]): `true` keeps the #230 `MISE_SAFE=1`
+/// guard, `false` runs the read unguarded.
+pub fn mise_tasks_ls(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+    safe_mode: bool,
+) -> Result<serde_json::Value, AppError> {
     let args = vec!["tasks".to_string(), "ls".to_string(), "--json".to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
-    };
+    }
+    .with_safe_mode(safe_mode);
     run_mise_json(mise_path, &req)
 }
 
@@ -2228,6 +2317,45 @@ fn trust_dir_applies(dir: &Path, cwd: &Path) -> bool {
     cwd.starts_with(&prefix)
 }
 
+/// The trust-gated safe-mode decision for one read (issue #293).
+///
+/// `MISE_SAFE=1` (issue #230) disables config hooks and plugin execution
+/// so a page view of an untrusted directory cannot run its code. On real
+/// mise 2026.10.17 the flag was measured to do more than that:
+/// `MISE_SAFE=1 mise env --json[-extended] -C <dir>` drops every project
+/// `[env]` variable, and `mise doctor` gains a `MISE_SAFE=1` line in the
+/// report it emits for bug reports — so guarding a trusted directory now
+/// costs real data. The decision mirrors `mise trust` semantics (the
+/// user trusting a config is precisely the user saying "this config may
+/// execute"):
+///
+///   * Global mode (`cwd: None`) — never guarded: the context is the
+///     user's own global config, which the CLI itself runs unguarded.
+///   * Untrusted directory — guarded: read-only-before-trust is the
+///     #230 semantics, partial `[env]` data included (without the guard
+///     an untrusted `mise env` fails outright on current mise).
+///   * Trusted or config-less directory — unguarded.
+///   * A probe that cannot answer — guarded (fail closed): an
+///     unanswerable trust state must not lift the guard.
+///
+/// `probe` is the trust mechanism, injected so the decision is
+/// unit-testable; production passes [`check_trust`] (`mise trust
+/// --show`, the same probe the trust banner uses). It is called at most
+/// once, and only for a directory context — Global mode costs no extra
+/// spawn.
+pub fn safe_mode_for_read(
+    cwd: Option<&Path>,
+    probe: impl FnOnce(&Path) -> Result<TrustStatus, AppError>,
+) -> bool {
+    let Some(dir) = cwd else {
+        return false;
+    };
+    match probe(dir) {
+        Ok(status) => status.source == TrustSource::ConfigUntrusted,
+        Err(_) => true,
+    }
+}
+
 /// `mise trust` — mark the active directory's `mise.toml` as
 /// trusted. Streams each line via `on_event` so the execution panel
 /// surfaces the trust attempt live. The caller is responsible for
@@ -2418,14 +2546,25 @@ fn doctor_text_payload(
 /// non-zero exit is a `COMMAND_FAILED` (issue #233), not a reason to
 /// try again (issues #230, #254). A timeout or a missing binary is
 /// propagated as-is, never retried.
-pub fn mise_doctor(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json::Value, AppError> {
+///
+/// `safe_mode` is the command layer's trust-gate decision (issue #293,
+/// see [`safe_mode_for_read`]): `true` keeps the #230 `MISE_SAFE=1`
+/// guard, `false` runs the read unguarded. Guarded, current mise adds a
+/// `MISE_SAFE=1` line to the report's environment list.
+pub fn mise_doctor(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+    safe_mode: bool,
+) -> Result<serde_json::Value, AppError> {
     let args = vec!["doctor".to_string(), "--json".to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
-    };
-    // Same read-only contract as `run_mise_json` (MISE_SAFE), but the
-    // exit code cannot short-circuit the parse — see the doc comment.
+    }
+    .with_safe_mode(safe_mode);
+    // Same read-only contract as `run_mise_json` (`MISE_SAFE` rides the
+    // request, issue #293), but the exit code cannot short-circuit the
+    // parse — see the doc comment.
     let outcome = run_mise_capture(mise_path, &req, READ_TIMEOUT)?;
     if let Ok(value) = serde_json::from_str::<serde_json::Value>(outcome.stdout.trim()) {
         return Ok(value);
@@ -2436,12 +2575,14 @@ pub fn mise_doctor(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json::V
 fn registry_table_fallback(
     mise_path: &Path,
     cwd: Option<&Path>,
+    safe_mode: bool,
 ) -> Result<serde_json::Value, AppError> {
     let args = vec!["registry".to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
-    };
+    }
+    .with_safe_mode(safe_mode);
     let outcome = run_mise_capture(mise_path, &req, READ_TIMEOUT)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
@@ -2480,12 +2621,21 @@ fn registry_fallback_applies(code: &str, exit_code: Option<i32>) -> bool {
 /// does not support `--json` (or the output is not valid JSON), the
 /// runner falls back to parsing the plain-text registry table into a
 /// JSON array.
-pub fn mise_registry(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json::Value, AppError> {
+///
+/// `safe_mode` is the command layer's trust-gate decision (issue #293,
+/// see [`safe_mode_for_read`]): `true` keeps the #230 `MISE_SAFE=1`
+/// guard, `false` runs the read unguarded.
+pub fn mise_registry(
+    mise_path: &Path,
+    cwd: Option<&Path>,
+    safe_mode: bool,
+) -> Result<serde_json::Value, AppError> {
     let args = vec!["registry".to_string(), "--json".to_string()];
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
-    };
+    }
+    .with_safe_mode(safe_mode);
     let (attempt, exit_code) = run_mise_json_attempt(mise_path, &req);
     match attempt {
         Ok(v) => Ok(v),
@@ -2494,7 +2644,7 @@ pub fn mise_registry(mise_path: &Path, cwd: Option<&Path>) -> Result<serde_json:
         // unparseable output", never a genuine failure, a timeout or a
         // missing binary.
         Err(e) if registry_fallback_applies(&e.code, exit_code) => {
-            registry_table_fallback(mise_path, cwd)
+            registry_table_fallback(mise_path, cwd, safe_mode)
         }
         Err(e) => Err(e),
     }
@@ -2556,9 +2706,14 @@ fn parse_plugin_row(line: &str) -> Option<MisePluginRow> {
 /// docs/agents/architecture.md), so the runner parses the plain-text
 /// table behind the boundary. Names, URLs, refs, and hashes are
 /// shipped verbatim; original case is preserved.
+///
+/// `safe_mode` is the command layer's trust-gate decision (issue #293,
+/// see [`safe_mode_for_read`]): `true` keeps the #230 `MISE_SAFE=1`
+/// guard, `false` runs the read unguarded.
 pub fn mise_plugins_ls(
     mise_path: &Path,
     cwd: Option<&Path>,
+    safe_mode: bool,
 ) -> Result<serde_json::Value, AppError> {
     let args = vec![
         "plugins".to_string(),
@@ -2568,7 +2723,8 @@ pub fn mise_plugins_ls(
     let req = match cwd {
         Some(c) => RunRequest::with_cwd(args, c),
         None => RunRequest::new(args),
-    };
+    }
+    .with_safe_mode(safe_mode);
     let outcome = run_mise_capture(mise_path, &req, READ_TIMEOUT)?;
     if outcome.exit_code != 0 {
         return Err(AppError::command_failed(
@@ -2808,11 +2964,13 @@ pub fn mise_tasks_add_argv(
 }
 
 /// Read `mise version --json` over the read path: `DETECT_TIMEOUT`
-/// (10 s, not the 30-minute streaming ceiling) and `MISE_SAFE=1`, like
-/// every other read (issue #254). Returns the raw payload and the
-/// `version` string it carries. Used by the startup probe and by the
-/// post-self-update version read in `install.rs`, so the two can never
-/// disagree on which contract a version read follows.
+/// (10 s, not the 30-minute streaming ceiling) and `MISE_SAFE=1` — the
+/// runner's fail-safe read default (issue #230), which stays on here:
+/// the probe has no directory context, so the #293 trust gate does not
+/// apply. Returns the raw payload and the `version` string it carries.
+/// Used by the startup probe and by the post-self-update version read
+/// in `install.rs`, so the two can never disagree on which contract a
+/// version read follows.
 pub fn mise_version(mise_path: &Path) -> Result<(serde_json::Value, String), AppError> {
     let req = RunRequest::new(vec!["version".to_string(), "--json".to_string()]);
     let outcome = run_mise_capture(mise_path, &req, DETECT_TIMEOUT)?;
@@ -3464,5 +3622,60 @@ mod tests {
         std::fs::remove_file(&file).unwrap();
         assert_eq!(read_config_file_content(&path), None);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    // ---------- trust-gated safe mode (issue #293) ----------
+    //
+    // The decision is pure with the trust probe injected, so the gate is
+    // pinned here without spawning mise. Production wires `check_trust`
+    // in as the probe (`read_safe_mode` in lib.rs); the runner half of
+    // the contract — a gated-off request runs without `MISE_SAFE` — is
+    // pinned in tests/runner.rs against the fixture's env log.
+
+    #[test]
+    fn safe_mode_for_read_never_guards_global_mode() {
+        let probed = std::cell::Cell::new(false);
+        let guarded = safe_mode_for_read(None, |_| {
+            probed.set(true);
+            Ok(TrustStatus {
+                source: TrustSource::ConfigUntrusted,
+                path: "/tmp/mise-293".to_string(),
+            })
+        });
+        assert!(
+            !guarded,
+            "Global mode is the user's own global config: the CLI runs it unguarded"
+        );
+        assert!(!probed.get(), "Global mode must not spend a trust probe");
+    }
+
+    #[test]
+    fn safe_mode_for_read_guards_only_untrusted_directories() {
+        let cwd = Path::new("/tmp/mise-293");
+        let cases = [
+            (TrustSource::ConfigTrusted, false),
+            (TrustSource::ConfigUntrusted, true),
+            (TrustSource::NoConfig, false),
+        ];
+        for (source, expected) in cases {
+            let guarded = safe_mode_for_read(Some(cwd), |_| {
+                Ok(TrustStatus {
+                    source: source.clone(),
+                    path: cwd.display().to_string(),
+                })
+            });
+            assert_eq!(guarded, expected, "source = {source:?}");
+        }
+    }
+
+    #[test]
+    fn safe_mode_for_read_fails_closed_on_probe_error() {
+        let guarded = safe_mode_for_read(Some(Path::new("/tmp/mise-293")), |_| {
+            Err(AppError::not_found())
+        });
+        assert!(
+            guarded,
+            "an unanswerable trust probe must keep the #230 guard"
+        );
     }
 }

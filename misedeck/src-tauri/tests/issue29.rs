@@ -166,7 +166,7 @@ fn settings_ls_garbage_stdout_returns_parse_failed() {
 fn doctor_returns_json_payload() {
     let script = fixture_script();
     with_slug("doctor---json", || {
-        let v = mise_doctor(&script, None).expect("doctor --json should yield Ok");
+        let v = mise_doctor(&script, None, true).expect("doctor --json should yield Ok");
         assert_eq!(v["version"], "2026.8.14 macos-arm64 (2026-08-26)");
         assert_eq!(v["activated"], true);
         let toolset = v["toolset"].as_object().expect("toolset object");
@@ -190,7 +190,7 @@ fn doctor_parses_a_nonzero_exit_as_the_structured_report() {
         std::env::set_var("FIXTURE_MISE_SLUG", "doctor---json-errors");
         std::env::set_var("FIXTURE_MISE_CALL_LOG", &log);
     }
-    let result = mise_doctor(&script, None);
+    let result = mise_doctor(&script, None, true);
     unsafe {
         std::env::remove_var("FIXTURE_MISE_SLUG");
         std::env::remove_var("FIXTURE_MISE_CALL_LOG");
@@ -221,7 +221,7 @@ fn doctor_parses_a_nonzero_exit_as_the_structured_report() {
 fn doctor_falls_back_to_raw_text_lines() {
     let script = fixture_script();
     with_slug("doctor---json-parse-failed", || {
-        let v = mise_doctor(&script, None).expect("doctor fallback should yield Ok");
+        let v = mise_doctor(&script, None, true).expect("doctor fallback should yield Ok");
         let lines = v["rawLines"].as_array().expect("rawLines array");
         assert_eq!(lines.len(), 3);
         assert_eq!(lines[0]["status"], "ok");
@@ -252,7 +252,7 @@ fn doctor_fallback_with_no_output_fails_instead_of_faking_health() {
         std::env::set_var("FIXTURE_MISE_SLUG", "doctor-fail");
         std::env::set_var("FIXTURE_MISE_CALL_LOG", &log);
     }
-    let result = mise_doctor(&script, None);
+    let result = mise_doctor(&script, None, true);
     unsafe {
         std::env::remove_var("FIXTURE_MISE_SLUG");
         std::env::remove_var("FIXTURE_MISE_CALL_LOG");
@@ -284,7 +284,7 @@ fn doctor_fallback_keeps_output_lines_on_a_nonzero_exit() {
     // conventions cannot silently drop failing-check reports.
     let script = fixture_script();
     with_slug("doctor-fail-with-lines", || {
-        let v = mise_doctor(&script, None).expect("lines on a non-zero exit stay Ok");
+        let v = mise_doctor(&script, None, true).expect("lines on a non-zero exit stay Ok");
         let lines = v["rawLines"].as_array().expect("rawLines array");
         assert_eq!(lines.len(), 3);
         assert_eq!(lines[2]["status"], "error");
@@ -299,7 +299,7 @@ fn doctor_fallback_keeps_output_lines_on_a_nonzero_exit() {
 fn registry_returns_json_array() {
     let script = fixture_script();
     with_slug("registry---json", || {
-        let v = mise_registry(&script, None).expect("registry --json should yield Ok");
+        let v = mise_registry(&script, None, true).expect("registry --json should yield Ok");
         let arr = v.as_array().expect("registry payload must be an array");
         assert_eq!(arr.len(), 2);
         assert_eq!(arr[0]["short"], "node");
@@ -315,7 +315,7 @@ fn registry_returns_json_array() {
 fn registry_falls_back_to_table_parsing() {
     let script = fixture_script();
     with_slug("registry---json-parse-failed", || {
-        let v = mise_registry(&script, None).expect("registry fallback should yield Ok");
+        let v = mise_registry(&script, None, true).expect("registry fallback should yield Ok");
         let arr = v.as_array().expect("fallback payload must be an array");
         assert_eq!(arr.len(), 2);
         assert_eq!(arr[0]["short"], "node");
@@ -347,7 +347,7 @@ fn registry_does_not_retry_a_real_failure() {
         std::env::set_var("FIXTURE_MISE_SLUG", "registry---json-command-failed");
         std::env::set_var("FIXTURE_MISE_CALL_LOG", &log);
     }
-    let result = mise_registry(&script, None);
+    let result = mise_registry(&script, None, true);
     unsafe {
         std::env::remove_var("FIXTURE_MISE_SLUG");
         std::env::remove_var("FIXTURE_MISE_CALL_LOG");
@@ -390,7 +390,7 @@ fn plugins_ls_parses_all_four_columns() {
     // than absorb a following column (issue #259).
     let script = fixture_script();
     with_slug("plugins---ls---urls", || {
-        let v = mise_plugins_ls(&script, None).expect("plugins ls should yield Ok");
+        let v = mise_plugins_ls(&script, None, true).expect("plugins ls should yield Ok");
         let arr = v.as_array().expect("plugins payload must be an array");
         assert_eq!(arr.len(), 3);
 
@@ -421,7 +421,7 @@ fn plugins_ls_parses_all_four_columns() {
 fn plugins_ls_command_failed_keeps_stderr() {
     let script = fixture_script();
     with_slug("plugins---ls---urls-command-failed", || {
-        let err = mise_plugins_ls(&script, None).expect_err("non-zero exit should yield Err");
+        let err = mise_plugins_ls(&script, None, true).expect_err("non-zero exit should yield Err");
         assert_eq!(err.code, code::COMMAND_FAILED);
         assert!(err.stderr.contains("plugin manager exploded"));
     });

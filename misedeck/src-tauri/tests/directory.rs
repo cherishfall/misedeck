@@ -41,7 +41,7 @@ fn with_slug<F: FnOnce()>(slug: &str, f: F) {
 fn tools_env_returns_flat_map() {
     let script = fixture_script();
     with_slug("env---json", || {
-        let v = mise_env(&script, None).expect("env --json should yield Ok");
+        let v = mise_env(&script, None, true).expect("env --json should yield Ok");
         let obj = v.as_object().expect("env payload must be a JSON object");
         // The recorded fixture has the well-known env vars below.
         assert_eq!(
@@ -72,7 +72,7 @@ fn tools_env_returns_flat_map() {
 fn tools_env_command_failed_keeps_stderr() {
     let script = fixture_script();
     with_slug("env---json-command-failed", || {
-        let err = mise_env(&script, None).expect_err("non-zero exit should yield Err");
+        let err = mise_env(&script, None, true).expect_err("non-zero exit should yield Err");
         assert_eq!(err.code, code::COMMAND_FAILED);
         assert!(
             err.stderr.contains("ERROR"),
@@ -87,7 +87,7 @@ fn tools_env_command_failed_keeps_stderr() {
 fn tools_env_garbage_stdout_returns_parse_failed() {
     let script = fixture_script();
     with_slug("env---json-parse-failed", || {
-        let err = mise_env(&script, None).expect_err("non-JSON stdout should yield Err");
+        let err = mise_env(&script, None, true).expect_err("non-JSON stdout should yield Err");
         assert_eq!(err.code, code::PARSE_FAILED);
     });
 }
@@ -100,7 +100,7 @@ fn tools_env_passes_cwd_via_dash_c() {
     // does not reject cwd and that the JSON parses.
     let script = fixture_script();
     with_slug("env---json", || {
-        let v = mise_env(&script, Some(std::path::Path::new("/tmp/some-cwd")))
+        let v = mise_env(&script, Some(std::path::Path::new("/tmp/some-cwd")), true)
             .expect("env --json with cwd should yield Ok");
         let obj = v.as_object().expect("env payload must be a JSON object");
         assert!(obj.contains_key("JAVA_HOME"));
@@ -114,7 +114,8 @@ fn tools_env_passes_cwd_via_dash_c() {
 fn mise_env_extended_returns_source_annotations() {
     let script = fixture_script();
     with_slug("env---json-extended", || {
-        let v = mise_env_extended(&script, None).expect("env --json-extended should yield Ok");
+        let v =
+            mise_env_extended(&script, None, true).expect("env --json-extended should yield Ok");
         let obj = v
             .as_object()
             .expect("extended env payload must be a JSON object");
@@ -144,7 +145,8 @@ fn mise_env_extended_returns_source_annotations() {
 fn mise_env_extended_command_failed_keeps_stderr() {
     let script = fixture_script();
     with_slug("env---json-extended-command-failed", || {
-        let err = mise_env_extended(&script, None).expect_err("non-zero exit should yield Err");
+        let err =
+            mise_env_extended(&script, None, true).expect_err("non-zero exit should yield Err");
         assert_eq!(err.code, code::COMMAND_FAILED);
         assert!(
             err.stderr.contains("ERROR"),
@@ -159,7 +161,8 @@ fn mise_env_extended_command_failed_keeps_stderr() {
 fn mise_env_extended_garbage_stdout_returns_parse_failed() {
     let script = fixture_script();
     with_slug("env---json-extended-parse-failed", || {
-        let err = mise_env_extended(&script, None).expect_err("non-JSON stdout should yield Err");
+        let err =
+            mise_env_extended(&script, None, true).expect_err("non-JSON stdout should yield Err");
         assert_eq!(err.code, code::PARSE_FAILED);
     });
 }
@@ -169,7 +172,7 @@ fn mise_env_extended_garbage_stdout_returns_parse_failed() {
 fn mise_env_extended_passes_cwd_via_dash_c() {
     let script = fixture_script();
     with_slug("env---json-extended", || {
-        let v = mise_env_extended(&script, Some(std::path::Path::new("/tmp/some-cwd")))
+        let v = mise_env_extended(&script, Some(std::path::Path::new("/tmp/some-cwd")), true)
             .expect("env --json-extended with cwd should yield Ok");
         let obj = v
             .as_object()

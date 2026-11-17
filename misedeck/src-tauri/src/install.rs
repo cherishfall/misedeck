@@ -213,8 +213,10 @@ pub fn mise_self_update_argv() -> Vec<String> {
 
 /// Run `mise self-update` via the existing runner, streaming the same
 /// `RunEvent` line the panel already knows. On success, re-reads
-/// `mise version --json` on the read path (`MISE_SAFE=1`, 10 s ceiling)
-/// to capture the post-update version string.
+/// `mise version --json` on the read path (10 s ceiling, `MISE_SAFE=1` —
+/// the runner's fail-safe read default; the probe has no directory
+/// context, so the #293 trust gate does not apply) to capture the
+/// post-update version string.
 ///
 /// `run_id` makes the update cancellable and part of the app-exit
 /// cleanup (issue #223); the post-update probe is short and runs
@@ -239,9 +241,10 @@ where
 
     // Best-effort post-update probe. Failure here is non-fatal — the
     // self-update succeeded, we just couldn't read the new version.
-    // A version read follows the read contract (10 s + MISE_SAFE), not
-    // the streaming one: a hung probe must not extend a successful
-    // self-update by 30 minutes (issue #254).
+    // A version read follows the read ceiling (10 s) and the runner's
+    // fail-safe `MISE_SAFE` default, not the streaming one: a hung probe
+    // must not extend a successful self-update by 30 minutes (issue
+    // #254).
     let new_version = mise_version(mise_path).ok().map(|(_, version)| version);
 
     // If we got a date back, check it still meets the floor. The

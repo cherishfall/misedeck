@@ -33,7 +33,7 @@ fn with_slug<F: FnOnce()>(slug: &str, f: F) {
 fn config_files_preserve_mise_precedence_order() {
     let script = fixture_script();
     with_slug("config-ls---json", || {
-        let files = misedeck_lib::mise::mise_config_files(&script, None)
+        let files = misedeck_lib::mise::mise_config_files(&script, None, true)
             .expect("config ls --json fixture should yield Ok");
         // mise emits the array highest-precedence-first; the runner
         // must preserve that order verbatim.
@@ -69,7 +69,7 @@ fn config_files_default_override_to_false_when_mise_omits_it() {
     // not fail the section — it reads as an ordinary config file.
     let script = fixture_script();
     with_slug("config-ls---json-no-override", || {
-        let files = misedeck_lib::mise::mise_config_files(&script, None)
+        let files = misedeck_lib::mise::mise_config_files(&script, None, true)
             .expect("a payload without `override` stays parseable");
         assert_eq!(files.len(), 1, "files = {files:?}");
         assert!(!files[0].r#override);

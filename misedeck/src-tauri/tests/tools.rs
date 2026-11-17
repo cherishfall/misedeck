@@ -142,7 +142,7 @@ fn tools_outdated_reports_only_in_range_targets() {
     // `latest` equals `current`.
     let script = fixture_script();
     with_slug("outdated---json", || {
-        let v = mise_outdated(&script, None).expect("outdated --json should yield Ok");
+        let v = mise_outdated(&script, None, true).expect("outdated --json should yield Ok");
         let obj = v
             .as_object()
             .expect("outdated payload must be a JSON object");
@@ -163,7 +163,7 @@ fn tools_outdated_reports_only_in_range_targets() {
 fn tools_outdated_empty_returns_empty_object() {
     let script = fixture_script();
     with_slug("outdated---json-empty", || {
-        let v = mise_outdated(&script, None).expect("empty outdated should yield Ok");
+        let v = mise_outdated(&script, None, true).expect("empty outdated should yield Ok");
         let obj = v
             .as_object()
             .expect("outdated payload must be a JSON object");
@@ -176,7 +176,7 @@ fn tools_outdated_empty_returns_empty_object() {
 fn tools_outdated_command_failed_keeps_stderr() {
     let script = fixture_script();
     with_slug("outdated---json-command-failed", || {
-        let err = mise_outdated(&script, None).expect_err("non-zero exit should yield Err");
+        let err = mise_outdated(&script, None, true).expect_err("non-zero exit should yield Err");
         assert_eq!(err.code, code::COMMAND_FAILED);
         assert!(err.stderr.contains("ERROR"));
     });

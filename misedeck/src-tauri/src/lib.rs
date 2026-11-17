@@ -257,12 +257,24 @@ async fn run_mise_command(
         Err(err) => return RunCommandResult::Err { err },
     };
 
-    let req = RunRequest { cwd, args };
     let run_id = run_id.filter(|id| !id.is_empty());
     // Explicit opt-in, never inferred from argv (issue #276): the caller
     // knows whether it dispatched a read view or a mutation. Only the
-    // read path gets the `MISE_SAFE=1` contract.
+    // read path gets the `MISE_SAFE` guard — and since #293 only when
+    // the trust gate says the directory is untrusted. The decision is
+    // computed in Rust (`read_safe_mode`, from `mise trust --show`),
+    // never taken from the frontend's trust state.
     let read_only = read_only == Some(true);
+
+    // The request template. The trust gate needs the resolved binary
+    // path, so on the read path it is applied per attempt inside the
+    // closure below (issue #293); a mutation keeps the flag off — the
+    // streaming surface never runs guarded (issue #230).
+    let template = RunRequest {
+        cwd,
+        args,
+        safe_mode: false,
+    };
 
     // Run the (process-spawning) work off the main thread so the
     // window chrome stays responsive while the process runs.
@@ -278,9 +290,11 @@ async fn run_mise_command(
                 let _ = channel.send(evt);
             };
             if read_only {
+                let mut req = template.clone();
+                req.safe_mode = read_safe_mode(path, req.cwd.as_deref());
                 run_mise_tracked_read_only(path, &req, run_id.as_deref(), emit)
             } else {
-                run_mise_tracked(path, &req, run_id.as_deref(), emit)
+                run_mise_tracked(path, &template, run_id.as_deref(), emit)
             }
         })
     })
@@ -489,6 +503,28 @@ fn run_with_reprobe<T>(
     }
 }
 
+/// The trust gate for one directory-context read (issue #293).
+///
+/// Computes `MISE_SAFE` in Rust from `mise trust --show` — the same
+/// probe `trust_check` (the trust banner) uses — and never from the
+/// frontend's trust state, which is a UI cache, not a security
+/// decision. Global mode and trusted or config-less directories run
+/// unguarded, exactly like the CLI runs them; guarding trusted
+/// directories measurably corrupts reads on current mise (`MISE_SAFE=1`
+/// drops every project `[env]` variable from `mise env --json[-extended]`
+/// and adds a `MISE_SAFE=1` line to the `mise doctor` report, measured
+/// on mise 2026.10.17). An untrusted directory — or a probe that cannot
+/// answer, fail closed — keeps the #230 guard: there, partial `[env]`
+/// data is the read-only-before-trust semantics.
+///
+/// The probe is one extra `mise trust --show` spawn per directory-mode
+/// read. Trust is deliberately not cached here: the backend holds no
+/// trust cache to invalidate, so a directory the user (or their CLI)
+/// trusts mid-session is seen unguarded by the very next read.
+fn read_safe_mode(mise_path: &Path, cwd: Option<&Path>) -> bool {
+    mise::safe_mode_for_read(cwd, |dir| check_trust(mise_path, Some(dir)))
+}
+
 /// Probe whether an IPC-supplied path is an existing directory
 /// (issue #214). Directory availability is a filesystem fact, not a
 /// mise question, so this never spawns mise and never depends on the
@@ -589,7 +625,7 @@ async fn tools_outdated(cwd: Option<String>) -> JsonResult {
     };
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        run_with_mise_binary(|path| mise_outdated(path, cwd))
+        run_with_mise_binary(|path| mise_outdated(path, cwd, read_safe_mode(path, cwd)))
     })
     .await
     {
@@ -614,7 +650,7 @@ async fn tools_env(cwd: Option<String>) -> JsonResult {
     };
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        run_with_mise_binary(|path| mise_env(path, cwd))
+        run_with_mise_binary(|path| mise_env(path, cwd, read_safe_mode(path, cwd)))
     })
     .await
     {
@@ -638,7 +674,7 @@ async fn env_ls(cwd: Option<String>) -> JsonResult {
     };
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        run_with_mise_binary(|path| mise_env_extended(path, cwd))
+        run_with_mise_binary(|path| mise_env_extended(path, cwd, read_safe_mode(path, cwd)))
     })
     .await
     {
@@ -682,7 +718,7 @@ async fn config_files(cwd: Option<String>) -> ConfigFilesResult {
     };
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        run_with_mise_binary(|path| mise_config_files(path, cwd))
+        run_with_mise_binary(|path| mise_config_files(path, cwd, read_safe_mode(path, cwd)))
     })
     .await
     {
@@ -772,7 +808,7 @@ async fn tasks_ls(cwd: Option<String>) -> JsonResult {
     };
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        run_with_mise_binary(|path| mise_tasks_ls(path, cwd))
+        run_with_mise_binary(|path| mise_tasks_ls(path, cwd, read_safe_mode(path, cwd)))
     })
     .await
     {
@@ -798,7 +834,7 @@ async fn doctor(cwd: Option<String>) -> JsonResult {
     };
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        run_with_mise_binary(|path| mise_doctor(path, cwd))
+        run_with_mise_binary(|path| mise_doctor(path, cwd, read_safe_mode(path, cwd)))
     })
     .await
     {
@@ -822,7 +858,7 @@ async fn registry(cwd: Option<String>) -> JsonResult {
     };
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        run_with_mise_binary(|path| mise_registry(path, cwd))
+        run_with_mise_binary(|path| mise_registry(path, cwd, read_safe_mode(path, cwd)))
     })
     .await
     {
@@ -847,7 +883,7 @@ async fn plugins_ls(cwd: Option<String>) -> JsonResult {
     };
     match spawn_run(move || {
         let cwd = cwd_owned.as_deref();
-        run_with_mise_binary(|path| mise_plugins_ls(path, cwd))
+        run_with_mise_binary(|path| mise_plugins_ls(path, cwd, read_safe_mode(path, cwd)))
     })
     .await
     {

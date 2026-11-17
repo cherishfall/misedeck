@@ -237,6 +237,7 @@ fn tasks_ls_returns_array_with_three_tasks() {
         let v = mise_tasks_ls(
             &script,
             Some(std::path::Path::new("/Users/example/project")),
+            true,
         )
         .expect("tasks ls --json should yield Ok");
         let arr = v.as_array().expect("tasks ls payload must be a JSON array");
@@ -256,7 +257,7 @@ fn tasks_ls_returns_array_with_three_tasks() {
 fn tasks_ls_command_failed_keeps_stderr() {
     let script = fixture_script();
     with_slug("tasks---ls---json-command-failed", || {
-        let err = mise_tasks_ls(&script, Some(std::path::Path::new("/tmp/no-config")))
+        let err = mise_tasks_ls(&script, Some(std::path::Path::new("/tmp/no-config")), true)
             .expect_err("non-zero exit should yield Err");
         assert_eq!(err.code, code::COMMAND_FAILED);
         assert!(
@@ -272,7 +273,7 @@ fn tasks_ls_command_failed_keeps_stderr() {
 fn tasks_ls_garbage_stdout_returns_parse_failed() {
     let script = fixture_script();
     with_slug("tasks---ls---json-parse-failed", || {
-        let err = mise_tasks_ls(&script, Some(std::path::Path::new("/tmp/somewhere")))
+        let err = mise_tasks_ls(&script, Some(std::path::Path::new("/tmp/somewhere")), true)
             .expect_err("non-JSON stdout should yield Err");
         assert_eq!(err.code, code::PARSE_FAILED);
     });
@@ -281,7 +282,7 @@ fn tasks_ls_garbage_stdout_returns_parse_failed() {
 #[test]
 fn tasks_ls_returns_not_found_when_mise_missing() {
     let bogus = PathBuf::from("/this/path/does/not/exist/mise-xyz");
-    let err = mise_tasks_ls(&bogus, Some(std::path::Path::new("/tmp")))
+    let err = mise_tasks_ls(&bogus, Some(std::path::Path::new("/tmp")), true)
         .expect_err("missing binary should yield Err");
     assert_eq!(err.code, code::MISE_NOT_FOUND);
 }
