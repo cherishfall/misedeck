@@ -82,6 +82,14 @@ pub struct AppError {
     pub code: String,
     pub message: String,
     pub stderr: String,
+    /// Rust-side only (never serialized — the wire shape above is
+    /// frozen): set when the failure *is* the aggregate-cap truncation of
+    /// a captured run (issue #301). The registry fallback reads it to
+    /// refuse retrying a payload that was cut off — the run worked, its
+    /// output was merely too large to keep, so this is the answer rather
+    /// than a reason for a second read. Everything else is `false`.
+    #[serde(skip)]
+    pub cap_truncated: bool,
 }
 
 impl AppError {
@@ -90,6 +98,7 @@ impl AppError {
             code: code.to_string(),
             message: message.into(),
             stderr: stderr.into(),
+            cap_truncated: false,
         }
     }
 
@@ -111,6 +120,13 @@ impl AppError {
 
     pub fn parse_failed(message: impl Into<String>, stderr: impl Into<String>) -> Self {
         Self::new(code::PARSE_FAILED, message, stderr)
+    }
+
+    /// Marks this error as the aggregate-cap truncation of a captured
+    /// run (issue #301). See [`AppError::cap_truncated`].
+    fn with_cap_truncated(mut self) -> Self {
+        self.cap_truncated = true;
+        self
     }
 
     pub fn timeout() -> Self {
@@ -1424,7 +1440,10 @@ where
 ///
 /// The only bound is the aggregate `MAX_STREAM_BYTES`, and a payload
 /// that exceeds it is an explicit `PARSE_FAILED` instead of a silent
-/// prefix. A captured run carries no run id, so `cancel_run` has nothing
+/// prefix. That error is flagged with [`AppError::cap_truncated`] so a
+/// caller that might retry (the registry fallback, issue #301) can tell
+/// "the answer was too large to keep" from "the answer was unparsable".
+/// A captured run carries no run id, so `cancel_run` has nothing
 /// to tear down (a read that needs cancel streams through the panel).
 fn run_mise_capture(
     mise_path: &Path,
@@ -1443,7 +1462,8 @@ fn run_mise_capture(
         return Err(AppError::parse_failed(
             format!("mise output exceeded the {MAX_STREAM_BYTES}-byte capture cap"),
             driven.stderr,
-        ));
+        )
+        .with_cap_truncated());
     }
     Ok(driven.into_run_outcome())
 }
@@ -2611,10 +2631,17 @@ fn registry_table_fallback(
 /// exits 0 with something that is not JSON. Any other failure is the
 /// answer: retrying it would add a second `READ_TIMEOUT` wait and, when
 /// the retry fails too, overwrite the original stderr with the
-/// fallback's own (issue #289). Timeouts and a missing binary never
-/// retry, matching every other read helper.
-fn registry_fallback_applies(code: &str, exit_code: Option<i32>) -> bool {
-    code == code::PARSE_FAILED || (code == code::COMMAND_FAILED && exit_code == Some(2))
+/// fallback's own (issue #289). A payload the aggregate cap cut off is
+/// the answer too, not a retry trigger (issue #301): the run worked, its
+/// output was merely too large to keep, and `cap_truncated` flags that
+/// `PARSE_FAILED` so it never reads as "this mise has no `--json`".
+/// Timeouts and a missing binary never retry, matching every other read
+/// helper.
+fn registry_fallback_applies(err: &AppError, exit_code: Option<i32>) -> bool {
+    if err.cap_truncated {
+        return false;
+    }
+    err.code == code::PARSE_FAILED || (err.code == code::COMMAND_FAILED && exit_code == Some(2))
 }
 
 /// `mise registry --json` for the active context. If the mise binary
@@ -2643,7 +2670,7 @@ pub fn mise_registry(
         // table fallback covers "this mise has no `--json` / emitted
         // unparseable output", never a genuine failure, a timeout or a
         // missing binary.
-        Err(e) if registry_fallback_applies(&e.code, exit_code) => {
+        Err(e) if registry_fallback_applies(&e, exit_code) => {
             registry_table_fallback(mise_path, cwd, safe_mode)
         }
         Err(e) => Err(e),
@@ -3253,15 +3280,38 @@ mod tests {
     /// reason for a second 120 s read that overwrites its stderr.
     #[test]
     fn registry_fallback_applies_only_to_usage_and_parse_failures() {
-        assert!(registry_fallback_applies(code::PARSE_FAILED, Some(0)));
+        assert!(registry_fallback_applies(
+            &AppError::parse_failed("bad json", ""),
+            Some(0)
+        ));
         assert!(
-            registry_fallback_applies(code::COMMAND_FAILED, Some(2)),
+            registry_fallback_applies(&AppError::command_failed("usage", ""), Some(2)),
             "clap exits 2 for an unknown flag: this mise has no `--json`"
         );
-        assert!(!registry_fallback_applies(code::COMMAND_FAILED, Some(1)));
-        assert!(!registry_fallback_applies(code::COMMAND_FAILED, None));
-        assert!(!registry_fallback_applies(code::TIMEOUT, None));
-        assert!(!registry_fallback_applies(code::MISE_NOT_FOUND, None));
+        assert!(!registry_fallback_applies(
+            &AppError::command_failed("boom", ""),
+            Some(1)
+        ));
+        assert!(!registry_fallback_applies(
+            &AppError::command_failed("boom", ""),
+            None
+        ));
+        assert!(!registry_fallback_applies(&AppError::timeout(), None));
+        assert!(!registry_fallback_applies(&AppError::not_found(), None));
+    }
+
+    /// Issue #301: a payload the aggregate cap cut off is not evidence
+    /// that this mise lacks `--json` — the plain-text retry must not run
+    /// for it, whatever exit code the truncated run reported.
+    #[test]
+    fn registry_fallback_never_retries_a_cap_truncated_payload() {
+        let truncated = AppError::parse_failed(
+            format!("mise output exceeded the {MAX_STREAM_BYTES}-byte capture cap"),
+            "",
+        )
+        .with_cap_truncated();
+        assert!(!registry_fallback_applies(&truncated, None));
+        assert!(!registry_fallback_applies(&truncated, Some(0)));
     }
 
     #[test]
