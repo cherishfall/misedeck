@@ -338,9 +338,25 @@ host triple, so the two keep separate entries without a `shared-key`.
 2. Identify the failing leg (`build (windows-latest)`,
    `build (ubuntu-22.04)`, etc.) and the failing step.
 3. If it's a system-dependency error on Linux, the apt package list
-   in this doc is the source of truth — update both the release and
-   ci workflows to keep them in sync, and bump the package list per
-   the [Tauri 2 Linux prerequisites](https://v2.tauri.app/start/prerequisites/#linux).
+   embedded below is the source of truth — both workflows copy it
+   verbatim; update `release.yml` and `ci.yml` together, and bump the
+   package list per the
+   [Tauri 2 Linux prerequisites](https://v2.tauri.app/start/prerequisites/#linux).
+
+   The canonical list (identical in `release.yml` and `ci.yml`):
+
+   ```text
+   libwebkit2gtk-4.1-dev
+   build-essential
+   curl
+   wget
+   file
+   libxdo-dev
+   libssl-dev
+   libayatana-appindicator3-dev
+   librsvg2-dev
+   libsoup-3.0-dev
+   ```
 4. If it's a Tauri or Rust error, reproduce locally with the same
    toolchain (Node 22, Rust stable) and `npm run tauri build`.
 5. File or link the issue in the closing comment of the ticket you

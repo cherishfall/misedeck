@@ -121,7 +121,7 @@ Extra prerequisites on top of Rust stable + Node 22: macOS needs the Xcode Comma
 npm run tauri build
 ```
 
-Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on macOS, `nsis/` on Windows, `deb/`, `rpm/`, `appimage/` on Linux. macOS builds come out unsigned, exactly like the released ones.
+Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on macOS, `nsis/` on Windows (and `msi/` from a bare targets `"all"` build), `deb/`, `rpm/`, `appimage/` on Linux. macOS builds come out unsigned, exactly like the released ones.
 
 `npm run ci` is the full frontend gate — CI's Windows job runs it verbatim. Its 20 steps, in order: `typecheck`, `lint:eslint` (React Hooks rules), `test`, sixteen lint guards (i18n parity and concatenation, CSS tokens/type/spacing/tracking, ellipsis, command hints, install-echo parity, tool-argv parity, modal focus, nested interactives, page layout, invoke wrapper, CSP inline, default-run), and `build`. The Rust checks are separate: `cargo check --all-targets --features fixtures`, `cargo clippy --all-targets --features fixtures -- -D warnings` and `cargo test --all-targets --features fixtures` on Ubuntu, and `cargo test --all-targets --features fixtures` plus a `cargo build` compile smoke on Windows — the same suite on both, not a Windows-only subset.
 

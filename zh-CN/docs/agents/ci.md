@@ -285,10 +285,26 @@ CI 矩阵使用按 SHA 固定的 `dtolnay/rust-toolchain` 的 `stable`
 1. 从 Actions 标签页或 issue tracker 链接打开失败的运行。
 2. 定位失败的那一段（`build (windows-latest)`、`build (ubuntu-22.04)` 等）
    和失败的那一步。
-3. 如果是 Linux 上的系统依赖报错，本页中 apt 包列表就是真值源 —— 同步更新
-   release 与 ci 两个 workflow，并按
+3. 如果是 Linux 上的系统依赖报错，下方内嵌的 apt 包列表就是真值源 ——
+   两个 workflow 原样照抄这份列表；更新 `release.yml` 与 `ci.yml` 时要
+   一起改，并按
    [Tauri 2 Linux prerequisites](https://v2.tauri.app/start/prerequisites/#linux)
    刷新包列表。
+
+   真值列表（`release.yml` 与 `ci.yml` 保持一致）：
+
+   ```text
+   libwebkit2gtk-4.1-dev
+   build-essential
+   curl
+   wget
+   file
+   libxdo-dev
+   libssl-dev
+   libayatana-appindicator3-dev
+   librsvg2-dev
+   libsoup-3.0-dev
+   ```
 4. 如果是 Tauri 或 Rust 报错，在本地用同一工具链（Node 22、Rust stable）
    复现：`npm run tauri build`。
 5. 在你正在做的 ticket 的收尾评论里附上 issue 链接，让失败留下可追溯的记录。
