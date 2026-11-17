@@ -2,13 +2,20 @@
 // driven by an open-in-terminal outcome (issue #228) and shared with the
 // strip's failed-pick message.
 //
-// Extracted from the component so the lifecycle is testable (issue #290):
-// the hint sits on a 4 s dismiss timer, and the outcome effect re-runs
-// whenever its formatter changes — which `t` does on a locale switch.
-// Its cleanup used to clear only the timer, so a locale switch inside
-// that window stranded the (now stale-language) hint on screen forever:
-// the timer was gone and the effect's `lastOutcome` guard meant nothing
-// re-showed it. The cleanup now dismisses both timer and hint.
+// Lifecycle (restructured for issue #298): the hint sits on a 4 s dismiss
+// timer armed by whoever set it, and that timer is the ONLY thing that
+// takes an outcome hint down. Two earlier designs failed:
+//   - clearing only the timer on cleanup stranded a stale-language line
+//     forever after a locale switch inside the window (#290);
+//   - dismissing from the outcome effect's cleanup cleared the hint one
+//     frame after it appeared, because production's `consumeOpenOutcome`
+//     nulls the outcome and the effect re-runs through its cleanup
+//     (#298 — the old test's fake `consume` never changed the outcome, so
+//     the production wiring was untested).
+// Now the outcome effect shows + consumes with no dismissal cleanup, and
+// the visible line is re-resolved through the CURRENT formatter on every
+// render — a locale switch rewrites it in place (it never goes stale, and
+// it never strands: the timer still fires).
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -33,13 +40,22 @@ export interface OpenOutcomeHint {
   dismiss: () => void;
 }
 
+/** Internal store: an outcome hint keeps the outcome so the text can be
+ *  re-resolved in the current locale at render time; a direct `show`
+ *  hint (the failed-pick path) keeps its finished text. */
+interface StoredHint {
+  kind: TransientHint["kind"];
+  outcome: OpenTerminalOutcome | null;
+  text: string;
+}
+
 export function useOpenOutcomeHint(
   openOutcome: OpenTerminalOutcome | null,
   consumeOpenOutcome: () => unknown,
   format: OutcomeHintFormatter,
   dismissMs: number = HINT_DISMISS_MS,
 ): OpenOutcomeHint {
-  const [hint, setHint] = useState<TransientHint | null>(null);
+  const [stored, setStored] = useState<StoredHint | null>(null);
   const hintTimer = useRef<number | null>(null);
 
   const clearTimer = useCallback(() => {
@@ -49,21 +65,25 @@ export function useOpenOutcomeHint(
     }
   }, []);
 
+  const armTimer = useCallback(() => {
+    clearTimer();
+    hintTimer.current = window.setTimeout(() => {
+      setStored(null);
+      hintTimer.current = null;
+    }, dismissMs);
+  }, [clearTimer, dismissMs]);
+
   const dismiss = useCallback(() => {
     clearTimer();
-    setHint(null);
+    setStored(null);
   }, [clearTimer]);
 
   const show = useCallback(
     (kind: TransientHint["kind"], text: string) => {
-      clearTimer();
-      setHint({ kind, text });
-      hintTimer.current = window.setTimeout(() => {
-        setHint(null);
-        hintTimer.current = null;
-      }, dismissMs);
+      setStored({ kind, outcome: null, text });
+      armTimer();
     },
-    [clearTimer, dismissMs],
+    [armTimer],
   );
 
   // An unmount clears the timer as well — a pending setState on a dead
@@ -77,12 +97,20 @@ export function useOpenOutcomeHint(
     lastOutcomeRef.current = openOutcome;
     consumeOpenOutcome();
     const next = format(openOutcome);
-    show(next.kind, next.text);
-    // The formatter changes with the locale. Dismissing on that re-run
-    // is the point: the visible line is in the language the user just
-    // left, and nothing else would ever take it down (#290).
-    return dismiss;
-  }, [openOutcome, consumeOpenOutcome, format, show, dismiss]);
+    setStored({ kind: next.kind, outcome: openOutcome, text: next.text });
+    armTimer();
+  }, [openOutcome, consumeOpenOutcome, format, armTimer]);
+
+  // The visible line resolves through the CURRENT formatter at render
+  // time: a locale switch re-renders the strip with a new `format`, and
+  // the outcome hint rewrites itself in place — no stale-language line,
+  // no stranded line, no extra effect.
+  const hint: TransientHint | null = stored
+    ? {
+        kind: stored.kind,
+        text: stored.outcome ? format(stored.outcome).text : stored.text,
+      }
+    : null;
 
   return { hint, show, dismiss };
 }
