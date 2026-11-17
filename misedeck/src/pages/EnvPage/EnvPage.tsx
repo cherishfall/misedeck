@@ -13,7 +13,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 
 import { I18N_KEYS } from "../../i18n/keys";
 import { useDirectory } from "../../state/directoryContext";
@@ -102,6 +102,13 @@ export function EnvPage() {
   // Guard-blocked mutations focus the shared trust banner (issues
   // #25 / #141) instead of running.
   const { ref: bannerRef, focus: focusTrustBanner } = useTrustBannerFocus();
+  // The empty card's "Add an env var" step lands focus on the add form's
+  // key input (#299) — the same pattern as the Settings page's empty
+  // state: the form the card talks about is reachable from the card.
+  const addKeyRef = useRef<HTMLInputElement>(null);
+  const focusAddKey = useCallback(() => {
+    addKeyRef.current?.focus();
+  }, []);
 
   const detect = useQuery({
     queryKey: ["mise", "detect"],
@@ -374,6 +381,21 @@ export function EnvPage() {
                       body={t(cwd === null
                         ? I18N_KEYS.env.empty.bodyGlobal
                         : I18N_KEYS.env.empty.bodyDirectory)}
+                      action={
+                        /* The card's own next step (issue #226, #299):
+                           the Add form the body talks about is reachable
+                           from here — the entry lands focus on the form's
+                           key input, the same pattern as the Settings
+                           empty state. */
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={focusAddKey}
+                          data-testid="env-empty-add"
+                        >
+                          {t(I18N_KEYS.env.empty.action)}
+                        </Button>
+                      }
                     />
                   )
                 }
@@ -382,6 +404,7 @@ export function EnvPage() {
           )}
 
           <AddEnvForm
+            inputRef={addKeyRef}
             onWrite={runWrite}
             disabled={envWriteBusy}
             cwd={cwd}
@@ -814,11 +837,15 @@ function OutOfScopeWarning({ sourcePath }: { sourcePath?: string }) {
 // ---------- Add form ----------
 
 function AddEnvForm({
+  inputRef,
   onWrite,
   disabled,
   cwd,
   existingNames,
 }: {
+  /** The key field — the empty state's "Add an env var" step focuses it
+   *  (issue #299, the Settings page's pattern). */
+  inputRef: RefObject<HTMLInputElement | null>;
   onWrite: (
     builder: (cwd: string | null) => string[],
     successMessage?: string,
@@ -874,6 +901,7 @@ function AddEnvForm({
       <span className={styles.addLabel}>{t(I18N_KEYS.env.addLabel)}</span>
       <input
         type="text"
+        ref={inputRef}
         className={styles.inputName}
         value={name}
         onChange={(e) => setName(e.target.value)}

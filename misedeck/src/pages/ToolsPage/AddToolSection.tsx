@@ -118,9 +118,12 @@ interface AddToolSectionProps {
   onUpgrade: (tool: string) => void;
   /** The main table's "Manage versions" request (#189): when `seq`
    *  changes, the region expands (if collapsed), searches this tool,
-   *  and scrolls itself into view. The disclosure/search state stays
-   *  internal — this is the one controlled input the page drives. */
-  focusTool?: { tool: string; seq: number } | null;
+   *  and scrolls itself into view. `tool: null` (the empty table's
+   *  Manage-versions entry, #299) expands and scrolls without filling
+   *  the search — there is no row to search for. The disclosure/search
+   *  state stays internal — this is the one controlled input the page
+   *  drives. */
+  focusTool?: { tool: string | null; seq: number } | null;
   /** Bumped by the toolbar Refresh (#269) after the page drops every
    *  cached per-tool `ls-remote` entry: re-dispatch the selected
    *  tool's upstream list instead of trusting the session cache. */
@@ -189,7 +192,9 @@ export function AddToolSection({
     if (focusTool == null || focusTool.seq === lastFocusSeq.current) return;
     lastFocusSeq.current = focusTool.seq;
     setOpen(true);
-    selectTool(focusTool.tool);
+    // A null-tool request (the empty table's entry, #299) only expands
+    // and scrolls: there is no tool name to fill the search with.
+    if (focusTool.tool !== null) selectTool(focusTool.tool);
     requestAnimationFrame(() => {
       sectionRef.current?.scrollIntoView({ block: "start" });
     });

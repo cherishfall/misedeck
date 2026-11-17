@@ -14,7 +14,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState, type RefObject } from "react";
 import { useNavigate } from "react-router";
 
 import { I18N_KEYS } from "../../i18n/keys";
@@ -100,6 +100,14 @@ export function PluginsPage() {
   // unchanged — the panel still auto-opens.
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [successTick, setSuccessTick] = useState(0);
+
+  // The empty card's "Install a plugin" step lands focus on the install
+  // form's name input (#299) — the same pattern as the Settings page's
+  // empty state: the form the card talks about is reachable from the card.
+  const installNameRef = useRef<HTMLInputElement>(null);
+  const focusInstallName = useCallback(() => {
+    installNameRef.current?.focus();
+  }, []);
 
   const installPlugin = useCallback(
     async (name: string, gitUrl: string): Promise<"ok" | "err"> => {
@@ -279,6 +287,7 @@ export function PluginsPage() {
             the empty state below is the norm, and the form is the
             page's way forward alongside the Tools search. */}
         <InstallPluginForm
+          nameInputRef={installNameRef}
           onInstall={installPlugin}
           disabled={installBusy}
           cwd={cwd}
@@ -316,14 +325,28 @@ export function PluginsPage() {
                   title={t(I18N_KEYS.plugins.installedEmpty.title)}
                   body={t(I18N_KEYS.plugins.installedEmpty.body)}
                   action={
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => navigate("/tools")}
-                      data-testid="plugins-empty-search-tools"
-                    >
-                      {t(I18N_KEYS.plugins.installedEmpty.action)}
-                    </Button>
+                    /* The card's own next steps (issue #226, #299): both
+                       ways forward — the Tools search and the custom-plugin
+                       install form — are reachable from here; the second
+                       entry lands focus on the form's name input. */
+                    <span className={styles.emptyActions}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => navigate("/tools")}
+                        data-testid="plugins-empty-search-tools"
+                      >
+                        {t(I18N_KEYS.plugins.installedEmpty.action)}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={focusInstallName}
+                        data-testid="plugins-empty-install-form"
+                      >
+                        {t(I18N_KEYS.plugins.installedEmpty.installAction)}
+                      </Button>
+                    </span>
                   }
                 />
               }
@@ -367,10 +390,14 @@ export function PluginsPage() {
  *  reachable only from the CLI. The submit runs `mise plugins install`
  *  through the execution panel, which echoes the exact argv. */
 function InstallPluginForm({
+  nameInputRef,
   onInstall,
   disabled,
   cwd,
 }: {
+  /** The name field — the installed-empty state's "Install a plugin"
+   *  step focuses it (issue #299, the Settings page's pattern). */
+  nameInputRef: RefObject<HTMLInputElement | null>;
   onInstall: (name: string, gitUrl: string) => Promise<"ok" | "err">;
   /** True while this form's own install is in flight; locks only the
    *  submit (run-locking, issue #135/#138) — drafting the inputs never
@@ -417,6 +444,7 @@ function InstallPluginForm({
       >
         <input
           type="text"
+          ref={nameInputRef}
           className={styles.input}
           value={name}
           onChange={(e) => setName(e.target.value)}

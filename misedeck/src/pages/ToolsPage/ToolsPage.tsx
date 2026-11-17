@@ -203,9 +203,13 @@ export function ToolsPage() {
   // to the region below. `seq` bumps on every click — including a repeat
   // click on the same row — so the region re-expands, re-searches, and
   // re-scrolls every time. The region owns the disclosure/search state;
-  // this is just the controlled input it reacts to.
-  const [manageFocus, setManageFocus] = useState<{ tool: string; seq: number } | null>(null);
-  const onManageVersions = useCallback((tool: string) => {
+  // this is just the controlled input it reacts to. `tool` may be null:
+  // the empty table's Manage-versions entry (#299) reaches the region
+  // through the same flow but has no row to search for.
+  const [manageFocus, setManageFocus] = useState<{ tool: string | null; seq: number } | null>(
+    null,
+  );
+  const onManageVersions = useCallback((tool: string | null) => {
     setManageFocus((f) => ({ tool, seq: (f?.seq ?? 0) + 1 }));
   }, []);
 
@@ -685,6 +689,21 @@ export function ToolsPage() {
                 <EmptyState
                   title={t(I18N_KEYS.tools.empty.title)}
                   body={t(I18N_KEYS.tools.empty.body)}
+                  action={
+                    /* The card's own next step (issue #226, #299): the
+                       Manage-versions search the body names is reachable
+                       from here through the same flow the table rows use
+                       — expand the region and scroll to it, no tool to
+                       pre-fill. */
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => onManageVersions(null)}
+                      data-testid="tools-empty-manage-versions"
+                    >
+                      {t(I18N_KEYS.tools.actions.manageVersions)}
+                    </Button>
+                  }
                 />
               )
             }
