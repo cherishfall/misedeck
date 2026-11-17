@@ -258,8 +258,23 @@ export function useExecution() {
       }
       const channel = background ? discardingChannel() : makeChannel(dispatch, id);
       let cancelled = false;
+      // Set synchronously when the user asks for a cancel, before the
+      // `cancel_run` IPC resolves (issue #301): the run's own invoke can
+      // reject with the runner's cancellation signature in that window —
+      // `DriveEnd::Cancelled` surfaces as `command_failed("mise run
+      // cancelled", "")` on the Rust side — and that rejection must
+      // settle the run as cancelled, not failed.
+      let cancelRequested = false;
+      /** The runner's cancellation rejection, matched on the exact
+       *  message `run_mise_timed` emits for `DriveEnd::Cancelled`
+       *  (misedeck/src-tauri/src/mise.rs). A genuine mise failure that
+       *  races the cancel click carries a different message and still
+       *  reports as a failure. */
+      const isCancellationRejection = (err: AppError): boolean =>
+        err.message === "mise run cancelled";
       if (!background) {
         cancelRefs.current.set(id, () => {
+          cancelRequested = true;
           // Only report "cancelled" once Rust acknowledged the cancel
           // (issue #262). The status then flips immediately — the panel
           // still never waits for the process to die — but a failed IPC
@@ -293,6 +308,17 @@ export function useExecution() {
       /** Report a failure: the panel only hears about foreground runs it
        *  still owns; the caller always gets the structured error. */
       const fail = (err: AppError): RunCommandResult => {
+        // The cancel round trip and the run's own invoke race (issue
+        // #301): when the rejection IS the runner's cancellation
+        // signature, the run's terminal state is cancelled — the same
+        // settle the `cancel_run` acknowledgment would produce — never
+        // "failed".
+        if (!background && cancelRequested && isCancellationRejection(err)) {
+          cancelled = true;
+          dispatch({ type: "cancel", id });
+          cancelRefs.current.delete(id);
+          return { kind: "err", err };
+        }
         if (!background && !cancelled) dispatch({ type: "fail", id, error: err });
         return { kind: "err", err };
       };
