@@ -458,6 +458,9 @@ pub(crate) const READER_SHUTDOWN_BOUND: Duration = Duration::from_secs(1);
 /// Captured reads are not streamed and never go through this cap: real
 /// mise emits `ls-remote --json <tool>` as one compact line (51,741
 /// bytes for node), which the per-line cap cut in half (issue #282).
+/// Panel reads (issue #292) still stream through this cap — the
+/// transcript shows the capped prefix — but their outcome stdout is
+/// captured raw beneath the line reader.
 pub(crate) const MAX_LINE_BYTES: usize = 8 * 1024;
 
 /// Largest aggregate retained per stream (2 MiB), shared by the streamed
@@ -554,6 +557,27 @@ fn read_line_capped<R: BufRead>(reader: &mut R, out: &mut Vec<u8>) -> std::io::R
     }
 }
 
+/// Split one pipe into capped lines and forward them to `tx` until EOF.
+/// The one loop body behind both line readers — the transcript-only one
+/// and the tee below (issue #292) — so the cap, decode, and drain rules
+/// live in exactly one place.
+fn forward_lines<R: BufRead>(mut reader: R, tx: &SyncSender<OutputLine>) {
+    let mut buf = Vec::new();
+    while let Ok(Some(dropped)) = read_line_capped(&mut reader, &mut buf) {
+        let line = OutputLine {
+            text: String::from_utf8_lossy(&buf).into_owned(),
+            truncated_bytes: dropped,
+        };
+        // A blocked send is bounded backpressure, not a lost
+        // drain: the main loop empties the queue every slice.
+        if tx.send(line).is_err() {
+            break;
+        }
+    }
+    // EOF or an I/O error — the pipe going away, not a decode
+    // problem; either way there is nothing left.
+}
+
 /// Spawn a reader thread that splits one pipe into lines and forwards
 /// them over `tx`.
 ///
@@ -573,21 +597,8 @@ where
     R: Read + Send + 'static,
 {
     thread::spawn(move || {
-        let mut reader = BufReader::new(pipe);
-        let mut buf = Vec::new();
-        while let Ok(Some(dropped)) = read_line_capped(&mut reader, &mut buf) {
-            let line = OutputLine {
-                text: String::from_utf8_lossy(&buf).into_owned(),
-                truncated_bytes: dropped,
-            };
-            // A blocked send is bounded backpressure, not a lost
-            // drain: the main loop empties the queue every slice.
-            if tx.send(line).is_err() {
-                break;
-            }
-        }
-        // EOF or an I/O error — the pipe going away, not a decode
-        // problem; either way there is nothing left.
+        let reader = BufReader::new(pipe);
+        forward_lines(reader, &tx);
     })
 }
 
@@ -683,6 +694,79 @@ fn join_capture_bounded(handle: JoinHandle<RawCapture>, deadline: Instant) -> Op
         }
         thread::sleep((deadline - now).min(Duration::from_millis(5)));
     }
+}
+
+/// Record every byte passing through a pipe while it is being read
+/// another way (issue #292). A read dispatched through the panel needs
+/// BOTH views of one stdout — the streaming transcript (lines, per-line
+/// cap) and the complete payload for `RunOutcome.stdout` (to EOF,
+/// aggregate cap only) — and a pipe can be consumed once, so the capture
+/// rides under the line reader, beneath its `BufReader`: bytes the
+/// per-line cap withholds from the transcript are still captured here.
+struct TeeCapture<R> {
+    inner: R,
+    captured: Vec<u8>,
+    /// Bytes the aggregate cap withheld (0 when the payload fit).
+    dropped: u64,
+}
+
+impl<R: Read> TeeCapture<R> {
+    fn new(inner: R) -> Self {
+        Self {
+            inner,
+            captured: Vec::new(),
+            dropped: 0,
+        }
+    }
+
+    fn into_capture(self) -> RawCapture {
+        RawCapture {
+            // Decoded once over the whole payload, so a multi-byte
+            // character split across two reads is never replaced — the
+            // same promise `read_pipe_to_eof` makes.
+            text: String::from_utf8_lossy(&self.captured).into_owned(),
+            dropped: self.dropped,
+        }
+    }
+}
+
+impl<R: Read> Read for TeeCapture<R> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let n = self.inner.read(buf)?;
+        // Same aggregate rule as `read_pipe_to_eof`: past the cap the
+        // bytes leave the capture but never stay unread, so the pipe
+        // keeps draining and the child cannot block on a full one
+        // (issue #277).
+        let room = MAX_STREAM_BYTES.saturating_sub(self.captured.len());
+        if n > room {
+            self.captured.extend_from_slice(&buf[..room]);
+            self.dropped += (n - room) as u64;
+        } else {
+            self.captured.extend_from_slice(&buf[..n]);
+        }
+        Ok(n)
+    }
+}
+
+/// Spawn a reader thread that splits one pipe into lines for the
+/// transcript while recording every byte that passes through, and
+/// returns the recorded payload (issue #292). The stdout side of a read
+/// dispatched through the panel: the transcript stays the streaming
+/// view, and `RunOutcome.stdout` comes from the tee so a payload past
+/// the per-line cap — `ls-remote --json` is one compact line — arrives
+/// whole.
+fn spawn_tee_line_reader<R>(pipe: R, tx: SyncSender<OutputLine>) -> JoinHandle<RawCapture>
+where
+    R: Read + Send + 'static,
+{
+    thread::spawn(move || {
+        let mut tee = TeeCapture::new(pipe);
+        {
+            let reader = BufReader::new(&mut tee);
+            forward_lines(reader, &tx);
+        }
+        tee.into_capture()
+    })
 }
 
 /// Result of offering one line to an aggregate buffer.
@@ -855,12 +939,21 @@ pub(crate) enum PipeMode {
     /// Read to EOF as one payload, aggregate cap only: a captured read,
     /// where a line is not the unit of anything (issue #282).
     Raw,
+    /// `Lines` for the transcript **and** a raw capture for the outcome
+    /// (issue #292). A read dispatched through the panel keeps its
+    /// streaming transcript — capped lines and the typed
+    /// `OutputTruncated` notice included — while `RunOutcome.stdout`
+    /// comes from a capture to EOF, bounded only by `MAX_STREAM_BYTES`:
+    /// real mise emits `ls-remote --json <tool>` as one compact line far
+    /// past `MAX_LINE_BYTES`, and that stdout is parsed as JSON
+    /// downstream. Mutations keep plain `Lines`.
+    LinesAndCapture,
 }
 
 /// One run's pipes, already being read by background threads.
 ///
 /// The loop that drives the child lives in `drive_child` and is
-/// identical for both modes; this type only answers "what does a byte
+/// identical for every mode; this type only answers "what does a byte
 /// become".
 enum Pipes {
     Lines {
@@ -869,6 +962,16 @@ enum Pipes {
         stdout: CappedStream,
         stderr: CappedStream,
         out_thread: JoinHandle<()>,
+        err_thread: JoinHandle<()>,
+    },
+    LinesAndCapture {
+        out_rx: Receiver<OutputLine>,
+        err_rx: Receiver<OutputLine>,
+        stdout: CappedStream,
+        stderr: CappedStream,
+        /// The stdout tee: its raw payload becomes the outcome's stdout
+        /// once the read loop ends.
+        out_thread: JoinHandle<RawCapture>,
         err_thread: JoinHandle<()>,
     },
     Raw {
@@ -892,6 +995,18 @@ impl Pipes {
                     err_thread: spawn_line_reader(stderr, err_tx),
                 }
             }
+            PipeMode::LinesAndCapture => {
+                let (out_tx, out_rx) = sync_channel(LINE_CHANNEL_CAPACITY);
+                let (err_tx, err_rx) = sync_channel(LINE_CHANNEL_CAPACITY);
+                Self::LinesAndCapture {
+                    out_rx,
+                    err_rx,
+                    stdout: CappedStream::default(),
+                    stderr: CappedStream::default(),
+                    out_thread: spawn_tee_line_reader(stdout, out_tx),
+                    err_thread: spawn_line_reader(stderr, err_tx),
+                }
+            }
             PipeMode::Raw => Self::Raw {
                 out_thread: spawn_raw_reader(stdout),
                 err_thread: spawn_raw_reader(stderr),
@@ -901,22 +1016,33 @@ impl Pipes {
 
     /// Move what the readers have already queued in, without blocking.
     fn poll<F: FnMut(RunEvent)>(&mut self, on_event: &mut F) {
-        if let Self::Lines {
-            out_rx,
-            err_rx,
-            stdout,
-            stderr,
-            ..
-        } = self
-        {
-            drain_streams(out_rx, err_rx, on_event, stdout, stderr);
+        match self {
+            Self::Lines {
+                out_rx,
+                err_rx,
+                stdout,
+                stderr,
+                ..
+            }
+            | Self::LinesAndCapture {
+                out_rx,
+                err_rx,
+                stdout,
+                stderr,
+                ..
+            } => {
+                drain_streams(out_rx, err_rx, on_event, stdout, stderr);
+            }
+            // A raw payload arrives once, at EOF; until the child is gone
+            // there is nothing to collect.
+            Self::Raw { .. } => {}
         }
     }
 
     /// Block up to `slice` for output so the poll loop does not spin.
     fn wait<F: FnMut(RunEvent)>(&mut self, slice: Duration, on_event: &mut F) {
         match self {
-            Self::Lines { out_rx, stdout, .. } => {
+            Self::Lines { out_rx, stdout, .. } | Self::LinesAndCapture { out_rx, stdout, .. } => {
                 if let Ok(line) = out_rx.recv_timeout(slice) {
                     deliver_line(line, OutputStream::Stdout, stdout, on_event);
                 }
@@ -950,6 +1076,36 @@ impl Pipes {
                     stdout_truncated: false,
                 }
             }
+            Self::LinesAndCapture {
+                out_rx,
+                err_rx,
+                mut stdout,
+                mut stderr,
+                out_thread,
+                err_thread,
+            } => {
+                finish_streams(&out_rx, &err_rx, on_event, &mut stdout, &mut stderr);
+                // The stderr lines already live in the transcript buffer,
+                // so this join is a courtesy (same rationale as the
+                // `Lines` arm); the tee is different — its payload lives
+                // INSIDE its thread, so it must be joined with a real
+                // bound or a detached tee loses the capture. Normally
+                // `finish_streams` above only returned once the tee's
+                // channel closed and the join lands immediately; a
+                // grandchild that inherited stdout keeps the tee blocked
+                // in `read` forever, and abandoning it under the bound
+                // loses the capture rather than the run's end (issue
+                // #222).
+                let captured =
+                    join_capture_bounded(out_thread, Instant::now() + READER_SHUTDOWN_BOUND)
+                        .unwrap_or_default();
+                join_readers_bounded(vec![err_thread], Duration::ZERO);
+                CapturedOutput {
+                    stdout: captured.text,
+                    stderr: stderr.into_text(),
+                    stdout_truncated: captured.dropped > 0,
+                }
+            }
             Self::Raw {
                 out_thread,
                 err_thread,
@@ -971,7 +1127,8 @@ impl Pipes {
 struct CapturedOutput {
     stdout: String,
     stderr: String,
-    /// Raw mode only: the aggregate cap withheld bytes from stdout.
+    /// Raw and `LinesAndCapture` mode: the aggregate cap withheld bytes
+    /// from stdout.
     stdout_truncated: bool,
 }
 
@@ -1006,7 +1163,8 @@ pub(crate) struct DriveOutcome {
     pub exit_code: i32,
     pub duration_ms: u64,
     pub end: DriveEnd,
-    /// Raw mode only: the aggregate cap withheld stdout bytes.
+    /// Raw and `LinesAndCapture` mode: the aggregate cap withheld stdout
+    /// bytes.
     pub stdout_truncated: bool,
 }
 
@@ -1177,6 +1335,13 @@ fn mise_drive_error(e: DriveError) -> AppError {
 /// `timeout`. This is the low-level entry point the streaming surface
 /// routes every call through; captured reads use `run_mise_capture`.
 ///
+/// `safe_mode` marks a read (issue #230), and with it the run takes
+/// `PipeMode::LinesAndCapture`: the transcript streams exactly like a
+/// mutation's, but the outcome's stdout comes from a raw capture to EOF
+/// so a payload past the per-line cap arrives whole (issue #292). A
+/// mutation keeps plain `Lines` — its stdout is a transcript, never
+/// parsed.
+///
 /// `run_id` links the run to the execution panel so `cancel_run` can
 /// stop its process tree; `None` is a run nobody can cancel (fixture
 /// tests).
@@ -1196,8 +1361,13 @@ where
     F: FnMut(RunEvent) + Send + 'static,
 {
     let mut cmd = mise_command(mise_path, req, safe_mode)?;
-    let driven = drive_child(&mut cmd, timeout, run_id, PipeMode::Lines, &mut on_event)
-        .map_err(mise_drive_error)?;
+    let mode = if safe_mode {
+        PipeMode::LinesAndCapture
+    } else {
+        PipeMode::Lines
+    };
+    let driven =
+        drive_child(&mut cmd, timeout, run_id, mode, &mut on_event).map_err(mise_drive_error)?;
     match driven.end {
         DriveEnd::Cancelled => Err(AppError::command_failed(
             "mise run cancelled",
@@ -1311,6 +1481,12 @@ where
 /// 30-minute streaming one: a stale NFS entry or a hung mise on a table
 /// load used to leave a zombie process and a permanent spinner with no
 /// cancel button (audit P1-R1).
+///
+/// The outcome's stdout comes from a raw capture to EOF — bounded only by
+/// `MAX_STREAM_BYTES` — while the transcript keeps streaming capped
+/// lines: the read result is parsed as JSON downstream, and real mise
+/// emits `ls-remote --json <tool>` as one compact line far past the
+/// per-line cap (issue #292).
 pub fn run_mise_tracked_read_only<F>(
     mise_path: &Path,
     req: &RunRequest,
@@ -2733,6 +2909,35 @@ mod tests {
         let capture = read_pipe_to_eof(Cursor::new(data));
         assert_eq!(capture.text.len(), MAX_STREAM_BYTES);
         assert_eq!(capture.dropped, 7);
+    }
+
+    /// Issue #292: the tee rides under the line reader, so bytes the
+    /// per-line cap withholds from the transcript still reach the raw
+    /// capture — the outcome's stdout is the complete payload while the
+    /// transcript shows the capped prefix.
+    #[test]
+    fn tee_capture_keeps_bytes_the_per_line_cap_withholds() {
+        let mut data = vec![b'x'; MAX_LINE_BYTES * 2];
+        data.push(b'\n');
+        data.extend_from_slice(b"tail\n");
+
+        let (tx, rx) = sync_channel::<OutputLine>(8);
+        let handle = spawn_tee_line_reader(Cursor::new(data), tx);
+        let capture = handle.join().expect("the tee must reach EOF");
+
+        // The transcript saw the capped prefix (8 KiB) and the next line.
+        let first = rx.recv().expect("the capped line");
+        assert_eq!(first.text.len(), MAX_LINE_BYTES);
+        assert_eq!(first.truncated_bytes, MAX_LINE_BYTES as u64);
+        let second = rx.recv().expect("the line after the cap");
+        assert_eq!(second.text, "tail");
+        assert_eq!(second.truncated_bytes, 0);
+        assert!(rx.recv().is_err());
+
+        // The capture saw everything, including the withheld bytes.
+        assert_eq!(capture.text.len(), MAX_LINE_BYTES * 2 + 6);
+        assert_eq!(capture.dropped, 0);
+        assert!(capture.text.ends_with("tail\n"));
     }
 
     /// The aggregate cap stops retaining (and emitting) lines, emits the

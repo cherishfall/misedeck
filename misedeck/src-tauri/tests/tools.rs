@@ -15,8 +15,12 @@
 // for the TS side and are not asserted here.
 
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
-use misedeck_lib::mise::{code, mise_ls, mise_ls_remote, mise_ls_tool, mise_outdated};
+use misedeck_lib::mise::{
+    code, mise_ls, mise_ls_remote, mise_ls_tool, mise_outdated, run_mise_tracked_read_only,
+    OutputStream, RunEvent, RunRequest,
+};
 use misedeck_lib::JsonResult;
 use serial_test::serial;
 mod common;
@@ -238,6 +242,86 @@ fn tools_ls_remote_parses_a_single_line_payload_past_the_per_line_cap() {
             "every recorded version must survive the read"
         );
         assert_eq!(v, recorded, "the captured payload must arrive unaltered");
+    });
+}
+
+/// Issue #292: the panel path — `run_mise_command(read_only: true)` →
+/// `run_mise_tracked_read_only` — still took `PipeMode::Lines` after #282
+/// wired `Raw` into the captured reads, so this same 17 KB single-line
+/// payload was cut to the 8 KiB per-line cap at that boundary too:
+/// `RunOutcome.stdout` was a prefix, the frontend's `toJsonResult`
+/// threw `PARSE_FAILED`, and the not-installed version list failed for
+/// every tool whose remote payload exceeds 8 KiB (go/node/python). A
+/// tracked read now takes its outcome stdout from a raw capture to EOF
+/// while the transcript keeps streaming lines.
+///
+/// The assertion compares the tracked run's stdout to the fixture parsed
+/// independently — a prefix would not be equal, so nothing can be
+/// silently dropped and still pass.
+#[test]
+#[serial]
+fn tracked_read_only_returns_the_whole_single_line_payload() {
+    let payload = std::fs::read_to_string(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/mise/ls-remote---json-go/stdout"),
+    )
+    .expect("the recorded go payload");
+    let recorded: serde_json::Value =
+        serde_json::from_str(&payload).expect("the fixture must be valid JSON");
+    let recorded_len = recorded.as_array().expect("an array").len();
+
+    let script = fixture_script();
+    with_slug("ls-remote---json-go", || {
+        let events: Arc<Mutex<Vec<RunEvent>>> = Arc::new(Mutex::new(Vec::new()));
+        let events2 = Arc::clone(&events);
+        let req = RunRequest::new(vec![
+            "ls-remote".to_string(),
+            "--json".to_string(),
+            "go".to_string(),
+        ]);
+        let outcome = run_mise_tracked_read_only(&script, &req, None, move |e| {
+            events2.lock().unwrap().push(e);
+        })
+        .expect("the panel read must succeed past the per-line cap");
+
+        // The read itself: exit 0 and the whole payload in the outcome.
+        assert_eq!(outcome.exit_code, 0);
+        assert_eq!(
+            outcome.stdout.len(),
+            payload.len(),
+            "the outcome must carry every byte of the payload, got {}",
+            outcome.stdout.len()
+        );
+        let parsed: serde_json::Value = serde_json::from_str(&outcome.stdout)
+            .expect("the panel read's stdout must parse as JSON");
+        assert_eq!(parsed, recorded, "the payload must arrive unaltered");
+        assert_eq!(
+            parsed.as_array().map(Vec::len),
+            Some(recorded_len),
+            "every recorded version must survive the panel read"
+        );
+
+        // The transcript is still the streaming view: the capped line was
+        // forwarded, the typed truncation notice was raised, and the run
+        // ended with a clean Exit event.
+        let evs = events.lock().unwrap();
+        assert!(
+            evs.iter().any(|e| matches!(e, RunEvent::Stdout { .. })),
+            "the transcript must still stream stdout lines, got {evs:?}"
+        );
+        assert!(
+            evs.iter().any(|e| matches!(
+                e,
+                RunEvent::OutputTruncated {
+                    stream: OutputStream::Stdout
+                }
+            )),
+            "the per-line cap must still raise the typed notice, got {evs:?}"
+        );
+        assert!(matches!(
+            evs.last(),
+            Some(RunEvent::Exit { exit_code: 0, .. })
+        ));
     });
 }
 
