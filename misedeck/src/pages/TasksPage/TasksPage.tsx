@@ -385,8 +385,13 @@ export function TasksPage() {
       setEditorError(null);
       try {
         await openExternalPath(path);
-      } catch {
-        setEditorError(t(I18N_KEYS.tasks.openEditorError.body));
+      } catch (err) {
+        // The OS opener failed after the command already returned a
+        // usable path (issue #297): "did not return a usable path"
+        // would be false here. The opener's own detail stays visible
+        // (failures stay visible).
+        const detail = err instanceof Error ? err.message : String(err);
+        setEditorError(t(I18N_KEYS.tasks.openEditorError.openerBody, { detail }));
       }
     },
     [guard.allowed, focusTrustBanner, editorRunBusy, runEditorCommand, cwd, t],
@@ -435,8 +440,11 @@ export function TasksPage() {
       setEditorError(null);
       try {
         await openExternalPath(path);
-      } catch {
-        setEditorError(t(I18N_KEYS.tasks.openConfigError.body));
+      } catch (err) {
+        // Same opener-vs-empty-path split as `openInEditor` (issue
+        // #297): the command returned a config file, the open failed.
+        const detail = err instanceof Error ? err.message : String(err);
+        setEditorError(t(I18N_KEYS.tasks.openConfigError.openerBody, { detail }));
       }
     },
     [guard.allowed, focusTrustBanner, configRunBusy, runConfigCommand, cwd, t],

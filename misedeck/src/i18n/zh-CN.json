@@ -453,10 +453,12 @@
     },
     "openEditorError": {
       "title": "无法打开配置文件",
-      "body": "mise tasks edit 没有返回可用路径。如果命令执行失败，stderr 会在执行面板中显示。"
+      "body": "mise tasks edit 没有返回可用路径。如果命令执行失败，stderr 会在执行面板中显示。",
+      "openerBody": "无法在编辑器中打开该任务的文件（{{detail}}）。"
     },
     "openConfigError": {
-      "body": "mise config ls --json 没有返回可打开的配置文件。如果命令执行失败，stderr 会在执行面板中显示。"
+      "body": "mise config ls --json 没有返回可打开的配置文件。如果命令执行失败，stderr 会在执行面板中显示。",
+      "openerBody": "无法在编辑器中打开配置文件（{{detail}}）。"
     },
     "readError": {
       "title": "加载任务失败",

@@ -666,9 +666,17 @@ export const I18N_KEYS = {
     openEditorError: {
       title: "tasks.openEditorError.title",
       body: "tasks.openEditorError.body",
+      /** The OS opener rejected after `mise tasks edit --path` already
+          returned a usable path (issue #297): "did not return a usable
+          path" would be false here, so this branch says the open
+          itself failed and keeps the opener's detail visible. */
+      openerBody: "tasks.openEditorError.openerBody",
     },
     openConfigError: {
       body: "tasks.openConfigError.body",
+      /** Same opener-vs-empty-path split as `openEditorError.openerBody`
+          (issue #297), for the config-file surface. */
+      openerBody: "tasks.openConfigError.openerBody",
     },
     readError: {
       title: "tasks.readError.title",

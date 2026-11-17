@@ -453,10 +453,12 @@
     },
     "openEditorError": {
       "title": "Could not open the config file",
-      "body": "mise tasks edit did not return a usable path. If the command failed, its stderr is in the execution panel."
+      "body": "mise tasks edit did not return a usable path. If the command failed, its stderr is in the execution panel.",
+      "openerBody": "The task's file could not be opened in your editor ({{detail}})."
     },
     "openConfigError": {
-      "body": "mise config ls --json did not return a config file to open. If the command failed, its stderr is in the execution panel."
+      "body": "mise config ls --json did not return a config file to open. If the command failed, its stderr is in the execution panel.",
+      "openerBody": "The config file could not be opened in your editor ({{detail}})."
     },
     "readError": {
       "title": "Failed to load tasks",
