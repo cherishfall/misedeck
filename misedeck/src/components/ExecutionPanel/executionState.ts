@@ -253,7 +253,15 @@ export function executionReducer(state: ExecState, action: Action): ExecState {
         isOpen: settle && action.exitCode !== 0 ? true : state.isOpen,
       };
     }
-    case "fail":
+    case "fail": {
+      // Same terminal-status guard as `exit`/`complete`/`cancel`: the
+      // invoke's error can surface after the run already reached a
+      // terminal state — the cancel round trip resolved first and the
+      // rejected invoke then reports "mise run cancelled", or the Exit
+      // event settled the run before the invoke result arrived — and a
+      // late `fail` must not rewrite that outcome (issue #301).
+      const target = state.runs.find((r) => r.id === action.id);
+      if (!target || target.status !== "running") return state;
       return {
         ...state,
         runs: state.runs.map((r) =>
@@ -265,6 +273,7 @@ export function executionReducer(state: ExecState, action: Action): ExecState {
         // action, so it can never fight the user with a loop.
         isOpen: true,
       };
+    }
     case "cancel": {
       // Only a running run can be marked cancelled, and only once the
       // cancel request resolved (issue #262). A late `cancel` for a run

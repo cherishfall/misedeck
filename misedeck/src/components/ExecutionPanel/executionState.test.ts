@@ -371,6 +371,43 @@ test("complete: the self-update version lands on the settling run", () => {
   assert.equal(entry.newVersion, "2.0.0");
 });
 
+// Issue #301: `fail` settles a run terminally like `exit`/`complete`/
+// `cancel`, so it carries the same running-only guard. The invoke's
+// error can surface after the run already reached a terminal state —
+// the cancel round trip resolved first and the rejected invoke then
+// reports "mise run cancelled", or the Exit event settled first — and a
+// late `fail` must not rewrite that outcome.
+
+test("fail: a running run settles failed with the error", () => {
+  let state = startRun(emptyState(), "a");
+  state = executionReducer(state, { type: "fail", id: "a", error: cancelError });
+  const entry = state.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "failed");
+  assert.deepEqual(entry.error, cancelError);
+  // The failure exception still pops a closed panel open.
+  assert.equal(state.isOpen, true);
+});
+
+test("fail after cancel: a late rejection keeps the cancelled status", () => {
+  let state = startRun(emptyState(), "a");
+  state = executionReducer(state, { type: "cancel", id: "a" });
+  const next = executionReducer(state, { type: "fail", id: "a", error: cancelError });
+  assert.equal(next, state);
+  const entry = state.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "cancelled");
+  assert.equal(entry.error, null);
+});
+
+test("fail after complete: a late rejection keeps the settled outcome", () => {
+  let state = finishRun(startRun(emptyState(), "a"), "a", 0);
+  const next = executionReducer(state, { type: "fail", id: "a", error: cancelError });
+  assert.equal(next, state);
+  const entry = state.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "ok");
+  assert.equal(entry.exitCode, 0);
+  assert.equal(entry.error, null);
+});
+
 // Issue #197: dismiss (close) is a panel fixture, usable in any state —
 // including the empty state the panel used to get stuck in.
 
