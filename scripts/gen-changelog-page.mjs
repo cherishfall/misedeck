@@ -403,7 +403,11 @@ console.log(`wrote ${OUT} (${releases.length} releases, latest ${latestVersion})
 // ---------------------------------------------------------------- guard ---
 // A generated page must never offer an install command that cannot work:
 // the Homebrew tap of v1.0.0-beta.2 is 404 and v1 ships no tap (ADR-0002).
-if (/brew\s+install/i.test(html)) {
+//
+// The check looks for a brew COMMAND (a line that runs `brew install`),
+// not for the words: a release note may legitimately mention that the
+// command is gone, and the dead-channel note itself names it.
+if (DEAD_INSTALL.test(html.replace(/<[^>]+>/g, "\n"))) {
   throw new Error(`${OUT} still offers a "brew install" command — that channel does not exist`);
 }
 
