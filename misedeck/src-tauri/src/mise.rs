@@ -3848,7 +3848,13 @@ mod tests {
             std::io::ErrorKind::PermissionDenied,
         )));
         assert_eq!(err.code, code::COMMAND_FAILED);
-        assert!(err.message.contains("failed to spawn mise"));
+        // The message is key-shaped (issue #311): the key names what
+        // happened and the OS error rides along as a parameter.
+        assert!(
+            err.message.starts_with("errors.spawnFailed|"),
+            "unexpected message: {}",
+            err.message
+        );
     }
 
     /// Issue #283 (audit P1-R1): reads dispatched through the panel are

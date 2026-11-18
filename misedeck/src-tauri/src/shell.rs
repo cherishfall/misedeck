@@ -44,7 +44,11 @@ use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 
-use crate::mise::{token, AppError, MessageParams};
+use crate::mise::{AppError, MessageParams};
+// `token` is referenced by the macOS-only `run_argv` below; the import
+// is gated so the Linux / Windows builds don't carry a dead import.
+#[cfg(target_os = "macos")]
+use crate::mise::token;
 // `code` is referenced by the Linux branch below. The import is
 // gated on Linux so macOS / Windows builds don't see a dead
 // `code::TERMINAL_NOT_FOUND` reference; the reference itself
