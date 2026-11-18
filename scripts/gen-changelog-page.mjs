@@ -94,14 +94,21 @@ function splitBody(body) {
   };
 }
 
-/** One half of a release body → HTML: headings become h3, bullets lists. */
-function halfToHtml(text, lang) {
+/**
+ * One half of a release body → HTML: headings become h3, bullets lists.
+ * `lang` may be empty — then no `lang` attribute is written (the
+ * fallback half, which carries the other language's text); its
+ * visibility is decided by the `rel-fallback-*` class instead.
+ */
+function halfToHtml(text, lang, extraClass = "") {
   if (!text) return "";
+  const attr = lang ? ` lang="${lang}"` : "";
+  const cls = extraClass ? ` class="${extraClass}"` : "";
   const blocks = [];
   let list = null;
   const flush = () => {
     if (list && list.length) {
-      blocks.push(`<ul lang="${lang}">\n${list.map((i) => `  <li>${inline(i)}</li>`).join("\n")}\n</ul>`);
+      blocks.push(`<ul${attr}${cls}>\n${list.map((i) => `  <li>${inline(i)}</li>`).join("\n")}\n</ul>`);
     }
     list = null;
   };
@@ -119,10 +126,10 @@ function halfToHtml(text, lang) {
     flush();
     const heading = line.match(/^#{2,3}\s+(.*)$/);
     if (heading) {
-      blocks.push(`<h3 lang="${lang}">${inline(heading[1])}</h3>`);
+      blocks.push(`<h3${attr}${cls}>${inline(heading[1])}</h3>`);
       continue;
     }
-    blocks.push(`<p lang="${lang}">${inline(line)}</p>`);
+    blocks.push(`<p${attr}${cls}>${inline(line)}</p>`);
   }
   flush();
   return blocks.join("\n");
@@ -135,10 +142,34 @@ const sections = releases.map((r) => {
   const badge = r.isPrerelease
     ? '<span class="rel-tag"><span lang="zh-CN">预发布</span><span lang="en">Pre-release</span></span>'
     : "";
+  // A release whose body carries only one language must not look empty
+  // in the other — and must not show twice in the language it does
+  // have. The missing half is rendered with the other language's text
+  // and a visibility class: `rel-fallback-en` shows only in English
+  // mode, `rel-fallback-zh` only in Chinese mode (the CSS lives in
+  // site.css). Every MiseDeck release body is bilingual; this covers a
+  // body that lost a heading.
+  const enHtml = en
+    ? halfToHtml(en, "en")
+    : halfToHtml(zh, "", "rel-fallback rel-fallback-en");
+  const zhHtml = zh
+    ? halfToHtml(zh, "zh-CN")
+    : halfToHtml(en, "", "rel-fallback rel-fallback-zh");
+  // Say so when a half is missing: a reader should not mistake the
+  // fallback for a translation.
+  const notes = [
+    !zh
+      ? '<p class="rel-note rel-fallback rel-fallback-zh"><span lang="zh-CN">此版本的发布说明只有英文。</span><span lang="en">This release has English-only notes.</span></p>'
+      : "",
+    !en
+      ? '<p class="rel-note rel-fallback rel-fallback-en"><span lang="zh-CN">此版本的发布说明只有中文。</span><span lang="en">This release has Chinese-only notes.</span></p>'
+      : "",
+  ].join("\n");
   return `<section class="rel" id="${id}">
   <h2 class="rel-h"><span class="rel-ver">${version}</span>${badge}<time class="rel-date" datetime="${r.publishedAt.slice(0, 10)}">${r.publishedAt.slice(0, 10)}</time></h2>
-${halfToHtml(en, "en")}
-${halfToHtml(zh, "zh-CN")}
+${notes}
+${enHtml}
+${zhHtml}
 </section>`;
 });
 
