@@ -91,7 +91,11 @@ export function toTrustState(value: unknown): TrustState {
     return { kind: "noConfig", source, path: v.ok.path };
   }
   if (v.kind === "err" && v.err) {
-    return { kind: "error", message: v.err.message ?? "unknown" };
+    // The key, not a literal: `resolveAppErrorMessage` passes an
+    // unknown string through verbatim, and a literal "unknown" would
+    // reach a zh reader in English (the KNOWN_MESSAGE_KEYS comment in
+    // appError.ts describes exactly this fallback).
+    return { kind: "error", message: v.err.message ?? I18N_KEYS.errors.unknown };
   }
   return { kind: "error", message: I18N_KEYS.errors.unknown };
 }

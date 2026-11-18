@@ -289,7 +289,7 @@ CI 矩阵使用按 SHA 固定的 `dtolnay/rust-toolchain` 的 `stable`
   `node_modules`，键为 `misedeck/package-lock.json`。
 
 `release.yml` 用 `shared-key: ${{ matrix.os }}` 让三个平台缓存不互窜；
-`ci.yml` 现在有两个 Rust job（ubuntu 与 macOS），同样不需要这个维度——
+`ci.yml` 现在有三个 Rust job（ubuntu、macOS 与 Windows），同样不需要这个维度——
 `rust-cache` 的键包含 host triple，两个条目不设 `shared-key` 也不会互窜。
 
 ## 构建失败时

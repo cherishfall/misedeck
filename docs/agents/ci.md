@@ -339,7 +339,7 @@ and Node 22; the exact lockfile is `misedeck/src-tauri/Cargo.lock` and
   for `node_modules`, keyed on `misedeck/package-lock.json`.
 
 `release.yml` uses `shared-key: ${{ matrix.os }}` so the three
-platform caches don't collide; `ci.yml` has two Rust jobs now (ubuntu
+platform caches don't collide; `ci.yml` has three Rust jobs now (ubuntu, macOS and Windows)
 and macOS) and does not need the dimension — `rust-cache` keys on the
 host triple, so the two keep separate entries without a `shared-key`.
 

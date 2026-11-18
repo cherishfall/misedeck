@@ -125,8 +125,17 @@ function inlineText(text) {
   // match that ran on the escaped text would swallow the entity and
   // the text after it, and the link would point at the wrong place.
   const links = [];
-  let out = String(text).replace(/\[([^\]]+)\]\((https?:[^)\s\u0000]+)\)/g, (_, label, url) => {
-    links.push({ label, url });
+  // A repo-relative href (`../README.md`, `./docs/adr/0002-….md`) points
+  // at a file in THIS repo; the changelog lives on the site, so the link
+  // is rewritten to the file on GitHub's master branch. A link that is
+  // already absolute keeps its URL.
+  const resolveHref = (url) => {
+    if (/^https?:/i.test(url)) return url;
+    const stripped = url.replace(/^(?:\.\.\/|\.\/)+/, "");
+    return `https://github.com/${REPO}/blob/master/${stripped}`;
+  };
+  let out = String(text).replace(/\[([^\]]+)\]\(([^)\s\u0000]+)\)/g, (_, label, url) => {
+    links.push({ label, url: resolveHref(url) });
     return `\u0000L${links.length - 1}\u0000`;
   });
   // A bare URL.
@@ -483,8 +492,8 @@ function halfToHtml(text, lang, extraClass = "") {
   const lines = neutraliseDeadChannels(text).split("\n");
   let i = 0;
   while (i < lines.length) {
-    const line = lines[i].trim();
-    if (FENCE.test(line)) {
+    const rawLine = lines[i].trim();
+    if (FENCE.test(rawLine)) {
       // A fenced code block: its content is literal text.
       flush();
       const { body, closing } = fenceBody(lines, i + 1);
@@ -492,7 +501,17 @@ function halfToHtml(text, lang, extraClass = "") {
       i = closing < lines.length ? closing + 1 : lines.length;
       continue;
     }
+    // GitHub's quoting convention: strip leading blockquote markers so
+    // a quoted line renders as content, not as a literal `> ` prefix.
+    const line = rawLine.replace(/^(?:>\s*)+/, "");
     if (!line) {
+      flush();
+      i += 1;
+      continue;
+    }
+    // A thematic break (`---`) is body layout noise between a release's
+    // language halves — the changelog separates sections itself.
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line)) {
       flush();
       i += 1;
       continue;
