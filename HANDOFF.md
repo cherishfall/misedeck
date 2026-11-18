@@ -2,7 +2,27 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-11-19 — **v1.0.7 is live; the only open issues are #323 (design, owner-gated) and #281 (hardware, owner-gated)**)
+## CURRENT STATE (2026-11-19, final — **the review loop STOPPED clean at round 3; v1.0.8 is live**)
+
+The owner-requested comprehensive re-review loop ran three rounds and stopped per its own criterion:
+
+- **Round 7** (four audit subagents + a 19-shot dark-theme visual sweep): 0 P1, 8 P2, 10 P3 → #316–#323; everything except owner-gated #323 fixed and shipped as v1.0.7 (tag `v1.0.7` at `816aa44`, run 44390880216; the macOS leg needed one rerun — a GitHub hosted-runner shortage, not a build failure). Release record: docs/feedback/round7-audit-2026-11-19.md.
+- **Round 2** (fresh-eyes delta review): 2 P2 + 4 P3 — the release layer itself (v1.0.7's notes shipped English-only because the lightweight tag fell back to a template with no zh half; package.json carried the malformed string "1.0.7,") plus doc nits → #324/#325, fixed in `0dc2256` + a `gh release edit` bilingual body on v1.0.7 (no re-tag; the app was always 1.0.7 via tauri.conf.json). The **release template now carries both language halves**, so a future lightweight tag ships bilingual notes by default.
+- **Round 3** (loop gate): **0 new findings — LOOP: STOP.** Issue #326 carries the verdict.
+- **Round-2's user-facing string change shipped as v1.0.8** (annotated tag at `499e289`, run 44404263454, first attempt green, six assets, dmg hash `OK`): the registry failure card reads "Could not load search suggestions" / 「无法加载搜索建议」 (the retired "Registry" wording is out of UI copy), and the zh plugins screenshot was re-captured for the title change (「还没有插件」).
+
+Open issues: #281 (hardware acceptance, owner-gated, unchanged) and #323 (AA contrast token pairs — a visual-design decision with computed numbers on the issue). Nothing agent-pickable is open.
+
+**Lessons that must not be forgotten:**
+- A lightweight tag's notes come from `.github/release-template.md` — that template MUST carry both language halves (AGENTS.md says so; round 2 proved the failure mode). v1.0.7's body was repaired via `gh release edit --notes-file`.
+- Version bumps by scripted replace can put the comma INSIDE the string (`"1.0.7,"`) — validate the parsed value, not the diff.
+- `screencapture -l<winid>` from a sandboxed grandchild silently writes nothing into the repo (capture to /tmp, verify mtime, copy in); a re-attached same-named dmg can serve a STALE volume from hdiutil's cache — verify a fresh download at a custom `-mountpoint` before judging a release.
+- GitHub's hosted macOS runners periodically refuse acquisition ("not acquired by Runner of type hosted", 15m01s) — `gh run rerun --failed` lands it.
+- The push-retry pipe trap: `git push | tail -1 && break` breaks on the success of `tail`, not of the push — compare `git rev-parse HEAD` with `origin/BRANCH` or use the push's own exit code.
+
+**Next move:** nothing agent-pickable. The owner owns #281, #323, and the visual pass on 1.0.7/1.0.8 (the registry failure card and the timeout card's new detail are the two states worth one look).
+
+## PREVIOUS STATE (2026-11-19, midday — **v1.0.7 live; the loop mid-flight**)
 
 v1.0.7 shipped from the round-7 audit. Tag `v1.0.7` (lightweight, notes from the bilingual template) at `816aa44`; release run **44390880216** green after one macOS-leg rerun (the hosted-macOS runner pool refused acquisition twice that night — the 15m01s "not acquired by Runner of type hosted" failure is GitHub infra, not the build; rerunning the failed leg landed it on the first retry). Six assets; `MiseDeck_1.0.7_aarch64.dmg` hash-checked against `SHA256SUMS` (`OK`) **and launched on this machine from the mounted dmg** — sidebar footer reads 1.0.7, Home shows the real mise (2026.11.9). Watch out for a local phantom when verifying a fresh dmg: `hdiutil` can serve a stale cached volume for a re-attached same-named image — verify Info.plist from a FRESH download at a CUSTOM `-mountpoint` before concluding anything about a release.
 

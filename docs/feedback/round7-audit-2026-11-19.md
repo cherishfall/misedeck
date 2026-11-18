@@ -78,8 +78,45 @@ footer reads 1.0.7 and Home shows the real mise 2026.11.9.
 
 Changelog regenerated; the site's version chip follows automatically.
 
-## Round 2 (post-release re-audit)
+## Round 2 (post-release re-audit, fresh eyes on the delta)
 
-Ran after 1.0.7 shipped, focusing on the delta (the round-7 fixes with fresh
-eyes), the release artifacts, and the site's synced state — see the round-2
-section appended below.
+The round-7 fix commits came back clean (every hunk correct, every
+same-class sweep clean). What round 2 found was the **release layer**:
+
+- v1.0.7's published notes were English-only — v1.0.7 is a lightweight tag,
+  so the body fell back to `.github/release-template.md`, which carried no
+  zh half. Fixed twice over: the template now carries both language halves
+  (en + zh mirror), and v1.0.7's body was repaired with `gh release edit
+  --notes-file` (no re-tag; the app was always 1.0.7 via tauri.conf.json).
+- package.json's version was the malformed string `"1.0.7,"` (the bump's
+  scripted replace put the comma inside the string) — corrected on master;
+  the published tag keeps it in untouched history, with no effect on the
+  shipped app.
+- P3s: the dev READMEs' ci lists had broken literal numbering (10 → 12 → 13
+  → 13 …) after the #317 fix's renumbering loop renamed its own insertion —
+  renumbered 1–21 in both locales; the new registryError title used the
+  glossary-retired word "Registry" — retitled "Could not load search
+  suggestions" / 「无法加载搜索建议」; HANDOFF's heading contradicted the
+  open-issue set; ci.md claimed Vite injects package.json's version (it
+  does not) — corrected en + zh.
+
+Issues #324/#325 closed with evidence.
+
+## Round 3 (loop gate)
+
+Fresh-eyes audit of the round-2 delta, the repaired release body, and the
+shipped state: **0 new findings — LOOP: STOP.** Every round-2 fix verified
+(the template's `<version>` substitution survives, the zh half is a faithful
+translation, the dev README numbering is 1–21 with no skips in both locales,
+the registry copy is glossary-clean, CI green on master, both working trees
+clean). Issue #326 carries the verdict.
+
+## 1.0.8 (the loop's last patch)
+
+Per the owner's loop rule, round-2's user-facing change shipped as a patch:
+annotated tag `v1.0.8` at `499e289` (hand-written bilingual notes — the
+annotation path for one-off fixes, with `--cleanup=verbatim` protecting the
+`##` headings), release run 44404263454 green on the first attempt, six
+assets, the dmg hash-checked (`OK`). It carries the registry-card title, the
+package.json metadata fix, and the docs nits. The zh plugins screenshot was
+re-captured for the 「还没有插件」 title change (README + site).
