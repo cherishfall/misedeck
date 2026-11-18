@@ -10,7 +10,7 @@ maintainer cuts a release.
 
 | Workflow    | Trigger                                  | What it does                                                                                                                                       | Wall-clock budget |
 | ----------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `ci.yml`    | push to `master`, every PR               | `npm ci` · `npm run ci` (typecheck, eslint, tests, every lint guard, production build) · `cargo fmt --all -- --check` · `cargo check` · `cargo clippy --all-targets --features fixtures -- -D warnings` · `cargo test`. Frontend runs on Ubuntu + Windows; Rust on Ubuntu (full suite) and macOS (`cargo check` only); a separate Windows job runs `npm run ci` + `cargo test --all-targets --features fixtures` + `cargo build` (see below). | < 5 min            |
+| `ci.yml`    | push to `master`, every PR               | `npm ci` · `npm run ci` (typecheck, eslint, tests, every lint guard, production build) · `cargo fmt --all -- --check` · `cargo check` · `cargo clippy --all-targets --features fixtures -- -D warnings` · `cargo test`. Frontend runs on Ubuntu + Windows; Rust on Ubuntu (full suite), macOS (`cargo check` + clippy + full suite) and Windows (clippy + full suite + a compile smoke) — clippy and the test suite run on **every** Rust leg (issue #314); see below. | < 5 min            |
 | `release.yml` | push of a `v*.*.*` tag, or `workflow_dispatch` | `preflight` requires a green `ci.yml` run for the tagged commit; then builds Tauri bundles for `macos-latest`, `windows-latest`, `ubuntu-22.04` in parallel; uploads per-platform artifacts; on a real tag push, computes one release-wide `SHA256SUMS` and publishes a GitHub Release. | matrix-driven     |
 
 The `ci.yml` workflow is the gate that keeps `master` green. The
@@ -61,9 +61,11 @@ Both workflows run with least privilege (issue #278):
   (and this table's version comment) in one change.
 
 The `rust` job also runs `cargo fmt --all -- --check` before anything is
-compiled (issue #287), and `cargo clippy --all-targets --features fixtures -- -D warnings`,
-so a formatting or lint drift (including `unexpected_cfgs`) fails CI instead of lingering
-on `master`. The fmt gate lives above the apt install on purpose: a
+compiled (issue #287), and **every Rust leg** runs
+`cargo clippy --all-targets --features fixtures -- -D warnings` —
+Ubuntu, Windows and macOS (issue #314) — so a formatting or lint drift
+(including `unexpected_cfgs`) fails CI instead of lingering on `master`.
+The fmt gate lives above the apt install on purpose: a
 formatting error reports in seconds, without downloading Linux
 dependencies. Fix locally with `cargo fmt --all` from
 `misedeck/src-tauri`.
@@ -80,21 +82,28 @@ and a new guard had to be added in two places to run everywhere.
 **A new guard is added to `scripts.ci` in `misedeck/package.json`,
 never to a workflow file.**
 
-### The macOS `cargo check` job
+### The macOS job
 
-`ci.yml` runs a `macos:` job that does one thing: `cargo check
---all-targets --features fixtures` on `macos-latest` (issue #287).
+`ci.yml` runs a `macos:` job on `macos-latest` that does three things:
+`cargo check --all-targets --features fixtures`,
+`cargo clippy --all-targets --features fixtures -- -D warnings`, and
+`cargo test --all-targets --features fixtures` (issue #314).
 macOS is the polished-first platform, and its Rust code is invisible to
 the ubuntu leg: the objc accessibility bridge in `src/lib.rs` and the
 macOS half of `src/shell.rs` sit behind `#[cfg(target_os = "macos")]`,
 so a typo in either used to reach a compiler *only* inside
-`release.yml` — during a release. Deliberately a check, not a test run
-or a bundle: the gate is "the macOS-only code compiles", it takes
-minutes rather than tens of minutes, and it shares the
-`Swatinem/rust-cache` setup with the ubuntu leg (the cache keys on the
-host triple, so the two jobs keep separate entries). Warnings in
-macOS-only code are not gated — `clippy -D warnings` still runs on
-ubuntu only.
+`release.yml` — during a release. The *lint* was invisible too: an
+import or a block that is dead on macOS (live on Linux) is linted by no
+leg, which is the mirror image of the `#[cfg]`-gated import that #311
+was about. And the suite never ran here, so the macOS-only assertions —
+the `open -a Terminal` launcher in `shell.rs`, the background-color and
+objc accessibility bridges in `lib.rs` — were compiled and shipped
+without a single runtime check.
+
+The leg compiles once (the cache is keyed on the host triple, so it
+keeps its own entries) and then runs clippy and the suite over the same
+artifacts: a few minutes, which the workflow's budget absorbs. Bundling
+stays out — packaging is the release job's business.
 
 ### The Windows job
 
@@ -104,7 +113,10 @@ in CI — and as of 2026-10-22 it is no longer the *only* place: the
 Windows code paths have now been run on real Windows hardware, which is
 how the `#222` / `#223` fixtures were found to be unusable there. It runs
 the same frontend check as the `frontend` legs — `npm run ci`, the whole
-check list (see "One list of frontend checks") — plus the full Rust
+check list (see "One list of frontend checks") — plus clippy
+(`cargo clippy --all-targets --features fixtures -- -D warnings`, issue
+#314: an import or a block that is dead on Windows is linted by no leg
+otherwise) and the full Rust
 suite (`cargo test --all-targets --features fixtures --no-fail-fast`),
 which includes the `#[cfg(windows)]` process-tree teardown tests: each
 spawns PowerShell, which starts a hidden `ping` as a grandchild, and

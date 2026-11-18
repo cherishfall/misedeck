@@ -9,7 +9,7 @@
 
 | Workflow      | 触发时机                                    | 做了什么                                                                                                                                  | 墙钟预算   |
 | ------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `npm run ci`（typecheck、eslint、测试、全部 lint 守卫、生产构建）· `cargo fmt --all -- --check` · `cargo check` · `cargo clippy --all-targets --features fixtures -- -D warnings` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu（完整套件）与 macOS（仅 `cargo check`）；另有独立 Windows job 跑 `npm run ci` + `cargo test --all-targets --features fixtures` + `cargo build`（见下文）。 | < 5 分钟    |
+| `ci.yml`      | 推送到 `master`、每个 PR                    | `npm ci` · `npm run ci`（typecheck、eslint、测试、全部 lint 守卫、生产构建）· `cargo fmt --all -- --check` · `cargo check` · `cargo clippy --all-targets --features fixtures -- -D warnings` · `cargo test`。前端跑在 Ubuntu + Windows，Rust 跑在 Ubuntu（完整套件）、macOS（`cargo check` + clippy + 完整套件）与 Windows（clippy + 完整套件 + 编译冒烟）——clippy 与测试套件在**每一条** Rust 腿上都会跑（issue #314）；见下文。 | < 5 分钟    |
 | `release.yml` | 推送 `v*.*.*` tag，或 `workflow_dispatch`   | `preflight` 先要求被 tag 的 commit 有一次绿色的 `ci.yml` 运行；然后在 `macos-latest`、`windows-latest`、`ubuntu-22.04` 上并行构建 Tauri bundle；上传各平台 artifact；真实 tag 推送时计算一份覆盖全版本的 `SHA256SUMS` 并发布 GitHub Release。       | 由矩阵决定 |
 
 `ci.yml` 是保证 `master` 绿色的闸门。`release.yml` 才是真正产出
@@ -52,8 +52,10 @@ Ubuntu 22.04 / Debian 12 上无法启动。`ci.yml` 保持 `ubuntu-latest` —�
   版本注释）。
 
 `rust` job 在编译任何东西之前先跑 `cargo fmt --all -- --check`（issue
-#287），随后是 `cargo clippy --all-targets --features fixtures -- -D warnings`：
-格式或 lint 漂移（包括 `unexpected_cfgs`）都会让 CI 失败，而不是留在
+#287），而**每一条 Rust 腿**都跑
+`cargo clippy --all-targets --features fixtures -- -D warnings`——Ubuntu、
+Windows 与 macOS（issue #314）：格式或 lint 漂移（包括 `unexpected_cfgs`）
+都会让 CI 失败，而不是留在
 `master` 上。fmt 关卡刻意放在 apt 安装**之前**：格式错误几秒内就能报出来，
 不必先下载 Linux 依赖。本地修复方式：在 `misedeck/src-tauri` 下跑
 `cargo fmt --all`。
@@ -68,18 +70,25 @@ Ubuntu 22.04 / Debian 12 上无法启动。`ci.yml` 保持 `ubuntu-latest` —�
 Windows 上跑过，新增一个守卫得改两个地方才能全平台生效。
 **新守卫一律加进 `misedeck/package.json` 的 `scripts.ci`，不要加进 workflow 文件。**
 
-### macOS `cargo check` job
+### macOS job
 
-`ci.yml` 有一个 `macos:` job，只做一件事：在 `macos-latest` 上
-`cargo check --all-targets --features fixtures`（issue #287）。
+`ci.yml` 有一个 `macos:` job，在 `macos-latest` 上做三件事：
+`cargo check --all-targets --features fixtures`、
+`cargo clippy --all-targets --features fixtures -- -D warnings`，以及
+`cargo test --all-targets --features fixtures`（issue #314）。
 macOS 是本产品优先打磨的平台，而它的 Rust 代码对 ubuntu 那条腿是不存在的：
 `src/lib.rs` 里的 objc 无障碍桥和 `src/shell.rs` 的 macOS 半边都在
 `#[cfg(target_os = "macos")]` 之下，写错一个字符过去**只**会在
-`release.yml` 里、也就是发版途中才碰到编译器。这个 job 刻意只做 check，
-不跑测试也不打包：它守的是「macOS 专属代码能编译」，耗时是分钟级而不是
-几十分钟，并与 ubuntu 腿共用 `Swatinem/rust-cache` 的设置（缓存键包含
-host triple，两个 job 的条目互不覆盖）。macOS 专属代码里的 warning 仍
-不受闸门约束——`clippy -D warnings` 只在 ubuntu 上跑。
+`release.yml` 里、也就是发版途中才碰到编译器。*lint* 同样是看不见的：
+在 macOS 上失效（却在 Linux 上生效）的 import 或代码块，过去没有任何一条腿
+会 lint 它——这正是 #311 那次 `#[cfg]` import 问题的镜像。而测试套件在这里
+从不运行，于是 macOS 专属的断言——`shell.rs` 里的 `open -a Terminal` 启动器、
+`lib.rs` 里的背景色与 objc 无障碍桥——是被编译、被发出去的，却一次运行时
+断言都没有。
+
+这条腿只编译一次（缓存键包含 host triple，因此它保留自己的条目），随后
+在同一批产物上跑 clippy 与测试套件：几分钟，workflow 的预算吃得下。
+打包不做——出包是发版 job 的事。
 
 ### Windows job
 
@@ -88,7 +97,10 @@ host triple，两个 job 的条目互不覆盖）。macOS 专属代码里的 war
 不再是**唯一**的地方：Windows 代码路径如今已在真实 Windows 硬件上跑过，
 正是那次实机运行暴露了 `#222` / `#223` 的 fixture 在 Windows 上根本不可用。
 它跑的前端检查与两条 `frontend` 腿相同——`npm run ci`，也就是完整的检查清单
-（见「前端检查只有一份清单」）——外加完整的 Rust 测试套件
+（见「前端检查只有一份清单」）——外加 clippy
+（`cargo clippy --all-targets --features fixtures -- -D warnings`，issue
+#314：在 Windows 上失效（却在 Linux 上生效）的 import 或代码块，过去没有任何
+一条腿会 lint 它），以及完整的 Rust 测试套件
 （`cargo test --all-targets --features fixtures --no-fail-fast`），
 其中包含 `#[cfg(windows)]` 的进程树 teardown 测试：每一条都启动
 PowerShell，由 PowerShell 再启动一个隐藏的 `ping` 作为孙进程，并用

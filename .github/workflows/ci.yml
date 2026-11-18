@@ -4,8 +4,9 @@ name: ci
 # The full tag-triggered build lives in release.yml — this workflow
 # keeps master green without paying for a Tauri bundle on every commit.
 # Target wall-clock: under 5 minutes on a warm cache for the Ubuntu
-# legs and for the macOS `cargo check` leg; the Windows smoke job runs
-# a cold Rust build and is slower.
+# legs; the macOS leg compiles once and then runs clippy and the test
+# suite over the same artifacts (a few minutes, issue #314); the
+# Windows smoke job runs a cold Rust build and is slower.
 
 on:
   push:
@@ -185,10 +186,18 @@ jobs:
   # `src/shell.rs` first met a compiler inside `release.yml`. A typo in
   # a `#[cfg]` block could only be found while cutting a release.
   #
-  # Deliberately a `cargo check`, not a full test or bundle run: the
-  # point is "the macOS-only code compiles", and a check is ~3 minutes
-  # on a warm cache against a bundler's 15+. Tests stay on the ubuntu
-  # and windows legs; the macOS test surface is the same crate.
+  # Since #314 the leg gates what the other two legs gate: clippy with
+  # `-D warnings` (a lint that is dead on macOS is dead everywhere else
+  # too — the mirror image of the `#[cfg]`-gated import #311 was about),
+  # and the Rust test suite. macOS-only code — the `open -a Terminal`
+  # launcher in `shell.rs`, the background-color and objc accessibility
+  # bridges in `lib.rs` — is the code that only ever compiles here, so
+  # the assertions that cover it belong here too.
+  #
+  # The wall clock: the leg compiles once (the cache is keyed on the
+  # host triple, so this job keeps its own entries), then runs clippy
+  # and the suite over the same artifacts — a few minutes, which the
+  # workflow's budget absorbs. Bundling stays out.
   macos:
     name: rust (macos-latest)
     runs-on: macos-latest
@@ -198,6 +207,9 @@ jobs:
 
       - name: Install Rust toolchain (stable)
         uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          # clippy is the lint gate on this leg too (issue #314).
+          components: clippy
 
       # Same cache as the ubuntu leg; Swatinem/rust-cache keys on the
       # host triple, so the two jobs do not evict each other's entries.
@@ -210,6 +222,57 @@ jobs:
       - name: cargo check
         working-directory: misedeck/src-tauri
         run: cargo check --all-targets --features fixtures
+
+      # Style + cfg lints are warnings by default; `-D warnings` turns the
+      # gate on (issue #278). On macOS too (issue #314): a lint that is
+      # dead on macOS is dead on every other platform too.
+      - name: cargo clippy (zero warnings)
+        working-directory: misedeck/src-tauri
+        run: cargo clippy --all-targets --features fixtures -- -D warnings
+
+      # The suite runs on macOS (issue #314): the macOS-only code
+      # (`open -a Terminal`, the background-color and objc accessibility
+      # bridges) is compiled and shipped without a single runtime
+      # assertion otherwise. `--features fixtures` is load-bearing here
+      # too — the fixture binaries are behind the flag.
+      - name: cargo test
+        working-directory: misedeck/src-tauri
+        run: cargo test --all-targets --features fixtures
+
+      # Same failure summary as the other Rust legs: print the failing
+      # test names instead of making the reader dig through the raw
+      # output. Block scalar for the same YAML reason as above.
+      - name: Test failure summary
+        if: failure()
+        working-directory: misedeck/src-tauri
+        shell: bash
+        run: |
+          log="$RUNNER_TEMP/cargo-test-failures.log"
+          cargo test --all-targets --features fixtures --no-fail-fast >"$log" 2>&1 || true
+          {
+            echo '=== failing tests ==='
+            grep -A 100 -E '^failures:$' "$log" || true
+            echo '=== panic sites ==='
+            grep -B 2 -A 12 'panicked at' "$log" || true
+          } | tee "$RUNNER_TEMP/failure-digest.txt"
+          {
+            echo '## Failing tests'
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/failure-digest.txt"
+            echo '```'
+          } >>"$GITHUB_STEP_SUMMARY"
+          # The raw log needs repository admin rights to download; an
+          # annotation does not. Re-emit the digest (first 6 KiB — the
+          # runner caps a single annotation well below this) so the
+          # failure is readable through the checks API as well as in
+          # the browser. `%` and CR/LF are escaped per the runner's
+          # property protocol.
+          digest=$(head -c 6000 "$RUNNER_TEMP/failure-digest.txt")
+          digest=${digest//'%'/'%25'}
+          digest=${digest//$'\r'/}
+          digest=${digest//$'\n'/'%0A'}
+          echo "::error title=Failing tests::${digest}"
 
   # Windows is a beta target (issue #208). This job is the place the
   # Windows code paths actually execute: the `frontend` job above covers
@@ -246,12 +309,24 @@ jobs:
 
       - name: Install Rust toolchain (stable)
         uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          # clippy is the lint gate on this leg too (issue #314): an
+          # import or a block that is dead on Windows (live on Linux) is
+          # linted by no leg otherwise.
+          components: clippy
 
       - name: Cache Rust build artifacts
         uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: misedeck/src-tauri -> target
           cache-on-failure: true
+
+      # Style + cfg lints are warnings by default; `-D warnings` turns the
+      # gate on (issue #278). Keep this before `cargo test` so a lint
+      # failure reports as a lint, not as a mystery later step.
+      - name: cargo clippy (zero warnings)
+        working-directory: misedeck/src-tauri
+        run: cargo clippy --all-targets --features fixtures -- -D warnings
 
       # The full suite, integration tests included. The fixtures are
       # cross-platform Rust binaries (`src/bin/fixture-mise.rs`,
