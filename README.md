@@ -4,7 +4,7 @@
 
 **A desktop GUI for [mise](https://mise.jdx.dev), the polyglot tool version manager.** It is built from mise's own concepts, not an invented layer on top: each page mirrors a part of the CLI, and every change it makes runs a real `mise` command, shown verbatim — command, logs, exit code — in the execution panel. MiseDeck is an independent community project, not affiliated with mise or its maintainer.
 
-> **Status: 1.0.7** (2026-11-19) — the latest patch release; what changed is in the [release notes](https://github.com/cherishfall/misedeck/releases/tag/v1.0.7). macOS on Apple Silicon is the polished target; Windows x64 runs and has been exercised end-to-end on one real Windows 11 machine, installer included; Linux is packaged but not verified on real hardware.
+> **Status: 1.0.8** (2026-11-19) — the latest patch release; what changed is in the [release notes](https://github.com/cherishfall/misedeck/releases/tag/v1.0.8). macOS on Apple Silicon is the polished target; Windows x64 runs and has been exercised end-to-end on one real Windows 11 machine, installer included; Linux is packaged but not verified on real hardware.
 
 ## Why
 

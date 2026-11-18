@@ -4,7 +4,7 @@
 
 **[mise](https://mise.jdx.dev)（多语言工具版本管理器）的桌面 GUI。** 它用 mise 自己的概念构建，而不是在上面另造一层：每个页面镜像 CLI 的一部分，每次改动都真实执行一条 `mise` 命令，命令行、日志与退出码都原样留在执行面板里。MiseDeck 是独立的社区项目，与 mise 及其维护者没有隶属关系。
 
-> **状态：1.0.7**（2026-11-19）——最新补丁版本，改动内容见 [release 说明](https://github.com/cherishfall/misedeck/releases/tag/v1.0.7)。macOS（Apple Silicon）是打磨过的目标平台；Windows x64 能跑，已在一台真实 Windows 11 机器上完整走通（含安装包安装）；Linux 有包但未在真机上验证。
+> **状态：1.0.8**（2026-11-19）——最新补丁版本，改动内容见 [release 说明](https://github.com/cherishfall/misedeck/releases/tag/v1.0.8)。macOS（Apple Silicon）是打磨过的目标平台；Windows x64 能跑，已在一台真实 Windows 11 机器上完整走通（含安装包安装）；Linux 有包但未在真机上验证。
 
 ## 为什么
 
