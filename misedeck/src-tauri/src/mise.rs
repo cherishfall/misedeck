@@ -431,23 +431,19 @@ fn is_executable_candidate(path: &Path) -> bool {
     if !meta.is_file() {
         return false;
     }
+    // Windows has no execute bit — being a file is the whole check there.
+    // The unix arm adds the execute-bit test. Both arms are written so
+    // that neither `needless_bool` nor `needless_return` fires on the
+    // platform where the other arm is compiled out.
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        if meta.permissions().mode() & 0o111 == 0 {
-            return false;
-        }
+        meta.permissions().mode() & 0o111 != 0
     }
     #[cfg(not(unix))]
     {
-        // Windows has no execute bit: being a file is the whole check.
-        // (Clippy's `needless_bool` fires here on the Windows leg —
-        // the unix branch above returns early, so the trailing `true`
-        // is only reachable on this platform.)
-        return true;
+        true
     }
-    #[cfg(unix)]
-    true
 }
 
 /// Extract the `YYYY.MM.DD` date prefix from a mise version string like
