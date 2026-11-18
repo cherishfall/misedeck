@@ -2,6 +2,8 @@
 
 > [简体中文](../../zh-CN/docs/adr/0001-tauri-react-cross-platform.md)
 
+> **Status (2026-11):** accepted; one consequence below has been overtaken by events. "Windows/Linux builds ship from CI with a beta label" described the beta era — the Windows surface has since been exercised end-to-end on real hardware (2026-10-22/23, recorded in docs/feedback/windows-hardware-verification.md and conventions.md → Cross-platform), and Windows x64 remains a beta label by honesty, not by absence of verification. The decision itself stands.
+
 MiseDeck is built with Tauri 2 (thin Rust shell) and a React/TypeScript frontend, targeting macOS, Windows, and Linux from one codebase. Chosen over native SwiftUI and Electron.
 
 ## Considered Options

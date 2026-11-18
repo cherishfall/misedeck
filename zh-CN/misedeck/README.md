@@ -30,16 +30,17 @@ npm run ci             # 完整的前端闸门：类型检查、测试、全部 
 8. `npm run lint:css-spacing` —— padding / margin / gap 来自间距 token。
 9. `npm run lint:css-tracking` —— 字距来自 tracking token。
 10. `npm run lint:i18n-ellipsis` —— 按钮文案不以 `…` 结尾（输入占位符与进行中文案除外）。
-11. `npm run lint:command-hint` —— 命令提示只展示用户真能输入的命令，且走共享组件。
-12. `npm run lint:install-echo-parity` —— UI 展示的引导安装命令与 Rust 执行器实际 spawn 的命令，按平台一致。
-13. `npm run lint:argv-parity` —— 工具页的 TS argv 构造器与 `src-tauri/src/mise.rs` 按共享用例表逐项一致。
-14. `npm run lint:modal-focus` —— 任何地方都不得出现 `autoFocus`（初始焦点由共享对话框的 `focusTarget.ts` 决定）；只有一套 modal 实现。
-15. `npm run lint:nested-interactive` —— 交互控件不得嵌套在另一个交互控件内。
-16. `npm run lint:page-layout` —— 页面的 padding、宽度与居中留在 `PageShell`。
-17. `npm run lint:invoke-wrapper` —— 所有 Tauri `invoke` 都经由 `src/api/invoke.ts`，命令被拒绝时默认会进入全局失败提示。
-18. `npm run lint:csp-inline` —— release 构建实际执行的解析型 CSP 路径上不得出现内联 script/style/属性。
-19. `npm run lint:default-run` —— 包里有多个 bin 目标时，`default-run` 始终指向应用，裸 `cargo run` / `npm run tauri dev` 能直接启动它。
-20. `npm run build` —— `tsc --noEmit && vite build`。
+12. `npm run lint:i18n-zh-spacing` —— zh-CN 文案不会在两个汉字之间渲染空格（issue #313）。
+13. `npm run lint:command-hint` —— 命令提示只展示用户真能输入的命令，且走共享组件。
+13. `npm run lint:install-echo-parity` —— UI 展示的引导安装命令与 Rust 执行器实际 spawn 的命令，按平台一致。
+14. `npm run lint:argv-parity` —— 工具页的 TS argv 构造器与 `src-tauri/src/mise.rs` 按共享用例表逐项一致。
+15. `npm run lint:modal-focus` —— 任何地方都不得出现 `autoFocus`（初始焦点由共享对话框的 `focusTarget.ts` 决定）；只有一套 modal 实现。
+16. `npm run lint:nested-interactive` —— 交互控件不得嵌套在另一个交互控件内。
+17. `npm run lint:page-layout` —— 页面的 padding、宽度与居中留在 `PageShell`。
+18. `npm run lint:invoke-wrapper` —— 所有 Tauri `invoke` 都经由 `src/api/invoke.ts`，命令被拒绝时默认会进入全局失败提示。
+19. `npm run lint:csp-inline` —— release 构建实际执行的解析型 CSP 路径上不得出现内联 script/style/属性。
+20. `npm run lint:default-run` —— 包里有多个 bin 目标时，`default-run` 始终指向应用，裸 `cargo run` / `npm run tauri dev` 能直接启动它。
+21. `npm run build` —— `tsc --noEmit && vite build`。
 
 这里只覆盖前端。Rust 检查（`cargo check`、`cargo test`）在 `ci.yml` 中运行；完整闸门见 [docs/agents/ci.md](../../docs/agents/ci.md)。
 

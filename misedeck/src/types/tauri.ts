@@ -130,11 +130,12 @@ export interface MiseTask {
 }
 
 /**
- * The `read_lockfile` Tauri command returns a discriminated union so
- * the JS side can tell "no lockfile" (None) apart from "the file
- * exists but is empty" (`Some("")`) apart from a hard I/O error
- * (the structured AppError). Mirrors the Tauri command in
- * `src-tauri/src/lib.rs`.
+ * The `read_lockfile`-backed API returns a discriminated union so the
+ * JS side can tell "no lockfile" (None) apart from "the file exists
+ * but is empty" (`Some("")`) apart from a hard I/O error (the
+ * structured AppError). The Tauri command itself returns bare
+ * `Result<Option<String>, AppError>` (src-tauri/src/lib.rs); the API
+ * layer (`src/api/mise.ts`) normalizes that into this union.
  */
 export type LockfileResult =
   | { kind: "ok"; content: string | null }

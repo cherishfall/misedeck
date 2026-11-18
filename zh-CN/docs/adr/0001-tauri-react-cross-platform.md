@@ -2,6 +2,8 @@
 
 > [English](../../../docs/adr/0001-tauri-react-cross-platform.md)
 
+> **状态（2026-11）：** 已接受；下文的一个后果已被事实超越。「Windows/Linux 构建由 CI 打包并带 beta 标签」描述的是 beta 时代——Windows 界面此后已在真实硬件上完整走通（2026-10-22/23，记录于 docs/feedback/windows-hardware-verification.md 与 conventions.md → Cross-platform）；Windows x64 仍标 beta 是出于诚实而非缺少验证。决策本身不变。
+
 MiseDeck 使用 Tauri 2（轻量 Rust 外壳）和 React/TypeScript 前端构建，从单一代码库面向 macOS、Windows 和 Linux。该方案在原生 SwiftUI 和 Electron 中胜出。
 
 ## 考虑过的选项
