@@ -55,6 +55,23 @@ Context is a budget, not an archive. Long contexts degrade (context rot, lost-in
 
 Agents may commit and push as part of completing a ticket: commit to master once the Definition of done passes, message referencing the issue (`#N`). Use a `ticket/NN-*` branch + PR only when running parallel worktrees. master must always stay green. Never force-push, rewrite published history, or delete branches/tags.
 
+## The public site (landing + changelog)
+
+The project's public web presence lives in a **separate repository** — `cherishfall/cherishfall.github.io`, path `misedeck/` (published at <https://cherishfall.github.io/misedeck/>). It is static HTML with no build step; a plain push to that repo's `main` branch publishes it.
+
+Two things in this repo are the **source of truth** for that site, and a change to either one obliges a matching update there:
+
+1. **The release history.** The site's changelog page is generated from the published GitHub Releases — never hand-edited. After a release is published, regenerate it:
+   ```sh
+   node scripts/gen-changelog-page.mjs
+   ```
+   The generator writes `../cherishfall.github.io/misedeck/changelog.html`. Commit the regenerated page in the site repo. The release body is already bilingual (`## English` then `## 简体中文`), so the generator splits it — a release whose body loses one of the two headings produces a half-empty changelog entry, which is a bug in the release notes, not in the generator.
+2. **The screenshots.** The site shows the app's real UI in `misedeck/screens/{en,zh}/*.webp`. When a release changes the UI, re-capture `docs/screenshots/*.png` (the README's own images) **and** re-convert them for the site — the same captures, converted to WebP at 1920 px wide. A site screenshot that no longer matches the app is a false claim about the product.
+
+What the site must keep saying, because it is checked against the code: the eight pages and their commands, the version number (the header chip must match the latest published release), the install file names, the unsigned/notarized caveat on macOS and the unsigned caveat on Windows, and the community-project disclaimer. When the release changes any of those, the site changes with it.
+
+The site's palette and typography are the app's own — `docs/design/visual-language.md` is the source of truth for both, so the site cannot drift from the app. Copy for the site follows `CONTEXT.md`'s vocabulary, like the app's.
+
 ## Agent skills
 
 ### Issue tracker

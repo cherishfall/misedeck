@@ -55,6 +55,23 @@
 
 agent 可以在完成 ticket 的过程中 commit 和 push：DoD 全部通过后提交到 master，commit message 引用对应 issue（`#N`）。仅在并行 worktree 时使用 `ticket/NN-*` 分支 + PR。master 必须始终保持绿色。禁止 force-push、改写已发布历史、删除分支或 tag。
 
+## 公开站点（落地页 + 更新日志）
+
+本项目的公开网页在**另一个仓库**——`cherishfall/cherishfall.github.io`，路径 `misedeck/`（线上地址 <https://cherishfall.github.io/misedeck/>）。它是纯静态 HTML，没有构建步骤；往那个仓库的 `main` 分支 push 即发布。
+
+本仓库里有两样东西是那个站点的**真值来源**，改动其中任何一样，都必须同步更新站点：
+
+1. **发布历史。** 站点的更新日志页由已发布的 GitHub Release **生成**，绝不手改。发布完成后重新生成：
+   ```sh
+   node scripts/gen-changelog-page.mjs
+   ```
+   生成器写入 `../cherishfall.github.io/misedeck/changelog.html`，在站点仓库里提交该文件。Release 正文本来就是双语的（`## English` 在前，`## 简体中文` 在后），生成器据此切分——如果某次发布的正文丢了其中一个标题，更新日志会出现半空条目，那是发布说明的问题，不是生成器的问题。
+2. **截图。** 站点展示的是应用真实界面：`misedeck/screens/{en,zh}/*.webp`。发布若改动了 UI，就要重拍 `docs/screenshots/*.png`（README 自己的图），**并**为站点重新转成 1920 像素宽的 WebP——同一批截图，两处使用。站点截图与应用不再一致，就是对产品的虚假描述。
+
+站点必须始终说对、且要与代码核对的内容：八个页面及其命令、版本号（页头 chip 必须与最新已发布版本一致）、安装包文件名、macOS 未签名未公证与 Windows 未签名的提醒，以及社区项目的免责声明。发布改变了其中任何一项，站点随之改变。
+
+站点的配色与字体就是应用自己的——`docs/design/visual-language.md` 是两者的共同真值来源，因此站点不会与应用漂移。站点文案同样遵循 `CONTEXT.md` 的词汇，与应用一致。
+
 ## Agent skills
 
 ### Issue tracker

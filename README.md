@@ -148,6 +148,10 @@ Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on ma
 | ![Doctor](./docs/screenshots/doctor-en.png) | ![诊断](./docs/screenshots/doctor-zh-CN.png) |
 | ![Settings](./docs/screenshots/settings-en.png) | ![设置](./docs/screenshots/settings-zh-CN.png) |
 
+## Website
+
+The project page lives at **[cherishfall.github.io/misedeck](https://cherishfall.github.io/misedeck/)** — bilingual, with the app's real screens and the [changelog](https://cherishfall.github.io/misedeck/changelog.html).
+
 ## Contributing
 
 See [AGENTS.md](./AGENTS.md), the glossary in [CONTEXT.md](./CONTEXT.md), and [docs/adr/](./docs/adr/). Report bugs and feedback in [Issues](https://github.com/cherishfall/misedeck/issues).

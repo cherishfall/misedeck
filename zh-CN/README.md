@@ -148,6 +148,10 @@ npm run tauri build
 | ![Doctor](../docs/screenshots/doctor-en.png) | ![诊断](../docs/screenshots/doctor-zh-CN.png) |
 | ![Settings](../docs/screenshots/settings-en.png) | ![设置](../docs/screenshots/settings-zh-CN.png) |
 
+## 站点
+
+项目页在 **[cherishfall.github.io/misedeck](https://cherishfall.github.io/misedeck/)**——双语，含应用真实截图与[更新日志](https://cherishfall.github.io/misedeck/changelog.html)。
+
 ## 参与贡献
 
 见 [AGENTS.md](../AGENTS.md)、术语表 [CONTEXT.md](../CONTEXT.md)、决策记录 [docs/adr/](../docs/adr/)。问题与反馈请提交到 [Issues](https://github.com/cherishfall/misedeck/issues)。
