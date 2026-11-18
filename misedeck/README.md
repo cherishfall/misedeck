@@ -30,8 +30,8 @@ npm run ci             # the full frontend gate: typecheck, tests, every lint gu
 8. `npm run lint:css-spacing` — padding / margin / gap come from the spacing tokens.
 9. `npm run lint:css-tracking` — letter-spacing comes from the tracking tokens.
 10. `npm run lint:i18n-ellipsis` — no button label ends in `…` (placeholders and in-progress copy excepted).
-12. `npm run lint:i18n-zh-spacing` — a zh-CN sentence never renders a space between two Han characters (issue #313).
-13. `npm run lint:command-hint` — command hints show only commands a user can type, through the shared component.
+11. `npm run lint:i18n-zh-spacing` — a zh-CN sentence never renders a space between two Han characters (issue #313).
+12. `npm run lint:command-hint` — command hints show only commands a user can type, through the shared component.
 13. `npm run lint:install-echo-parity` — the guided-install line the UI shows is the line the Rust executor spawns, per platform.
 14. `npm run lint:argv-parity` — the tools-page argv builders in TS and `src-tauri/src/mise.rs` agree, per the shared case table.
 15. `npm run lint:modal-focus` — no `autoFocus` anywhere (initial focus lives in the shared dialog's `focusTarget.ts`); only one modal implementation.

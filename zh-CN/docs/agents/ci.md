@@ -149,7 +149,7 @@ commit 上看到的运行列出来。它**不**重跑整套检查：那会在每
    - `misedeck/src-tauri/Cargo.lock`（`name = "misedeck"` 包的 `version`）
    - `misedeck/src-tauri/tauri.conf.json`（`"version"`）
    Tauri CLI 会把版本号写入 bundle 元数据；`package.json` 的值是
-   Vite 在构建时注入的。
+   npm 侧的元数据，不得与其余五处漂移。
 3. **打 tag 之前先把 README 更新到位。** 按实际要发布的内容核对中英两份：
    状态行与版本号、页面/命令对照表、安装步骤（文件名、签名注意事项）、
    平台支持、已知限制，以及 `docs/screenshots/` —— 界面、文案或数据结构

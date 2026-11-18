@@ -161,7 +161,7 @@
         "bodyNoStderr": "mise ls-remote --json {{tool}} 未返回结果，也没有输出 stderr。请重试；若反复出现，请在终端中运行该命令。"
       },
       "registryError": {
-        "title": "无法加载 registry",
+        "title": "无法加载搜索建议",
         "body": "mise registry --json 未返回结果。stderr 如下所示。",
         "bodyNoStderr": "mise registry --json 未返回结果，也没有输出 stderr。请重试；若反复出现，请在终端中运行该命令。"
       }

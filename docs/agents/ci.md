@@ -175,7 +175,8 @@ To cut a release:
      `version`)
    - `misedeck/src-tauri/tauri.conf.json` (`"version"`)
    The Tauri CLI stamps the version into the bundle metadata; the
-   `package.json` value is what Vite injects at build time.
+   `package.json` value is npm-facing metadata that must not drift
+   from the other five sites.
 3. **Bring the README up to date before tagging.** Check both locales
    against what is actually shipping: the status line and version, the
    page/command table, install steps (file names, signing caveats),

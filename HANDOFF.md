@@ -2,7 +2,7 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-11-19 — **v1.0.7 is live; #318's HANDOFF item done, #323 is the only open issue and it is owner-gated (design)**)
+## CURRENT STATE (2026-11-19 — **v1.0.7 is live; the only open issues are #323 (design, owner-gated) and #281 (hardware, owner-gated)**)
 
 v1.0.7 shipped from the round-7 audit. Tag `v1.0.7` (lightweight, notes from the bilingual template) at `816aa44`; release run **44390880216** green after one macOS-leg rerun (the hosted-macOS runner pool refused acquisition twice that night — the 15m01s "not acquired by Runner of type hosted" failure is GitHub infra, not the build; rerunning the failed leg landed it on the first retry). Six assets; `MiseDeck_1.0.7_aarch64.dmg` hash-checked against `SHA256SUMS` (`OK`) **and launched on this machine from the mounted dmg** — sidebar footer reads 1.0.7, Home shows the real mise (2026.11.9). Watch out for a local phantom when verifying a fresh dmg: `hdiutil` can serve a stale cached volume for a re-attached same-named image — verify Info.plist from a FRESH download at a CUSTOM `-mountpoint` before concluding anything about a release.
 
