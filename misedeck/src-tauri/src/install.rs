@@ -21,8 +21,8 @@ use std::time::Duration;
 use serde::Serialize;
 
 use crate::mise::{
-    drive_child, extract_date, meets_minimum, mise_version, run_mise_tracked, AppError, DriveEnd,
-    DriveError, PipeMode, RunEvent, RunRequest, MIN_MISE_VERSION,
+    drive_child, extract_date, meets_minimum, mise_version, run_mise_tracked, token, AppError,
+    DriveEnd, DriveError, MessageParams, PipeMode, RunEvent, RunRequest, MIN_MISE_VERSION,
 };
 
 /// Maximum wall-clock time the official install script is allowed to
@@ -154,28 +154,40 @@ where
     // with `run_mise_timed`.
     let driven = drive_child(&mut cmd, timeout, run_id, PipeMode::Lines, &mut on_event).map_err(
         |e| match e {
-            DriveError::Spawn(e) => AppError::command_failed(
-                format!("failed to spawn install command: {e}"),
+            DriveError::Spawn(e) => AppError::command_failed_keyed(
+                "errors.spawnFailed",
+                MessageParams::new()
+                    .with("task", token::task::INSTALL)
+                    .with("reason", e.to_string()),
                 String::new(),
             ),
-            DriveError::Wait(e) => {
-                AppError::command_failed(format!("error waiting for install: {e}"), String::new())
-            }
+            DriveError::Wait(e) => AppError::command_failed_keyed(
+                "errors.waitFailed",
+                MessageParams::new()
+                    .with("task", token::task::INSTALL)
+                    .with("reason", e.to_string()),
+                String::new(),
+            ),
         },
     )?;
     match driven.end {
         // The panel already shows "cancelled", so the outcome is
         // discarded; what matters is that `curl` and the installer died
         // with `sh` (issue #223).
-        DriveEnd::Cancelled => Err(AppError::command_failed("install cancelled", String::new())),
+        DriveEnd::Cancelled => Err(AppError::command_failed_keyed(
+            "errors.cancelled",
+            MessageParams::new().with("task", token::task::INSTALL),
+            String::new(),
+        )),
         DriveEnd::TimedOut => Err(AppError::timeout()),
         DriveEnd::Exited => {
             // A non-zero exit is a failure, not an outcome — returning Ok
             // would let the next caller treat a failed install as success
             // (issue #172).
             if driven.exit_code != 0 {
-                return Err(AppError::command_failed(
-                    format!("install script exited with status {}", driven.exit_code),
+                return Err(AppError::command_failed_keyed(
+                    "errors.installFailed",
+                    MessageParams::new().with("code", driven.exit_code),
                     driven.stderr.clone(),
                 ));
             }
@@ -233,8 +245,11 @@ where
     let outcome = run_mise_tracked(mise_path, &req, run_id, on_event)?;
 
     if outcome.exit_code != 0 {
-        return Err(AppError::command_failed(
-            format!("mise self-update exited with status {}", outcome.exit_code),
+        return Err(AppError::command_failed_keyed(
+            "errors.commandFailed",
+            MessageParams::new()
+                .with("cmd", "mise self-update")
+                .with("code", outcome.exit_code),
             outcome.stderr.clone(),
         ));
     }

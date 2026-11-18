@@ -118,6 +118,19 @@ impl AppError {
         Self::new(code::COMMAND_FAILED, message, stderr)
     }
 
+    /// A COMMAND_FAILED whose detail is a *key-shaped* message
+    /// (issue #311): the frontend resolves `key|param=value|…` through
+    /// the i18n catalog, so a zh-CN UI never renders MiseDeck-authored
+    /// English. `params` carries the data — the command that ran, the
+    /// exit status, the path — so the sentence stays honest.
+    pub fn command_failed_keyed(
+        key: &str,
+        params: MessageParams,
+        stderr: impl Into<String>,
+    ) -> Self {
+        Self::new(code::COMMAND_FAILED, params.encode(key), stderr)
+    }
+
     pub fn parse_failed(message: impl Into<String>, stderr: impl Into<String>) -> Self {
         Self::new(code::PARSE_FAILED, message, stderr)
     }
@@ -131,6 +144,55 @@ impl AppError {
 
     pub fn timeout() -> Self {
         Self::new(code::TIMEOUT, "errors.timeout", String::new())
+    }
+}
+
+/// Percent-encode a parameter value for the `key|param=value|…` wire
+/// format (issue #311).
+///
+/// The `|` delimiter is the one character the format cannot carry raw:
+/// a value that contains one would split the message into bogus
+/// parameters, and the reader would then see a truncated path or a
+/// half-quoted command. `%` is encoded first so the escape itself
+/// round-trips (`%7C` is never mistaken for a literal `%`).
+pub fn encode_param_value(value: &str) -> String {
+    value.replace('%', "%25").replace('|', "%7C")
+}
+
+/// The parameters of a key-shaped `AppError.message` (issue #311).
+///
+/// A key-shaped message carries the i18n key first, then one
+/// `|name=value` segment per parameter. The values are the *data* —
+/// the command that ran, the exit status, the path, the OS error —
+/// so the localized sentence never has to invent them.
+#[derive(Debug, Default, Clone)]
+pub struct MessageParams {
+    parts: Vec<(String, String)>,
+}
+
+impl MessageParams {
+    /// An empty parameter set.
+    pub fn new() -> Self {
+        Self { parts: Vec::new() }
+    }
+
+    /// Add one parameter. The value is stringified and percent-encoded
+    /// when the message is built.
+    pub fn with(mut self, name: &str, value: impl ToString) -> Self {
+        self.parts.push((name.to_string(), value.to_string()));
+        self
+    }
+
+    /// The wire format: the key, then `|name=value` per parameter.
+    pub fn encode(&self, key: &str) -> String {
+        let mut out = String::from(key);
+        for (name, value) in &self.parts {
+            out.push('|');
+            out.push_str(name);
+            out.push('=');
+            out.push_str(&encode_param_value(value));
+        }
+        out
     }
 }
 
@@ -153,6 +215,70 @@ mod parse_shape {
     pub const VERSION_STRING: &str = "versionString";
 }
 
+/// The locale-neutral tokens of the key-shaped COMMAND_FAILED messages
+/// (issue #311). A parameter that names a *kind* rather than data
+/// carries one of these tokens; the catalog holds the token's phrase in
+/// both locales, so the Rust side emits the token without knowing the
+/// reader's language. The full vocabulary lives in the catalog and in
+/// `docs/agents/i18n.md`; only the tokens this crate emits are listed
+/// here.
+pub mod token {
+    /// `errors.task.*` — the operation a background task, a
+    /// cancellation, a spawn, or a wait belongs to.
+    pub mod task {
+        /// A `mise …` run.
+        pub const MISE: &str = "mise";
+        /// The official mise installer script.
+        pub const INSTALL: &str = "install";
+        /// `mise self-update`.
+        pub const SELF_UPDATE: &str = "selfUpdate";
+        /// `mise trust`.
+        pub const TRUST: &str = "trust";
+        /// The working-directory check every command with a `cwd` runs.
+        pub const CWD: &str = "cwd";
+    }
+
+    /// `errors.arg.*` — the argument a rule is about.
+    pub mod arg {
+        /// The argv of a mise run.
+        pub const COMMAND: &str = "command";
+        /// A tool name (`mise ls --json <tool>`).
+        pub const TOOL: &str = "tool";
+        /// A task name (`mise tasks edit --path <task>`).
+        pub const TASK: &str = "task";
+        /// The working directory.
+        pub const CWD: &str = "cwd";
+        /// A command-line flag.
+        pub const FLAG: &str = "flag";
+        /// The app theme.
+        pub const THEME: &str = "theme";
+    }
+
+    /// `errors.linkReason.*` — why a link was refused.
+    pub mod link_reason {
+        /// The link carried no text.
+        pub const EMPTY: &str = "empty";
+        /// The link was longer than the opener accepts.
+        pub const TOO_LONG: &str = "tooLong";
+        /// The link carried whitespace or a control character.
+        pub const WHITESPACE: &str = "whitespace";
+        /// The link was not an `http(s)` URL.
+        pub const SCHEME: &str = "scheme";
+        /// The link had no host.
+        pub const HOST: &str = "host";
+        /// The link's credentials came before its host.
+        pub const CREDENTIALS: &str = "credentials";
+    }
+
+    /// `errors.feedReason.*` — why the release feed was unreadable.
+    pub mod feed_reason {
+        /// The response was not an Atom feed.
+        pub const NOT_ATOM: &str = "notAtom";
+        /// The feed carried no complete `<entry>`.
+        pub const NO_ENTRY: &str = "noEntry";
+    }
+}
+
 /// The key-shaped parse-failure detail (issue #310): the frontend
 /// resolves `errors.parseFailed` through the i18n catalog, so a zh-CN
 /// UI never renders MiseDeck-authored English detail. `cmd` is mise's
@@ -160,7 +286,10 @@ mod parse_shape {
 /// expected — the data-honesty rule asks the detail to name what was
 /// run and what was expected back.
 fn parse_failed_detail(cmd: &str, shape: &str) -> String {
-    format!("errors.parseFailed|cmd={cmd}|shape={shape}")
+    MessageParams::new()
+        .with("cmd", cmd)
+        .with("shape", shape)
+        .encode("errors.parseFailed")
 }
 
 /// The mise command line a request runs, as the user would type it
@@ -471,15 +600,19 @@ fn contains_shell_metachar(s: &str) -> bool {
 ///     injection surface.
 pub fn validate_run_args(args: &[String]) -> Result<(), AppError> {
     if args.is_empty() {
-        return Err(AppError::command_failed(
-            "run_mise_command called with empty args",
+        return Err(AppError::command_failed_keyed(
+            "errors.emptyArg",
+            MessageParams::new().with("arg", token::arg::COMMAND),
             String::new(),
         ));
     }
     for a in args {
         if a.starts_with('-') && contains_shell_metachar(a) {
-            return Err(AppError::command_failed(
-                format!("run_mise_command: flag arg contains shell metacharacter: {a:?}"),
+            return Err(AppError::command_failed_keyed(
+                "errors.invalidArg",
+                MessageParams::new()
+                    .with("arg", token::arg::FLAG)
+                    .with("value", a),
                 String::new(),
             ));
         }
@@ -498,8 +631,9 @@ pub fn resolve_cwd_anchor(cwd: Option<&Path>) -> Result<PathBuf, AppError> {
     match cwd {
         Some(dir) => Ok(dir.to_path_buf()),
         None => dirs::home_dir().ok_or_else(|| {
-            AppError::command_failed(
-                "cannot resolve the home directory to anchor Global mode",
+            AppError::command_failed_keyed(
+                "errors.homeNotFound",
+                MessageParams::new(),
                 String::new(),
             )
         }),
@@ -1421,12 +1555,20 @@ fn mise_drive_error(e: DriveError) -> AppError {
         DriveError::Spawn(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
             AppError::not_found()
         }
-        DriveError::Spawn(e) => {
-            AppError::command_failed(format!("failed to spawn mise: {e}"), String::new())
-        }
-        DriveError::Wait(e) => {
-            AppError::command_failed(format!("error waiting for mise: {e}"), String::new())
-        }
+        DriveError::Spawn(e) => AppError::command_failed_keyed(
+            "errors.spawnFailed",
+            MessageParams::new()
+                .with("task", token::task::MISE)
+                .with("reason", e.to_string()),
+            String::new(),
+        ),
+        DriveError::Wait(e) => AppError::command_failed_keyed(
+            "errors.waitFailed",
+            MessageParams::new()
+                .with("task", token::task::MISE)
+                .with("reason", e.to_string()),
+            String::new(),
+        ),
     }
 }
 
@@ -1479,9 +1621,13 @@ where
         // The message is a cross-language contract: the panel's
         // `useExecution.ts` matches it verbatim (`isCancellationRejection`)
         // to settle a cancel-racing rejection as cancelled, not failed
-        // (issue #301). Change both sides together.
-        DriveEnd::Cancelled => Err(AppError::command_failed(
-            "mise run cancelled",
+        // (issue #301). It is key-shaped (issue #311), so the message
+        // still reads as a sentence in the reader's locale — the
+        // frontend compares the key-shaped form. Change both sides
+        // together.
+        DriveEnd::Cancelled => Err(AppError::command_failed_keyed(
+            "errors.cancelled",
+            MessageParams::new().with("task", token::task::MISE),
             String::new(),
         )),
         DriveEnd::TimedOut => Err(AppError::timeout()),
@@ -1655,10 +1801,17 @@ where
 ///
 /// The error carries mise's own stderr verbatim; the execution panel
 /// has already streamed the transcript by the time this runs.
-pub fn require_success(outcome: RunOutcome) -> Result<RunOutcome, AppError> {
+///
+/// `cmd` is the command line that ran, as the user would type it
+/// (`mise ls --json`) — the detail names what failed, so a zh-CN UI
+/// still shows the same facts (issue #311).
+pub fn require_success(outcome: RunOutcome, cmd: &str) -> Result<RunOutcome, AppError> {
     if outcome.exit_code != 0 {
-        return Err(AppError::command_failed(
-            format!("mise exited with status {}", outcome.exit_code),
+        return Err(AppError::command_failed_keyed(
+            "errors.commandFailed",
+            MessageParams::new()
+                .with("cmd", cmd)
+                .with("code", outcome.exit_code),
             outcome.stderr,
         ));
     }
@@ -1775,8 +1928,11 @@ fn run_mise_json_attempt(
     let exit_code = outcome.exit_code;
     if exit_code != 0 {
         return (
-            Err(AppError::command_failed(
-                format!("mise exited with status {exit_code}"),
+            Err(AppError::command_failed_keyed(
+                "errors.commandFailed",
+                MessageParams::new()
+                    .with("cmd", command_line(req))
+                    .with("code", exit_code),
                 outcome.stderr,
             )),
             Some(exit_code),
@@ -1817,8 +1973,9 @@ pub fn mise_ls_tool(
     tool: &str,
 ) -> Result<serde_json::Value, AppError> {
     if tool.is_empty() {
-        return Err(AppError::command_failed(
-            "mise_ls_tool: tool name is empty",
+        return Err(AppError::command_failed_keyed(
+            "errors.emptyArg",
+            MessageParams::new().with("arg", token::arg::TOOL),
             String::new(),
         ));
     }
@@ -1946,8 +2103,11 @@ pub fn read_mise_lockfile(cwd: Option<&Path>) -> Result<Option<String>, AppError
     match std::fs::read_to_string(&path) {
         Ok(s) => Ok(Some(s)),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(e) => Err(AppError::command_failed(
-            format!("failed to read {}: {e}", path.display()),
+        Err(e) => Err(AppError::command_failed_keyed(
+            "errors.readFailed",
+            MessageParams::new()
+                .with("path", path.display().to_string())
+                .with("reason", e.to_string()),
             String::new(),
         )),
     }
@@ -2057,8 +2217,9 @@ pub fn mise_ls_remote(
     tool: &str,
 ) -> Result<serde_json::Value, AppError> {
     if tool.is_empty() {
-        return Err(AppError::command_failed(
-            "mise_ls_remote: tool name is empty",
+        return Err(AppError::command_failed_keyed(
+            "errors.emptyArg",
+            MessageParams::new().with("arg", token::arg::TOOL),
             String::new(),
         ));
     }
@@ -2174,8 +2335,9 @@ pub fn mise_tasks_edit_path(
     name: &str,
 ) -> Result<Option<String>, AppError> {
     if name.is_empty() {
-        return Err(AppError::command_failed(
-            "mise_tasks_edit_path: task name is empty",
+        return Err(AppError::command_failed_keyed(
+            "errors.emptyArg",
+            MessageParams::new().with("arg", token::arg::TASK),
             String::new(),
         ));
     }
@@ -2191,11 +2353,11 @@ pub fn mise_tasks_edit_path(
     };
     let outcome = run_mise_capture(mise_path, &req, READ_TIMEOUT)?;
     if outcome.exit_code != 0 {
-        return Err(AppError::command_failed(
-            format!(
-                "mise tasks edit --path {} exited with status {}",
-                name, outcome.exit_code
-            ),
+        return Err(AppError::command_failed_keyed(
+            "errors.commandFailed",
+            MessageParams::new()
+                .with("cmd", command_line(&req))
+                .with("code", outcome.exit_code),
             outcome.stderr,
         ));
     }
@@ -2273,8 +2435,11 @@ pub fn check_trust(mise_path: &Path, cwd: Option<&Path>) -> Result<TrustStatus, 
     };
     let outcome = run_mise_capture(mise_path, &req, READ_TIMEOUT)?;
     if outcome.exit_code != 0 {
-        return Err(AppError::command_failed(
-            format!("mise trust --show exited with status {}", outcome.exit_code),
+        return Err(AppError::command_failed_keyed(
+            "errors.commandFailed",
+            MessageParams::new()
+                .with("cmd", command_line(&req))
+                .with("code", outcome.exit_code),
             outcome.stderr,
         ));
     }
@@ -2315,8 +2480,9 @@ fn parse_trust_show(stdout: &str, cwd: Option<&Path>) -> Result<TrustStatus, App
     if entries.is_empty() && unparsed {
         // The raw payload *is* the detail here: mise exited 0, so there
         // is no stderr to surface. The panel shows it verbatim.
-        return Err(AppError::command_failed(
-            "mise trust --show printed output the app could not parse",
+        return Err(AppError::command_failed_keyed(
+            "errors.unparsableOutput",
+            MessageParams::new().with("cmd", "mise trust --show"),
             stdout,
         ));
     }
@@ -2469,8 +2635,11 @@ where
     };
     let outcome = run_mise_tracked(mise_path, &req, run_id, on_event)?;
     if outcome.exit_code != 0 {
-        return Err(AppError::command_failed(
-            format!("mise trust exited with status {}", outcome.exit_code),
+        return Err(AppError::command_failed_keyed(
+            "errors.commandFailed",
+            MessageParams::new()
+                .with("cmd", command_line(&req))
+                .with("code", outcome.exit_code),
             outcome.stderr,
         ));
     }
@@ -2604,8 +2773,11 @@ fn doctor_text_payload(
     // from no data (issue #233). Non-zero exits WITH lines stay Ok —
     // those lines are the diagnostic output the fallback exists for.
     if lines.is_empty() && exit_code != 0 {
-        return Err(AppError::command_failed(
-            format!("mise doctor exited with status {exit_code}"),
+        return Err(AppError::command_failed_keyed(
+            "errors.commandFailed",
+            MessageParams::new()
+                .with("cmd", "mise doctor")
+                .with("code", exit_code),
             stderr,
         ));
     }
@@ -2668,8 +2840,11 @@ fn registry_table_fallback(
     .with_safe_mode(safe_mode);
     let outcome = run_mise_capture(mise_path, &req, READ_TIMEOUT)?;
     if outcome.exit_code != 0 {
-        return Err(AppError::command_failed(
-            format!("mise registry exited with status {}", outcome.exit_code),
+        return Err(AppError::command_failed_keyed(
+            "errors.commandFailed",
+            MessageParams::new()
+                .with("cmd", command_line(&req))
+                .with("code", outcome.exit_code),
             outcome.stderr,
         ));
     }
@@ -2817,8 +2992,11 @@ pub fn mise_plugins_ls(
     .with_safe_mode(safe_mode);
     let outcome = run_mise_capture(mise_path, &req, READ_TIMEOUT)?;
     if outcome.exit_code != 0 {
-        return Err(AppError::command_failed(
-            format!("mise plugins ls exited with status {}", outcome.exit_code),
+        return Err(AppError::command_failed_keyed(
+            "errors.commandFailed",
+            MessageParams::new()
+                .with("cmd", command_line(&req))
+                .with("code", outcome.exit_code),
             outcome.stderr,
         ));
     }
@@ -3065,8 +3243,11 @@ pub fn mise_version(mise_path: &Path) -> Result<(serde_json::Value, String), App
     let req = RunRequest::new(vec!["version".to_string(), "--json".to_string()]);
     let outcome = run_mise_capture(mise_path, &req, DETECT_TIMEOUT)?;
     if outcome.exit_code != 0 {
-        return Err(AppError::command_failed(
-            format!("mise exited with status {}", outcome.exit_code),
+        return Err(AppError::command_failed_keyed(
+            "errors.commandFailed",
+            MessageParams::new()
+                .with("cmd", command_line(&req))
+                .with("code", outcome.exit_code),
             outcome.stderr,
         ));
     }
@@ -3120,6 +3301,61 @@ mod tests {
     use super::*;
     use std::io::Cursor;
     use std::sync::mpsc::channel;
+
+    // ---------- Issue #311: the key-shaped COMMAND_FAILED detail ----------
+
+    /// A COMMAND_FAILED detail is `key|param=value|…`: the i18n key
+    /// first, then the data. The frontend resolves the key through the
+    /// catalog, so a zh-CN UI never renders MiseDeck's English prose.
+    #[test]
+    fn a_keyed_failure_carries_the_key_and_its_parameters() {
+        let err = AppError::command_failed_keyed(
+            "errors.commandFailed",
+            MessageParams::new()
+                .with("cmd", "mise trust --show")
+                .with("code", 1),
+            "mise: trust failed",
+        );
+        assert_eq!(err.code, code::COMMAND_FAILED);
+        assert_eq!(
+            err.message,
+            "errors.commandFailed|cmd=mise trust --show|code=1"
+        );
+        // mise's own stderr stays in the stderr field, verbatim.
+        assert_eq!(err.stderr, "mise: trust failed");
+    }
+
+    /// The `|` delimiter is the one character the wire format cannot
+    /// carry raw: a value that contains one would split the message
+    /// into bogus parameters and the reader would see a truncated path.
+    /// `%` is encoded first so the escape round-trips.
+    #[test]
+    fn a_parameter_value_cannot_break_the_wire_format() {
+        let err = AppError::command_failed_keyed(
+            "errors.invalidArg",
+            MessageParams::new()
+                .with("arg", token::arg::FLAG)
+                .with("value", "--run=a|b%c"),
+            String::new(),
+        );
+        assert_eq!(
+            err.message,
+            "errors.invalidArg|arg=flag|value=--run=a%7Cb%25c"
+        );
+        // Three segments: the key and two parameters — the pipe did not
+        // split the value.
+        assert_eq!(err.message.split('|').count(), 3);
+    }
+
+    /// The parse-failure detail (issue #310) uses the same builder, so
+    /// its command line is encoded too.
+    #[test]
+    fn the_parse_failure_detail_uses_the_same_wire_format() {
+        assert_eq!(
+            parse_failed_detail("mise ls --json", parse_shape::VALID_JSON),
+            "errors.parseFailed|cmd=mise ls --json|shape=validJson"
+        );
+    }
 
     /// Issue #277: a newline-free writer used to grow the reader's
     /// buffer without bound. The per-line cap keeps 8 KiB, reports the

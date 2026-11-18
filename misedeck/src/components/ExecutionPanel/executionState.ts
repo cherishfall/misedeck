@@ -257,7 +257,7 @@ export function executionReducer(state: ExecState, action: Action): ExecState {
       // Same terminal-status guard as `exit`/`complete`/`cancel`: the
       // invoke's error can surface after the run already reached a
       // terminal state — the cancel round trip resolved first and the
-      // rejected invoke then reports "mise run cancelled", or the Exit
+      // rejected invoke then reports the cancellation, or the Exit
       // event settled the run before the invoke result arrived — and a
       // late `fail` must not rewrite that outcome (issue #301).
       const target = state.runs.find((r) => r.id === action.id);

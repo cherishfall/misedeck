@@ -30,7 +30,7 @@ use std::process::{Command, ExitStatus};
 use semver::Version;
 use serde::Serialize;
 
-use crate::mise::AppError;
+use crate::mise::{token, AppError, MessageParams};
 
 /// Every MiseDeck release, newest first, prereleases included.
 pub const RELEASES_FEED_URL: &str = "https://github.com/cherishfall/misedeck/releases.atom";
@@ -115,20 +115,24 @@ where
 /// at least one complete entry; only then does `Ok(None)` mean "current".
 pub fn check_from_body(current_version: &str, body: &str) -> Result<Option<ReleaseTag>, AppError> {
     if !body.contains("<feed") {
-        return Err(feed_shape_error("the response is not an Atom feed"));
+        return Err(feed_shape_error(token::feed_reason::NOT_ATOM));
     }
     if entry_blocks(body).is_empty() {
-        return Err(feed_shape_error(
-            "the feed contains no complete <entry> element",
-        ));
+        return Err(feed_shape_error(token::feed_reason::NO_ENTRY));
     }
     Ok(pick_newest(current_version, &parse_release_tags(body)))
 }
 
-fn feed_shape_error(detail: &str) -> AppError {
+/// A feed whose shape is not a release feed. `reason` is a
+/// locale-neutral token naming an `errors.feedReason.*` leaf of the
+/// catalog, so the sentence is resolved in the reader's language
+/// (issue #311).
+fn feed_shape_error(reason: &str) -> AppError {
     AppError::new(
         CHECK_FAILED_CODE,
-        format!("the release feed could not be read: {detail}"),
+        MessageParams::new()
+            .with("reason", reason)
+            .encode("errors.updateFeedInvalid"),
         String::new(),
     )
 }
@@ -161,7 +165,9 @@ fn fetch_feed(current_version: &str) -> Result<String, AppError> {
     let output = cmd.output().map_err(|err| {
         AppError::new(
             CHECK_FAILED_CODE,
-            format!("could not run curl: {err}"),
+            MessageParams::new()
+                .with("reason", err.to_string())
+                .encode("errors.updateCurlFailed"),
             String::new(),
         )
     })?;
@@ -177,7 +183,9 @@ fn fetch_feed(current_version: &str) -> Result<String, AppError> {
     if output.stdout.len() > MAX_FEED_BYTES {
         return Err(AppError::new(
             CHECK_FAILED_CODE,
-            format!("the release feed exceeded the {MAX_FEED_BYTES} byte limit"),
+            MessageParams::new()
+                .with("limit", MAX_FEED_BYTES)
+                .encode("errors.updateFeedTooLarge"),
             String::new(),
         ));
     }
@@ -207,9 +215,11 @@ fn curl_args(current_version: &str) -> Vec<String> {
 /// way.
 fn feed_failure(status: ExitStatus, stderr: String) -> AppError {
     let message = if status.code() == Some(63) {
-        format!("the release feed exceeded the {MAX_FEED_BYTES} byte limit")
+        MessageParams::new()
+            .with("limit", MAX_FEED_BYTES)
+            .encode("errors.updateFeedTooLarge")
     } else {
-        "the release feed request did not succeed".to_string()
+        MessageParams::new().encode("errors.updateRequestFailed")
     };
     AppError::new(CHECK_FAILED_CODE, message, stderr)
 }
@@ -459,7 +469,14 @@ mod tests {
             "curl: (63) Maximum file size exceeded".to_string(),
         );
         assert_eq!(err.code, crate::mise::code::COMMAND_FAILED);
-        assert!(err.message.contains("byte limit"), "got {:?}", err.message);
+        // The detail is key-shaped (issue #311): the catalog owns the
+        // sentence, the cap is the data.
+        assert_eq!(
+            err.message,
+            format!("errors.updateFeedTooLarge|limit={MAX_FEED_BYTES}"),
+            "got {:?}",
+            err.message
+        );
         assert_eq!(err.stderr, "curl: (63) Maximum file size exceeded");
     }
 

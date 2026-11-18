@@ -363,7 +363,7 @@ fn registry_does_not_retry_a_real_failure() {
         err.stderr
     );
     assert!(
-        err.message.contains("status 1"),
+        err.message.contains("code=1"),
         "the original exit must survive, got {:?}",
         err.message
     );

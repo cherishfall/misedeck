@@ -25,7 +25,7 @@
 
 use tauri_plugin_opener::OpenerExt;
 
-use crate::mise::AppError;
+use crate::mise::{token, AppError, MessageParams};
 
 /// Longest URL the command will pass on. Every link the app renders is
 /// well under 100 bytes; the bound exists so that a runaway string can
@@ -41,16 +41,16 @@ pub fn validate(raw: &str) -> Result<&str, AppError> {
     let url = raw.trim();
 
     if url.is_empty() {
-        return Err(reject("empty url"));
+        return Err(reject(token::link_reason::EMPTY));
     }
     if url.len() > MAX_URL_LEN {
-        return Err(reject("url is too long"));
+        return Err(reject(token::link_reason::TOO_LONG));
     }
     // Whitespace and control characters never appear in a URL we render,
     // and they are the shape a command-line injection would take if the
     // opener ever fell back to a shell on some platform.
     if url.chars().any(|c| c.is_control() || c.is_whitespace()) {
-        return Err(reject("url contains whitespace or control characters"));
+        return Err(reject(token::link_reason::WHITESPACE));
     }
 
     // The scheme is case-insensitive (RFC 3986 §3.1), so decide on the
@@ -62,17 +62,17 @@ pub fn validate(raw: &str) -> Result<&str, AppError> {
     } else if lower.starts_with("http://") {
         &url["http://".len()..]
     } else {
-        return Err(reject("url is not http(s)"));
+        return Err(reject(token::link_reason::SCHEME));
     };
 
     // An authority is mandatory: `https://` alone, or `https:///path`,
     // would ask the OS to open nothing in particular.
     let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
     if authority.is_empty() {
-        return Err(reject("url has no host"));
+        return Err(reject(token::link_reason::HOST));
     }
     if authority.starts_with('@') || authority.starts_with(':') {
-        return Err(reject("url has no host before its credentials or port"));
+        return Err(reject(token::link_reason::CREDENTIALS));
     }
 
     Ok(url)
@@ -82,15 +82,23 @@ pub fn validate(raw: &str) -> Result<&str, AppError> {
 pub fn open(app: &tauri::AppHandle, raw: &str) -> Result<(), AppError> {
     let url = validate(raw)?;
     app.opener().open_url(url, None::<&str>).map_err(|e| {
-        AppError::command_failed(
-            format!("open_external: the system browser refused the request: {e}"),
+        AppError::command_failed_keyed(
+            "errors.browserRefused",
+            MessageParams::new().with("reason", e.to_string()),
             String::new(),
         )
     })
 }
 
+/// A refused link. `reason` is a locale-neutral token naming an
+/// `errors.linkReason.*` leaf of the catalog, so the sentence is
+/// resolved in the reader's language (issue #311).
 fn reject(reason: &str) -> AppError {
-    AppError::command_failed(format!("open_external: {reason}"), String::new())
+    AppError::command_failed_keyed(
+        "errors.linkRejected",
+        MessageParams::new().with("reason", reason),
+        String::new(),
+    )
 }
 
 #[cfg(test)]

@@ -14,6 +14,7 @@
 
 import { shellActivationCheck } from "../api/mise";
 import type { ActivationStatus, ShellActivationResult } from "../types/tauri";
+import { ipcFailedMessage, runtimeErrorText } from "../utils/appError";
 
 /** The UI's view of the activation probe. Mirrors the `TrustState`
  *  shape (issue #25) so the banner code reads the same way. An `error`
@@ -37,6 +38,12 @@ export async function probeShellActivation(
     if (result.kind === "ok") return { kind: "ok", status: result.ok };
     return { kind: "error", message: result.err.message };
   } catch (e) {
-    return { kind: "error", message: e instanceof Error ? e.message : String(e) };
+    // The detail is the key-shaped IPC failure (issue #311): MiseDeck's
+    // words live in the catalog, the runtime's own text is the data —
+    // so the banner renders the sentence in the reader's language.
+    return {
+      kind: "error",
+      message: ipcFailedMessage(runtimeErrorText(e)),
+    };
   }
 }

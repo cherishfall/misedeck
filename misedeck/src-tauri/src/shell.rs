@@ -44,7 +44,7 @@ use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 
-use crate::mise::AppError;
+use crate::mise::{token, AppError, MessageParams};
 // `code` is referenced by the Linux branch below. The import is
 // gated on Linux so macOS / Windows builds don't see a dead
 // `code::TERMINAL_NOT_FOUND` reference; the reference itself
@@ -1094,15 +1094,20 @@ pub fn open_in_terminal(path: Option<&str>) -> Result<TerminalOpenOutcome, AppEr
         Some(p) if !p.is_empty() => {
             let pb = PathBuf::from(p);
             if !pb.is_dir() {
-                return Err(AppError::command_failed(
-                    format!("open_in_terminal: not a directory: {p}"),
+                return Err(AppError::command_failed_keyed(
+                    "errors.notADirectory",
+                    MessageParams::new().with("path", p),
                     String::new(),
                 ));
             }
             pb
         }
         _ => dirs::home_dir().ok_or_else(|| {
-            AppError::command_failed("open_in_terminal: no home directory to open", String::new())
+            AppError::command_failed_keyed(
+                "errors.homeNotFound",
+                MessageParams::new(),
+                String::new(),
+            )
         })?,
     };
     let path_str = resolved.to_string_lossy().to_string();
@@ -1209,8 +1214,9 @@ fn run_argv(
     path: &str,
 ) -> Result<(), AppError> {
     if argv.is_empty() {
-        return Err(AppError::command_failed(
-            "open_in_terminal: empty argv",
+        return Err(AppError::command_failed_keyed(
+            "errors.emptyArg",
+            MessageParams::new().with("arg", token::arg::COMMAND),
             String::new(),
         ));
     }
@@ -1218,6 +1224,23 @@ fn run_argv(
     let mut cmd = Command::new(bin);
     cmd.args(args);
     run_prepared(cmd, platform, terminal_app, path, argv)
+}
+
+/// The parameters of a key-shaped terminal-launch failure (issue
+/// #311): the platform, the terminal app, the directory, and the exact
+/// argv that was attempted — the data the reader needs to reproduce the
+/// launch by hand.
+fn terminal_launch_params(
+    platform: &str,
+    terminal_app: &str,
+    path: &str,
+    argv: &[String],
+) -> MessageParams {
+    MessageParams::new()
+        .with("platform", platform)
+        .with("app", terminal_app)
+        .with("path", path)
+        .with("command", format!("{argv:?}"))
 }
 
 /// Give a prepared launcher no inherited stdio and start it. The terminal
@@ -1235,10 +1258,10 @@ fn spawn_launcher(
         .stdout(Stdio::null())
         .stderr(Stdio::null());
     cmd.spawn().map_err(|e| {
-        AppError::command_failed(
-            format!(
-                "{platform} terminal launch via {terminal_app} failed for {path}: {e} (argv: {argv:?})"
-            ),
+        AppError::command_failed_keyed(
+            "errors.terminalLaunchFailed",
+            terminal_launch_params(platform, terminal_app, path, argv)
+                .with("reason", e.to_string()),
             String::new(),
         )
     })
@@ -1259,17 +1282,16 @@ fn run_prepared(
     let mut child = spawn_launcher(cmd, platform, terminal_app, path, argv)?;
     match wait_with_timeout(&mut child, LAUNCH_TIMEOUT) {
         Some(s) if s.success() => Ok(()),
-        Some(s) => Err(AppError::command_failed(
-            format!(
-                "{platform} terminal launch via {terminal_app} exited with status {s} for {path} (argv: {argv:?})"
-            ),
+        Some(s) => Err(AppError::command_failed_keyed(
+            "errors.terminalLaunchExited",
+            terminal_launch_params(platform, terminal_app, path, argv)
+                .with("code", s.code().unwrap_or(-1)),
             String::new(),
         )),
-        None => Err(AppError::command_failed(
-            format!(
-                "{platform} terminal launch via {terminal_app} failed or did not finish within {}s for {path} (argv: {argv:?})",
-                LAUNCH_TIMEOUT.as_secs()
-            ),
+        None => Err(AppError::command_failed_keyed(
+            "errors.terminalLaunchTimeout",
+            terminal_launch_params(platform, terminal_app, path, argv)
+                .with("seconds", LAUNCH_TIMEOUT.as_secs()),
             String::new(),
         )),
     }
@@ -1784,7 +1806,14 @@ mod tests {
         cmd.args(["-c", "exit 4"]);
         let err = run_prepared(cmd, "test", "sh", "/tmp", &["sh".to_string()])
             .expect_err("a non-zero exit is a failed launch");
-        assert!(err.message.contains("status"), "got {:?}", err.message);
+        // The detail is key-shaped (issue #311): the catalog owns the
+        // sentence, the exit status is the data.
+        assert_eq!(
+            err.message,
+            "errors.terminalLaunchExited|platform=test|app=sh|path=/tmp|command=[\"sh\"]|code=4",
+            "got {:?}",
+            err.message
+        );
     }
 
     /// The rc resolver must agree with `dirs::home_dir()` on every

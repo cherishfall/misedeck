@@ -15,6 +15,7 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { tasksLs } from "../api/mise";
 import { readTasksLsPayload } from "../api/miseTools";
 import { useDirectory } from "../state/directoryContext";
+import { ipcFailedMessage, runtimeErrorText } from "../utils/appError";
 import { CONFIG_DEPENDENT_STALE_TIME } from "./configDependents";
 import type { JsonResult, MiseTask } from "../types/tauri";
 
@@ -41,12 +42,20 @@ export function useTasksList(): UseQueryResult<JsonResult> {
  * renders. The Tauri command itself should never throw on the
  * happy path, so a thrown error always means a structural
  * failure.
+ *
+ * The detail is the key-shaped IPC failure (issue #311): MiseDeck's
+ * words live in the catalog, and the runtime's own message rides along
+ * as the message's data — so a zh-CN page never shows an English
+ * sentence.
  */
 function toErr(error: unknown): JsonResult {
-  const message = error instanceof Error ? error.message : String(error);
   return {
     kind: "err",
-    err: { code: "COMMAND_FAILED", message, stderr: "" },
+    err: {
+      code: "COMMAND_FAILED",
+      message: ipcFailedMessage(runtimeErrorText(error)),
+      stderr: "",
+    },
   };
 }
 

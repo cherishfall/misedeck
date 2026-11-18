@@ -16,7 +16,7 @@ import type {
   TerminalOpenResult,
   TrustResult,
 } from "../types/tauri";
-import { parseFailedMessage } from "../utils/appError";
+import { parseFailedMessage, ipcFailedMessage, runtimeErrorText } from "../utils/appError";
 import { isAppError } from "../utils/isAppError";
 import { isConfigFilesResult, parseFailedError } from "./miseTools";
 import { invoke, type InvokeOptions } from "./invoke";
@@ -100,7 +100,11 @@ export async function readMiseLockfile(
       kind: "err",
       err: isAppError(e)
         ? e
-        : { code: "COMMAND_FAILED", message: String(e), stderr: "" },
+        : {
+            code: "COMMAND_FAILED",
+            message: ipcFailedMessage(runtimeErrorText(e)),
+            stderr: "",
+          },
     };
   }
 }

@@ -16,7 +16,9 @@ struct AppError {
 }
 ```
 
-UI 通过 i18n 渲染 `code`，并通过执行面板提供 stderr。调用方对 `code` 做模式匹配，绝不匹配消息文本。UI 中每一个展示 `err.message` 的位置都通过 `resolveAppErrorMessage`（`misedeck/src/utils/appError.ts`）解析：它拆解 `key|param=value|…` 线格式并在 i18n 目录中查键（找不到时回退到 `errors.unknown`，原始键永远不会被渲染）；对原始细节文本（COMMAND_FAILED）则原样透传。解析失败是键形的 —— `errors.parseFailed|cmd=…|shape=…`（issue #310）—— 因此 MiseDeck 自己撰写的细节会经由目录在所有语言下解析，而不是渲染成英文句子。
+UI 通过 i18n 渲染 `code`，并通过执行面板提供 stderr。调用方对 `code` 做模式匹配，绝不匹配消息文本。UI 中每一个展示 `err.message` 的位置都通过 `resolveAppErrorMessage`（`misedeck/src/utils/appError.ts`）解析：它拆解 `key|param=value|…` 线格式并在 i18n 目录中查键（找不到时回退到 `errors.unknown`，原始键永远不会被渲染）；对不是键形的消息则原样透传。解析失败是键形的 —— `errors.parseFailed|cmd=…|shape=…`（issue #310）—— 命令失败同样是键形的 —— `errors.commandFailed|cmd=…|code=…` 及其同类（issue #311）—— 因此 MiseDeck 自己撰写的每一处细节都会经由目录在所有语言下解析，而不是渲染成英文句子。
+
+**MiseDeck 自己的措辞要加键，数据保持原样。** MiseDeck 自己撰写的 `AppError.message` 是一个 i18n 键加上参数，绝不是一句英文句子 —— 边界两侧都一样（Rust 的各个构造函数，以及前端自己的运行时失败）。消息所*携带*的是数据：运行过的命令、退出码、路径、操作系统错误、运行时自身的拒绝文本。mise 自己的 stderr 同样是数据，它原样留在 `stderr` 字段里 —— 那是 CLI 的输出，既不翻译也不改写。
 
 **边界序列化**：每个跨越 Rust↔TS 边界的类型在 Rust 侧使用 `#[serde(rename_all = "camelCase")]`；对应的 TS 类型为 camelCase。`code` 的取值来自这个固定集合——发明新的是 bug：
 

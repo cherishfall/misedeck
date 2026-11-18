@@ -54,5 +54,10 @@ test("a thrown IPC error becomes an error state instead of rejecting", async () 
   const state = await probeShellActivation(async () => {
     throw new Error("ipc closed");
   });
-  assert.deepEqual(state, { kind: "error", message: "ipc closed" });
+  // The detail is the key-shaped IPC failure (issue #311): MiseDeck's
+  // words live in the catalog, the runtime's own text is the data.
+  assert.deepEqual(state, {
+    kind: "error",
+    message: "errors.ipcFailed|detail=ipc closed",
+  });
 });

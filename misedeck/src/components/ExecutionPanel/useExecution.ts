@@ -26,7 +26,14 @@ import { invoke } from "../../api/invoke";
 import type { AppError, JsonResult } from "../../types/tauri";
 import { isAppError } from "../../api/mise";
 import { loadPersistent, savePersistent } from "../../hooks/usePersistentState";
-import { parseFailedMessage } from "../../utils/appError";
+import { I18N_KEYS } from "../../i18n/keys";
+import {
+  RUN_CANCELLED_MESSAGE,
+  ipcFailedMessage,
+  keyedMessage,
+  parseFailedMessage,
+  runtimeErrorText,
+} from "../../utils/appError";
 import { executionReducer } from "./executionState";
 import { runMiseCommandPayload } from "./runPayload";
 import type {
@@ -221,10 +228,14 @@ function makeChannel(
   });
 }
 
+/** The IPC boundary answered with something that is not a run result
+ *  (issue #311): a structural failure, not a mise failure. The detail
+ *  is key-shaped, so the panel's copy is the catalog's in every
+ *  locale. */
 function unexpectedIpcResponse(): AppError {
   return {
     code: "COMMAND_FAILED",
-    message: "unexpected IPC response from execution panel",
+    message: keyedMessage(I18N_KEYS.errors.unexpectedIpcResponse),
     stderr: "",
   };
 }
@@ -274,9 +285,9 @@ export function useExecution() {
       // Set synchronously when the user asks for a cancel, before the
       // `cancel_run` IPC resolves (issue #301): the run's own invoke can
       // reject with the runner's cancellation signature in that window —
-      // `DriveEnd::Cancelled` surfaces as `command_failed("mise run
-      // cancelled", "")` on the Rust side — and that rejection must
-      // settle the run as cancelled, not failed.
+      // `DriveEnd::Cancelled` surfaces as the key-shaped
+      // `errors.cancelled|task=mise` on the Rust side (issue #311) — and
+      // that rejection must settle the run as cancelled, not failed.
       let cancelRequested = false;
       /** The runner's cancellation rejection, matched on the exact
        *  message `run_mise_timed` emits for `DriveEnd::Cancelled`
@@ -284,7 +295,7 @@ export function useExecution() {
        *  races the cancel click carries a different message and still
        *  reports as a failure. */
       const isCancellationRejection = (err: AppError): boolean =>
-        err.message === "mise run cancelled";
+        err.message === RUN_CANCELLED_MESSAGE;
       if (!background) {
         cancelRefs.current.set(id, () => {
           cancelRequested = true;
@@ -311,7 +322,7 @@ export function useExecution() {
                   ? e
                   : {
                       code: "COMMAND_FAILED",
-                      message: e instanceof Error ? e.message : String(e),
+                      message: ipcFailedMessage(runtimeErrorText(e)),
                       stderr: "",
                     },
               });
@@ -372,7 +383,7 @@ export function useExecution() {
           // Route through `fail` rather than dispatching directly: the
           // panel commands RESOLVE with `RunCommandResult::Err` (they
           // never reject), so the runner's cancellation rejection —
-          // `command_failed("mise run cancelled", …)` for
+          // the key-shaped `errors.cancelled|task=mise` for
           // `DriveEnd::Cancelled` — arrives HERE, not in the catch. When
           // it races a requested cancel (#301), `fail` settles the run
           // as cancelled; a genuine failure dispatches unchanged.
@@ -382,7 +393,7 @@ export function useExecution() {
       } catch (e) {
         return fail({
           code: "COMMAND_FAILED",
-          message: e instanceof Error ? e.message : String(e),
+          message: ipcFailedMessage(runtimeErrorText(e)),
           stderr: "",
         });
       } finally {

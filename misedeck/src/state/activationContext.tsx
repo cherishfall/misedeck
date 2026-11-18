@@ -51,7 +51,11 @@ import type {
   AppError,
   TerminalOpenOutcome,
 } from "../types/tauri";
-import { resolveAppErrorMessage } from "../utils/appError";
+import {
+  resolveAppErrorMessage,
+  ipcFailedMessage,
+  runtimeErrorText,
+} from "../utils/appError";
 import { probeShellActivation, type ActivationState } from "./activationProbe";
 
 /** The UI's view of the activation probe lives with its execution half
@@ -262,8 +266,10 @@ export function ActivationProvider({ children }: { children: ReactNode }) {
       }
     } catch (e) {
       // Defensive: the Rust command should not throw, but if
-      // it does we surface the message as a structured error.
-      const message = e instanceof Error ? e.message : String(e);
+      // it does we surface the message as a structured error. The
+      // detail is the key-shaped IPC failure (issue #311): MiseDeck's
+      // words live in the catalog, the runtime's own text is the data.
+      const message = ipcFailedMessage(runtimeErrorText(e));
       const next: OpenTerminalOutcome = {
         kind: "error",
         error: { code: "COMMAND_FAILED", message, stderr: "" },

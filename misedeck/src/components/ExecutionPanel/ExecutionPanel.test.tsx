@@ -268,10 +268,16 @@ test("a cancellation rejection racing the cancel round trip settles the run as c
 
   // The run's invoke resolves with the runner's cancellation rejection
   // while the cancel acknowledgment is still pending — the race ordering.
+  // The rejection is the key-shaped cancellation signature (issue #311):
+  // the Rust side emits exactly this message.
   await act(async () => {
     runInvoke.resolve({
       kind: "err",
-      err: { code: "COMMAND_FAILED", message: "mise run cancelled", stderr: "" },
+      err: {
+        code: "COMMAND_FAILED",
+        message: "errors.cancelled|task=mise",
+        stderr: "",
+      },
     });
   });
   await act(async () => {

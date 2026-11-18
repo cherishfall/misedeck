@@ -61,14 +61,14 @@ fn check_reports_current_on_a_real_feed_with_nothing_newer() {
 fn check_passes_a_fetch_failure_through_unchanged() {
     let err = check_with("1.0.0-beta.16", |_| {
         Err(AppError::command_failed(
-            "the release feed request did not succeed",
+            "errors.updateRequestFailed",
             "curl: (6) Could not resolve host",
         ))
     })
     .expect_err("a failed fetch is a failed check");
 
     assert_eq!(err.code, code::COMMAND_FAILED);
-    assert_eq!(err.message, "the release feed request did not succeed");
+    assert_eq!(err.message, "errors.updateRequestFailed");
     assert_eq!(err.stderr, "curl: (6) Could not resolve host");
 }
 
@@ -79,8 +79,10 @@ fn check_rejects_a_captive_portal_body_instead_of_claiming_current() {
         .expect_err("a 200 HTML block page is not a release feed");
 
     assert_eq!(err.code, code::COMMAND_FAILED);
-    assert!(
-        err.message.contains("not an Atom feed"),
+    // The detail is key-shaped (issue #311): the catalog owns the
+    // sentence, the reason is a locale-neutral token.
+    assert_eq!(
+        err.message, "errors.updateFeedInvalid|reason=notAtom",
         "the check must name the shape failure, got {:?}",
         err.message
     );

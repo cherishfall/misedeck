@@ -1012,6 +1012,123 @@ export const I18N_KEYS = {
       versionDate: "errors.shape.versionDate",
       versionString: "errors.shape.versionString",
     },
+    /** A command MiseDeck ran exited non-zero (issue #311): the
+        command line and the exit status are the data, the sentence is
+        the catalog's. mise's own stderr stays in the `stderr` field,
+        verbatim. */
+    commandFailed: "errors.commandFailed",
+    /** The official mise installer script exited non-zero (issue
+        #311). Its stderr (the installer's own output) stays in the
+        `stderr` field. */
+    installFailed: "errors.installFailed",
+    /** The operating system refused to start the process (issue #311).
+        `{{reason}}` is the OS error — data, not copy. */
+    spawnFailed: "errors.spawnFailed",
+    /** Waiting for the process failed (issue #311). */
+    waitFailed: "errors.waitFailed",
+    /** A background task died before it could report (issue #311). */
+    backgroundTaskFailed: "errors.backgroundTaskFailed",
+    /** The user cancelled the run (issue #311). The runner's
+        cancellation signature — `useExecution.ts` matches it to settle
+        a cancel-racing rejection as cancelled, not failed. */
+    cancelled: "errors.cancelled",
+    /** A required argument was empty (issue #311). */
+    emptyArg: "errors.emptyArg",
+    /** An argument was rejected (issue #311). `{{value}}` is the
+        offending value — data, not copy. */
+    invalidArg: "errors.invalidArg",
+    /** The path is not a directory (issue #311). */
+    notADirectory: "errors.notADirectory",
+    /** A file could not be read (issue #311). `{{reason}}` is the OS
+        error — data, not copy. */
+    readFailed: "errors.readFailed",
+    /** The home directory could not be resolved (issue #311). */
+    homeNotFound: "errors.homeNotFound",
+    /** The command ran but its output could not be read (issue #311).
+        The raw output stays in the `stderr` field. */
+    unparsableOutput: "errors.unparsableOutput",
+    /** The terminal could not be started (issue #311). */
+    terminalLaunchFailed: "errors.terminalLaunchFailed",
+    /** The terminal launcher exited non-zero (issue #311). */
+    terminalLaunchExited: "errors.terminalLaunchExited",
+    /** The terminal launcher did not finish in time (issue #311). */
+    terminalLaunchTimeout: "errors.terminalLaunchTimeout",
+    /** A link was refused before it reached the browser (issue #311). */
+    linkRejected: "errors.linkRejected",
+    /** The system browser refused the request (issue #311). */
+    browserRefused: "errors.browserRefused",
+    /** The release feed was not a release feed (issue #311). */
+    updateFeedInvalid: "errors.updateFeedInvalid",
+    /** The update check could not run curl (issue #311). */
+    updateCurlFailed: "errors.updateCurlFailed",
+    /** The release feed exceeded the byte cap (issue #311). */
+    updateFeedTooLarge: "errors.updateFeedTooLarge",
+    /** The release feed request did not succeed (issue #311). */
+    updateRequestFailed: "errors.updateRequestFailed",
+    /** An IPC call rejected with something that is not an `AppError`
+        (issue #311): the frontend's own runtime failure. The raw
+        runtime text is the data; MiseDeck's words are the sentence. */
+    ipcFailed: "errors.ipcFailed",
+    /** The IPC boundary answered with something that is not a run
+        result (issue #311): a structural failure, not a mise failure. */
+    unexpectedIpcResponse: "errors.unexpectedIpcResponse",
+    /** The shell's rc file could not be read (issue #311). */
+    shellRcUnreadable: "errors.shellRcUnreadable",
+    /** The window chrome refused the theme (issue #311). */
+    windowChromeFailed: "errors.windowChromeFailed",
+    /** The operation vocabulary (issue #311): the `task` parameter of
+        the spawn / wait / background-task / cancellation messages
+        carries a locale-neutral token (the token IS the leaf name
+        below) and the catalog holds its phrase in both locales, so the
+        token can cross the Rust↔TS boundary. The Rust side emits the
+        same tokens — see `docs/agents/i18n.md`. */
+    task: {
+      mise: "errors.task.mise",
+      install: "errors.task.install",
+      selfUpdate: "errors.task.selfUpdate",
+      trust: "errors.task.trust",
+      cwd: "errors.task.cwd",
+      /** The phrase for a failure that names no operation — the
+          message still reads as a sentence (issue #311). */
+      other: "errors.task.other",
+    },
+    /** The argument vocabulary (issue #311): the `arg` parameter of
+        the empty-argument / rejected-argument messages carries a
+        locale-neutral token. Same contract as `errors.task.*`. */
+    arg: {
+      command: "errors.arg.command",
+      tool: "errors.arg.tool",
+      task: "errors.arg.task",
+      cwd: "errors.arg.cwd",
+      flag: "errors.arg.flag",
+      theme: "errors.arg.theme",
+      /** The phrase for a failure that names no argument (issue
+          #311). */
+      other: "errors.arg.other",
+    },
+    /** Why a link was refused (issue #311): the `reason` parameter of
+        `errors.linkRejected` carries a locale-neutral token. Same
+        contract as `errors.task.*`. */
+    linkReason: {
+      empty: "errors.linkReason.empty",
+      tooLong: "errors.linkReason.tooLong",
+      whitespace: "errors.linkReason.whitespace",
+      scheme: "errors.linkReason.scheme",
+      host: "errors.linkReason.host",
+      credentials: "errors.linkReason.credentials",
+      /** The phrase for a refusal that names no reason (issue #311). */
+      other: "errors.linkReason.other",
+    },
+    /** Why the release feed was unreadable (issue #311): the `reason`
+        parameter of `errors.updateFeedInvalid` carries a
+        locale-neutral token. Same contract as `errors.task.*`. */
+    feedReason: {
+      notAtom: "errors.feedReason.notAtom",
+      noEntry: "errors.feedReason.noEntry",
+      /** The phrase for a feed failure that names no reason (issue
+          #311). */
+      other: "errors.feedReason.other",
+    },
     unknown: "errors.unknown",
   },
   languages: {

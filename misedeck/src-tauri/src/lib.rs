@@ -28,7 +28,8 @@ use mise::{
     check_trust, detect_mise as run_mise_probe, locate_mise, mise_config_files, mise_doctor,
     mise_env, mise_env_extended, mise_outdated, mise_plugins_ls, mise_registry, mise_tasks_ls,
     read_mise_lockfile, require_success, run_mise_tracked, run_mise_tracked_read_only, run_trust,
-    validate_run_args, AppError, DetectMiseOk, RunEvent, RunOutcome, RunRequest,
+    token, validate_run_args, AppError, DetectMiseOk, MessageParams, RunEvent, RunOutcome,
+    RunRequest,
 };
 use shell::{check_shell_activation, open_in_terminal as open_in_terminal_inner};
 use update::AppUpdateResult;
@@ -266,6 +267,10 @@ async fn run_mise_command(
     // never taken from the frontend's trust state.
     let read_only = read_only == Some(true);
 
+    // The command that ran, named for the failure detail (issue #311):
+    // the exit status alone would not say what failed.
+    let cmd = format!("mise {}", args.join(" "));
+
     // The request template. The trust gate needs the resolved binary
     // path, so on the read path it is applied per attempt inside the
     // closure below (issue #293); a mutation keeps the flag off — the
@@ -300,14 +305,15 @@ async fn run_mise_command(
     })
     .await;
     match res {
-        Ok(Ok(outcome)) => match require_success(outcome) {
+        Ok(Ok(outcome)) => match require_success(outcome, &cmd) {
             Ok(outcome) => RunCommandResult::Ok { outcome },
             Err(err) => RunCommandResult::Err { err },
         },
         Ok(Err(e)) => RunCommandResult::Err { err: e },
         Err(_) => RunCommandResult::Err {
-            err: AppError::command_failed(
-                "run_mise_command: background task failed",
+            err: AppError::command_failed_keyed(
+                "errors.backgroundTaskFailed",
+                MessageParams::new().with("task", token::task::MISE),
                 String::new(),
             ),
         },
@@ -342,7 +348,11 @@ async fn install_mise(
         },
         Ok(Err(e)) => InstallCommandResult::Err { err: e },
         Err(_) => InstallCommandResult::Err {
-            err: AppError::command_failed("install_mise: background task failed", String::new()),
+            err: AppError::command_failed_keyed(
+                "errors.backgroundTaskFailed",
+                MessageParams::new().with("task", token::task::INSTALL),
+                String::new(),
+            ),
         },
     }
 }
@@ -378,8 +388,9 @@ async fn mise_self_update(
         },
         Ok(Err(e)) => InstallCommandResult::Err { err: e },
         Err(_) => InstallCommandResult::Err {
-            err: AppError::command_failed(
-                "mise_self_update: background task failed",
+            err: AppError::command_failed_keyed(
+                "errors.backgroundTaskFailed",
+                MessageParams::new().with("task", token::task::SELF_UPDATE),
                 String::new(),
             ),
         },
@@ -621,8 +632,9 @@ fn strip_windows_verbatim(path: &str) -> String {
 async fn validated_cwd(cwd: Option<String>) -> Result<Option<PathBuf>, AppError> {
     match tauri::async_runtime::spawn_blocking(move || validate_cwd(cwd.as_deref())).await {
         Ok(result) => result,
-        Err(_) => Err(AppError::command_failed(
-            "cwd validation task failed",
+        Err(_) => Err(AppError::command_failed_keyed(
+            "errors.backgroundTaskFailed",
+            MessageParams::new().with("task", token::task::CWD),
             String::new(),
         )),
     }
@@ -634,14 +646,17 @@ async fn validated_cwd(cwd: Option<String>) -> Result<Option<PathBuf>, AppError>
 fn validate_cwd(cwd: Option<&str>) -> Result<Option<PathBuf>, AppError> {
     match cwd {
         None => Ok(None),
-        Some(raw) if raw.trim().is_empty() => {
-            Err(AppError::command_failed("cwd is empty", String::new()))
-        }
+        Some(raw) if raw.trim().is_empty() => Err(AppError::command_failed_keyed(
+            "errors.emptyArg",
+            MessageParams::new().with("arg", token::arg::CWD),
+            String::new(),
+        )),
         Some(raw) => {
             let path = PathBuf::from(raw);
             if !path.is_dir() {
-                return Err(AppError::command_failed(
-                    format!("cwd is not a directory: {raw}"),
+                return Err(AppError::command_failed_keyed(
+                    "errors.notADirectory",
+                    MessageParams::new().with("path", raw),
                     String::new(),
                 ));
             }
@@ -663,8 +678,9 @@ where
 {
     match tauri::async_runtime::spawn_blocking(f).await {
         Ok(result) => result,
-        Err(_) => Err(AppError::command_failed(
-            "mise background task failed",
+        Err(_) => Err(AppError::command_failed_keyed(
+            "errors.backgroundTaskFailed",
+            MessageParams::new().with("task", token::task::MISE),
             String::new(),
         )),
     }
@@ -847,7 +863,11 @@ async fn mise_trust(
         Ok(Ok(outcome)) => RunCommandResult::Ok { outcome },
         Ok(Err(e)) => RunCommandResult::Err { err: e },
         Err(_) => RunCommandResult::Err {
-            err: AppError::command_failed("mise_trust: background task failed", String::new()),
+            err: AppError::command_failed_keyed(
+                "errors.backgroundTaskFailed",
+                MessageParams::new().with("task", token::task::TRUST),
+                String::new(),
+            ),
         },
     }
 }
@@ -961,7 +981,11 @@ async fn plugins_ls(cwd: Option<String>) -> JsonResult {
 async fn shell_activation_check() -> ShellActivationResult {
     match spawn_run(move || {
         check_shell_activation().map_err(|e| {
-            AppError::command_failed(format!("failed to read shell rc file: {e}"), String::new())
+            AppError::command_failed_keyed(
+                "errors.shellRcUnreadable",
+                MessageParams::new().with("reason", e.to_string()),
+                String::new(),
+            )
         })
     })
     .await
@@ -1003,15 +1027,19 @@ fn set_window_theme(window: tauri::Window, theme: String) -> Result<(), AppError
         "light" => tauri::Theme::Light,
         "dark" => tauri::Theme::Dark,
         other => {
-            return Err(AppError::command_failed(
-                format!("set_window_theme: unknown theme {other:?}"),
+            return Err(AppError::command_failed_keyed(
+                "errors.invalidArg",
+                MessageParams::new()
+                    .with("arg", token::arg::THEME)
+                    .with("value", other),
                 String::new(),
             ));
         }
     };
     window.set_theme(Some(resolved)).map_err(|e| {
-        AppError::command_failed(
-            format!("set_window_theme: set_theme failed: {e}"),
+        AppError::command_failed_keyed(
+            "errors.windowChromeFailed",
+            MessageParams::new().with("reason", e.to_string()),
             String::new(),
         )
     })?;
@@ -1025,8 +1053,9 @@ fn set_window_theme(window: tauri::Window, theme: String) -> Result<(), AppError
         window
             .set_background_color(Some(tauri::window::Color(r, g, b, 0xff)))
             .map_err(|e| {
-                AppError::command_failed(
-                    format!("set_window_theme: set_background_color failed: {e}"),
+                AppError::command_failed_keyed(
+                    "errors.windowChromeFailed",
+                    MessageParams::new().with("reason", e.to_string()),
                     String::new(),
                 )
             })?;
@@ -1256,14 +1285,21 @@ mod tests {
         for raw in ["", "   "] {
             let err = validate_cwd(Some(raw)).expect_err("empty cwd must be rejected");
             assert_eq!(err.code, mise::code::COMMAND_FAILED);
-            assert!(err.message.contains("empty"), "got {:?}", err.message);
+            // The detail is key-shaped (issue #311): the catalog owns
+            // the sentence, the argument token is the data.
+            assert_eq!(
+                err.message, "errors.emptyArg|arg=cwd",
+                "got {:?}",
+                err.message
+            );
         }
         let missing = std::env::temp_dir().join("misedeck-no-such-dir-210");
         let err = validate_cwd(Some(missing.to_str().unwrap()))
             .expect_err("missing cwd must be rejected");
         assert_eq!(err.code, mise::code::COMMAND_FAILED);
-        assert!(
-            err.message.contains("not a directory"),
+        assert_eq!(
+            err.message,
+            format!("errors.notADirectory|path={}", missing.display()),
             "got {:?}",
             err.message
         );

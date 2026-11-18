@@ -10,18 +10,27 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { envLs } from "../api/mise";
 import { readEnvExtendedPayload, type EnvEntry } from "../api/miseTools";
 import { useDirectory } from "../state/directoryContext";
+import { ipcFailedMessage, runtimeErrorText } from "../utils/appError";
 import { CONFIG_DEPENDENT_STALE_TIME } from "./configDependents";
 import type { JsonResult } from "../types/tauri";
 
 /**
  * Wrap a thrown IPC error as the structured `{kind: "err"}` shape
  * the page renders.
+ *
+ * The detail is the key-shaped IPC failure (issue #311): MiseDeck's
+ * words live in the catalog, and the runtime's own message rides along
+ * as the message's data — so a zh-CN page never shows an English
+ * sentence.
  */
 function toErr(error: unknown): JsonResult {
-  const message = error instanceof Error ? error.message : String(error);
   return {
     kind: "err",
-    err: { code: "COMMAND_FAILED", message, stderr: "" },
+    err: {
+      code: "COMMAND_FAILED",
+      message: ipcFailedMessage(runtimeErrorText(error)),
+      stderr: "",
+    },
   };
 }
 

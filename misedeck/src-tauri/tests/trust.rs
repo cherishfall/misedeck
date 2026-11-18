@@ -127,6 +127,14 @@ fn check_trust_propagates_command_failed() {
             "stderr should be preserved verbatim, got {:?}",
             err.stderr
         );
+        // Issue #311: the detail MiseDeck authors is key-shaped, so a
+        // zh-CN UI resolves it through the catalog instead of reading
+        // "mise trust --show exited with status 1".
+        assert_eq!(
+            err.message, "errors.commandFailed|cmd=mise trust --show|code=1",
+            "message should be key-shaped, got {:?}",
+            err.message
+        );
     });
 }
 

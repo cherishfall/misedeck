@@ -55,8 +55,10 @@ fn open_in_terminal_rejects_non_directory_path() {
     let err = open_in_terminal(Some("/this/path/does/not/exist/xyzzy"))
         .expect_err("non-directory should yield Err");
     assert_eq!(err.code, code::COMMAND_FAILED);
-    assert!(
-        err.message.contains("not a directory"),
+    // The detail is key-shaped (issue #311): the catalog owns the
+    // sentence, the rejected path is the data.
+    assert_eq!(
+        err.message, "errors.notADirectory|path=/this/path/does/not/exist/xyzzy",
         "message should explain the rejection, got {:?}",
         err.message
     );

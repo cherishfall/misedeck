@@ -75,9 +75,10 @@ fn flag_token_with_semicolon_is_rejected() {
     let args = argv(&["tasks", "ls", "--json;echo pwned"]);
     let err = validate_run_args(&args).expect_err("flag with ; should be rejected");
     assert_eq!(err.code, code::COMMAND_FAILED);
-    assert!(
-        err.message
-            .contains("flag arg contains shell metacharacter"),
+    // The detail is key-shaped (issue #311): the catalog owns the
+    // sentence, the rejected token is the data.
+    assert_eq!(
+        err.message, "errors.invalidArg|arg=flag|value=--json;echo pwned",
         "message should name the flag-region rule, got {:?}",
         err.message
     );

@@ -426,10 +426,7 @@ fn app_update_result_err() {
     // update panel offers stderr through the execution panel like every
     // other command failure (issue #254).
     let v = serde_json::to_value(misedeck_lib::update::AppUpdateResult::Err {
-        err: AppError::command_failed(
-            "the release feed request did not succeed",
-            "curl: (28) timed out",
-        ),
+        err: AppError::command_failed("errors.updateRequestFailed", "curl: (28) timed out"),
     })
     .unwrap();
     assert_eq!(
@@ -438,7 +435,7 @@ fn app_update_result_err() {
             "status": "err",
             "err": {
                 "code": "COMMAND_FAILED",
-                "message": "the release feed request did not succeed",
+                "message": "errors.updateRequestFailed",
                 "stderr": "curl: (28) timed out",
             },
         })

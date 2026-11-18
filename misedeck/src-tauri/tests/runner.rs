@@ -105,11 +105,15 @@ fn streaming_boundary_turns_nonzero_exit_into_command_failed() {
     with_slug("doctor-fail", || {
         let req = RunRequest::new(vec!["doctor".to_string()]);
         let outcome = run_mise(&script, &req, |_| {}).expect("raw runner returns Ok");
-        let err = require_success(outcome).expect_err("non-zero exit must fail at the boundary");
+        let err = require_success(outcome, "mise doctor")
+            .expect_err("non-zero exit must fail at the boundary");
         assert_eq!(err.code, code::COMMAND_FAILED);
         assert!(err.stderr.contains("ERROR"), "stderr = {:?}", err.stderr);
-        assert!(
-            err.message.contains("exited with status"),
+        // The detail is key-shaped (issue #311): the command that ran and
+        // the exit status are the parameters, the sentence is the
+        // catalog's.
+        assert_eq!(
+            err.message, "errors.commandFailed|cmd=mise doctor|code=1",
             "message = {:?}",
             err.message
         );
@@ -123,7 +127,7 @@ fn streaming_boundary_passes_a_clean_exit_through() {
     with_slug("doctor-happy", || {
         let req = RunRequest::new(vec!["doctor".to_string()]);
         let outcome = run_mise(&script, &req, |_| {}).expect("happy fixture yields Ok");
-        let outcome = require_success(outcome).expect("exit 0 must stay Ok");
+        let outcome = require_success(outcome, "mise doctor").expect("exit 0 must stay Ok");
         assert_eq!(outcome.exit_code, 0);
         assert!(outcome.stdout.contains("[OK]"));
     });

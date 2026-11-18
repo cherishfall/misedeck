@@ -375,7 +375,7 @@ test("complete: the self-update version lands on the settling run", () => {
 // `cancel`, so it carries the same running-only guard. The invoke's
 // error can surface after the run already reached a terminal state —
 // the cancel round trip resolved first and the rejected invoke then
-// reports "mise run cancelled", or the Exit event settled first — and a
+// reports the cancellation, or the Exit event settled first — and a
 // late `fail` must not rewrite that outcome.
 
 test("fail: a running run settles failed with the error", () => {

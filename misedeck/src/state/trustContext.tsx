@@ -54,7 +54,7 @@ import { I18N_KEYS } from "../i18n/keys";
 import { invalidateConfigDependents } from "../hooks/configDependents";
 import { useDirectory } from "./directoryContext";
 import type { TrustSource, TrustStatus } from "../types/tauri";
-import { resolveAppErrorMessage } from "../utils/appError";
+import { resolveAppErrorMessage, ipcFailedMessage, runtimeErrorText } from "../utils/appError";
 
 export type TrustState =
   | { kind: "unknown" }
@@ -99,9 +99,14 @@ export function toTrustState(value: unknown): TrustState {
 /** Wrap a thrown IPC error as the structured `{kind: "err"}` shape
  *  the hook renders. The Tauri command itself should never throw on
  *  the happy path, so a thrown error always means a structural
- *  failure. */
+ *  failure.
+ *
+ *  The detail is the key-shaped IPC failure (issue #311): MiseDeck's
+ *  words live in the catalog, and the runtime's own message rides along
+ *  as the message's data — so a zh-CN banner never shows an English
+ *  sentence. */
 function toErr(error: unknown): { kind: "err"; err: { message: string } } {
-  const message = error instanceof Error ? error.message : String(error);
+  const message = ipcFailedMessage(runtimeErrorText(error));
   return { kind: "err", err: { message } };
 }
 
