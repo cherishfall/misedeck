@@ -1,10 +1,10 @@
 # MiseDeck
 
-> [简体中文](./zh-CN/README.md)
+> [简体中文](./zh-CN/README.md) · [Landing page](https://cherishfall.github.io/misedeck/) · [Changelog](https://cherishfall.github.io/misedeck/changelog.html)
 
 **A desktop GUI for [mise](https://mise.jdx.dev), the polyglot tool version manager.** It is built from mise's own concepts, not an invented layer on top: each page mirrors a part of the CLI, and every change it makes runs a real `mise` command, shown verbatim — command, logs, exit code — in the execution panel. MiseDeck is an independent community project, not affiliated with mise or its maintainer.
 
-> **Status: 1.0.6** — a patch on 1.0.5 (2026-11-18). It closes the last review round: a cancelled run is now reported as cancelled on every path, a failure with no output says what went wrong instead of showing an empty log, the release feed's size limit reads as "1 MiB", and the Chinese sentences no longer carry a stray space between two Han characters. The site's release history no longer republishes a Homebrew command that cannot work, renders its shell snippets and tables as code, and states what both of the app's outbound requests are. macOS on Apple Silicon is the polished target; Windows x64 runs, has been exercised end-to-end on one real Windows 11 machine, and its NSIS installer has been installed there; Linux is packaged but not verified on real hardware.
+> **Status: 1.0.6** (2026-11-18) — the latest patch release; what changed is in the [release notes](https://github.com/cherishfall/misedeck/releases/tag/v1.0.6). macOS on Apple Silicon is the polished target; Windows x64 runs and has been exercised end-to-end on one real Windows 11 machine, installer included; Linux is packaged but not verified on real hardware.
 
 ## Why
 
@@ -142,6 +142,7 @@ Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on ma
 | ![Home](./docs/screenshots/home-en.png) | ![首页](./docs/screenshots/home-zh-CN.png) |
 | ![Overview](./docs/screenshots/preview-en.png) | ![概览](./docs/screenshots/preview-zh-CN.png) |
 | ![Tools](./docs/screenshots/tools-en.png) | ![工具](./docs/screenshots/tools-zh-CN.png) |
+| ![Tools — manage versions](./docs/screenshots/tools-versions-en.png) | ![工具 — 版本管理](./docs/screenshots/tools-versions-zh-CN.png) |
 | ![Env](./docs/screenshots/env-en.png) | ![环境变量](./docs/screenshots/env-zh-CN.png) |
 | ![Tasks](./docs/screenshots/tasks-en.png) | ![任务](./docs/screenshots/tasks-zh-CN.png) |
 | ![Plugins](./docs/screenshots/plugins-en.png) | ![插件](./docs/screenshots/plugins-zh-CN.png) |
