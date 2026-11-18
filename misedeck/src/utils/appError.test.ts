@@ -19,15 +19,16 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import i18n from "../i18n";
+import { MESSAGE_TOKEN } from "../i18n/messageTokens";
 import {
-  MESSAGE_TOKEN,
-  RUN_CANCELLED_MESSAGE,
   decodeParamValue,
   encodeParamValue,
   ipcFailedMessage,
+  isRunCancelledMessage,
   keyedMessage,
   parseAppErrorMessage,
   resolveAppErrorMessage,
+  runtimeErrorText,
 } from "./appError";
 
 if (!i18n.isInitialized) {
@@ -108,7 +109,10 @@ test("a token parameter resolves to the catalog's phrase", async () => {
   await i18n.changeLanguage("zh-CN");
   assert.equal(
     resolveAppErrorMessage(message, i18n.t),
-    "mise trust 的后台任务失败。",
+    // No space between the phrase and the Han text around it: Chinese
+    // does not space its words, and the phrase may end in Latin or Han
+    // (issue #313).
+    "mise trust的后台任务失败。",
   );
 });
 
@@ -136,11 +140,48 @@ test("the frontend's own runtime failure carries the runtime's text", async () =
 });
 
 test("the runner's cancellation signature is the key-shaped form", () => {
-  // The Rust side emits exactly this message for a cancelled run
-  // (`src-tauri/src/mise.rs`), and the execution panel matches it to
-  // settle a cancel-racing rejection as cancelled. It is a
-  // cross-language contract.
-  assert.equal(RUN_CANCELLED_MESSAGE, "errors.cancelled|task=mise");
+  // The Rust side emits the key-shaped `errors.cancelled` message for a
+  // cancelled run (`src-tauri/src/mise.rs`, `install.rs`), and the
+  // execution panel matches it to settle a cancel-racing rejection as
+  // cancelled. It is a cross-language contract.
+  assert.equal(
+    keyedMessage("errors.cancelled", { task: MESSAGE_TOKEN.task.mise }),
+    "errors.cancelled|task=mise",
+  );
+});
+
+test("the cancellation signature is the key, whatever task it names (#313)", () => {
+  // The `task` parameter names the operation that was cancelled, so an
+  // exact match on one task's message missed the others — the install
+  // runner emitted `errors.cancelled|task=install` and the panel settled
+  // it as *failed*, with a card that said the installer was cancelled.
+  assert.ok(isRunCancelledMessage("errors.cancelled|task=mise"));
+  assert.ok(isRunCancelledMessage("errors.cancelled|task=install"));
+  assert.ok(isRunCancelledMessage("errors.cancelled"));
+  // A genuine failure is not a cancellation, whatever it carries.
+  assert.ok(!isRunCancelledMessage("errors.commandFailed|cmd=mise ls|code=1"));
+  assert.ok(!isRunCancelledMessage("errors.spawnFailed|task=install|reason=boom"));
+  assert.ok(!isRunCancelledMessage("boom"));
+});
+
+test("an IPC failure with no runtime text carries no empty detail (#313)", async () => {
+  await i18n.changeLanguage("en");
+  // The runtime rejected with nothing to say: interpolating an empty
+  // detail would leave the reader a dangling colon.
+  const message = ipcFailedMessage("   ");
+  assert.equal(message, "errors.ipcFailedNoDetail");
+  assert.equal(
+    resolveAppErrorMessage(message, i18n.t),
+    "MiseDeck could not complete the request.",
+  );
+});
+
+test("a thrown object reads as JSON, not as [object Object] (#313)", () => {
+  assert.equal(runtimeErrorText({ code: 7 }), '{"code":7}');
+  assert.equal(runtimeErrorText(new Error("boom")), "boom");
+  assert.equal(runtimeErrorText("boom"), "boom");
+  assert.equal(runtimeErrorText(null), "");
+  assert.equal(runtimeErrorText(undefined), "");
 });
 
 test("a raw detail string still renders verbatim", () => {

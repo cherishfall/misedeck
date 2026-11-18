@@ -106,10 +106,17 @@ impl AppError {
         Self::new(code::MISE_NOT_FOUND, "errors.miseNotFound", String::new())
     }
 
+    /// The too-old gate (issue #313): the message is built through
+    /// [`MessageParams::encode`], like every other key-shaped message,
+    /// so a version string that carries the `|` delimiter cannot split
+    /// it into bogus parameters.
     pub fn too_old(found: &str, minimum: &str) -> Self {
         Self::new(
             code::MISE_TOO_OLD,
-            format!("errors.miseTooOld|found={found}|minimum={minimum}"),
+            MessageParams::new()
+                .with("found", found)
+                .with("minimum", minimum)
+                .encode("errors.miseTooOld"),
             String::new(),
         )
     }
@@ -680,21 +687,42 @@ pub(crate) const MAX_LINE_BYTES: usize = 8 * 1024;
 /// payload, so a live read fits whole.
 pub(crate) const MAX_STREAM_BYTES: usize = 2 * 1024 * 1024;
 
+/// A byte cap in the reader's units: "2 MiB", not the raw byte count
+/// (issue #308). A limit reads as a size the reader thinks in — never as
+/// a number they have to convert (issue #313). One helper for every
+/// cap on the boundary: the capture cap and the release feed's cap.
+pub(crate) fn byte_limit_label(bytes: usize) -> String {
+    const KIB: usize = 1024;
+    const MIB: usize = 1024 * 1024;
+    if bytes.is_multiple_of(MIB) {
+        format!("{} MiB", bytes / MIB)
+    } else if bytes.is_multiple_of(KIB) {
+        format!("{} KiB", bytes / KIB)
+    } else {
+        format!("{bytes} B")
+    }
+}
+
 /// The capture cap as the reader should meet it: "2 MiB", not the raw
 /// byte count (issue #308). `docs/agents/runner.md` frames the same
 /// cap as 2 MiB, and a bare `2097152` in the message leaves the
 /// conversion to the user. Computed from [`MAX_STREAM_BYTES`] so the
 /// label cannot drift from the constant it describes.
 pub(crate) fn capture_cap_label() -> String {
-    const KIB: usize = 1024;
-    const MIB: usize = 1024 * 1024;
-    if MAX_STREAM_BYTES.is_multiple_of(MIB) {
-        format!("{} MiB", MAX_STREAM_BYTES / MIB)
-    } else if MAX_STREAM_BYTES.is_multiple_of(KIB) {
-        format!("{} KiB", MAX_STREAM_BYTES / KIB)
-    } else {
-        format!("{MAX_STREAM_BYTES} B")
-    }
+    byte_limit_label(MAX_STREAM_BYTES)
+}
+
+/// The capture-cap failure (issue #313): a keyed message built through
+/// [`MessageParams::encode`] like every other key-shaped message, with
+/// the cap in the reader's units as its data.
+pub(crate) fn capture_cap_error(stderr: impl Into<String>) -> AppError {
+    AppError::parse_failed(
+        MessageParams::new()
+            .with("limit", capture_cap_label())
+            .encode("errors.captureCap"),
+        stderr,
+    )
+    .with_cap_truncated()
 }
 
 /// Lines a reader may queue ahead of the main loop. The channel was
@@ -1619,12 +1647,15 @@ where
         drive_child(&mut cmd, timeout, run_id, mode, &mut on_event).map_err(mise_drive_error)?;
     match driven.end {
         // The message is a cross-language contract: the panel's
-        // `useExecution.ts` matches it verbatim (`isCancellationRejection`)
-        // to settle a cancel-racing rejection as cancelled, not failed
-        // (issue #301). It is key-shaped (issue #311), so the message
-        // still reads as a sentence in the reader's locale — the
-        // frontend compares the key-shaped form. Change both sides
-        // together.
+        // `useExecution.ts` matches the KEY of this message
+        // (`isCancellationRejection`) to settle a cancel-racing
+        // rejection as cancelled, not failed (issue #301). It is
+        // key-shaped (issue #311), so the message still reads as a
+        // sentence in the reader's locale — the frontend compares the
+        // key, not the whole message, because the `task` parameter
+        // names the operation (the installer emits its own
+        // `errors.cancelled|task=install`; issue #313). Change both
+        // sides together.
         DriveEnd::Cancelled => Err(AppError::command_failed_keyed(
             "errors.cancelled",
             MessageParams::new().with("task", token::task::MISE),
@@ -1665,11 +1696,7 @@ fn run_mise_capture(
         // Key-shaped so the frontend localizes it (issue #304's trust-note
         // precedent): this is MiseDeck-authored copy, not mise stderr.
         // Resolved by `resolveAppErrorMessage` via `errors.captureCap`.
-        return Err(AppError::parse_failed(
-            format!("errors.captureCap|limit={}", capture_cap_label()),
-            driven.stderr,
-        )
-        .with_cap_truncated());
+        return Err(capture_cap_error(driven.stderr));
     }
     Ok(driven.into_run_outcome())
 }
@@ -3405,6 +3432,54 @@ mod tests {
         assert!(!label.contains(&MAX_STREAM_BYTES.to_string()));
     }
 
+    /// Issue #313: every cap on the boundary reads in the reader's units
+    /// — the release feed's cap included. A raw byte count in a message
+    /// is the "2097152 leaves the conversion to the user" defect the
+    /// capture cap already had.
+    #[test]
+    fn a_byte_limit_reads_in_the_readers_units() {
+        assert_eq!(byte_limit_label(1024 * 1024), "1 MiB");
+        assert_eq!(byte_limit_label(2 * 1024 * 1024), "2 MiB");
+        assert_eq!(byte_limit_label(8 * 1024), "8 KiB");
+        assert_eq!(byte_limit_label(512), "512 B");
+        assert!(!byte_limit_label(1024 * 1024).contains("1048576"));
+    }
+
+    /// Issue #313: the capture-cap failure is key-shaped and built
+    /// through `MessageParams::encode` — the cap is its data, and the
+    /// sentence is the catalog's.
+    #[test]
+    fn the_capture_cap_failure_is_key_shaped() {
+        let err = capture_cap_error("boom");
+        assert_eq!(err.code, code::PARSE_FAILED);
+        assert_eq!(
+            err.message,
+            format!("errors.captureCap|limit={}", capture_cap_label()),
+            "got {:?}",
+            err.message
+        );
+        assert!(err.cap_truncated);
+    }
+
+    /// Issue #313: the too-old gate is key-shaped and built through
+    /// `MessageParams::encode`, so a version string that carries the
+    /// `|` delimiter cannot split the message into bogus parameters.
+    #[test]
+    fn the_too_old_gate_is_key_shaped_and_encoded() {
+        let err = AppError::too_old("2025.12.5", "2025.12.5");
+        assert_eq!(err.code, code::MISE_TOO_OLD);
+        assert_eq!(
+            err.message,
+            "errors.miseTooOld|found=2025.12.5|minimum=2025.12.5"
+        );
+
+        let piped = AppError::too_old("2025.12.5|extra", "2025.12.5");
+        assert_eq!(
+            piped.message, "errors.miseTooOld|found=2025.12.5%7Cextra|minimum=2025.12.5",
+            "the delimiter must be percent-encoded"
+        );
+    }
+
     /// Issue #282: a captured read has no per-line cap — the aggregate
     /// bound is the only one — and bytes past it are dropped but still
     /// read to EOF, so a child can never block on a full pipe.
@@ -3626,11 +3701,7 @@ mod tests {
     /// for it, whatever exit code the truncated run reported.
     #[test]
     fn registry_fallback_never_retries_a_cap_truncated_payload() {
-        let truncated = AppError::parse_failed(
-            format!("errors.captureCap|limit={}", capture_cap_label()),
-            "",
-        )
-        .with_cap_truncated();
+        let truncated = capture_cap_error("");
         assert!(!registry_fallback_applies(&truncated, None));
         assert!(!registry_fallback_applies(&truncated, Some(0)));
     }

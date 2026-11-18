@@ -356,6 +356,22 @@ export function ExecutionPanel() {
             </button>
           </div>
         </div>
+        {/* The failure reason (issue #313): a run that failed with
+            nothing in the transcript — a spawn failure, an IPC failure
+            — otherwise showed only "failed (0.0s)" and an empty log.
+            The resolved error is a catalog sentence, so it reads in the
+            reader's language. */}
+        {state.status === "failed" && state.error && (
+          <div
+            className={styles.failureDetail}
+            role="alert"
+            data-testid="execution-failure-detail"
+          >
+            {t(I18N_KEYS.execution.failureDetail, {
+              detail: resolveAppErrorMessage(state.error.message, t),
+            })}
+          </div>
+        )}
         {/* A failed cancel keeps the run going, so the panel must not
             look like it stopped (issue #262). The same Cancel button is
             the retry; the row disappears when the run actually ends. */}

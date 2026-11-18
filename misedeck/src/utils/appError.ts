@@ -25,6 +25,10 @@ import type { TFunction } from "i18next";
 
 import i18n from "../i18n";
 import { I18N_KEYS } from "../i18n/keys";
+import {
+  MESSAGE_TOKEN_PARAMS,
+  TOKEN_GROUPS,
+} from "../i18n/messageTokens";
 
 /**
  * The keys the Rust side can emit inside `AppError.message` (see
@@ -77,6 +81,10 @@ const KNOWN_MESSAGE_KEYS: ReadonlySet<string> = new Set([
   I18N_KEYS.errors.updateFeedTooLarge,
   I18N_KEYS.errors.updateRequestFailed,
   I18N_KEYS.errors.ipcFailed,
+  // The same IPC failure with no runtime text to carry (issue #313):
+  // an empty detail would render a dangling colon, so the message
+  // without a detail is its own key.
+  I18N_KEYS.errors.ipcFailedNoDetail,
   I18N_KEYS.errors.unexpectedIpcResponse,
   I18N_KEYS.errors.shellRcUnreadable,
   I18N_KEYS.errors.windowChromeFailed,
@@ -86,120 +94,11 @@ const KNOWN_MESSAGE_KEYS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * The locale-neutral tokens of the key-shaped messages. A parameter that
- * names a *kind* rather than data carries one of these tokens; the catalog
- * holds the token's phrase in both locales, so the detail is translated on
- * the reader's side and the token can cross the Rust↔TS boundary. The Rust
- * side emits the same tokens — see `docs/agents/i18n.md`.
+ * The token vocabularies live in `src/i18n/messageTokens.ts` — the single
+ * home shared with the zh-CN spacing guard
+ * (`scripts/check-i18n-zh-spacing.ts`), so the guard and this resolver can
+ * never disagree about which parameter holds a phrase.
  */
-const SHAPE_KEYS = {
-  array: I18N_KEYS.errors.shape.array,
-  configFilesResult: I18N_KEYS.errors.shape.configFilesResult,
-  objectBySetting: I18N_KEYS.errors.shape.objectBySetting,
-  objectByTool: I18N_KEYS.errors.shape.objectByTool,
-  objectByVariable: I18N_KEYS.errors.shape.objectByVariable,
-  report: I18N_KEYS.errors.shape.report,
-  rowsWithPath: I18N_KEYS.errors.shape.rowsWithPath,
-  validJson: I18N_KEYS.errors.shape.validJson,
-  versionDate: I18N_KEYS.errors.shape.versionDate,
-  versionString: I18N_KEYS.errors.shape.versionString,
-} as const;
-
-/** `errors.task.*` — the operation a task belongs to (issue #311). */
-const TASK_KEYS = {
-  mise: I18N_KEYS.errors.task.mise,
-  install: I18N_KEYS.errors.task.install,
-  selfUpdate: I18N_KEYS.errors.task.selfUpdate,
-  trust: I18N_KEYS.errors.task.trust,
-  cwd: I18N_KEYS.errors.task.cwd,
-} as const;
-
-/** `errors.arg.*` — the argument a rule is about (issue #311). */
-const ARG_KEYS = {
-  command: I18N_KEYS.errors.arg.command,
-  tool: I18N_KEYS.errors.arg.tool,
-  task: I18N_KEYS.errors.arg.task,
-  cwd: I18N_KEYS.errors.arg.cwd,
-  flag: I18N_KEYS.errors.arg.flag,
-  theme: I18N_KEYS.errors.arg.theme,
-} as const;
-
-/** `errors.linkReason.*` — why a link was refused (issue #311). */
-const LINK_REASON_KEYS = {
-  empty: I18N_KEYS.errors.linkReason.empty,
-  tooLong: I18N_KEYS.errors.linkReason.tooLong,
-  whitespace: I18N_KEYS.errors.linkReason.whitespace,
-  scheme: I18N_KEYS.errors.linkReason.scheme,
-  host: I18N_KEYS.errors.linkReason.host,
-  credentials: I18N_KEYS.errors.linkReason.credentials,
-} as const;
-
-/** `errors.feedReason.*` — why the release feed was unreadable (issue #311). */
-const FEED_REASON_KEYS = {
-  notAtom: I18N_KEYS.errors.feedReason.notAtom,
-  noEntry: I18N_KEYS.errors.feedReason.noEntry,
-} as const;
-
-/**
- * One token vocabulary: the catalog key per token, plus the phrase used
- * when the token is missing (the message still has to read as a sentence).
- */
-interface TokenGroup {
-  readonly keys: Readonly<Record<string, string>>;
-  readonly fallback: string;
-}
-
-/** The token vocabularies the key-shaped messages draw on. */
-type TokenGroupName = "shape" | "task" | "arg" | "linkReason" | "feedReason";
-
-const TOKEN_GROUPS: Readonly<Record<TokenGroupName, TokenGroup>> = {
-  shape: { keys: SHAPE_KEYS, fallback: I18N_KEYS.errors.shape.documented },
-  task: { keys: TASK_KEYS, fallback: I18N_KEYS.errors.task.other },
-  arg: { keys: ARG_KEYS, fallback: I18N_KEYS.errors.arg.other },
-  linkReason: {
-    keys: LINK_REASON_KEYS,
-    fallback: I18N_KEYS.errors.linkReason.other,
-  },
-  feedReason: {
-    keys: FEED_REASON_KEYS,
-    fallback: I18N_KEYS.errors.feedReason.other,
-  },
-};
-
-/**
- * Which parameters of which message carry a token rather than data.
- * A message without an entry here has no token parameter.
- */
-const MESSAGE_TOKEN_PARAMS: Readonly<
-  Record<string, Readonly<Record<string, TokenGroupName>>>
-> = {
-  [I18N_KEYS.errors.parseFailed]: { shape: "shape" },
-  [I18N_KEYS.errors.spawnFailed]: { task: "task" },
-  [I18N_KEYS.errors.waitFailed]: { task: "task" },
-  [I18N_KEYS.errors.backgroundTaskFailed]: { task: "task" },
-  [I18N_KEYS.errors.cancelled]: { task: "task" },
-  [I18N_KEYS.errors.emptyArg]: { arg: "arg" },
-  [I18N_KEYS.errors.invalidArg]: { arg: "arg" },
-  [I18N_KEYS.errors.linkRejected]: { reason: "linkReason" },
-  [I18N_KEYS.errors.updateFeedInvalid]: { reason: "feedReason" },
-};
-
-/**
- * The locale-neutral tokens the Rust side emits (issue #311). They mirror
- * the `token` module in `src-tauri/src/mise.rs` — see
- * `docs/agents/i18n.md`. A token crosses the boundary unchanged; the
- * catalog turns it into the reader's language.
- */
-export const MESSAGE_TOKEN = {
-  /** `errors.task.*` — the operation a task belongs to. */
-  task: {
-    mise: "mise",
-    install: "install",
-    selfUpdate: "selfUpdate",
-    trust: "trust",
-    cwd: "cwd",
-  },
-} as const;
 
 /**
  * Percent-encode a parameter value for the `key|param=value|…` wire
@@ -236,7 +135,7 @@ export function keyedMessage(
 }
 
 /** One expected shape the parse-failure message can name. */
-export type ParseShape = keyof typeof SHAPE_KEYS;
+export type ParseShape = keyof typeof TOKEN_GROUPS.shape.keys;
 
 /**
  * Build the key-shaped parse-failure message (issue #310): one
@@ -254,9 +153,15 @@ export function parseFailedMessage(cmd: string, shape: ParseShape): string {
  * own runtime failure — an `invoke` that rejected with something that is
  * not an `AppError`. MiseDeck's words are the catalog's sentence; the
  * runtime's own text is the data it carries.
+ *
+ * A runtime that rejected with *no* text gets the no-detail sentence
+ * (issue #313): interpolating an empty detail would leave the reader a
+ * dangling colon — "MiseDeck could not complete the request: ".
  */
 export function ipcFailedMessage(detail: string): string {
-  return keyedMessage(I18N_KEYS.errors.ipcFailed, { detail });
+  const text = detail.trim();
+  if (!text) return keyedMessage(I18N_KEYS.errors.ipcFailedNoDetail);
+  return keyedMessage(I18N_KEYS.errors.ipcFailed, { detail: text });
 }
 
 /**
@@ -264,10 +169,30 @@ export function ipcFailedMessage(detail: string): string {
  * is *data* — it is not MiseDeck's copy, so it is never translated and
  * never reformatted; it is carried as a parameter of the key-shaped
  * message. A value that cannot be stringified contributes no text.
+ *
+ * A plain object is rendered as JSON, not as `String(value)` (issue
+ * #313): `String({code: 1})` is "[object Object]", which tells the
+ * reader nothing.
  */
 export function runtimeErrorText(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
+  if (error === null || error === undefined) return "";
+  if (typeof error === "object") {
+    try {
+      // `JSON.stringify` returns `undefined` for a value it cannot
+      // serialize (a function, a symbol) — treat that as no text.
+      return JSON.stringify(error) ?? "";
+    } catch {
+      // A cyclic object throws — the runtime's own text is better than
+      // nothing, so fall back to the plain stringification.
+      try {
+        return String(error);
+      } catch {
+        return "";
+      }
+    }
+  }
   try {
     return String(error);
   } catch {
@@ -276,15 +201,29 @@ export function runtimeErrorText(error: unknown): string {
 }
 
 /**
- * The runner's cancellation signature (issue #311): the Rust side emits
- * exactly this key-shaped message for a cancelled run, and the execution
+ * The runner's cancellation signature (issue #311, #313): the Rust side
+ * emits the key-shaped `errors.cancelled` message for a cancelled run —
+ * `errors.cancelled|task=mise` from the mise runner,
+ * `errors.cancelled|task=install` from the installer — and the execution
  * panel matches it to settle a cancel-racing rejection as *cancelled*,
- * not failed (issue #301). It is a cross-language contract — change both
+ * not failed (issue #301).
+ *
+ * The signature is the KEY, not the whole message: the `task` parameter
+ * names *which* operation was cancelled, so an exact match on one
+ * task's message misses the others — the installer used to settle its
+ * own cancellation as a failure. Match the key; the parameters stay
+ * free to name the task. It is a cross-language contract — change both
  * sides together.
  */
-export const RUN_CANCELLED_MESSAGE = keyedMessage(I18N_KEYS.errors.cancelled, {
-  task: MESSAGE_TOKEN.task.mise,
-});
+export const RUN_CANCELLED_KEY = I18N_KEYS.errors.cancelled;
+
+/**
+ * Is this message the runner's cancellation signature? The key decides;
+ * the `task` parameter may name any operation (issue #313).
+ */
+export function isRunCancelledMessage(message: string): boolean {
+  return parseAppErrorMessage(message).key === RUN_CANCELLED_KEY;
+}
 
 export interface ParsedAppErrorMessage {
   /** The first segment — the i18n key when the message is key-shaped. */

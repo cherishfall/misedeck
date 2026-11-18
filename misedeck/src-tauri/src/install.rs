@@ -174,6 +174,13 @@ where
         // The panel already shows "cancelled", so the outcome is
         // discarded; what matters is that `curl` and the installer died
         // with `sh` (issue #223).
+        //
+        // The key is the runner's cancellation signature: the panel
+        // matches `errors.cancelled` whatever the `task` parameter says
+        // (issue #313). It used to match one task's message verbatim,
+        // so this install cancellation settled as *failed* — a card
+        // that said the installer was cancelled while reporting a
+        // failure.
         DriveEnd::Cancelled => Err(AppError::command_failed_keyed(
             "errors.cancelled",
             MessageParams::new().with("task", token::task::INSTALL),

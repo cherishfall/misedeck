@@ -206,6 +206,46 @@ test("a run that fails while the panel is closed opens it and reports the failur
   );
 });
 
+test("a failed run names the failure, not just the status (issue #313)", async (t) => {
+  t.after(cleanup);
+  ctx = null;
+  localStorage.clear();
+
+  const failing = deferred<RunCommandResult>();
+  scripts.push(() => failing.promise);
+
+  renderPanel();
+  await act(async () => {
+    ctl().openPanel();
+  });
+
+  let run!: Promise<RunCommandResult>;
+  await act(async () => {
+    run = ctl().run({ cwd: null, args: ["ls"] });
+  });
+
+  // A failure with nothing in the transcript — a spawn failure, an IPC
+  // failure — used to show only "failed (0.0s)" and an empty log. The
+  // resolved error is the panel's copy now.
+  await act(async () => {
+    failing.resolve({
+      kind: "err",
+      err: {
+        code: "COMMAND_FAILED",
+        message: "errors.spawnFailed|task=install|reason=boom",
+        stderr: "",
+      },
+    });
+    await run;
+  });
+
+  const detail = screen.getByTestId("execution-failure-detail");
+  assert.equal(
+    detail.textContent,
+    "Failure: MiseDeck could not start the mise installer: boom.",
+  );
+});
+
 test("a resize drag still in flight is torn down when the panel unmounts", async (t) => {
   t.after(cleanup);
   ctx = null;

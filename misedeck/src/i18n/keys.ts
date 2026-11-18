@@ -121,6 +121,11 @@ export const I18N_KEYS = {
     statusFailed: "execution.statusFailed",
     statusFailedNoCode: "execution.statusFailedNoCode",
     statusCancelled: "execution.statusCancelled",
+    /** The resolved failure of a failed run (issue #313). `{{detail}}` is
+        the resolved error — a catalog sentence, never raw prose. The
+        panel renders it so a failure with no stderr (a spawn failure,
+        an IPC failure) is more than "failed (0.0s)" and an empty log. */
+    failureDetail: "execution.failureDetail",
     copy: "execution.copy",
     copyHint: "execution.copyHint",
     cancel: "execution.cancel",
@@ -948,7 +953,6 @@ export const I18N_KEYS = {
     },
     parseFailed: {
       title: "states.parseFailed.title",
-      body: "states.parseFailed.body",
     },
   },
   labels: {
@@ -1029,8 +1033,10 @@ export const I18N_KEYS = {
     /** A background task died before it could report (issue #311). */
     backgroundTaskFailed: "errors.backgroundTaskFailed",
     /** The user cancelled the run (issue #311). The runner's
-        cancellation signature — `useExecution.ts` matches it to settle
-        a cancel-racing rejection as cancelled, not failed. */
+        cancellation signature — `useExecution.ts` matches the KEY to
+        settle a cancel-racing rejection as cancelled, not failed; the
+        `task` parameter names the operation, so the two runners'
+        messages differ (issue #313). */
     cancelled: "errors.cancelled",
     /** A required argument was empty (issue #311). */
     emptyArg: "errors.emptyArg",
@@ -1069,6 +1075,10 @@ export const I18N_KEYS = {
         (issue #311): the frontend's own runtime failure. The raw
         runtime text is the data; MiseDeck's words are the sentence. */
     ipcFailed: "errors.ipcFailed",
+    /** The same IPC failure with no runtime text to carry (issue
+        #313): an empty detail would render a dangling colon, so the
+        failure without a detail is its own key. */
+    ipcFailedNoDetail: "errors.ipcFailedNoDetail",
     /** The IPC boundary answered with something that is not a run
         result (issue #311): a structural failure, not a mise failure. */
     unexpectedIpcResponse: "errors.unexpectedIpcResponse",

@@ -22,6 +22,7 @@
     "lint:css-font-size": "tsx scripts/check-css-font-size.ts",
     "lint:css-tracking": "tsx scripts/check-css-tracking.ts",
     "lint:i18n-ellipsis": "tsx scripts/check-i18n-ellipsis.ts",
+    "lint:i18n-zh-spacing": "tsx scripts/check-i18n-zh-spacing.ts",
     "lint:command-hint": "tsx scripts/check-command-hint.ts",
     "lint:install-echo-parity": "tsx scripts/check-install-echo-parity.ts",
     "lint:argv-parity": "tsx scripts/check-argv-parity.ts",
@@ -34,7 +35,7 @@
     "test": "npm run test:unit && npm run test:ui",
     "test:unit": "tsx --test \"src/**/*.test.ts\"",
     "test:ui": "tsx --import ./scripts/test-dom-env.mjs --test \"src/**/*.test.tsx\"",
-    "ci": "npm run typecheck && npm run lint:eslint && npm run test && npm run lint:i18n && npm run lint:i18n-concat && npm run lint:css-tokens && npm run lint:css-font-size && npm run lint:css-spacing && npm run lint:css-tracking && npm run lint:i18n-ellipsis && npm run lint:command-hint && npm run lint:install-echo-parity && npm run lint:argv-parity && npm run lint:modal-focus && npm run lint:nested-interactive && npm run lint:page-layout && npm run lint:invoke-wrapper && npm run lint:csp-inline && npm run lint:default-run && npm run build",
+    "ci": "npm run typecheck && npm run lint:eslint && npm run test && npm run lint:i18n && npm run lint:i18n-concat && npm run lint:css-tokens && npm run lint:css-font-size && npm run lint:css-spacing && npm run lint:css-tracking && npm run lint:i18n-ellipsis && npm run lint:i18n-zh-spacing && npm run lint:command-hint && npm run lint:install-echo-parity && npm run lint:argv-parity && npm run lint:modal-focus && npm run lint:nested-interactive && npm run lint:page-layout && npm run lint:invoke-wrapper && npm run lint:csp-inline && npm run lint:default-run && npm run build",
     "preview": "vite preview",
     "tauri": "tauri",
     "lint:css-spacing": "tsx scripts/check-css-spacing.ts"

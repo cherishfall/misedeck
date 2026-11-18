@@ -30,7 +30,7 @@ use std::process::{Command, ExitStatus};
 use semver::Version;
 use serde::Serialize;
 
-use crate::mise::{token, AppError, MessageParams};
+use crate::mise::{byte_limit_label, token, AppError, MessageParams};
 
 /// Every MiseDeck release, newest first, prereleases included.
 pub const RELEASES_FEED_URL: &str = "https://github.com/cherishfall/misedeck/releases.atom";
@@ -184,7 +184,7 @@ fn fetch_feed(current_version: &str) -> Result<String, AppError> {
         return Err(AppError::new(
             CHECK_FAILED_CODE,
             MessageParams::new()
-                .with("limit", MAX_FEED_BYTES)
+                .with("limit", byte_limit_label(MAX_FEED_BYTES))
                 .encode("errors.updateFeedTooLarge"),
             String::new(),
         ));
@@ -216,7 +216,7 @@ fn curl_args(current_version: &str) -> Vec<String> {
 fn feed_failure(status: ExitStatus, stderr: String) -> AppError {
     let message = if status.code() == Some(63) {
         MessageParams::new()
-            .with("limit", MAX_FEED_BYTES)
+            .with("limit", byte_limit_label(MAX_FEED_BYTES))
             .encode("errors.updateFeedTooLarge")
     } else {
         MessageParams::new().encode("errors.updateRequestFailed")
@@ -470,11 +470,24 @@ mod tests {
         );
         assert_eq!(err.code, crate::mise::code::COMMAND_FAILED);
         // The detail is key-shaped (issue #311): the catalog owns the
-        // sentence, the cap is the data.
+        // sentence, the cap is the data — and the cap reads in MiB, not
+        // as a raw byte count (issue #313).
         assert_eq!(
             err.message,
-            format!("errors.updateFeedTooLarge|limit={MAX_FEED_BYTES}"),
+            MessageParams::new()
+                .with("limit", byte_limit_label(MAX_FEED_BYTES))
+                .encode("errors.updateFeedTooLarge"),
             "got {:?}",
+            err.message
+        );
+        assert!(
+            err.message.contains(" MiB"),
+            "the cap must read in MiB: {:?}",
+            err.message
+        );
+        assert!(
+            !err.message.contains(&MAX_FEED_BYTES.to_string()),
+            "the cap must not read as a raw byte count: {:?}",
             err.message
         );
         assert_eq!(err.stderr, "curl: (63) Maximum file size exceeded");

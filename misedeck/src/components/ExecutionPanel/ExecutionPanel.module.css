@@ -118,6 +118,18 @@
   font-size: var(--size-data);
 }
 
+/* The failure reason of a failed run (issue #313). It is a sentence from
+ * the catalog, not a log line: the panel's own copy, in the reader's
+ * language, above the transcript it belongs to. */
+.failureDetail {
+  padding: var(--space-2) var(--space-3);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--size-base);
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
 /* A cancel request that failed: the run is still going, so this reads as
  * a compact danger notice inside the panel rather than a change of the
  * run's status (issue #262). */

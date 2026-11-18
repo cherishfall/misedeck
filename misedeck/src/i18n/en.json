@@ -670,8 +670,7 @@
       "body": "The mise version probe did not complete. The error is shown below; retry the probe."
     },
     "parseFailed": {
-      "title": "Unrecognized mise response",
-      "body": "MiseDeck could not parse the output of mise version --json. You may be running a forked build."
+      "title": "Unrecognized mise response"
     }
   },
   "labels": {
@@ -713,9 +712,10 @@
     "browserRefused": "The system browser refused the request: {{reason}}.",
     "updateFeedInvalid": "MiseDeck could not read the release feed: {{reason}}.",
     "updateCurlFailed": "MiseDeck could not run curl: {{reason}}.",
-    "updateFeedTooLarge": "The release feed exceeded the {{limit}} byte limit.",
+    "updateFeedTooLarge": "The release feed exceeded the {{limit}} limit.",
     "updateRequestFailed": "The release feed request did not succeed.",
     "ipcFailed": "MiseDeck could not complete the request: {{detail}}",
+    "ipcFailedNoDetail": "MiseDeck could not complete the request.",
     "unexpectedIpcResponse": "MiseDeck received an unexpected response from the mise command.",
     "shellRcUnreadable": "MiseDeck could not read the shell's rc file: {{reason}}.",
     "windowChromeFailed": "MiseDeck could not apply the theme to the window: {{reason}}.",
@@ -786,6 +786,7 @@
     "statusFailed": "failed ({{duration}}s, exit {{code}})",
     "statusFailedNoCode": "failed ({{duration}}s)",
     "statusCancelled": "cancelled",
+    "failureDetail": "Failure: {{detail}}",
     "copy": "Copy command",
     "copyHint": "Copy the exact command to your clipboard",
     "cancel": "Cancel",

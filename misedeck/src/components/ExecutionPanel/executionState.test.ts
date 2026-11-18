@@ -408,6 +408,20 @@ test("fail after complete: a late rejection keeps the settled outcome", () => {
   assert.equal(entry.error, null);
 });
 
+test("fail after exit: a failed run records the reason without changing its outcome (issue #313)", () => {
+  // The channel's Exit event can settle the run before the invoke
+  // result arrives. The outcome stays (failed, with its exit code);
+  // only the reason is recorded, so the panel can name the failure
+  // instead of showing "failed (0.0s)" and an empty log.
+  let state = startRun(emptyState(), "a");
+  state = finishRun(state, "a", 1);
+  const next = executionReducer(state, { type: "fail", id: "a", error: cancelError });
+  const entry = next.runs.find((r) => r.id === "a") as RunEntry;
+  assert.equal(entry.status, "failed");
+  assert.equal(entry.exitCode, 1);
+  assert.deepEqual(entry.error, cancelError);
+});
+
 // Issue #197: dismiss (close) is a panel fixture, usable in any state —
 // including the empty state the panel used to get stuck in.
 

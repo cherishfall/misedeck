@@ -261,7 +261,23 @@ export function executionReducer(state: ExecState, action: Action): ExecState {
       // event settled the run before the invoke result arrived — and a
       // late `fail` must not rewrite that outcome (issue #301).
       const target = state.runs.find((r) => r.id === action.id);
-      if (!target || target.status !== "running") return state;
+      if (!target) return state;
+      if (target.status !== "running") {
+        // The run already settled. The outcome (ok / failed / cancelled)
+        // stays as it is — only the *reason* is recorded, so the panel
+        // can name the failure (issue #313). Without this the same
+        // failure shows its reason or not depending on whether the
+        // channel's Exit event or the invoke result arrived first.
+        // A cancelled run keeps its own outcome: the cancellation
+        // message is not a failure reason.
+        if (target.status !== "failed" || target.error) return state;
+        return {
+          ...state,
+          runs: state.runs.map((r) =>
+            r.id === action.id ? { ...r, error: action.error } : r,
+          ),
+        };
+      }
       return {
         ...state,
         runs: state.runs.map((r) =>

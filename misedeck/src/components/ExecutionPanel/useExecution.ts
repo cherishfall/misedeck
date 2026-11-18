@@ -28,8 +28,8 @@ import { isAppError } from "../../api/mise";
 import { loadPersistent, savePersistent } from "../../hooks/usePersistentState";
 import { I18N_KEYS } from "../../i18n/keys";
 import {
-  RUN_CANCELLED_MESSAGE,
   ipcFailedMessage,
+  isRunCancelledMessage,
   keyedMessage,
   parseFailedMessage,
   runtimeErrorText,
@@ -91,6 +91,10 @@ export interface ExecutionState {
    *  (#129). */
   exitCode: number | null;
   durationMs: number;
+  /** The failure that settled this run, when it failed (issue #313).
+   *  The panel renders it — resolved through the catalog — so a
+   *  failure with no stderr (a spawn failure, an IPC failure) says
+   *  what went wrong instead of showing an empty log. */
   error: AppError | null;
   /** Why a cancel request failed, while the run is still going (issue
    *  #262). Cleared when a retry succeeds or the run ends. */
@@ -286,16 +290,22 @@ export function useExecution() {
       // `cancel_run` IPC resolves (issue #301): the run's own invoke can
       // reject with the runner's cancellation signature in that window —
       // `DriveEnd::Cancelled` surfaces as the key-shaped
-      // `errors.cancelled|task=mise` on the Rust side (issue #311) — and
-      // that rejection must settle the run as cancelled, not failed.
+      // `errors.cancelled` message on the Rust side, with the `task`
+      // parameter naming the operation (issue #311, #313) — and that
+      // rejection must settle the run as cancelled, not failed.
       let cancelRequested = false;
-      /** The runner's cancellation rejection, matched on the exact
-       *  message `run_mise_timed` emits for `DriveEnd::Cancelled`
-       *  (misedeck/src-tauri/src/mise.rs). A genuine mise failure that
-       *  races the cancel click carries a different message and still
-       *  reports as a failure. */
+      /** The runner's cancellation rejection, matched on the key of the
+       *  key-shaped `errors.cancelled` message the Rust side emits for
+       *  `DriveEnd::Cancelled` (`misedeck/src-tauri/src/mise.rs`,
+       *  `install.rs`). The KEY is the signature, not the whole message:
+       *  the `task` parameter names the operation that was cancelled
+       *  (`mise`, `install`), so an exact match on one task's message
+       *  missed the others and settled an install cancellation as a
+       *  failure (issue #313). A genuine mise failure that races the
+       *  cancel click carries a different key and still reports as a
+       *  failure. */
       const isCancellationRejection = (err: AppError): boolean =>
-        err.message === RUN_CANCELLED_MESSAGE;
+        isRunCancelledMessage(err.message);
       if (!background) {
         cancelRefs.current.set(id, () => {
           cancelRequested = true;
@@ -383,10 +393,11 @@ export function useExecution() {
           // Route through `fail` rather than dispatching directly: the
           // panel commands RESOLVE with `RunCommandResult::Err` (they
           // never reject), so the runner's cancellation rejection —
-          // the key-shaped `errors.cancelled|task=mise` for
-          // `DriveEnd::Cancelled` — arrives HERE, not in the catch. When
-          // it races a requested cancel (#301), `fail` settles the run
-          // as cancelled; a genuine failure dispatches unchanged.
+          // the key-shaped `errors.cancelled` for `DriveEnd::Cancelled`,
+          // whatever operation it names (issue #313) — arrives HERE, not
+          // in the catch. When it races a requested cancel (#301), `fail`
+          // settles the run as cancelled; a genuine failure dispatches
+          // unchanged.
           return fail(result.err);
         }
         return result;

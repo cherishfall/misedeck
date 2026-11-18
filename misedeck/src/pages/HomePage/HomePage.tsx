@@ -463,7 +463,7 @@ export function HomePage() {
           </Panel>
         )}
 
-        {view.status === "parseFailed" && (
+        {view.status === "parseFailed" && view.err && (
           <Panel tone="danger" className={styles.state}>
             <div className={styles.stateIndicator}>
               <ProgressDot tone="breach" />
@@ -471,7 +471,19 @@ export function HomePage() {
                 {t(I18N_KEYS.states.parseFailed.title)}
               </span>
             </div>
-            <p className={styles.stateBody}>{t(I18N_KEYS.states.parseFailed.body)}</p>
+            {/* The keyed parse-failure detail (issue #313): the card
+                names the command that ran and the payload shape
+                MiseDeck expected, in the reader's language. The old
+                body guessed ("You may be running a forked build") —
+                the shape is known now, so the guess is gone. */}
+            <p className={styles.stateBody}>
+              {readErrorBody(
+                view.err,
+                t,
+                I18N_KEYS.states.commandFailed.body,
+                I18N_KEYS.states.commandFailed.bodyNoStderr,
+              )}
+            </p>
           </Panel>
         )}
 

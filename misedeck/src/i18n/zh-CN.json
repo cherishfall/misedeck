@@ -670,8 +670,7 @@
       "body": "mise 版本探测未能完成。下方是错误信息，请重试。"
     },
     "parseFailed": {
-      "title": "无法解析 mise 响应",
-      "body": "MiseDeck 无法解析 mise version --json 的输出。你可能在运行一个 fork 版本。"
+      "title": "无法解析 mise 响应"
     }
   },
   "labels": {
@@ -696,12 +695,12 @@
     "parseFailed": "MiseDeck 无法解析 {{cmd}} 返回的内容：预期为{{shape}}。",
     "commandFailed": "{{cmd}} 以状态码 {{code}} 结束。",
     "installFailed": "mise 安装程序以状态码 {{code}} 结束。",
-    "spawnFailed": "MiseDeck 无法启动 {{task}}：{{reason}}。",
-    "waitFailed": "MiseDeck 无法等待 {{task}} 结束：{{reason}}。",
-    "backgroundTaskFailed": "{{task}} 的后台任务失败。",
-    "cancelled": "{{task}} 已取消。",
-    "emptyArg": "{{arg}} 为空。",
-    "invalidArg": "MiseDeck 拒绝了 {{arg}} {{value}}。",
+    "spawnFailed": "MiseDeck 无法启动{{task}}：{{reason}}。",
+    "waitFailed": "MiseDeck 无法等待{{task}}结束：{{reason}}。",
+    "backgroundTaskFailed": "{{task}}的后台任务失败。",
+    "cancelled": "{{task}}已取消。",
+    "emptyArg": "{{arg}}为空。",
+    "invalidArg": "MiseDeck 拒绝了{{arg}} {{value}}。",
     "notADirectory": "{{path}} 不是一个目录。",
     "readFailed": "MiseDeck 无法读取 {{path}}：{{reason}}。",
     "homeNotFound": "MiseDeck 无法解析主目录。",
@@ -713,9 +712,10 @@
     "browserRefused": "系统浏览器拒绝了该请求：{{reason}}。",
     "updateFeedInvalid": "MiseDeck 无法读取发行说明：{{reason}}。",
     "updateCurlFailed": "MiseDeck 无法运行 curl：{{reason}}。",
-    "updateFeedTooLarge": "发行说明超过了 {{limit}} 字节的上限。",
+    "updateFeedTooLarge": "发行说明超过了 {{limit}} 上限。",
     "updateRequestFailed": "发行说明请求未成功。",
     "ipcFailed": "MiseDeck 无法完成该请求：{{detail}}",
+    "ipcFailedNoDetail": "MiseDeck 无法完成该请求。",
     "unexpectedIpcResponse": "MiseDeck 收到了来自 mise 命令的意外响应。",
     "shellRcUnreadable": "MiseDeck 无法读取 shell 的 rc 文件：{{reason}}。",
     "windowChromeFailed": "MiseDeck 无法将主题应用到窗口：{{reason}}。",
@@ -786,6 +786,7 @@
     "statusFailed": "失败（{{duration}}s，退出码 {{code}}）",
     "statusFailedNoCode": "失败（{{duration}}s）",
     "statusCancelled": "已取消",
+    "failureDetail": "失败详情：{{detail}}",
     "copy": "复制命令",
     "copyHint": "复制确切命令到剪贴板",
     "cancel": "取消",
