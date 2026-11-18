@@ -6,17 +6,21 @@
 // then "## 简体中文", or "# MiseDeck v1.0.1" then "# MiseDeck 1.0.1（简体中文）"
 // — so this script splits each body at its language marker and emits the
 // two halves as sibling blocks, the shape the site's language toggle hides
-// and shows. A body that carries one language only is rendered in both
-// languages with a note that says the notes could not be split, never a
-// claim about the release itself.
+// and shows. EVERY marker starts a new half of its language, so a body
+// that repeats a marker loses nothing and misattributes nothing. A body
+// that carries one language only is rendered in both languages with a
+// note that says the notes could not be split, never a claim about the
+// release itself.
 //
 // The same release list drives the landing page's version chip and the
 // install file names, so a release never leaves the site stale.
 //
 // The generator fails loudly instead of publishing something wrong: a
 // release body it cannot read, an install file the release does not
-// have, and a `brew install` command that survived into the page all
-// stop the run before a file is written.
+// have, a `brew install` command that survived into the page, and a
+// commit trailer that survived into the page all stop the run before a
+// file is written. A body that is a commit message rather than release
+// notes is never published: it renders the "no notes" state.
 //
 // Usage:
 //   node scripts/gen-changelog-page.mjs [--out <path>] [--repo <owner/name>]
@@ -116,23 +120,31 @@ function inline(text) {
 }
 
 function inlineText(text) {
-  const s = esc(text);
-  // A markdown link: its URL leaves the text stream first, so the
-  // bare-URL pass below cannot linkify it a second time.
+  // The links leave the text stream FIRST, and they are matched on the
+  // RAW text: an escaped entity (`&quot;`) is not part of a URL, so a
+  // match that ran on the escaped text would swallow the entity and
+  // the text after it, and the link would point at the wrong place.
   const links = [];
-  let out = s.replace(/\[([^\]]+)\]\((https?:[^)\s\u0000]+)\)/g, (_, label, url) => {
-    links.push(`<a href="${url}" rel="noopener">${label}</a>`);
+  let out = String(text).replace(/\[([^\]]+)\]\((https?:[^)\s\u0000]+)\)/g, (_, label, url) => {
+    links.push({ label, url });
     return `\u0000L${links.length - 1}\u0000`;
   });
-  out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   // A bare URL.
   out = out.replace(/https?:\/\/[^\s<>"'`\u0000]+/g, (url) => {
     let trimmed = url.replace(/[.,;:!?。，；：！？、）】》」』]+$/, "");
     if (trimmed.endsWith(")") && !trimmed.includes("(")) trimmed = trimmed.slice(0, -1);
     if (!trimmed) return url;
-    return `<a href="${trimmed}" rel="noopener">${trimmed}</a>${url.slice(trimmed.length)}`;
+    links.push({ label: trimmed, url: trimmed });
+    return `\u0000L${links.length - 1}\u0000${url.slice(trimmed.length)}`;
   });
-  return out.replace(/\u0000L(\d+)\u0000/g, (_, i) => links[Number(i)]);
+  // The rest of the text is escaped; the parked links are put back
+  // afterwards, with their own label and their own href escaped.
+  out = esc(out);
+  out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  return out.replace(/\u0000L(\d+)\u0000/g, (_, i) => {
+    const { label, url } = links[Number(i)];
+    return `<a href="${esc(url)}" rel="noopener">${esc(label)}</a>`;
+  });
 }
 
 // A fenced code block: three or more backticks or tildes at the start
@@ -157,15 +169,53 @@ function fenceBody(lines, start) {
 }
 
 /**
+ * A markdown table: a row of cells, a separator row, and the rows that
+ * follow. A row is a line that starts with a pipe; the separator is a
+ * row whose cells are all dashes.
+ */
+function isTableRow(line) {
+  const text = String(line).trim();
+  return text.startsWith("|") && text.includes("|", 1);
+}
+
+/** The cells of a table row, trimmed, without the pipes. */
+function tableCells(line) {
+  const inner = String(line)
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "");
+  return inner.split("|").map((cell) => cell.trim());
+}
+
+/** The separator row of a table: every cell is a dash, with optional colons. */
+function isTableSeparator(line) {
+  const text = String(line).trim();
+  if (!text.includes("-") || !text.includes("|")) return false;
+  const cells = tableCells(text);
+  return cells.length > 0 && cells.every((cell) => /^:?-+:?$/.test(cell));
+}
+
+/**
  * Normalise a line of a release body before it is tested for an install
- * command: drop the list marker and the shell prompt, and unwrap an
- * inline code span that makes up the whole line.
+ * command: drop the list marker and the shell prompt, unwrap an inline
+ * code span that makes up the whole line, and — for a table row — take
+ * the row's FIRST cell, so a row that carries a command in that cell
+ * is recognised as a command.
  *
  * The neutraliser and the guard use this one helper, so a command
  * cannot be one thing to the neutraliser and another to the guard.
  */
 function normaliseCommandLine(line) {
   let text = String(line).trim();
+  // A table row: the command candidate is the row's FIRST cell, so a
+  // row that carries a command in that cell is recognised as a command
+  // — the guard sees the same cell the page renders.
+  if (text.includes("|")) {
+    text = text.replace(/^\|/, "");
+    const pipe = text.indexOf("|");
+    if (pipe >= 0) text = text.slice(0, pipe);
+    text = text.trim();
+  }
   let previous = "";
   while (text !== previous) {
     previous = text;
@@ -231,12 +281,35 @@ function deadChannelNote(extraClass = "") {
 // The placeholder for a dead command inside a fence that holds more
 // than the dead command. It must not read as a command itself.
 const DEAD_FENCE_NOTE = "# [the Homebrew command no longer works: MiseDeck v1 ships through GitHub Releases only]";
+// The placeholder for a dead command inside a table cell: the cell is
+// kept — a table that lost a row would not be a table — and only the
+// command in it is replaced.
+const DEAD_CELL_MARKER = "MISEDECK_DEAD_CHANNEL_CELL_MARKER";
+// The note that replaces the command inside the cell. It must not read
+// as a command itself.
+const DEAD_CELL_NOTE = `<span lang="zh-CN">（这条 Homebrew 安装命令已经失效）</span><span lang="en">(This Homebrew command no longer works.)</span>`;
+
+/**
+ * A table row with a dead command in one of its cells: the command is
+ * replaced by the cell marker, so the row — and the table — stay a
+ * table. Every other cell is left exactly as it is.
+ */
+function neutraliseTableRow(line) {
+  const cells = line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|");
+  const out = cells.map((cell) => (isBrewInstallCommand(cell) ? ` ${DEAD_CELL_MARKER} ` : cell));
+  return `|${out.join("|")}|`;
+}
 
 /**
  * Replace every dead install command of a half with the marker line; a
- * fenced block that holds nothing else goes as a whole, and a dead
- * command inside a fence that holds more becomes a comment. Every other
- * line is left exactly as it is.
+ * fenced block that holds nothing else goes as a whole, a dead command
+ * inside a fence that holds more becomes a comment, and a dead command
+ * inside a table cell is replaced in place. Every other line is left
+ * exactly as it is.
  */
 function neutraliseDeadChannels(text) {
   const lines = text.split("\n");
@@ -256,6 +329,11 @@ function neutraliseDeadChannels(text) {
         if (end < lines.length) out.push(lines[end]);
       }
       i = end < lines.length ? end + 1 : lines.length;
+      continue;
+    }
+    if (isTableRow(line)) {
+      out.push(neutraliseTableRow(line));
+      i += 1;
       continue;
     }
     out.push(isBrewInstallCommand(line) ? DEAD_MARKER : line);
@@ -289,17 +367,11 @@ function languageOfHeading(text) {
 }
 
 /**
- * Split a release body at its language marker.
- *
- * The English half is what precedes the Chinese marker, the Chinese
- * half what follows it. Content that precedes the first marker belongs
- * to neither half: it is kept in the preceding (English) half and the
- * split says so, because nothing may be dropped. A heading inside a
- * fenced code block is not a heading, so it is never a marker.
+ * The language markers of a release body: the headings that ARE a
+ * language name. A heading inside a fenced code block is part of the
+ * code, so it is never a marker.
  */
-function splitBody(body) {
-  const text = (body ?? "").replace(/\r\n/g, "\n");
-  const lines = text.split("\n");
+function findLanguageMarkers(lines) {
   const markers = [];
   let fenced = false;
   lines.forEach((line, i) => {
@@ -313,58 +385,85 @@ function splitBody(body) {
     const lang = languageOfHeading(m[2]);
     if (lang) markers.push({ index: i, ...lang });
   });
-  const zhHead = markers.find((h) => h.lang === "zh");
-  const enHead = markers.find((h) => h.lang === "en");
+  return markers;
+}
+
+/**
+ * Split a release body at its language markers.
+ *
+ * EVERY marker starts a new half of its language: a body that repeats a
+ * marker splits on every occurrence, so each line of the body belongs
+ * to exactly one half. A body that repeats a marker and is split only
+ * at the FIRST marker of each language would attribute the rest of the
+ * body to the other language — and the language toggle hides the half
+ * that does not belong, so that content would be invisible to half the
+ * readers. Nothing may be dropped, and nothing may be misattributed.
+ *
+ * The content that precedes the first marker belongs to neither half:
+ * it is kept in the English half and the split says so. A body whose
+ * only marker is a Chinese one is the exception: everything before that
+ * marker is the English half, which is what such a body means.
+ */
+function splitBody(body) {
+  const text = (body ?? "").replace(/\r\n/g, "\n");
+  const lines = text.split("\n");
+  const markers = findLanguageMarkers(lines);
   const slice = (from, to) =>
     lines.slice(from, to === undefined ? lines.length : to).join("\n").trim();
   const withTitle = (half, title) => (title ? `${title}\n\n${half}`.trim() : half);
 
-  if (enHead && zhHead) {
-    const first = enHead.index < zhHead.index ? enHead : zhHead;
-    const pre = slice(0, first.index);
-    let en;
-    let zh;
-    if (enHead.index < zhHead.index) {
-      en = slice(enHead.index + 1, zhHead.index);
-      zh = slice(zhHead.index + 1);
-    } else {
-      en = slice(enHead.index + 1);
-      zh = slice(zhHead.index + 1, enHead.index);
-    }
-    if (pre) {
-      console.warn(
-        `a release body has ${pre.split("\n").length} line(s) before its language marker — ` +
-          `they were kept in the English half`,
-      );
-      en = `${pre}\n\n${en}`.trim();
-    }
-    return { en: withTitle(en, enHead.title), zh: withTitle(zh, zhHead.title) };
+  if (!markers.length) return { en: text.trim(), zh: "" };
+
+  const enCount = markers.filter((m) => m.lang === "en").length;
+  const zhCount = markers.filter((m) => m.lang === "zh").length;
+  if (enCount > 1 || zhCount > 1) {
+    console.warn(
+      `a release body repeats a language marker (${enCount} English, ${zhCount} Chinese) — ` +
+        `every occurrence starts a new half of its language`,
+    );
   }
-  if (zhHead) {
-    // Only a Chinese marker: everything before it is the English half.
-    return { en: slice(0, zhHead.index), zh: withTitle(slice(zhHead.index + 1), zhHead.title) };
+
+  // The content before the first marker belongs to neither half.
+  const pre = slice(0, markers[0].index);
+  const zhOnly = markers[0].lang === "zh" && enCount === 0;
+  if (pre && !zhOnly) {
+    console.warn(
+      `a release body has ${pre.split("\n").length} line(s) before its language marker — ` +
+        `they were kept in the English half`,
+    );
   }
-  if (enHead) {
-    // Only an English marker: the content before it belongs to neither
-    // half either, so it is kept in the English half and the split says so.
-    const pre = slice(0, enHead.index);
-    const en = slice(enHead.index + 1);
-    if (pre) {
-      console.warn(
-        `a release body has ${pre.split("\n").length} line(s) before its language marker — ` +
-          `they were kept in the English half`,
-      );
-      return { en: withTitle(`${pre}\n\n${en}`, enHead.title), zh: "" };
-    }
-    return { en: withTitle(en, enHead.title), zh: "" };
+
+  // Every marker starts a new half of its language; the content between
+  // two markers belongs to the first of them, and to no other half.
+  const parts = { en: [], zh: [] };
+  const titles = { en: "", zh: "" };
+  for (let i = 0; i < markers.length; i += 1) {
+    const marker = markers[i];
+    const next = markers[i + 1];
+    const content = slice(marker.index + 1, next ? next.index : undefined);
+    if (!titles[marker.lang]) titles[marker.lang] = marker.title;
+    parts[marker.lang].push(content);
   }
-  return { en: text.trim(), zh: "" };
+
+  const en = [pre, ...parts.en].filter(Boolean).join("\n\n");
+  const zh = parts.zh.filter(Boolean).join("\n\n");
+  return { en: withTitle(en, titles.en), zh: withTitle(zh, titles.zh) };
+}
+
+/**
+ * Inline markdown → HTML, with the dead-command cell marker replaced by
+ * the note that says the channel is gone. A row that carries the marker
+ * but is not part of a table renders as a paragraph, and the note must
+ * not leak as a marker.
+ */
+function renderInline(text) {
+  return inline(text).replace(DEAD_CELL_MARKER, () => DEAD_CELL_NOTE);
 }
 
 /**
  * One half of a release body → HTML: headings become h3, bullets lists,
- * fenced code becomes a code block. A heading inside a fence is part of
- * the code, never a heading.
+ * tables become tables, fenced code becomes a code block. A heading
+ * inside a fence is part of the code, never a heading.
  *
  * `lang` may be empty — then no `lang` attribute is written; its
  * visibility is decided by the `rel-fallback-*` class instead.
@@ -377,7 +476,7 @@ function halfToHtml(text, lang, extraClass = "") {
   let list = null;
   const flush = () => {
     if (list && list.length) {
-      blocks.push(`<ul${attr}${cls}>\n${list.map((i) => `  <li>${inline(i)}</li>`).join("\n")}\n</ul>`);
+      blocks.push(`<ul${attr}${cls}>\n${list.map((i) => `  <li>${renderInline(i)}</li>`).join("\n")}\n</ul>`);
     }
     list = null;
   };
@@ -404,6 +503,20 @@ function halfToHtml(text, lang, extraClass = "") {
       i += 1;
       continue;
     }
+    if (isTableRow(line) && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
+      // A table: the header row, the separator row, and the rows that
+      // follow it.
+      flush();
+      const header = tableCells(line);
+      const rows = [];
+      i += 2;
+      while (i < lines.length && isTableRow(lines[i])) {
+        rows.push(tableCells(lines[i]));
+        i += 1;
+      }
+      blocks.push(tableToHtml(header, rows, attr, cls));
+      continue;
+    }
     const bullet = line.match(/^[-*+]\s+(.*)$/);
     if (bullet) {
       (list ??= []).push(bullet[1]);
@@ -413,15 +526,33 @@ function halfToHtml(text, lang, extraClass = "") {
     flush();
     const heading = line.match(/^#{1,6}\s+(.*)$/);
     if (heading) {
-      blocks.push(`<h3${attr}${cls}>${inline(heading[1])}</h3>`);
+      blocks.push(`<h3${attr}${cls}>${renderInline(heading[1])}</h3>`);
       i += 1;
       continue;
     }
-    blocks.push(`<p${attr}${cls}>${inline(line)}</p>`);
+    blocks.push(`<p${attr}${cls}>${renderInline(line)}</p>`);
     i += 1;
   }
   flush();
   return blocks.join("\n");
+}
+
+/**
+ * A markdown table → HTML.
+ *
+ * The language and the visibility class of the half sit on a wrapper,
+ * not on the table: the class sets `display: block` when the half is
+ * the fallback one, and a table with `display: block` loses its
+ * layout. The cells carry no language of their own — the wrapper's
+ * language is theirs.
+ */
+function tableToHtml(header, rows, attr, cls) {
+  const cell = (text) => (text === DEAD_CELL_MARKER ? DEAD_CELL_NOTE : renderInline(text));
+  const head = `<thead><tr>${header.map((c) => `<th>${cell(c)}</th>`).join("")}</tr></thead>`;
+  const body = rows.length
+    ? `<tbody>\n${rows.map((r) => `  <tr>${r.map((c) => `<td>${cell(c)}</td>`).join("")}</tr>`).join("\n")}\n</tbody>`
+    : "";
+  return `<div${attr}${cls}>\n<table>\n${head}\n${body}\n</table>\n</div>`;
 }
 
 // A note that says what the generator knows: the notes could not be
@@ -431,10 +562,62 @@ function halfToHtml(text, lang, extraClass = "") {
 const SPLIT_NOTE = `<span lang="zh-CN">这次发布的说明未能按语言拆分，下面是原文。</span><span lang="en">These release notes could not be split by language; the original text follows.</span>`;
 const NO_NOTES = `<p class="rel-note"><span lang="zh-CN">这次发布没有发布说明。</span><span lang="en">This release has no notes.</span></p>`;
 
+/**
+ * A commit message is not release notes.
+ *
+ * Thirteen releases went out with the release commit's message as their
+ * body, and the site published it verbatim. A commit message opens with
+ * a conventional-commit subject and carries no heading; such a body
+ * renders the "no notes" state instead of the commit's text.
+ */
+const CONVENTIONAL_SUBJECT = /^(chore|fix|feat|docs|refactor|test|style|perf)(\([^)]*\))?: /;
+
+/** Does the body carry a heading? A heading inside a fence is code. */
+function hasHeading(text) {
+  let fenced = false;
+  for (const line of String(text).split("\n")) {
+    if (FENCE.test(line.trim())) {
+      fenced = !fenced;
+      continue;
+    }
+    if (fenced) continue;
+    if (/^#{1,6}\s+\S/.test(line)) return true;
+  }
+  return false;
+}
+
+/** Is this body a commit message rather than release notes? */
+function isCommitMessage(body) {
+  const text = String(body ?? "").replace(/\r\n/g, "\n");
+  const first = text.split("\n").find((line) => line.trim())?.trim() ?? "";
+  if (!CONVENTIONAL_SUBJECT.test(first)) return false;
+  return !hasHeading(text);
+}
+
+/**
+ * A commit trailer is not release notes either: the `Co-Authored-By:`
+ * line of the release commit must never reach the page. Every such
+ * line is removed from every body.
+ */
+function stripCommitTrailers(body) {
+  return String(body ?? "")
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .filter((line) => !/^\s*Co-Authored-By\s*:/i.test(line))
+    .join("\n");
+}
+
 const sections = releases.map((r) => {
   const version = r.tagName.replace(/^v/, "");
   const id = `v${version.replace(/\./g, "-")}`;
-  const { en, zh } = splitBody(r.body);
+  const body = stripCommitTrailers(r.body);
+  const commitMessage = isCommitMessage(body);
+  if (commitMessage) {
+    console.warn(
+      `the body of ${r.tagName} is a commit message, not release notes — it was not published`,
+    );
+  }
+  const { en, zh } = commitMessage ? { en: "", zh: "" } : splitBody(body);
   const badge = r.isPrerelease
     ? '<span class="rel-tag"><span lang="zh-CN">预发布</span><span lang="en">Pre-release</span></span>'
     : "";
@@ -640,6 +823,9 @@ function brewCommandsIn(text) {
 if (isBrewInstallCommand(DEAD_CHANNEL_NOTE)) {
   throw new Error("the dead-channel note reads as a `brew install` command — the guard would reject its own page");
 }
+if (isBrewInstallCommand(DEAD_CELL_NOTE)) {
+  throw new Error("the dead-channel cell note reads as a `brew install` command — the guard would reject its own page");
+}
 
 const offenders = brewCommandsIn(html);
 if (offenders.length) {
@@ -647,6 +833,13 @@ if (offenders.length) {
     `${OUT} still offers a "brew install" command — that channel does not exist:\n` +
       offenders.map((line) => `  ${line.trim()}`).join("\n"),
   );
+}
+
+// A commit trailer is not release notes: the page must never carry one.
+// The trailers are stripped from every body, so this can only fire if
+// the stripping stops working.
+if (/Co-Authored-By/i.test(html)) {
+  throw new Error(`${OUT} carries a "Co-Authored-By:" trailer — a commit trailer is not release notes`);
 }
 
 /* -------------------------------------------------------------- landing --- */
