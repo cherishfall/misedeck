@@ -65,7 +65,7 @@ agent 可以在完成 ticket 的过程中 commit 和 push：DoD 全部通过后�
    ```sh
    node scripts/gen-changelog-page.mjs
    ```
-   生成器写入 `../cherishfall.github.io/misedeck/changelog.html`，在站点仓库里提交该文件。Release 正文本来就是双语的（`## English` 在前，`## 简体中文` 在后），生成器据此切分——如果某次发布的正文丢了其中一个标题，更新日志会出现半空条目，那是发布说明的问题，不是生成器的问题。
+   生成器写入 `../cherishfall.github.io/misedeck/changelog.html`，并把落地页的版本 chip 与安装包文件名同步到最新发布；在站点仓库里提交重新生成的页面。Release 正文在带中文标题时即为双语（生成器按"含中文的标题"识别该标记，不限标题级别），两个半段按该标记切分；没有该标记的正文整段展示，并标注未能按语言拆分。发布说明模板（`.github/release-template.md`）是常规发布的默认路径，因此它必须带两个语言半段——只有一种语言的发布说明是发布说明本身的 bug，站点会如实说明，而不会编造翻译。
 2. **截图。** 站点展示的是应用真实界面：`misedeck/screens/{en,zh}/*.webp`。发布若改动了 UI，就要重拍 `docs/screenshots/*.png`（README 自己的图），**并**为站点重新转成 1920 像素宽的 WebP——同一批截图，两处使用。站点截图与应用不再一致，就是对产品的虚假描述。
 
 站点必须始终说对、且要与代码核对的内容：八个页面及其命令、版本号（页头 chip 必须与最新已发布版本一致）、安装包文件名、macOS 未签名未公证与 Windows 未签名的提醒，以及社区项目的免责声明。发布改变了其中任何一项，站点随之改变。
