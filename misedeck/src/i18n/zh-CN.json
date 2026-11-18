@@ -159,6 +159,11 @@
         "title": "无法加载版本列表",
         "body": "mise ls-remote --json {{tool}} 未返回结果。stderr 如下所示。",
         "bodyNoStderr": "mise ls-remote --json {{tool}} 未返回结果，也没有输出 stderr。请重试；若反复出现，请在终端中运行该命令。"
+      },
+      "registryError": {
+        "title": "无法加载 registry",
+        "body": "mise registry --json 未返回结果。stderr 如下所示。",
+        "bodyNoStderr": "mise registry --json 未返回结果，也没有输出 stderr。请重试；若反复出现，请在终端中运行该命令。"
       }
     },
     "linkForm": {
@@ -632,7 +637,7 @@
       }
     },
     "installedEmpty": {
-      "title": "未安装插件",
+      "title": "还没有插件",
       "body": "大多数工具根本不需要插件——前往「工具」页搜索即可安装。要添加自定义插件，请使用安装表单：填写名称和插件的 git URL。",
       "action": "搜索工具",
       "installAction": "安装插件"

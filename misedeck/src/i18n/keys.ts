@@ -374,6 +374,11 @@ export const I18N_KEYS = {
         /** No-stderr variant (V-7, issue #262). */
         bodyNoStderr: "tools.addTool.remoteError.bodyNoStderr",
       },
+      registryError: {
+        title: "tools.addTool.registryError.title",
+        body: "tools.addTool.registryError.body",
+        bodyNoStderr: "tools.addTool.registryError.bodyNoStderr",
+      },
     },
     linkForm: {
       title: "tools.linkForm.title",

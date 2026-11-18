@@ -94,6 +94,40 @@ fn run_event_output_truncated_is_a_typed_notice() {
     }
 }
 
+#[test]
+fn run_event_stream_and_exit_kinds_are_pinned() {
+    // The panel pattern-matches on `kind === "stdout" | "stderr" | "exit"`
+    // (useExecution.ts), so their exact wire JSON is pinned like every
+    // other boundary enum — the truncation notice alone is not enough.
+    let v = serde_json::to_value(RunEvent::Stdout {
+        line: "go 1.27.1".to_string(),
+    })
+    .unwrap();
+    assert_eq!(v, json!({ "kind": "stdout", "line": "go 1.27.1" }));
+
+    let v = serde_json::to_value(RunEvent::Stderr {
+        line: "warning".to_string(),
+    })
+    .unwrap();
+    assert_eq!(v, json!({ "kind": "stderr", "line": "warning" }));
+
+    let v = serde_json::to_value(RunEvent::Exit {
+        exit_code: 0,
+        duration_ms: 412,
+        timed_out: false,
+    })
+    .unwrap();
+    assert_eq!(
+        v,
+        json!({
+            "kind": "exit",
+            "exitCode": 0,
+            "durationMs": 412,
+            "timedOut": false,
+        })
+    );
+}
+
 // ---------- install_mise / mise_self_update ----------
 
 #[test]

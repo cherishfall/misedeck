@@ -300,12 +300,17 @@ fn kill_group(group: u32) {
     // Absolute System32 path (issue #253): a bare `taskkill` resolves
     // through the current directory first, so a planted binary would run
     // here with the app's privileges.
-    let _ = Command::new(system32("taskkill.exe"))
-        .args(["/F", "/T", "/PID", &group.to_string()])
+    //
+    // The console-suppression rule applies here too (#240 class): cancel,
+    // timeout, and app-quit all reach this spawn, and a visible console
+    // would flash at exactly those moments.
+    let mut cmd = Command::new(system32("taskkill.exe"));
+    cmd.args(["/F", "/T", "/PID", &group.to_string()])
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status();
+        .stderr(std::process::Stdio::null());
+    hide_console_window(&mut cmd);
+    let _ = cmd.status();
 }
 
 /// Platforms with neither `setsid` nor `taskkill` fall back to killing

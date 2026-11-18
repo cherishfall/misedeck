@@ -495,6 +495,23 @@ export function HomePage() {
                 {t(I18N_KEYS.errors.timeout)}
               </span>
             </div>
+            {/* The timeout card carries the same detail and recovery as
+                its sibling failure cards (round-7 audit): the keyed
+                summary pre and the detect retry — not a bare label. */}
+            {detectErrorSummary && (
+              <pre className={styles.stderr}>{detectErrorSummary}</pre>
+            )}
+            <div className={styles.stateActions}>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={query.isFetching}
+                onClick={() => void query.refetch()}
+                data-testid="home-detect-retry"
+              >
+                {t(I18N_KEYS.common.retry)}
+              </Button>
+            </div>
           </Panel>
         )}
 

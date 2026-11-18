@@ -457,6 +457,10 @@ export function SettingsPage() {
 }
 
 function formatValue(value: unknown): string {
+  // `mise settings ls --all` omits the value of an unset setting, so the
+  // deserialized row carries `undefined` — render the empty-value
+  // placeholder instead of letting `String(value)` print "undefined".
+  if (value === undefined) return "—";
   if (value === null) return "null";
   if (typeof value === "boolean") return value ? "true" : "false";
   if (typeof value === "string") return value || "—";

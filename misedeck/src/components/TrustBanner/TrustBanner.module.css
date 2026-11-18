@@ -20,3 +20,8 @@
   border-radius: 4px;
   background: color-mix(in srgb, var(--hull) 60%, transparent);
 }
+
+.sep {
+  color: var(--dim);
+  margin: 0 var(--space-2);
+}

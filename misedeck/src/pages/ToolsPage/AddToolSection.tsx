@@ -385,6 +385,15 @@ export function AddToolSection({
   const installedWindow = paginate(filteredInstalledRows, installedPage, pageSize);
   const availableWindow = paginate(filteredAvailableRows, availablePage, pageSize);
 
+  const registryError = registry.error;
+  const registryAppErr =
+    registryError && registryError.kind === "err" && isAppError(registryError.err)
+      ? registryError.err
+      : null;
+  const onRetryRegistry = () => {
+    void queryClient.invalidateQueries({ queryKey: ["registry", cwd] });
+  };
+
   const remoteError = remote.error;
   const remoteAppErr =
     remoteError && remoteError.kind === "err" && isAppError(remoteError.err)
@@ -671,6 +680,41 @@ export function AddToolSection({
           {/* The default state is search-only: no tool picked, no
               ls-remote dispatched (the read is a cold, seconds-long
               call — beta12 2-c). */}
+          {!registry.isPending && registry.error !== null && (
+            // The registry failure card (round-7 audit): a `{kind:"err"}`
+            // read is a RESOLVED invoke, so no failure notice fires on its
+            // own — and `registry.data ?? []` would read as "no matches".
+            // The failed read surfaces here instead, with retry; free-text
+            // submit keeps working meanwhile.
+            <div className={styles.errorBlock}>
+              <div className={styles.errorLabel}>
+                {t(I18N_KEYS.tools.addTool.registryError.title)}
+              </div>
+              <p className={styles.errorBody}>
+                {registryAppErr
+                  ? readErrorBody(
+                      registryAppErr,
+                      t,
+                      I18N_KEYS.tools.addTool.registryError.body,
+                      I18N_KEYS.tools.addTool.registryError.bodyNoStderr,
+                    )
+                  : t(I18N_KEYS.tools.addTool.registryError.bodyNoStderr)}
+              </p>
+              {registryAppErr?.stderr ? (
+                <pre className={styles.errorStderr}>{registryAppErr.stderr}</pre>
+              ) : null}
+              <Button
+                variant="ghost"
+                size="sm"
+                className={styles.errorRetry}
+                onClick={onRetryRegistry}
+                data-testid="add-tool-registry-retry"
+              >
+                {t(I18N_KEYS.common.retry)}
+              </Button>
+            </div>
+          )}
+
           <RegistrySearch
             query={query}
             onQueryChange={(value) => {

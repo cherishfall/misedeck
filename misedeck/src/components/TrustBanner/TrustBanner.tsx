@@ -102,14 +102,26 @@ export const TrustBanner = forwardRef<HTMLDivElement, TrustBannerProps>(
               {t(body)}
               {trust.path ? (
                 <Tooltip text={trust.path}>
-                  <span className={styles.trustPath}> · {trust.path}</span>
+                  <span className={styles.trustPath}>
+                    <span className={styles.sep} aria-hidden="true">
+                      ·
+                    </span>
+                    {trust.path}
+                  </span>
                 </Tooltip>
               ) : null}
             </Banner>
             {lastResult === "error" && (
               <div className={styles.trustNote} data-testid="trust-error">
                 {t(I18N_KEYS.trust.error)}
-                {lastError ? <> · {lastError}</> : null}
+                {lastError ? (
+                  <>
+                    <span className={styles.sep} aria-hidden="true">
+                      ·
+                    </span>
+                    {lastError}
+                  </>
+                ) : null}
               </div>
             )}
           </>

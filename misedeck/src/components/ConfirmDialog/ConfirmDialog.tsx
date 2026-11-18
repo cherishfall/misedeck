@@ -94,6 +94,7 @@ export function ConfirmDialog({
   const cancelRef = useRef<HTMLButtonElement | null>(null);
   const confirmRef = useRef<HTMLButtonElement | null>(null);
   const busyNoteId = useId();
+  const bodyId = useId();
 
   // Runs once per opening: later changes (a command finishing, flipping
   // `confirmBusy`) must not steal focus back from wherever the user
@@ -135,10 +136,11 @@ export function ConfirmDialog({
         role="alertdialog"
         aria-modal="true"
         aria-label={title}
+        aria-describedby={bodyId}
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className={styles.title}>{title}</h2>
-        <p className={styles.body}>{body}</p>
+        <p id={bodyId} className={styles.body}>{body}</p>
         {commands.map((c, i) => (
           <div key={`${i}-${c}`} className={styles.commandWrap} data-danger={danger || undefined}>
             <code className={styles.command}>{c}</code>

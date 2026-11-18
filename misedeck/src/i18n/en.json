@@ -159,6 +159,11 @@
         "title": "Could not load versions",
         "body": "mise ls-remote --json {{tool}} did not return a result. Stderr is shown below.",
         "bodyNoStderr": "mise ls-remote --json {{tool}} did not return a result and wrote no stderr. Retry; if it keeps happening, run the command in a terminal."
+      },
+      "registryError": {
+        "title": "Could not load the registry",
+        "body": "mise registry --json did not return a result. Stderr is shown below.",
+        "bodyNoStderr": "mise registry --json did not return a result and wrote no stderr. Retry; if it keeps happening, run the command in a terminal."
       }
     },
     "linkForm": {

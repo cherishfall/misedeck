@@ -188,6 +188,7 @@ fn cwd_none_anchors_to_home() {
 }
 
 #[test]
+#[serial]
 fn missing_binary_returns_not_found() {
     let bogus = PathBuf::from("/this/path/does/not/exist/mise-xyz");
     let req = RunRequest::new(vec!["version".to_string()]);
@@ -269,6 +270,7 @@ fn streaming_emits_stdout_stderr_and_exit_in_order() {
 /// pipe open, exactly like a task that ends with `npm run dev &` or starts
 /// a daemon (issue #222).
 #[test]
+#[serial]
 fn exited_child_whose_grandchild_holds_stdout_still_returns() {
     let script = process_tree_fixture();
     let req = RunRequest::new(vec!["hold-stdout".to_string(), "10".to_string()]);
@@ -554,6 +556,7 @@ mod process_tree {
     /// the runner had no cancel path at all (soft cancel) and killed only
     /// the direct child at timeout.
     #[test]
+    #[serial]
     fn cancel_kills_the_grandchild_too() {
         let dir = tempfile::tempdir().expect("tempdir");
         let pid_file = dir.path().join("grandchild.pid");
@@ -601,6 +604,7 @@ mod process_tree {
     /// Timeout is the same guarantee with a deadline: the 30-minute
     /// ceiling must tear down the tree, not just mise.
     #[test]
+    #[serial]
     fn timeout_kills_the_grandchild_too() {
         let dir = tempfile::tempdir().expect("tempdir");
         let pid_file = dir.path().join("grandchild.pid");

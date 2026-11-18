@@ -1109,7 +1109,11 @@ function TaskForm({
           t(I18N_KEYS.tasks.editForm.addTitle)
         ) : (
           <>
-            {t(I18N_KEYS.tasks.editForm.title)} · {task.name}
+            {t(I18N_KEYS.tasks.editForm.title)}
+            <span className={styles.sep} aria-hidden="true">
+              ·
+            </span>
+            {task.name}
           </>
         )}
       </h3>

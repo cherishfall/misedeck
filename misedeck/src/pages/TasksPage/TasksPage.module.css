@@ -314,3 +314,8 @@
   justify-content: flex-start;
   gap: var(--space-2);
 }
+
+.sep {
+  color: var(--dim);
+  margin: 0 var(--space-2);
+}
