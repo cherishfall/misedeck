@@ -982,6 +982,36 @@ export const I18N_KEYS = {
         reader is never asked to convert a byte count.
         Resolved through `resolveAppErrorMessage`. */
     captureCap: "errors.captureCap",
+    /** The parse-failure detail (issue #310): ONE message for every
+        payload MiseDeck could not read, with the command that ran and
+        the expected shape as parameters
+        (`errors.parseFailed|cmd=mise ls --json|shape=objectByTool`).
+        Both sides author it — the frontend's shape checks
+        (`api/miseTools.ts`, `api/mise.ts`) and the Rust boundary
+        (`src-tauri/src/mise.rs`) — so a zh-CN UI never renders
+        MiseDeck-authored English detail. Resolved through
+        `resolveAppErrorMessage` (see `KNOWN_MESSAGE_KEYS`). */
+    parseFailed: "errors.parseFailed",
+    /** The expected-shape vocabulary (issue #310): the `shape`
+        parameter carries a locale-neutral token (the token IS the leaf
+        name below) and the catalog holds its phrase in both locales,
+        so the token can cross the Rust↔TS boundary. The Rust side
+        emits the same tokens — see `docs/agents/i18n.md`. */
+    shape: {
+      array: "errors.shape.array",
+      configFilesResult: "errors.shape.configFilesResult",
+      /** The phrase for a parse failure that names no shape — the
+          message still names the command that ran (issue #310). */
+      documented: "errors.shape.documented",
+      objectBySetting: "errors.shape.objectBySetting",
+      objectByTool: "errors.shape.objectByTool",
+      objectByVariable: "errors.shape.objectByVariable",
+      report: "errors.shape.report",
+      rowsWithPath: "errors.shape.rowsWithPath",
+      validJson: "errors.shape.validJson",
+      versionDate: "errors.shape.versionDate",
+      versionString: "errors.shape.versionString",
+    },
     unknown: "errors.unknown",
   },
   languages: {

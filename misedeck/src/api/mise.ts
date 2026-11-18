@@ -16,6 +16,7 @@ import type {
   TerminalOpenResult,
   TrustResult,
 } from "../types/tauri";
+import { parseFailedMessage } from "../utils/appError";
 import { isAppError } from "../utils/isAppError";
 import { isConfigFilesResult, parseFailedError } from "./miseTools";
 import { invoke, type InvokeOptions } from "./invoke";
@@ -109,7 +110,8 @@ export async function readMiseLockfile(
  *  first), each with its raw text for the read-only content view.
  *  Used by the preview page (issue #42). A response that is not the
  *  documented union is a PARSE_FAILED error, never an empty "no config
- *  files" list (issue #270). */
+ *  files" list (issue #270). The detail is the key-shaped parse
+ *  failure (issue #310), so it resolves through the catalog. */
 export async function configFiles(
   cwd: string | null,
 ): Promise<ConfigFilesResult> {
@@ -118,7 +120,7 @@ export async function configFiles(
     return {
       kind: "err",
       err: parseFailedError(
-        'config_files did not return a {kind: "ok", files} result',
+        parseFailedMessage("mise config ls --json", "configFilesResult"),
       ),
     };
   }

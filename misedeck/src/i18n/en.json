@@ -693,6 +693,20 @@
     "timeout": "mise did not respond within the time limit. Try the action again; if it keeps happening, run the command in a terminal to see more.",
     "exitCode": "mise exited with code {{code}}",
     "captureCap": "mise output exceeded the {{limit}} capture cap.",
+    "parseFailed": "MiseDeck could not parse the payload {{cmd}} returned: expected {{shape}}.",
+    "shape": {
+      "array": "an array of rows",
+      "configFilesResult": "a result carrying a files array",
+      "documented": "the documented shape",
+      "objectBySetting": "an object keyed by setting",
+      "objectByTool": "an object keyed by tool",
+      "objectByVariable": "an object keyed by variable",
+      "report": "a recognizable report object",
+      "rowsWithPath": "rows carrying a path string",
+      "validJson": "valid JSON",
+      "versionDate": "a YYYY.MM.DD version",
+      "versionString": "a version string"
+    },
     "unknown": "Something went wrong. The execution panel has the details."
   },
   "languages": {

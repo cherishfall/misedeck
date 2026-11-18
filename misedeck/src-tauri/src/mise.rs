@@ -134,6 +134,42 @@ impl AppError {
     }
 }
 
+/// The expected-shape tokens of the key-shaped parse-failure detail
+/// (issue #310). Each token names an `errors.shape.*` leaf in the i18n
+/// catalog, so the frontend resolves the phrase in the reader's locale
+/// instead of rendering MiseDeck's English prose. The full vocabulary
+/// lives in the catalog and in `docs/agents/i18n.md`; only the tokens
+/// this module emits are listed here.
+mod parse_shape {
+    /// An array of rows — `mise config ls --json`, `mise plugins ls --urls`.
+    pub const ARRAY: &str = "array";
+    /// Rows carrying a `path` string — `mise config ls --json`.
+    pub const ROWS_WITH_PATH: &str = "rowsWithPath";
+    /// Valid JSON — any `--json` read whose stdout did not parse.
+    pub const VALID_JSON: &str = "validJson";
+    /// A `YYYY.MM.DD` version — `mise version --json`.
+    pub const VERSION_DATE: &str = "versionDate";
+    /// A `version` string — `mise version --json`.
+    pub const VERSION_STRING: &str = "versionString";
+}
+
+/// The key-shaped parse-failure detail (issue #310): the frontend
+/// resolves `errors.parseFailed` through the i18n catalog, so a zh-CN
+/// UI never renders MiseDeck-authored English detail. `cmd` is mise's
+/// own command line and `shape` names the payload shape MiseDeck
+/// expected — the data-honesty rule asks the detail to name what was
+/// run and what was expected back.
+fn parse_failed_detail(cmd: &str, shape: &str) -> String {
+    format!("errors.parseFailed|cmd={cmd}|shape={shape}")
+}
+
+/// The mise command line a request runs, as the user would type it
+/// (`mise env --json`) — the name the parse-failure detail carries
+/// (issue #310).
+fn command_line(req: &RunRequest) -> String {
+    format!("mise {}", req.args.join(" "))
+}
+
 /// File name of the mise executable on this platform. Windows needs the
 /// `.exe` suffix to launch it; unix has none.
 #[cfg(windows)]
@@ -1746,9 +1782,12 @@ fn run_mise_json_attempt(
             Some(exit_code),
         );
     }
-    let value = serde_json::from_slice(outcome.stdout.as_bytes()).map_err(|e| {
+    // The stdout did not parse as JSON at all (issue #310): the detail
+    // names the command that ran and the shape MiseDeck expected, so it
+    // resolves through the catalog instead of rendering English prose.
+    let value = serde_json::from_slice(outcome.stdout.as_bytes()).map_err(|_| {
         AppError::parse_failed(
-            format!("invalid mise JSON output: {e}"),
+            parse_failed_detail(&command_line(req), parse_shape::VALID_JSON),
             outcome.stderr.clone(),
         )
     });
@@ -1975,7 +2014,7 @@ pub fn mise_config_files(
     let value = run_mise_json(mise_path, &req)?;
     let entries = value.as_array().ok_or_else(|| {
         AppError::parse_failed(
-            "mise config ls --json did not return an array",
+            parse_failed_detail(&command_line(&req), parse_shape::ARRAY),
             String::new(),
         )
     })?;
@@ -1983,7 +2022,7 @@ pub fn mise_config_files(
     for entry in entries {
         let Some(path) = entry.get("path").and_then(|p| p.as_str()) else {
             return Err(AppError::parse_failed(
-                "mise config ls --json entry missing a `path` string",
+                parse_failed_detail(&command_line(&req), parse_shape::ROWS_WITH_PATH),
                 String::new(),
             ));
         };
@@ -2789,9 +2828,9 @@ pub fn mise_plugins_ls(
         .filter(|line| !line.trim().is_empty())
         .filter_map(parse_plugin_row)
         .collect();
-    serde_json::to_value(rows).map_err(|e| {
+    serde_json::to_value(rows).map_err(|_| {
         AppError::parse_failed(
-            format!("could not serialize mise plugins ls rows: {e}"),
+            parse_failed_detail(&command_line(&req), parse_shape::ARRAY),
             String::new(),
         )
     })
@@ -3033,9 +3072,9 @@ pub fn mise_version(mise_path: &Path) -> Result<(serde_json::Value, String), App
     }
 
     let raw: serde_json::Value =
-        serde_json::from_slice(outcome.stdout.as_bytes()).map_err(|e| {
+        serde_json::from_slice(outcome.stdout.as_bytes()).map_err(|_| {
             AppError::parse_failed(
-                format!("invalid mise version --json output: {e}"),
+                parse_failed_detail(&command_line(&req), parse_shape::VALID_JSON),
                 outcome.stderr.clone(),
             )
         })?;
@@ -3044,7 +3083,7 @@ pub fn mise_version(mise_path: &Path) -> Result<(serde_json::Value, String), App
         .and_then(|v| v.as_str())
         .ok_or_else(|| {
             AppError::parse_failed(
-                "mise version --json did not include a `version` string",
+                parse_failed_detail(&command_line(&req), parse_shape::VERSION_STRING),
                 outcome.stderr.clone(),
             )
         })?
@@ -3058,7 +3097,10 @@ pub fn detect_mise(mise_path: &Path) -> Result<DetectMiseOk, AppError> {
     let (raw_value, version) = mise_version(mise_path)?;
 
     let version_date = extract_date(&version).map(|(d, _)| d).ok_or_else(|| {
-        AppError::parse_failed("version did not start with YYYY.MM.DD", String::new())
+        AppError::parse_failed(
+            parse_failed_detail("mise version --json", parse_shape::VERSION_DATE),
+            String::new(),
+        )
     })?;
 
     if !meets_minimum(&version_date, MIN_MISE_VERSION) {

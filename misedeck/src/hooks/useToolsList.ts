@@ -59,7 +59,8 @@ function usePanelRead(): (
 ) => Promise<JsonResult> {
   const { run } = useExecutionContext();
   return useCallback(
-    async (cwd, args, options) => toJsonResult(await run({ cwd, args }, options)),
+    async (cwd, args, options) =>
+      toJsonResult(await run({ cwd, args }, options), args),
     [run],
   );
 }
@@ -231,7 +232,7 @@ export function useParsedLsRemote(
   if (!q.data || q.data.kind === "err") {
     return { isPending: false, data: null, error: q.data ?? null };
   }
-  const parsed = readLsRemotePayload(q.data.value);
+  const parsed = readLsRemotePayload(q.data.value, tool);
   return { isPending: false, data: parsed.data, error: parsed.error };
 }
 

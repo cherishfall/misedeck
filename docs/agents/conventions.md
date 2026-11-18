@@ -16,7 +16,7 @@ struct AppError {
 }
 ```
 
-The UI renders `code` via i18n and offers stderr through the execution panel. Callers pattern-match on `code`, never on message text. Every UI site that displays `err.message` resolves it through `resolveAppErrorMessage` (`misedeck/src/utils/appError.ts`), which parses the `key|param=value|…` wire format, looks the key up in the catalog (falling back to `errors.unknown` so a raw key never renders), and passes raw detail text (COMMAND_FAILED / PARSE_FAILED) through verbatim.
+The UI renders `code` via i18n and offers stderr through the execution panel. Callers pattern-match on `code`, never on message text. Every UI site that displays `err.message` resolves it through `resolveAppErrorMessage` (`misedeck/src/utils/appError.ts`), which parses the `key|param=value|…` wire format, looks the key up in the catalog (falling back to `errors.unknown` so a raw key never renders), and passes raw detail text (COMMAND_FAILED) through verbatim. A parse failure is key-shaped — `errors.parseFailed|cmd=…|shape=…` (issue #310) — so the detail MiseDeck authors resolves through the catalog in every locale instead of rendering as English prose.
 
 **Boundary serialization**: every type crossing the Rust↔TS boundary uses `#[serde(rename_all = "camelCase")]` on the Rust side; the matching TS type is camelCase. `code` values come from this fixed set — inventing new ones is a bug:
 

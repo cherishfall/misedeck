@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { parseFailedMessage } from "../utils/appError";
 import {
   configScopeForPath,
   isConfigFilesResult,
@@ -310,25 +311,30 @@ test("parseRegistryItem: keeps bins for the lowest search tier", () => {
 // A wrong top-level shape must become a PARSE_FAILED error — coercing
 // it to `[]`/`{}` used to render a valid-looking empty page, and
 // doctor's `{}` a green "Status: OK".
+//
+// The detail is the key-shaped parse failure (issue #310): one
+// catalog message, with the command that ran and the expected shape
+// as parameters — so it resolves through the catalog in every locale
+// instead of rendering MiseDeck's English prose.
 
 function assertParseFailed(
   parsed: { data: unknown; error: { kind: string; err?: { code: string; message: string } } | null },
-  detail: RegExp,
+  message: string,
 ) {
   assert.equal(parsed.data, null);
   assert.ok(parsed.error && parsed.error.kind === "err");
   assert.equal(parsed.error.err?.code, "PARSE_FAILED");
-  assert.match(parsed.error.err?.message ?? "", detail);
+  assert.equal(parsed.error.err?.message, message);
 }
 
 test("parseReadPayload: a rejected shape is a PARSE_FAILED error, an accepted one parses", () => {
   const rejected = parseReadPayload(
     [],
     (v) => v !== null && typeof v === "object" && !Array.isArray(v),
-    "expected an object",
+    parseFailedMessage("mise ls --json", "objectByTool"),
     () => ({ ok: true }),
   );
-  assertParseFailed(rejected, /expected an object/);
+  assertParseFailed(rejected, parseFailedMessage("mise ls --json", "objectByTool"));
 
   const accepted = parseReadPayload({ a: 1 }, () => true, "unused", () => 42);
   assert.deepEqual(accepted, { data: 42, error: null });
@@ -347,8 +353,9 @@ test("readToolsLsPayload: an object parses, a bare array is rejected", () => {
   assert.equal(ok.error, null);
   assert.deepEqual(ok.data?.map((g) => g.tool), ["node"]);
 
-  assertParseFailed(readToolsLsPayload([{ version: "22.0.0" }]), /object keyed by tool/);
-  assertParseFailed(readToolsLsPayload("nope"), /object keyed by tool/);
+  const detail = parseFailedMessage("mise ls --json", "objectByTool");
+  assertParseFailed(readToolsLsPayload([{ version: "22.0.0" }]), detail);
+  assertParseFailed(readToolsLsPayload("nope"), detail);
 });
 
 test("readOutdatedPayload: an object parses, a bare array is rejected", () => {
@@ -356,7 +363,10 @@ test("readOutdatedPayload: an object parses, a bare array is rejected", () => {
   assert.equal(ok.error, null);
   assert.equal(ok.data?.[0].name, "node");
 
-  assertParseFailed(readOutdatedPayload([]), /object keyed by tool/);
+  assertParseFailed(
+    readOutdatedPayload([]),
+    parseFailedMessage("mise outdated --json", "objectByTool"),
+  );
 });
 
 test("readLsRemotePayload: an array parses, an object is rejected", () => {
@@ -364,7 +374,17 @@ test("readLsRemotePayload: an array parses, an object is rejected", () => {
   assert.equal(ok.error, null);
   assert.equal(ok.data?.[0].version, "1.0.0");
 
-  assertParseFailed(readLsRemotePayload({ version: "1.0.0" }), /did not return an array/);
+  assertParseFailed(
+    readLsRemotePayload({ version: "1.0.0" }),
+    parseFailedMessage("mise ls-remote --json", "array"),
+  );
+});
+
+test("readLsRemotePayload: the detail names the tool the command targeted", () => {
+  assertParseFailed(
+    readLsRemotePayload({ version: "1.0.0" }, "node"),
+    parseFailedMessage("mise ls-remote --json node", "array"),
+  );
 });
 
 test("readEnvPayload: an object parses, an array is rejected", () => {
@@ -372,7 +392,10 @@ test("readEnvPayload: an object parses, an array is rejected", () => {
   assert.equal(ok.error, null);
   assert.equal(ok.data?.[0].name, "FOO");
 
-  assertParseFailed(readEnvPayload(["FOO"]), /object keyed by variable/);
+  assertParseFailed(
+    readEnvPayload(["FOO"]),
+    parseFailedMessage("mise env --json", "objectByVariable"),
+  );
 });
 
 test("readEnvExtendedPayload: an object parses, an array is rejected", () => {
@@ -380,7 +403,10 @@ test("readEnvExtendedPayload: an object parses, an array is rejected", () => {
   assert.equal(ok.error, null);
   assert.equal(ok.data?.[0].value, "bar");
 
-  assertParseFailed(readEnvExtendedPayload([{ name: "FOO" }]), /object keyed by variable/);
+  assertParseFailed(
+    readEnvExtendedPayload([{ name: "FOO" }]),
+    parseFailedMessage("mise env --json-extended", "objectByVariable"),
+  );
 });
 
 test("readTasksLsPayload: an array parses, an object is rejected", () => {
@@ -388,7 +414,10 @@ test("readTasksLsPayload: an array parses, an object is rejected", () => {
   assert.equal(ok.error, null);
   assert.equal(ok.data?.[0].name, "build");
 
-  assertParseFailed(readTasksLsPayload({ tasks: [] }), /did not return an array/);
+  assertParseFailed(
+    readTasksLsPayload({ tasks: [] }),
+    parseFailedMessage("mise tasks ls --json", "array"),
+  );
 });
 
 test("readSettingsPayload: an object parses, an array is rejected", () => {
@@ -396,7 +425,10 @@ test("readSettingsPayload: an object parses, an array is rejected", () => {
   assert.equal(ok.error, null);
   assert.equal(ok.data?.[0].key, "experimental");
 
-  assertParseFailed(readSettingsPayload([]), /object keyed by setting/);
+  assertParseFailed(
+    readSettingsPayload([]),
+    parseFailedMessage("mise settings ls --json-extended", "objectBySetting"),
+  );
 });
 
 test("readRegistryPayload: an array parses, an object is rejected", () => {
@@ -404,7 +436,10 @@ test("readRegistryPayload: an array parses, an object is rejected", () => {
   assert.equal(ok.error, null);
   assert.equal(ok.data?.[0].short, "node");
 
-  assertParseFailed(readRegistryPayload({ node: {} }), /did not return an array/);
+  assertParseFailed(
+    readRegistryPayload({ node: {} }),
+    parseFailedMessage("mise registry --json", "array"),
+  );
 });
 
 test("readPluginsLsPayload: an array parses, an object is rejected", () => {
@@ -412,7 +447,10 @@ test("readPluginsLsPayload: an array parses, an object is rejected", () => {
   assert.equal(ok.error, null);
   assert.equal(ok.data?.[0].name, "direnv");
 
-  assertParseFailed(readPluginsLsPayload({ direnv: {} }), /did not return an array/);
+  assertParseFailed(
+    readPluginsLsPayload({ direnv: {} }),
+    parseFailedMessage("mise plugins ls --urls", "array"),
+  );
 });
 
 test("isDoctorPayload: a version or the rawLines fallback is a report, anything else is not", () => {
@@ -433,9 +471,10 @@ test("readDoctorPayload: an unusable object never becomes a green report", () =>
   assert.equal(ok.error, null);
   assert.equal(ok.data?.version, "2026.10.15");
 
-  assertParseFailed(readDoctorPayload({}), /unrecognized report object/);
-  assertParseFailed(readDoctorPayload({ unexpected: true }), /unrecognized report object/);
-  assertParseFailed(readDoctorPayload([]), /unrecognized report object/);
+  const detail = parseFailedMessage("mise doctor --json", "report");
+  assertParseFailed(readDoctorPayload({}), detail);
+  assertParseFailed(readDoctorPayload({ unexpected: true }), detail);
+  assertParseFailed(readDoctorPayload([]), detail);
 });
 
 test("isConfigFilesResult: accepts the documented ok/err union only", () => {

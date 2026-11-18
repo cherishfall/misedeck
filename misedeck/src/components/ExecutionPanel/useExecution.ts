@@ -26,6 +26,7 @@ import { invoke } from "../../api/invoke";
 import type { AppError, JsonResult } from "../../types/tauri";
 import { isAppError } from "../../api/mise";
 import { loadPersistent, savePersistent } from "../../hooks/usePersistentState";
+import { parseFailedMessage } from "../../utils/appError";
 import { executionReducer } from "./executionState";
 import { runMiseCommandPayload } from "./runPayload";
 import type {
@@ -151,19 +152,31 @@ function isRunCommandResult(v: unknown): v is RunCommandResult {
  * result always carries a clean run; the only remaining failure is
  * unparsable output, which becomes `PARSE_FAILED` with mise's stderr
  * preserved verbatim — the runner never invents a payload.
+ *
+ * The failure detail is the key-shaped parse failure (issue #310): the
+ * command that ran and the shape MiseDeck expected, so it resolves
+ * through the catalog in every locale instead of rendering the JS
+ * runtime's English message. `args` is the run's argv — the same
+ * command line the Rust side names in its own parse-failure detail.
  */
-export function toJsonResult(result: RunCommandResult): JsonResult {
+export function toJsonResult(
+  result: RunCommandResult,
+  args: string[],
+): JsonResult {
   if (result.kind === "err") {
     return { kind: "err", err: result.err };
   }
   try {
     return { kind: "ok", value: JSON.parse(result.outcome.stdout) as Record<string, unknown> };
-  } catch (e) {
+  } catch {
     return {
       kind: "err",
       err: {
         code: "PARSE_FAILED",
-        message: e instanceof Error ? e.message : String(e),
+        message: parseFailedMessage(
+          ["mise", ...args].join(" "),
+          "validJson",
+        ),
         stderr: result.outcome.stderr,
       },
     };

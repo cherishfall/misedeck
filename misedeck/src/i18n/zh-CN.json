@@ -693,6 +693,20 @@
     "timeout": "mise 未在超时时间内响应。请重试该操作；若反复出现，请在终端中运行该命令查看详情。",
     "exitCode": "mise 以退出码 {{code}} 结束",
     "captureCap": "mise 输出超过了 {{limit}} 的捕获上限。",
+    "parseFailed": "MiseDeck 无法解析 {{cmd}} 返回的内容：预期为{{shape}}。",
+    "shape": {
+      "array": "一个由记录组成的数组",
+      "configFilesResult": "一个带 files 数组的结果",
+      "documented": "文档中约定的形状",
+      "objectBySetting": "一个以设置项为键的对象",
+      "objectByTool": "一个以工具为键的对象",
+      "objectByVariable": "一个以变量为键的对象",
+      "report": "一个可识别的报告对象",
+      "rowsWithPath": "带 path 字符串的行",
+      "validJson": "有效的 JSON",
+      "versionDate": "一个 YYYY.MM.DD 格式的版本号",
+      "versionString": "一个版本号字符串"
+    },
     "unknown": "出现了未知错误，详情请见执行面板。"
   },
   "languages": {

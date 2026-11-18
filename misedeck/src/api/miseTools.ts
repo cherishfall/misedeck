@@ -24,6 +24,7 @@ import type {
   SettingsItem,
 } from "../types/tauri";
 
+import { parseFailedMessage } from "../utils/appError";
 import { isAppError } from "../utils/isAppError";
 import { isPathUnder, normalizePathForCompare } from "../utils/paths";
 
@@ -849,8 +850,11 @@ export function parsePluginsLsPayload(value: unknown): InstalledPlugin[] {
 // command documents. Coercing a wrong top-level shape to `[]`/`{}`
 // renders a valid-looking empty page (and doctor's `{}` as a green
 // "Status: OK"), so every read validates its shape before parsing and
-// surfaces a PARSE_FAILED result otherwise. The detail strings are raw
-// text, matching the Rust boundary's own parse-failure messages.
+// surfaces a PARSE_FAILED result otherwise. The detail is the one
+// key-shaped message of the class (issue #310): `errors.parseFailed`
+// with the command that ran and the expected shape as parameters, so
+// it resolves through the catalog in every locale — the same form the
+// Rust boundary emits.
 
 /** Typed result of one read: parsed data or the failure to render. */
 export interface ReadPayload<T> {
@@ -859,7 +863,9 @@ export interface ReadPayload<T> {
 }
 
 /** The structured PARSE_FAILED error for a payload that parsed as JSON
- *  but does not match the command's documented shape. */
+ *  but does not match the command's documented shape. `message` is the
+ *  key-shaped detail (issue #310) — never a hardcoded English string,
+ *  which would reach a zh-CN UI untranslated. */
 export function parseFailedError(message: string, stderr = ""): AppError {
   return { code: "PARSE_FAILED", message, stderr };
 }
@@ -889,7 +895,7 @@ export function readToolsLsPayload(value: unknown) {
   return parseReadPayload(
     value,
     isJsonObject,
-    "mise ls --json did not return an object keyed by tool",
+    parseFailedMessage("mise ls --json", "objectByTool"),
     parseLsPayload,
   );
 }
@@ -899,17 +905,20 @@ export function readOutdatedPayload(value: unknown) {
   return parseReadPayload(
     value,
     isJsonObject,
-    "mise outdated --json did not return an object keyed by tool",
+    parseFailedMessage("mise outdated --json", "objectByTool"),
     parseOutdatedPayload,
   );
 }
 
-/** `mise ls-remote --json <tool>` is an array of rows. */
-export function readLsRemotePayload(value: unknown) {
+/** `mise ls-remote --json <tool>` is an array of rows. `tool` names the
+ *  tool the command targeted, so the failure detail names the command
+ *  that actually ran (issue #310). */
+export function readLsRemotePayload(value: unknown, tool?: string) {
+  const cmd = tool ? `mise ls-remote --json ${tool}` : "mise ls-remote --json";
   return parseReadPayload(
     value,
     Array.isArray,
-    "mise ls-remote --json did not return an array",
+    parseFailedMessage(cmd, "array"),
     parseLsRemotePayload,
   );
 }
@@ -919,7 +928,7 @@ export function readEnvPayload(value: unknown) {
   return parseReadPayload(
     value,
     isJsonObject,
-    "mise env --json did not return an object keyed by variable",
+    parseFailedMessage("mise env --json", "objectByVariable"),
     parseEnvPayload,
   );
 }
@@ -932,7 +941,7 @@ export function readEnvExtendedPayload(value: unknown, cwd: string | null = null
   return parseReadPayload(
     value,
     isJsonObject,
-    "mise env --json-extended did not return an object keyed by variable",
+    parseFailedMessage("mise env --json-extended", "objectByVariable"),
     (payload) => parseEnvExtendedPayload(payload, cwd),
   );
 }
@@ -942,7 +951,7 @@ export function readTasksLsPayload(value: unknown) {
   return parseReadPayload(
     value,
     Array.isArray,
-    "mise tasks ls --json did not return an array",
+    parseFailedMessage("mise tasks ls --json", "array"),
     parseTasksLsPayload,
   );
 }
@@ -952,7 +961,7 @@ export function readSettingsPayload(value: unknown) {
   return parseReadPayload(
     value,
     isJsonObject,
-    "mise settings ls --json-extended did not return an object keyed by setting",
+    parseFailedMessage("mise settings ls --json-extended", "objectBySetting"),
     parseSettingsPayload,
   );
 }
@@ -962,7 +971,7 @@ export function readRegistryPayload(value: unknown) {
   return parseReadPayload(
     value,
     Array.isArray,
-    "mise registry --json did not return an array",
+    parseFailedMessage("mise registry --json", "array"),
     parseRegistryPayload,
   );
 }
@@ -973,7 +982,7 @@ export function readPluginsLsPayload(value: unknown) {
   return parseReadPayload(
     value,
     Array.isArray,
-    "mise plugins ls did not return an array",
+    parseFailedMessage("mise plugins ls --urls", "array"),
     parsePluginsLsPayload,
   );
 }
@@ -993,7 +1002,7 @@ export function readDoctorPayload(value: unknown) {
   return parseReadPayload(
     value,
     isDoctorPayload,
-    "mise doctor --json returned an unrecognized report object",
+    parseFailedMessage("mise doctor --json", "report"),
     parseDoctorPayload,
   );
 }
