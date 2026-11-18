@@ -2,7 +2,30 @@
 
 This document is a continuation marker between autonomous driver sessions.
 
-## CURRENT STATE (2026-10-26 — **v1.0.2 is live; #281 is the only open issue and it is owner-gated**)
+## CURRENT STATE (2026-11-19 — **v1.0.7 is live; #318's HANDOFF item done, #323 is the only open issue and it is owner-gated (design)**)
+
+v1.0.7 shipped from the round-7 audit. Tag `v1.0.7` (lightweight, notes from the bilingual template) at `816aa44`; release run **44390880216** green after one macOS-leg rerun (the hosted-macOS runner pool refused acquisition twice that night — the 15m01s "not acquired by Runner of type hosted" failure is GitHub infra, not the build; rerunning the failed leg landed it on the first retry). Six assets; `MiseDeck_1.0.7_aarch64.dmg` hash-checked against `SHA256SUMS` (`OK`) **and launched on this machine from the mounted dmg** — sidebar footer reads 1.0.7, Home shows the real mise (2026.11.9). Watch out for a local phantom when verifying a fresh dmg: `hdiutil` can serve a stale cached volume for a re-attached same-named image — verify Info.plist from a FRESH download at a CUSTOM `-mountpoint` before concluding anything about a release.
+
+**Round-7 audit (owner requested another full pass; 4 read-only subagents + a 19-shot dark-theme visual sweep):** 0 P1, 8 P2, 10 P3 → issues #316–#323. Fixed and shipped in 1.0.7:
+- #316 (closed) — settings `--all` rendered literal "undefined"; Windows `taskkill` flashed a console; `runner.rs` spawn tests missed the #278 serial rule; the macOS CI leg failed on `open -a Terminal` (the test now pins path resolution in the failure branch under GITHUB_ACTIONS instead of assuming a runner GUI works).
+- #317 (closed) — AGENTS.md prescribed a nonexistent gh JSON field (`blockedBy` is real); developer READMEs' ci list had 20 steps (now 21, `lint:i18n-zh-spacing` included, both locales).
+- #318 (closed with this handoff) — wire_shapes now pins `stdout`/`stderr`/`exit` channel kinds; `types/tauri.ts` states the real `read_lockfile` contract; ADR-0001's consequence is dated; ci.md lost an editing fragment (en + zh); HANDOFF refreshed (this section).
+- #319/#320 (closed) — zh plugins empty-state title; Home timeout card carries detail + retry; the registry failure card stops reading as "no matches"; separators go through styled spans; ConfirmDialog announces its body.
+- Site (cherishfall/misedeck#321, #322, fixed on the site repo): lightbox caption had a 1.29:1 contrast failure in light theme (opaque strip now), feature cards list the full command set, screenshot metadata says 1289 (the captures' real height), the panel mock speaks zh, the Home alt typo fixed. #323 (small-size AA contrast token pairs) stays OPEN, labelled open-question — fixing it means changing tokens shared with the app (visual design, owner call).
+
+Everything previously recorded as standing contracts still stands: keyed error messages, invalidation contract, CSP inline refusal, default-run, the capture-harness traps (below).
+
+**Capture-harness traps (learned this cycle, in /tmp/misedeck-visual/):**
+- `screencapture -l<winid>` from a sandboxed-shell grandchild process writes NOTHING into the repo's docs/ (exit 0, no file) — capture to /tmp and copy in; ALWAYS verify output mtime before diagnosing (a stale file masqueraded as "the app reports 1.0.3" for an hour).
+- Kill EVERY MiseDeck instance before a capture, including the installed /Applications copy, and wait for zero: a stale instance loads the current Vite UI via devUrl but answers getVersion() from its own old binary.
+- The seed reads `public/shot.json` with a synchronous XHR before i18next/router init (no reload), sets localStorage + history.replaceState, and can run click actions (`clickToolVersions`, generic `click` by testid).
+
+**Next move:**
+1. Round-2 re-audit of the shipped state (fresh-eyes on the round-7 delta + release artifacts). If it finds nothing new, the loop stops per the owner's instruction.
+2. #323 is owner-gated (design decision with computed numbers on the issue).
+3. #281 remains open, owner-gated, unchanged.
+
+## PREVIOUS STATE (2026-10-26 — **v1.0.2 is live; #281 is the only open issue and it is owner-gated**)
 
 v1.0.2 is published — annotated tag `v1.0.2` at `ed64d82`, release run **40290465156** green end to end (preflight, three build legs, release job), six assets: `MiseDeck_1.0.2_aarch64.dmg`, `MiseDeck_1.0.2_x64-setup.exe`, `MiseDeck_1.0.2_amd64.deb`, `MiseDeck-1.0.2-1.x86_64.rpm`, `MiseDeck_1.0.2_amd64.AppImage`, `SHA256SUMS`. The aarch64 dmg was hash-checked against the manifest (`OK`). The body is the bilingual tag annotation, **but the annotation lost its `##` headings**: `git tag -F` defaults to `--cleanup=strip`, which deletes every line starting with `#`. The published body was restored with `gh release edit --notes-file`, and the trap is documented in `docs/agents/ci.md` → Annotated vs lightweight tags (use `--cleanup=verbatim`).
 
