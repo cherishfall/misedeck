@@ -428,22 +428,29 @@ fn is_executable_candidate(path: &Path) -> bool {
     let Ok(meta) = std::fs::metadata(path) else {
         return false;
     };
-    if !meta.is_file() {
-        return false;
-    }
-    // Windows has no execute bit — being a file is the whole check there.
-    // The unix arm adds the execute-bit test. Both arms are written so
-    // that neither `needless_bool` nor `needless_return` fires on the
-    // platform where the other arm is compiled out.
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        meta.permissions().mode() & 0o111 != 0
-    }
-    #[cfg(not(unix))]
-    {
-        true
-    }
+    meta.is_file() && is_executable_mode(&meta)
+}
+
+/// The execute-bit half of the check — unix only. Windows has no execute
+/// bit, so being a file is the whole check there.
+///
+/// A separate function rather than a `#[cfg]` arm inside the caller:
+/// with the arm, the Windows build reduces the caller to
+/// `if !meta.is_file() { return false; } true` — a shape clippy rejects
+/// as a needless bool (and its `return true;` variant as a needless
+/// return). Nothing linted the Windows build before the Windows leg grew
+/// a clippy gate (issue #314), so both lints were invisible; now that the
+/// gate runs there, the shape has to be clean on every platform.
+#[cfg(unix)]
+fn is_executable_mode(meta: &std::fs::Metadata) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    meta.permissions().mode() & 0o111 != 0
+}
+
+/// Windows has no execute bit — being a file is the whole check there.
+#[cfg(not(unix))]
+fn is_executable_mode(_meta: &std::fs::Metadata) -> bool {
+    true
 }
 
 /// Extract the `YYYY.MM.DD` date prefix from a mise version string like
