@@ -438,6 +438,15 @@ fn is_executable_candidate(path: &Path) -> bool {
             return false;
         }
     }
+    #[cfg(not(unix))]
+    {
+        // Windows has no execute bit: being a file is the whole check.
+        // (Clippy's `needless_bool` fires here on the Windows leg —
+        // the unix branch above returns early, so the trailing `true`
+        // is only reachable on this platform.)
+        return true;
+    }
+    #[cfg(unix)]
     true
 }
 

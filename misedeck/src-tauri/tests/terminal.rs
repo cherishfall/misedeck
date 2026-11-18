@@ -102,14 +102,23 @@ fn open_in_terminal_rejects_empty_path() {
 #[cfg(target_os = "macos")]
 fn open_in_terminal_resolves_existing_directory_on_macos() {
     // On macOS the spawn is `open -a Terminal <path>`. In a CI
-    // environment with no display, the spawn can succeed (exit
-    // 0) without actually opening a window — `open` queues the
-    // launch with launchd. The test asserts the outcome shape;
-    // the real success path is exercised by the smoke check in
-    // the PR description.
+    // environment with no GUI session, `open` cannot hand the app to
+    // launchd and exits 1 — so the strict assertions below only apply
+    // where a GUI session exists. On a developer's machine the spawn
+    // must succeed; the real success path is exercised by the smoke
+    // check in the PR description.
     let dir = tempdir();
-    let outcome = open_in_terminal(Some(dir.path().to_str().unwrap()))
-        .expect("open_in_terminal should succeed on macOS for an existing dir");
+    let outcome = match open_in_terminal(Some(dir.path().to_str().unwrap())) {
+        Ok(outcome) => outcome,
+        Err(e) => {
+            assert!(
+                !has_gui_session(),
+                "open_in_terminal must succeed in a GUI session: {e:?}"
+            );
+            assert_eq!(e.code, code::COMMAND_FAILED);
+            return;
+        }
+    };
     assert_eq!(outcome.platform, "macOS");
     assert_eq!(outcome.terminal_app, "Terminal.app");
     assert!(
@@ -120,6 +129,19 @@ fn open_in_terminal_resolves_existing_directory_on_macos() {
     assert!(outcome.argv.contains(&"-a".to_string()));
     assert!(outcome.argv.contains(&"Terminal".to_string()));
     assert!(outcome.path.contains(dir.path().to_str().unwrap()));
+}
+
+/// True when this process runs in a macOS GUI login session.
+///
+/// `launchctl managername` prints `Aqua` in a GUI session and
+/// `Background` on a headless CI runner.
+#[cfg(target_os = "macos")]
+fn has_gui_session() -> bool {
+    std::process::Command::new("launchctl")
+        .arg("managername")
+        .output()
+        .map(|out| String::from_utf8_lossy(&out.stdout).trim() == "Aqua")
+        .unwrap_or(false)
 }
 
 #[test]
