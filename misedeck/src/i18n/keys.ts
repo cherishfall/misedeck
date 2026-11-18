@@ -672,6 +672,10 @@ export const I18N_KEYS = {
       untrustedBody: "tasks.guard.untrustedBody",
     },
     openEditorError: {
+      /** The per-row flow (`mise tasks edit --path`) opens the file the
+          task lives in — a config file or a file task under
+          `mise-tasks/` — so its title names the task's file, never the
+          config file (issue #308). */
       title: "tasks.openEditorError.title",
       body: "tasks.openEditorError.body",
       /** The OS opener rejected after `mise tasks edit --path` already
@@ -681,6 +685,9 @@ export const I18N_KEYS = {
       openerBody: "tasks.openEditorError.openerBody",
     },
     openConfigError: {
+      /** The empty state's flow (`mise config ls --json`) always opens a
+          config file, so it keeps the config-file title (issue #308). */
+      title: "tasks.openConfigError.title",
       body: "tasks.openConfigError.body",
       /** Same opener-vs-empty-path split as `openEditorError.openerBody`
           (issue #297), for the config-file surface. */
@@ -969,8 +976,10 @@ export const I18N_KEYS = {
     exitCode: "errors.exitCode",
     /** The captured-read aggregate-cap truncation (issue #301's registry
         guard): `run_mise_capture` authors this key-shaped message
-        (`errors.captureCap|limit=<bytes>`) instead of hardcoded English,
+        (`errors.captureCap|limit=2 MiB`) instead of hardcoded English,
         so the plugins error card never renders English detail in zh.
+        The limit is humanized on the Rust side (issue #308) — the
+        reader is never asked to convert a byte count.
         Resolved through `resolveAppErrorMessage`. */
     captureCap: "errors.captureCap",
     unknown: "errors.unknown",

@@ -374,12 +374,18 @@ export function TasksPage() {
       if (res.kind === "err") {
         // The failed run auto-opens the panel with stderr; the
         // page-level message explains what the attempt was for.
-        setEditorError(t(I18N_KEYS.tasks.openEditorError.body));
+        setEditorError({
+          title: t(I18N_KEYS.tasks.openEditorError.title),
+          body: t(I18N_KEYS.tasks.openEditorError.body),
+        });
         return;
       }
       const path = res.outcome.stdout.trim();
       if (!path) {
-        setEditorError(t(I18N_KEYS.tasks.openEditorError.body));
+        setEditorError({
+          title: t(I18N_KEYS.tasks.openEditorError.title),
+          body: t(I18N_KEYS.tasks.openEditorError.body),
+        });
         return;
       }
       setEditorError(null);
@@ -391,15 +397,20 @@ export function TasksPage() {
         // would be false here. The opener's own detail stays visible
         // (failures stay visible).
         const detail = err instanceof Error ? err.message : String(err);
-        setEditorError(t(I18N_KEYS.tasks.openEditorError.openerBody, { detail }));
+        setEditorError({
+          title: t(I18N_KEYS.tasks.openEditorError.title),
+          body: t(I18N_KEYS.tasks.openEditorError.openerBody, { detail }),
+        });
       }
     },
     [guard.allowed, focusTrustBanner, editorRunBusy, runEditorCommand, cwd, t],
   );
 
   // Track the open-in-editor error so the user can see why
-  // nothing happened. Cleared on each new attempt.
-  const [editorError, setEditorError] = useState<string | null>(null);
+  // nothing happened, with the title of the flow that produced it:
+  // the per-row flow opens the task's file, the empty state's flow
+  // opens the config file (issue #308).
+  const [editorError, setEditorError] = useState<{ title: string; body: string } | null>(null);
 
   // The empty state's way out (issue #112): open the config file
   // that would define tasks in the OS editor. Same route as the
@@ -418,7 +429,10 @@ export function TasksPage() {
       if (configRunBusy) return;
       const res = await runConfigCommand({ cwd, args: miseConfigLsArgs() });
       if (res.kind === "err") {
-        setEditorError(t(I18N_KEYS.tasks.openConfigError.body));
+        setEditorError({
+          title: t(I18N_KEYS.tasks.openConfigError.title),
+          body: t(I18N_KEYS.tasks.openConfigError.body),
+        });
         return;
       }
       let path: string | null = null;
@@ -434,7 +448,10 @@ export function TasksPage() {
         path = null;
       }
       if (!path) {
-        setEditorError(t(I18N_KEYS.tasks.openConfigError.body));
+        setEditorError({
+          title: t(I18N_KEYS.tasks.openConfigError.title),
+          body: t(I18N_KEYS.tasks.openConfigError.body),
+        });
         return;
       }
       setEditorError(null);
@@ -444,7 +461,10 @@ export function TasksPage() {
         // Same opener-vs-empty-path split as `openInEditor` (issue
         // #297): the command returned a config file, the open failed.
         const detail = err instanceof Error ? err.message : String(err);
-        setEditorError(t(I18N_KEYS.tasks.openConfigError.openerBody, { detail }));
+        setEditorError({
+          title: t(I18N_KEYS.tasks.openConfigError.title),
+          body: t(I18N_KEYS.tasks.openConfigError.openerBody, { detail }),
+        });
       }
     },
     [guard.allowed, focusTrustBanner, configRunBusy, runConfigCommand, cwd, t],
@@ -769,9 +789,9 @@ export function TasksPage() {
         {editorError && (
           <div className={styles.errorState} data-testid="tasks-editor-error">
             <div className={styles.errorLabel}>
-              {t(I18N_KEYS.tasks.openEditorError.title)}
+              {editorError.title}
             </div>
-            <p className={styles.errorBody}>{editorError}</p>
+            <p className={styles.errorBody}>{editorError.body}</p>
           </div>
         )}
 

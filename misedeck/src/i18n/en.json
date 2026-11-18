@@ -451,11 +451,12 @@
       "untrustedBody": "Trust this directory before changing its tasks."
     },
     "openEditorError": {
-      "title": "Could not open the config file",
+      "title": "Could not open the task's file",
       "body": "mise tasks edit did not return a usable path. If the command failed, its stderr is in the execution panel.",
       "openerBody": "The task's file could not be opened in your editor ({{detail}})."
     },
     "openConfigError": {
+      "title": "Could not open the config file",
       "body": "mise config ls --json did not return a config file to open. If the command failed, its stderr is in the execution panel.",
       "openerBody": "The config file could not be opened in your editor ({{detail}})."
     },
@@ -691,7 +692,7 @@
     "terminalNotFound": "No terminal emulator was found on this Linux system.",
     "timeout": "mise did not respond within the time limit. Try the action again; if it keeps happening, run the command in a terminal to see more.",
     "exitCode": "mise exited with code {{code}}",
-    "captureCap": "mise output exceeded the {{limit}}-byte capture cap.",
+    "captureCap": "mise output exceeded the {{limit}} capture cap.",
     "unknown": "Something went wrong. The execution panel has the details."
   },
   "languages": {

@@ -510,6 +510,23 @@ pub(crate) const MAX_LINE_BYTES: usize = 8 * 1024;
 /// payload, so a live read fits whole.
 pub(crate) const MAX_STREAM_BYTES: usize = 2 * 1024 * 1024;
 
+/// The capture cap as the reader should meet it: "2 MiB", not the raw
+/// byte count (issue #308). `docs/agents/runner.md` frames the same
+/// cap as 2 MiB, and a bare `2097152` in the message leaves the
+/// conversion to the user. Computed from [`MAX_STREAM_BYTES`] so the
+/// label cannot drift from the constant it describes.
+pub(crate) fn capture_cap_label() -> String {
+    const KIB: usize = 1024;
+    const MIB: usize = 1024 * 1024;
+    if MAX_STREAM_BYTES.is_multiple_of(MIB) {
+        format!("{} MiB", MAX_STREAM_BYTES / MIB)
+    } else if MAX_STREAM_BYTES.is_multiple_of(KIB) {
+        format!("{} KiB", MAX_STREAM_BYTES / KIB)
+    } else {
+        format!("{MAX_STREAM_BYTES} B")
+    }
+}
+
 /// Lines a reader may queue ahead of the main loop. The channel was
 /// unbounded, so a child that outran the panel's poll loop could grow it
 /// without limit. A bounded channel applies backpressure to the reader,
@@ -1467,7 +1484,7 @@ fn run_mise_capture(
         // precedent): this is MiseDeck-authored copy, not mise stderr.
         // Resolved by `resolveAppErrorMessage` via `errors.captureCap`.
         return Err(AppError::parse_failed(
-            format!("errors.captureCap|limit={MAX_STREAM_BYTES}"),
+            format!("errors.captureCap|limit={}", capture_cap_label()),
             driven.stderr,
         )
         .with_cap_truncated());
@@ -3091,6 +3108,25 @@ mod tests {
         assert!(rx.recv().is_err());
     }
 
+    /// Issue #308: the capture-cap message names the cap in MiB, not in
+    /// raw bytes — the user should not have to convert 2097152 to know
+    /// how much output was dropped. The label is computed from the
+    /// constant, so it cannot drift from the cap it describes.
+    #[test]
+    fn capture_cap_label_names_the_cap_it_describes() {
+        let label = capture_cap_label();
+        assert!(
+            label.ends_with(" MiB"),
+            "the cap must read in MiB, got: {label}"
+        );
+        let mib: usize = label
+            .trim_end_matches(" MiB")
+            .parse()
+            .expect("the MiB count must parse");
+        assert_eq!(mib * 1024 * 1024, MAX_STREAM_BYTES);
+        assert!(!label.contains(&MAX_STREAM_BYTES.to_string()));
+    }
+
     /// Issue #282: a captured read has no per-line cap — the aggregate
     /// bound is the only one — and bytes past it are dropped but still
     /// read to EOF, so a child can never block on a full pipe.
@@ -3312,9 +3348,11 @@ mod tests {
     /// for it, whatever exit code the truncated run reported.
     #[test]
     fn registry_fallback_never_retries_a_cap_truncated_payload() {
-        let truncated =
-            AppError::parse_failed(format!("errors.captureCap|limit={MAX_STREAM_BYTES}"), "")
-                .with_cap_truncated();
+        let truncated = AppError::parse_failed(
+            format!("errors.captureCap|limit={}", capture_cap_label()),
+            "",
+        )
+        .with_cap_truncated();
         assert!(!registry_fallback_applies(&truncated, None));
         assert!(!registry_fallback_applies(&truncated, Some(0)));
     }

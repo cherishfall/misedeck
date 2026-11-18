@@ -451,11 +451,12 @@
       "untrustedBody": "在修改此目录的任务之前，请先信任它。"
     },
     "openEditorError": {
-      "title": "无法打开配置文件",
+      "title": "无法打开任务文件",
       "body": "mise tasks edit 没有返回可用路径。如果命令执行失败，stderr 会在执行面板中显示。",
       "openerBody": "无法在编辑器中打开该任务的文件（{{detail}}）。"
     },
     "openConfigError": {
+      "title": "无法打开配置文件",
       "body": "mise config ls --json 没有返回可打开的配置文件。如果命令执行失败，stderr 会在执行面板中显示。",
       "openerBody": "无法在编辑器中打开配置文件（{{detail}}）。"
     },
@@ -691,7 +692,7 @@
     "terminalNotFound": "未在这个 Linux 系统上找到终端模拟器。",
     "timeout": "mise 未在超时时间内响应。请重试该操作；若反复出现，请在终端中运行该命令查看详情。",
     "exitCode": "mise 以退出码 {{code}} 结束",
-    "captureCap": "mise 输出超过了 {{limit}} 字节的捕获上限。",
+    "captureCap": "mise 输出超过了 {{limit}} 的捕获上限。",
     "unknown": "出现了未知错误，详情请见执行面板。"
   },
   "languages": {

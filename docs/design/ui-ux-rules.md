@@ -130,6 +130,7 @@ One vocabulary, four variants (color/type semantics owned by `visual-language.md
 - Removal vocabulary splits by scope (ADR-0008, amended by beta13): tool-level removal is Unuse / 取消使用 and runs `mise unuse <tool>` — reachable only from the version-management section's active rows, where a config request always exists; per-version file deletion is Uninstall / 卸载 (`mise uninstall <tool>@<version>`); plugin removal is Uninstall / 卸载 (`mise plugins uninstall <plugin>`). `mise uninstall --all` never enters the GUI — the beta13 batch-operation ban (a product decision owned by `CONTEXT.md` → Orphan installation). The binding rule is that a label always pairs with the command it actually runs: the confirmation dialog's teaching echo must never contradict its button.
 - Button labels never end in "…" — the trailing ellipsis is the retired "opens a dialog" convention; buttons read as plain verbs (beta9). The ellipsis stays only where the semantics differ: input placeholders and in-progress copy (loading / busy). Guarded by `npm run lint:i18n-ellipsis`.
 - Outdated versions render as the upgrade path: `2026.8.14 → 2026.9.0`, never as raw CLI prose, never as color alone.
+- A failure message names the object it acted on and the unit the reader thinks in: a card shared by two flows carries the title of the flow that produced it (the task's file vs the config file), and a limit reads as "2 MiB", never as a raw byte count the reader has to convert (issue #308).
 - Popovers and menus render inside the app window; never as separate overlay windows.
 
 ## Glyphs & icons
