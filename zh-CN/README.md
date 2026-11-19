@@ -8,6 +8,10 @@
 
 > **状态：1.0.8**（2026-11-19）——最新补丁版本，改动内容见 [release 说明](https://github.com/cherishfall/mise-deck/releases/tag/v1.0.8)。macOS（Apple Silicon）是打磨过的目标平台；Windows x64 能跑，已在一台真实 Windows 11 机器上完整走通（含安装包安装）；Linux 有包但未在真机上验证。
 
+## 站点
+
+项目页在 **[cherishfall.github.io/mise-deck](https://cherishfall.github.io/mise-deck/)**——双语，含应用真实截图与[更新日志](https://cherishfall.github.io/mise-deck/changelog.html)。
+
 ## 为什么
 
 - **展示解析结果，不靠猜**：已安装工具、已激活版本、可升级项、按目录的覆盖——每一行都标出来自哪个配置文件。
@@ -150,10 +154,6 @@ npm run tauri build
 | ![Plugins](../docs/screenshots/plugins-en.png) | ![插件](../docs/screenshots/plugins-zh-CN.png) |
 | ![Doctor](../docs/screenshots/doctor-en.png) | ![诊断](../docs/screenshots/doctor-zh-CN.png) |
 | ![Settings](../docs/screenshots/settings-en.png) | ![设置](../docs/screenshots/settings-zh-CN.png) |
-
-## 站点
-
-项目页在 **[cherishfall.github.io/mise-deck](https://cherishfall.github.io/mise-deck/)**——双语，含应用真实截图与[更新日志](https://cherishfall.github.io/mise-deck/changelog.html)。
 
 ## 参与贡献
 

@@ -8,6 +8,10 @@
 
 > **Status: 1.0.8** (2026-11-19) — the latest patch release; what changed is in the [release notes](https://github.com/cherishfall/mise-deck/releases/tag/v1.0.8). macOS on Apple Silicon is the polished target; Windows x64 runs and has been exercised end-to-end on one real Windows 11 machine, installer included; Linux is packaged but not verified on real hardware.
 
+## Website
+
+The project page lives at **[cherishfall.github.io/mise-deck](https://cherishfall.github.io/mise-deck/)** — bilingual, with the app's real screens and the [changelog](https://cherishfall.github.io/mise-deck/changelog.html).
+
 ## Why
 
 - **Resolved, not guessed**: installed tools, active versions, outdated upgrades, per-directory overrides — every row labeled with the config file it came from.
@@ -150,10 +154,6 @@ Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on ma
 | ![Plugins](./docs/screenshots/plugins-en.png) | ![插件](./docs/screenshots/plugins-zh-CN.png) |
 | ![Doctor](./docs/screenshots/doctor-en.png) | ![诊断](./docs/screenshots/doctor-zh-CN.png) |
 | ![Settings](./docs/screenshots/settings-en.png) | ![设置](./docs/screenshots/settings-zh-CN.png) |
-
-## Website
-
-The project page lives at **[cherishfall.github.io/mise-deck](https://cherishfall.github.io/mise-deck/)** — bilingual, with the app's real screens and the [changelog](https://cherishfall.github.io/mise-deck/changelog.html).
 
 ## Contributing
 
