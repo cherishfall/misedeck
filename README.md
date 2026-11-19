@@ -1,6 +1,6 @@
 # MiseDeck
 
-> [简体中文](./zh-CN/README.md) · [Landing page](https://cherishfall.github.io/misedeck/) · [Changelog](https://cherishfall.github.io/misedeck/changelog.html)
+> [简体中文](./zh-CN/README.md) · [Landing page](https://cherishfall.github.io/mise-deck/) · [Changelog](https://cherishfall.github.io/mise-deck/changelog.html)
 
 **A desktop GUI for [mise](https://mise.jdx.dev), the polyglot tool version manager.** It is built from mise's own concepts, not an invented layer on top: each page mirrors a part of the CLI, and every change it makes runs a real `mise` command, shown verbatim — command, logs, exit code — in the execution panel. MiseDeck is an independent community project, not affiliated with mise or its maintainer.
 
@@ -151,7 +151,7 @@ Bundles land in `src-tauri/target/release/bundle/` — `dmg/` and `macos/` on ma
 
 ## Website
 
-The project page lives at **[cherishfall.github.io/misedeck](https://cherishfall.github.io/misedeck/)** — bilingual, with the app's real screens and the [changelog](https://cherishfall.github.io/misedeck/changelog.html).
+The project page lives at **[cherishfall.github.io/mise-deck](https://cherishfall.github.io/mise-deck/)** — bilingual, with the app's real screens and the [changelog](https://cherishfall.github.io/mise-deck/changelog.html).
 
 ## Contributing
 

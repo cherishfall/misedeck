@@ -1,6 +1,6 @@
 # MiseDeck
 
-> [English](../README.md) · [落地页](https://cherishfall.github.io/misedeck/) · [更新日志](https://cherishfall.github.io/misedeck/changelog.html)
+> [English](../README.md) · [落地页](https://cherishfall.github.io/mise-deck/) · [更新日志](https://cherishfall.github.io/mise-deck/changelog.html)
 
 **[mise](https://mise.jdx.dev)（多语言工具版本管理器）的桌面 GUI。** 它用 mise 自己的概念构建，而不是在上面另造一层：每个页面镜像 CLI 的一部分，每次改动都真实执行一条 `mise` 命令，命令行、日志与退出码都原样留在执行面板里。MiseDeck 是独立的社区项目，与 mise 及其维护者没有隶属关系。
 
@@ -151,7 +151,7 @@ npm run tauri build
 
 ## 站点
 
-项目页在 **[cherishfall.github.io/misedeck](https://cherishfall.github.io/misedeck/)**——双语，含应用真实截图与[更新日志](https://cherishfall.github.io/misedeck/changelog.html)。
+项目页在 **[cherishfall.github.io/mise-deck](https://cherishfall.github.io/mise-deck/)**——双语，含应用真实截图与[更新日志](https://cherishfall.github.io/mise-deck/changelog.html)。
 
 ## 参与贡献
 

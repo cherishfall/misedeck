@@ -57,7 +57,7 @@ agent 可以在完成 ticket 的过程中 commit 和 push：DoD 全部通过后�
 
 ## 公开站点（落地页 + 更新日志）
 
-本项目的公开网页在**另一个仓库**——`cherishfall/cherishfall.github.io`，路径 `misedeck/`（线上地址 <https://cherishfall.github.io/misedeck/>）。它是纯静态 HTML，没有构建步骤；往那个仓库的 `main` 分支 push 即发布。
+本项目的公开网页在**另一个仓库**——`cherishfall/cherishfall.github.io`，路径 `mise-deck/`（线上地址 <https://cherishfall.github.io/mise-deck/>）。它是纯静态 HTML，没有构建步骤；往那个仓库的 `main` 分支 push 即发布。
 
 本仓库里有两样东西是那个站点的**真值来源**，改动其中任何一样，都必须同步更新站点：
 
@@ -65,8 +65,8 @@ agent 可以在完成 ticket 的过程中 commit 和 push：DoD 全部通过后�
    ```sh
    node scripts/gen-changelog-page.mjs
    ```
-   生成器写入 `../cherishfall.github.io/misedeck/changelog.html`，并把落地页的版本 chip 与安装包文件名同步到最新发布；在站点仓库里提交重新生成的页面。Release 正文带语言标记时即为双语（标记是"标题本身就是语言名"：`## English`、`## 简体中文`、`## MiseDeck 1.0.1（简体中文）`，不限标题级别）。**每个**标记都开启该语言的一个新半段，所以正文重复标记时既不丢内容也不张冠李戴；没有标记的正文整段展示，并标注未能按语言拆分。发布说明模板（`.github/release-template.md`）是常规发布的默认路径，因此它必须带两个语言半段——只有一种语言的发布说明是发布说明本身的 bug，站点会如实说明，而不会编造翻译。正文若是提交信息而不是发布说明，绝不会被发布——它渲染为"没有发布说明"——提交 trailer（`Co-Authored-By:`）会从每个正文里去掉。
-2. **截图。** 站点展示的是应用真实界面：`misedeck/screens/{en,zh}/*.webp`。发布若改动了 UI，就要重拍 `docs/screenshots/*.png`（README 自己的图），**并**为站点重新转成 1920 像素宽的 WebP——同一批截图，两处使用。截图按应用的导航顺序排列，首页在最前；站点单独强调的功能要带自己的截图（工具的版本管理视图有自己的两张）。站点截图与应用不再一致，就是对产品的虚假描述。
+   生成器写入 `../cherishfall.github.io/mise-deck/changelog.html`，并把落地页的版本 chip 与安装包文件名同步到最新发布；在站点仓库里提交重新生成的页面。Release 正文带语言标记时即为双语（标记是"标题本身就是语言名"：`## English`、`## 简体中文`、`## MiseDeck 1.0.1（简体中文）`，不限标题级别）。**每个**标记都开启该语言的一个新半段，所以正文重复标记时既不丢内容也不张冠李戴；没有标记的正文整段展示，并标注未能按语言拆分。发布说明模板（`.github/release-template.md`）是常规发布的默认路径，因此它必须带两个语言半段——只有一种语言的发布说明是发布说明本身的 bug，站点会如实说明，而不会编造翻译。正文若是提交信息而不是发布说明，绝不会被发布——它渲染为"没有发布说明"——提交 trailer（`Co-Authored-By:`）会从每个正文里去掉。
+2. **截图。** 站点展示的是应用真实界面：`mise-deck/screens/{en,zh}/*.webp`。发布若改动了 UI，就要重拍 `docs/screenshots/*.png`（README 自己的图），**并**为站点重新转成 1920 像素宽的 WebP——同一批截图，两处使用。截图按应用的导航顺序排列，首页在最前；站点单独强调的功能要带自己的截图（工具的版本管理视图有自己的两张）。站点截图与应用不再一致，就是对产品的虚假描述。
 
 站点必须始终说对、且要与代码核对的内容：八个页面及其命令、版本号（页头 chip 必须与最新已发布版本一致）、安装包文件名、应用的真实图标（从 `src-tauri/icons` 复制的 `icon.png`，绝不使用占位图形）、macOS 未签名未公证与 Windows 未签名的提醒，以及社区项目的免责声明。发布改变了其中任何一项，站点随之改变。
 
