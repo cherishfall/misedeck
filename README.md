@@ -1,5 +1,7 @@
 # MiseDeck
 
+[![MiseDeck banner: the app icon, the name, and the tagline](.github/social-preview.png)](https://cherishfall.github.io/mise-deck/)
+
 > [简体中文](./zh-CN/README.md) · [Landing page](https://cherishfall.github.io/mise-deck/) · [Changelog](https://cherishfall.github.io/mise-deck/changelog.html)
 
 **A desktop GUI for [mise](https://mise.jdx.dev), the polyglot tool version manager.** It is built from mise's own concepts, not an invented layer on top: each page mirrors a part of the CLI, and every change it makes runs a real `mise` command, shown verbatim — command, logs, exit code — in the execution panel. MiseDeck is an independent community project, not affiliated with mise or its maintainer.

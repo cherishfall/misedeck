@@ -1,5 +1,7 @@
 # MiseDeck
 
+[![MiseDeck 横幅：应用图标、名称与一句话定位](../.github/social-preview.png)](https://cherishfall.github.io/mise-deck/)
+
 > [English](../README.md) · [落地页](https://cherishfall.github.io/mise-deck/) · [更新日志](https://cherishfall.github.io/mise-deck/changelog.html)
 
 **[mise](https://mise.jdx.dev)（多语言工具版本管理器）的桌面 GUI。** 它用 mise 自己的概念构建，而不是在上面另造一层：每个页面镜像 CLI 的一部分，每次改动都真实执行一条 `mise` 命令，命令行、日志与退出码都原样留在执行面板里。MiseDeck 是独立的社区项目，与 mise 及其维护者没有隶属关系。
