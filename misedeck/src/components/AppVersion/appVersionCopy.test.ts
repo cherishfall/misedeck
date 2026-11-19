@@ -34,7 +34,7 @@ test("summarizeCheck: a newer build points at the download, not another check", 
   const summary = summarizeCheck({
     kind: "available",
     version: "1.0.0-beta.17",
-    url: "https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.17",
+    url: "https://github.com/cherishfall/mise-deck/releases/tag/v1.0.0-beta.17",
   });
   assert.equal(summary.statusKey, I18N_KEYS.about.available);
   assert.equal(summary.statusTone, "flare");

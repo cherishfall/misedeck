@@ -6,10 +6,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cherishfall/misedeck.git",
+    "url": "git+https://github.com/cherishfall/mise-deck.git",
     "directory": "misedeck"
   },
-  "homepage": "https://github.com/cherishfall/misedeck#readme",
+  "homepage": "https://github.com/cherishfall/mise-deck#readme",
   "type": "module",
   "scripts": {
     "dev": "vite",

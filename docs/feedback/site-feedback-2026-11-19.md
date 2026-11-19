@@ -49,7 +49,7 @@ facts intact; a zh spacing slip (`mise use过的`) fixed.
 - README + zh README carry a top nav line: `Landing page · Changelog` (the
   "Website" section keeps the long-form link). Mirrors the owner's PageMask
   repo, whose README leads with its landing page.
-- `gh repo edit cherishfall/misedeck --homepage` + bilingual description, again
+- `gh repo edit cherishfall/mise-deck --homepage` + bilingual description, again
   matching the PageMask About pattern (done after the push; recorded in the
   session report).
 

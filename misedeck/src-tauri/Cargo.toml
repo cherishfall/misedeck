@@ -4,8 +4,8 @@ version = "1.0.8"
 description = "MiseDeck — a faithful GUI for mise"
 authors = ["cherishfall"]
 license = "MIT"
-repository = "https://github.com/cherishfall/misedeck"
-homepage = "https://github.com/cherishfall/misedeck#readme"
+repository = "https://github.com/cherishfall/mise-deck"
+homepage = "https://github.com/cherishfall/mise-deck#readme"
 edition = "2021"
 # The package ships more than one binary: the app plus the two fixture
 # harnesses below. Those are gated behind `--features fixtures`, but the

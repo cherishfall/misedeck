@@ -2,7 +2,7 @@
 
 > [English](../../misedeck/README.md)
 
-[MiseDeck](https://github.com/cherishfall/misedeck) 的 React + Tauri 2 前端。
+[MiseDeck](https://github.com/cherishfall/mise-deck) 的 React + Tauri 2 前端。
 
 ## 开发
 

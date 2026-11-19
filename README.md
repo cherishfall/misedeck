@@ -4,7 +4,7 @@
 
 **A desktop GUI for [mise](https://mise.jdx.dev), the polyglot tool version manager.** It is built from mise's own concepts, not an invented layer on top: each page mirrors a part of the CLI, and every change it makes runs a real `mise` command, shown verbatim — command, logs, exit code — in the execution panel. MiseDeck is an independent community project, not affiliated with mise or its maintainer.
 
-> **Status: 1.0.8** (2026-11-19) — the latest patch release; what changed is in the [release notes](https://github.com/cherishfall/misedeck/releases/tag/v1.0.8). macOS on Apple Silicon is the polished target; Windows x64 runs and has been exercised end-to-end on one real Windows 11 machine, installer included; Linux is packaged but not verified on real hardware.
+> **Status: 1.0.8** (2026-11-19) — the latest patch release; what changed is in the [release notes](https://github.com/cherishfall/mise-deck/releases/tag/v1.0.8). macOS on Apple Silicon is the polished target; Windows x64 runs and has been exercised end-to-end on one real Windows 11 machine, installer included; Linux is packaged but not verified on real hardware.
 
 ## Why
 
@@ -44,7 +44,7 @@ Beyond the pages:
 
 ## Install
 
-Prebuilt (unsigned) binaries are attached to [GitHub Releases](https://github.com/cherishfall/misedeck/releases). Each release carries a `SHA256SUMS` file covering every asset — run `shasum -a 256 -c SHA256SUMS` (macOS) or `sha256sum -c SHA256SUMS` (Linux) in the folder you downloaded into.
+Prebuilt (unsigned) binaries are attached to [GitHub Releases](https://github.com/cherishfall/mise-deck/releases). Each release carries a `SHA256SUMS` file covering every asset — run `shasum -a 256 -c SHA256SUMS` (macOS) or `sha256sum -c SHA256SUMS` (Linux) in the folder you downloaded into.
 
 ### macOS (Apple Silicon)
 
@@ -96,7 +96,7 @@ Each release attaches `MiseDeck_<version>_x64-setup.exe`. CI compiles it and run
 The repo root is not the app: `package.json` lives in the `misedeck/` subdirectory, and every npm command has to run from there.
 
 ```bash
-git clone https://github.com/cherishfall/misedeck.git
+git clone https://github.com/cherishfall/mise-deck.git
 cd misedeck/misedeck   # repo root → app directory (package.json is here)
 npm install
 ```
@@ -155,7 +155,7 @@ The project page lives at **[cherishfall.github.io/misedeck](https://cherishfall
 
 ## Contributing
 
-See [AGENTS.md](./AGENTS.md), the glossary in [CONTEXT.md](./CONTEXT.md), and [docs/adr/](./docs/adr/). Report bugs and feedback in [Issues](https://github.com/cherishfall/misedeck/issues).
+See [AGENTS.md](./AGENTS.md), the glossary in [CONTEXT.md](./CONTEXT.md), and [docs/adr/](./docs/adr/). Report bugs and feedback in [Issues](https://github.com/cherishfall/mise-deck/issues).
 
 ## Disclaimer
 

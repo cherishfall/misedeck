@@ -2,7 +2,7 @@
 
 > [简体中文](../zh-CN/misedeck/README.md)
 
-The React + Tauri 2 frontend for [MiseDeck](https://github.com/cherishfall/misedeck).
+The React + Tauri 2 frontend for [MiseDeck](https://github.com/cherishfall/mise-deck).
 
 ## Develop
 

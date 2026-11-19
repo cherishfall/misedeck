@@ -409,7 +409,7 @@ fn terminal_open_result_err() {
 fn app_update_result_available() {
     let v = serde_json::to_value(misedeck_lib::update::AppUpdateResult::Available {
         version: "1.0.0-beta.17".to_string(),
-        url: "https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.17".to_string(),
+        url: "https://github.com/cherishfall/mise-deck/releases/tag/v1.0.0-beta.17".to_string(),
         published_at: Some("2026-11-02T09:14:00Z".to_string()),
     })
     .unwrap();
@@ -418,7 +418,7 @@ fn app_update_result_available() {
         json!({
             "status": "available",
             "version": "1.0.0-beta.17",
-            "url": "https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.17",
+            "url": "https://github.com/cherishfall/mise-deck/releases/tag/v1.0.0-beta.17",
             "publishedAt": "2026-11-02T09:14:00Z",
         })
     );

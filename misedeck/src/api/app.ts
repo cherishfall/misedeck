@@ -29,4 +29,4 @@ export async function getAppVersion(): Promise<string | null> {
 /** The project's Releases page — where every build is published. The app
  *  never downloads a build itself (ADR-0009): the browser (or the user's
  *  download manager / proxy) owns the transfer. */
-export const RELEASES_URL = "https://github.com/cherishfall/misedeck/releases";
+export const RELEASES_URL = "https://github.com/cherishfall/mise-deck/releases";

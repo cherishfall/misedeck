@@ -1,6 +1,6 @@
 # MiseDeck v<version>
 
-> [English](https://github.com/cherishfall/misedeck/blob/master/README.md) · [简体中文](https://github.com/cherishfall/misedeck/blob/master/zh-CN/README.md)
+> [English](https://github.com/cherishfall/mise-deck/blob/master/README.md) · [简体中文](https://github.com/cherishfall/mise-deck/blob/master/zh-CN/README.md)
 
 ## English
 
@@ -23,11 +23,11 @@ Beyond the pages: the execution panel (exact command, live logs, exit code, copy
 
 ### Install
 
-GitHub Releases is the only distribution channel — v1 ships no Homebrew formula or cask (per [ADR-0002](https://github.com/cherishfall/misedeck/blob/master/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)).
+GitHub Releases is the only distribution channel — v1 ships no Homebrew formula or cask (per [ADR-0002](https://github.com/cherishfall/mise-deck/blob/master/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)).
 
 **macOS** — download the `.dmg` from the assets below, open it, and drag MiseDeck to Applications.
 
-> **First launch (unsigned)**: the binary is **not notarized** (per [ADR-0002](https://github.com/cherishfall/misedeck/blob/master/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)). macOS Gatekeeper will block the first open and may report that the app is damaged. After dragging `MiseDeck.app` to `/Applications`, remove the quarantine flag from Terminal:
+> **First launch (unsigned)**: the binary is **not notarized** (per [ADR-0002](https://github.com/cherishfall/mise-deck/blob/master/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)). macOS Gatekeeper will block the first open and may report that the app is damaged. After dragging `MiseDeck.app` to `/Applications`, remove the quarantine flag from Terminal:
 >
 > ```bash
 > xattr -dr com.apple.quarantine /Applications/MiseDeck.app
@@ -85,11 +85,11 @@ MiseDeck <version> 稳定版——一个忠实于 [mise](https://mise.jdx.dev) �
 
 ### 安装
 
-GitHub Releases 是唯一分发渠道——v1 不提供 Homebrew formula 或 cask（见 [ADR-0002](https://github.com/cherishfall/misedeck/blob/master/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)）。
+GitHub Releases 是唯一分发渠道——v1 不提供 Homebrew formula 或 cask（见 [ADR-0002](https://github.com/cherishfall/mise-deck/blob/master/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)）。
 
 **macOS** —— 从下方资产下载 `.dmg`，打开并把 MiseDeck 拖进「应用程序」。
 
-> **首次启动（未签名）**：二进制**未经公证**（见 [ADR-0002](https://github.com/cherishfall/misedeck/blob/master/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)）。macOS Gatekeeper 会拦下第一次打开，并可能提示应用「已损坏」。把 `MiseDeck.app` 拖进 `/Applications` 后，在终端执行：
+> **首次启动（未签名）**：二进制**未经公证**（见 [ADR-0002](https://github.com/cherishfall/mise-deck/blob/master/docs/adr/0002-distribution-github-releases-and-homebrew-tap.md)）。macOS Gatekeeper 会拦下第一次打开，并可能提示应用「已损坏」。把 `MiseDeck.app` 拖进 `/Applications` 后，在终端执行：
 >
 > ```bash
 > xattr -dr com.apple.quarantine /Applications/MiseDeck.app

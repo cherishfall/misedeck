@@ -1,6 +1,6 @@
 # v1.0.0-beta.3 反馈记录（已发布为 GitHub issues）
 
-> ✅ 已于 2026-09-01 全部发布到 cherishfall/misedeck：SPEC 父 issue **#34** + tickets **#35~#44**（label: v1 + ready-for-agent，原生 blocking 关系已设置）。
+> ✅ 已于 2026-09-01 全部发布到 cherishfall/mise-deck：SPEC 父 issue **#34** + tickets **#35~#44**（label: v1 + ready-for-agent，原生 blocking 关系已设置）。
 > 映射：Issue 1→#38，Issue 2→#35，Issue 3→#38，Issue 4→#38，Issue 5→#37，Issue 6→#38，Issue 7a/7b→#36，Issue 8→#38，Issue 9→#39，Issue 10→#37。
 > 产品逻辑文档：docs/design/product-logic.md（双语）。
 > 每个条目：现象（中文原文）→ 对齐后的理解 → 代码调查结论。

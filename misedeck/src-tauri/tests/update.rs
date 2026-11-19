@@ -34,7 +34,7 @@ fn check_reports_a_newer_prerelease_from_a_recorded_feed() {
     assert_eq!(newest.version, "1.0.0-beta.17");
     assert_eq!(
         newest.url,
-        "https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.17"
+        "https://github.com/cherishfall/mise-deck/releases/tag/v1.0.0-beta.17"
     );
     assert_eq!(newest.published_at.as_deref(), Some("2026-11-02T09:14:00Z"));
     assert!(

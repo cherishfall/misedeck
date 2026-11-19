@@ -33,7 +33,7 @@ use serde::Serialize;
 use crate::mise::{byte_limit_label, token, AppError, MessageParams};
 
 /// Every MiseDeck release, newest first, prereleases included.
-pub const RELEASES_FEED_URL: &str = "https://github.com/cherishfall/misedeck/releases.atom";
+pub const RELEASES_FEED_URL: &str = "https://github.com/cherishfall/mise-deck/releases.atom";
 
 /// How long the whole request may take. A check the user asked for should
 /// answer or give up; it must never sit in the background for a minute on
@@ -333,13 +333,13 @@ mod tests {
   <entry>
     <id>tag:github.com,2008:Repository/1/v1.0.0-beta.17</id>
     <updated>2026-11-02T09:14:00Z</updated>
-    <link rel="alternate" type="text/html" href="https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.17"/>
+    <link rel="alternate" type="text/html" href="https://github.com/cherishfall/mise-deck/releases/tag/v1.0.0-beta.17"/>
     <title>v1.0.0-beta.17</title>
   </entry>
   <entry>
     <id>tag:github.com,2008:Repository/1/v1.0.0-beta.16</id>
     <updated>2026-10-21T02:43:00Z</updated>
-    <link rel="alternate" type="text/html" href="https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.16"/>
+    <link rel="alternate" type="text/html" href="https://github.com/cherishfall/mise-deck/releases/tag/v1.0.0-beta.16"/>
     <title>v1.0.0-beta.16</title>
   </entry>
 </feed>"#;
@@ -351,7 +351,7 @@ mod tests {
         assert_eq!(tags[0].version, "1.0.0-beta.17");
         assert_eq!(
             tags[0].url,
-            "https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.17"
+            "https://github.com/cherishfall/mise-deck/releases/tag/v1.0.0-beta.17"
         );
         assert_eq!(
             tags[0].published_at.as_deref(),
@@ -537,7 +537,7 @@ mod tests {
         assert_eq!(newer.version, "1.0.0-beta.17");
         assert_eq!(
             newer.url,
-            "https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.17"
+            "https://github.com/cherishfall/mise-deck/releases/tag/v1.0.0-beta.17"
         );
     }
 

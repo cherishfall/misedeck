@@ -16,7 +16,7 @@ MiseDeck 之前无法说明自己在跑哪个构建，也无从得知有更新�
 
 - 运行版本来自 Tauri 上下文（`getVersion()`），绝不来自界面里的字面量。显示与比较用同一个值，二者不可能不一致。
 - 检查只在用户要求时执行。启动时什么都不发：一个卡在被限速的请求上的冷启动比"不知道有没有新版"更糟；而要让启动检查变安全，需要限速加持久化状态——那是一个功能，不是一个细节。
-- 传输用 `curl` 拉 `https://github.com/cherishfall/misedeck/releases.atom`，上限 8 秒。feed 在 `github.com` 上（在 `api.github.com` 常常不可达的网络里仍可达），无需 token、无速率配额，而且——决定性的一点——它列出 prerelease。排序用 semver，因此 `1.0.0-beta.17` 胜过 `1.0.0-beta.16`，正式版胜过它自己的 beta。
+- 传输用 `curl` 拉 `https://github.com/cherishfall/mise-deck/releases.atom`，上限 8 秒。feed 在 `github.com` 上（在 `api.github.com` 常常不可达的网络里仍可达），无需 token、无速率配额，而且——决定性的一点——它列出 prerelease。排序用 semver，因此 `1.0.0-beta.17` 胜过 `1.0.0-beta.16`，正式版胜过它自己的 beta。
 - 所有失败——断网、代理、超时、缺 curl、feed 解析不出东西——都收敛成一句话加一个重试。不弹模态、不自动重试、不打断正在跑的 mise 命令。
 - 有更新的构建就给出它的 Release 页。应用绝不直接链接二进制，也绝不下载。
 

@@ -16,7 +16,7 @@ MiseDeck had no way to say which build was running, and no way to learn that a n
 
 - The running version comes from the Tauri context (`getVersion()`), never from a literal in the UI. It powers both the display and the comparison, so the two can never disagree.
 - The check runs only when the user asks. Nothing fires at launch: a cold start that blocks on a throttled request is worse than not knowing, and making it safe would need throttling plus persisted state — a feature, not a detail.
-- Transport is `curl` against `https://github.com/cherishfall/misedeck/releases.atom`, bounded at 8 seconds. The feed sits on `github.com` (reachable where `api.github.com` often is not), needs no token and no rate budget, and — decisive — lists prereleases. Ordering is semver, so `1.0.0-beta.17` beats `1.0.0-beta.16` and a final release beats its own betas.
+- Transport is `curl` against `https://github.com/cherishfall/mise-deck/releases.atom`, bounded at 8 seconds. The feed sits on `github.com` (reachable where `api.github.com` often is not), needs no token and no rate budget, and — decisive — lists prereleases. Ordering is semver, so `1.0.0-beta.17` beats `1.0.0-beta.16` and a final release beats its own betas.
 - Every failure — offline, proxy, timeout, no curl, unparseable feed — collapses into one sentence and a retry. No modal, no automatic retry, no interrupting a mise command that is already running.
 - A newer build yields its Release page. The app never links directly at a binary and never downloads one.
 

@@ -4,7 +4,7 @@
 
 **[mise](https://mise.jdx.dev)（多语言工具版本管理器）的桌面 GUI。** 它用 mise 自己的概念构建，而不是在上面另造一层：每个页面镜像 CLI 的一部分，每次改动都真实执行一条 `mise` 命令，命令行、日志与退出码都原样留在执行面板里。MiseDeck 是独立的社区项目，与 mise 及其维护者没有隶属关系。
 
-> **状态：1.0.8**（2026-11-19）——最新补丁版本，改动内容见 [release 说明](https://github.com/cherishfall/misedeck/releases/tag/v1.0.8)。macOS（Apple Silicon）是打磨过的目标平台；Windows x64 能跑，已在一台真实 Windows 11 机器上完整走通（含安装包安装）；Linux 有包但未在真机上验证。
+> **状态：1.0.8**（2026-11-19）——最新补丁版本，改动内容见 [release 说明](https://github.com/cherishfall/mise-deck/releases/tag/v1.0.8)。macOS（Apple Silicon）是打磨过的目标平台；Windows x64 能跑，已在一台真实 Windows 11 机器上完整走通（含安装包安装）；Linux 有包但未在真机上验证。
 
 ## 为什么
 
@@ -44,7 +44,7 @@
 
 ## 安装
 
-未签名的预构建文件附在 [GitHub Releases](https://github.com/cherishfall/misedeck/releases)。每个 release 都带一个覆盖全部资产的 `SHA256SUMS` —— 在下好包的目录里跑 `shasum -a 256 -c SHA256SUMS`（macOS）或 `sha256sum -c SHA256SUMS`（Linux）即可校验。
+未签名的预构建文件附在 [GitHub Releases](https://github.com/cherishfall/mise-deck/releases)。每个 release 都带一个覆盖全部资产的 `SHA256SUMS` —— 在下好包的目录里跑 `shasum -a 256 -c SHA256SUMS`（macOS）或 `sha256sum -c SHA256SUMS`（Linux）即可校验。
 
 ### macOS（Apple Silicon）
 
@@ -96,7 +96,7 @@ xattr -dr com.apple.quarantine /Applications/MiseDeck.app
 仓库根目录不是应用目录：`package.json` 在 `misedeck/` 子目录里，所有 npm 命令都要在那里执行。
 
 ```bash
-git clone https://github.com/cherishfall/misedeck.git
+git clone https://github.com/cherishfall/mise-deck.git
 cd misedeck/misedeck   # 仓库根 → 应用目录（package.json 在这里）
 npm install
 ```
@@ -155,7 +155,7 @@ npm run tauri build
 
 ## 参与贡献
 
-见 [AGENTS.md](../AGENTS.md)、术语表 [CONTEXT.md](../CONTEXT.md)、决策记录 [docs/adr/](../docs/adr/)。问题与反馈请提交到 [Issues](https://github.com/cherishfall/misedeck/issues)。
+见 [AGENTS.md](../AGENTS.md)、术语表 [CONTEXT.md](../CONTEXT.md)、决策记录 [docs/adr/](../docs/adr/)。问题与反馈请提交到 [Issues](https://github.com/cherishfall/mise-deck/issues)。
 
 ## 免责声明
 

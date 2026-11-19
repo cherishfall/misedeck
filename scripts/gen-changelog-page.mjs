@@ -27,7 +27,7 @@
 //                                       [--limit <n>] [--site <dir>]
 //                                       [--index <path>]
 //
-// Defaults: repo=cherishfall/misedeck, site=../cherishfall.github.io/misedeck,
+// Defaults: repo=cherishfall/mise-deck, site=../cherishfall.github.io/misedeck,
 // out=<site>/changelog.html, index=<site>/index.html. Requires `gh` on PATH
 // and a logged-in session (the release bodies are read through the GitHub API).
 
@@ -44,7 +44,7 @@ function arg(name, fallback) {
   return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
 }
 
-const REPO = arg("--repo", "cherishfall/misedeck");
+const REPO = arg("--repo", "cherishfall/mise-deck");
 const LIMIT = Number(arg("--limit", "40"));
 const SITE = resolve(arg("--site", resolve(repoRoot, "../cherishfall.github.io/misedeck")));
 const OUT = resolve(arg("--out", resolve(SITE, "changelog.html")));

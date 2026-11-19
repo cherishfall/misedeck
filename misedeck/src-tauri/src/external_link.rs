@@ -108,7 +108,7 @@ mod tests {
     #[test]
     fn release_page_urls_pass_through_unchanged() {
         for url in [
-            "https://github.com/cherishfall/misedeck/releases",
+            "https://github.com/cherishfall/mise-deck/releases",
             "https://github.com/jdx/mise/releases",
             "https://mise.jdx.dev/installing.html",
             "http://localhost:1420/",

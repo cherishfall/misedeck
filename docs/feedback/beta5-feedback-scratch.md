@@ -1,6 +1,6 @@
 # v1.0.0-beta.5 反馈记录
 
-> ✅ **第一批（2 条）已于 2026-09-03 发布到 cherishfall/misedeck**：SPEC 父 issue **#61** + tickets **#62~#64**（label: v1 + ready-for-agent，原生 blocking + sub-issue 关系已设置）。
+> ✅ **第一批（2 条）已于 2026-09-03 发布到 cherishfall/mise-deck**：SPEC 父 issue **#61** + tickets **#62~#64**（label: v1 + ready-for-agent，原生 blocking + sub-issue 关系已设置）。
 > 映射：Issue 1（首页位置 + 底部控件行）→ **#62**；Issue 2（折叠态语言菜单被裁）→ **#63**（建浮层 primitive + 迁移语言菜单 + 补齐无障碍）+ **#64**（目录菜单迁移，纯技术债，独立排期）。
 > 阻塞链：**#63 ← #62；#64 ← #63**（#62 可立即开工）。
 > 每条：用户原话（+截图）→ 代码调查结论 → 对齐后的理解 → 定稿。
@@ -103,7 +103,7 @@ DOM 层级共享同一容器 `.sidebarTop`（`PageShell.module.css:39-66`），p
 
 # 第二批（Issue 3~10，已于 2026-09-03 发布）
 
-> ✅ **第二批（8 条）已于 2026-09-03 发布到 cherishfall/misedeck**：SPEC 父 issue **#65** + tickets **#66~#73**（label: v1 + ready-for-agent，原生 blocking + sub-issue 关系已设置）。
+> ✅ **第二批（8 条）已于 2026-09-03 发布到 cherishfall/mise-deck**：SPEC 父 issue **#65** + tickets **#66~#73**（label: v1 + ready-for-agent，原生 blocking + sub-issue 关系已设置）。
 > 映射：Issue 3（toggle 对齐）→ **#66**；Issue 4 拆两半——token 硬写值归位 → **#67**、token-to-token 差异 → **#68**；Issue 5（bug）→ **#69**；Issue 6+7（分页+卸载）→ **#70**；Issue 8（链接工具）→ **#71**；Issue 9（执行面板+ADR+复制命令）→ **#72**；Issue 10（预览页 redesign）→ **#73**。
 > 阻塞链：**#68 ← #67**（同一 stylesheet，token 先行语义后行）；**#70 ← #69**（bug 不修，卸载按钮无数据可点）。
 > **#66 / #67 / #69 / #71 / #72 / #73 六个可立即开工**；#72 建议在 #69~#71 后做（排期建议非硬依赖）；#73 的「复制命令删除」部分归 #72 承接（避免能力空窗）。

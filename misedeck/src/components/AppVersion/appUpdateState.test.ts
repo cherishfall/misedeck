@@ -16,7 +16,7 @@ import {
 
 const MARKER: AvailableUpdate = {
   version: "1.0.0-beta.18",
-  url: "https://github.com/cherishfall/misedeck/releases/tag/v1.0.0-beta.18",
+  url: "https://github.com/cherishfall/mise-deck/releases/tag/v1.0.0-beta.18",
 };
 
 test("parseUpdateState: a missing value means never checked", () => {
